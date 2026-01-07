@@ -1,0 +1,36 @@
+services:
+  mongo:
+    image: mongo:latest
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/mern_app}
+      - PORT=${PORT:-4000}
+    depends_on:
+      - mongo
+    ports:
+      - "4000:4000"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:4000/api}
+    depends_on:
+      - api
+    ports:
+      - "4173:4173"
+
+volumes:
+  mongo-data:
