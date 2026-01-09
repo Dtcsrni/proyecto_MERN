@@ -1,5 +1,5 @@
 {
-  "name": "proyecto-mern",
+  "name": "sistema-evaluacion-universitaria",
   "version": "0.1.0",
   "private": true,
   "workspaces": ["apps/backend", "apps/frontend", "apps/portal_alumno_cloud"],

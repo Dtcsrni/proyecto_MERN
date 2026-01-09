@@ -1,6 +1,6 @@
-# Plataforma MERN para examenes
+# Sistema de Evaluacion Universitaria
 
-Monorepo MERN con backend docente local (Express + MongoDB) y frontend React.
+Monorepo MERN del Sistema de Evaluacion Universitaria con backend docente local (Express + MongoDB) y frontend React.
 Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) y
 calificacion exacta sin redondeos.
 
