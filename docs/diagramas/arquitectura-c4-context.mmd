@@ -1,6 +1,7 @@
 %%{init: {'theme':'base','themeVariables':{ 'primaryColor':'#e0f2fe', 'primaryTextColor':'#0c4a6e', 'primaryBorderColor':'#0284c7', 'lineColor':'#334155' }}}%%
 C4Context
 title Sistema de Evaluacion Universitaria - Contexto
+LAYOUT_TOP_DOWN()
 
 Person(docente, "Docente", "Opera el panel local")
 Person(alumno, "Alumno", "Consulta resultados")
@@ -17,12 +18,12 @@ SystemDb(mongoLocal, "MongoDB Local", "Datos docentes")
 System_Ext(pdfStore, "PDFs locales", "data/examenes")
 System_Ext(mail, "Correo", "Opcional")
 
-Rel(docente, webDoc, "Usa", "HTTP")
-Rel(webDoc, apiDoc, "Consume API", "JSON")
-Rel(apiDoc, mongoLocal, "CRUD")
-Rel(apiDoc, pdfStore, "Genera y lee")
-Rel(apiDoc, mail, "Envia codigo", "SMTP")
-Rel(apiDoc, apiPortal, "Publica resultados", "HTTP + API Key")
-Rel(alumno, webAlu, "Consulta", "HTTP")
-Rel(webAlu, apiPortal, "Consume API", "JSON")
-Rel(apiPortal, mongoCloud, "CRUD")
+Rel_D(docente, webDoc, "Usa", "HTTP")
+Rel_D(webDoc, apiDoc, "Consume API", "JSON")
+Rel_D(apiDoc, mongoLocal, "CRUD")
+Rel_R(apiDoc, pdfStore, "Genera y lee")
+Rel_R(apiDoc, mail, "Envia codigo", "SMTP")
+Rel_D(apiDoc, apiPortal, "Publica resultados", "HTTP + API Key")
+Rel_D(alumno, webAlu, "Consulta", "HTTP")
+Rel_D(webAlu, apiPortal, "Consume API", "JSON")
+Rel_D(apiPortal, mongoCloud, "CRUD")

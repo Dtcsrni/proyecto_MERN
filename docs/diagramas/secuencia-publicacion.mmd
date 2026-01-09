@@ -1,3 +1,4 @@
+%%{init: {'sequence': {'messageAlign': 'center'}}}%%
 sequenceDiagram
   actor Docente
   participant Web as Web Docente
@@ -13,7 +14,7 @@ sequenceDiagram
   API->>FS: Leer PDFs opcional
   API->>API: Comprimir PDF (gzip + base64)
   API->>Portal: POST /api/portal/sincronizar (API Key)
-  Portal->>CloudDB: Upsert resultados + codigo acceso
+  Portal->>CloudDB: Upsert resultados + codigo de acceso
   Portal-->>API: OK
   API->>DB: Guardar sincronizacion
   API-->>Web: OK
