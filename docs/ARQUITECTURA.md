@@ -37,7 +37,7 @@ flowchart LR
 
   subgraph Cloud["Nube (Portal Alumno)"]
     userAlu[Alumno]:::user
-    webAlu[Web Alumno<br/>React (app_alumno)]:::svc
+    webAlu[Web Alumno<br/>React app_alumno]:::svc
     apiPortal[API Portal Alumno<br/>Express + TS]:::cloud
     mongoCloud[(MongoDB Cloud)]:::db
   end
@@ -54,9 +54,11 @@ flowchart LR
   userAlu --> webAlu
   webAlu -->|HTTP JSON| apiPortal
 
-  extMail[Correo (opcional)]:::ext
+  extMail[Correo opcional]:::ext
   apiDoc -.->|codigo acceso| extMail
 ```
+
+![Arquitectura logica](diagramas/arquitectura-logica.svg)
 
 ## Diagrama de despliegue (local + nube)
 
@@ -86,7 +88,7 @@ flowchart TB
   end
 
   subgraph Static["Hosting estatico"]
-    web_alumno[web_alumno (build app_alumno)]:::svc
+    web_alumno[web_alumno - build app_alumno]:::svc
   end
 
   alumno[Alumno]:::user --> web_alumno
@@ -94,6 +96,12 @@ flowchart TB
   api_docente_local -->|sync + API Key| portal_api
   portal_api --> mongo_cloud
 ```
+
+![Arquitectura despliegue](diagramas/arquitectura-despliegue.svg)
+
+Ver todos los diagramas en `docs/DIAGRAMAS.md`.
+
+Ver la version C4 en `docs/ARQUITECTURA_C4.md`.
 
 ## Decisiones clave
 - Monolito modular local: menos complejidad, facil mantenimiento.
