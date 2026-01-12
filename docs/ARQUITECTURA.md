@@ -58,7 +58,7 @@ flowchart LR
   apiDoc -.->|codigo acceso| extMail
 ```
 
-![Arquitectura logica](diagramas/arquitectura-logica.svg)
+![Arquitectura logica](diagramas/arquitectura/arquitectura-logica.svg)
 
 ## Diagrama de despliegue (local + nube)
 
@@ -97,7 +97,7 @@ flowchart TB
   portal_api --> mongo_cloud
 ```
 
-![Arquitectura despliegue](diagramas/arquitectura-despliegue.svg)
+![Arquitectura despliegue](diagramas/arquitectura/arquitectura-despliegue.svg)
 
 Ver todos los diagramas en `docs/DIAGRAMAS.md`.
 

@@ -1,0 +1,65 @@
+flowchart LR
+  classDef collection fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+  classDef embedded fill:#fef9c3,stroke:#ca8a04,color:#713f12;
+  classDef note fill:#f5f5f4,stroke:#78716c,color:#1c1917;
+
+  subgraph LocalDB["MongoDB Local (documentos)"]
+    Docente[Docente]:::collection
+    Periodo[Periodo]:::collection
+    Alumno[Alumno]:::collection
+    BancoPregunta[BancoPregunta]:::collection
+    VersionPregunta{{VersionPregunta}}:::embedded
+    Opcion{{Opcion}}:::embedded
+    ExamenPlantilla[ExamenPlantilla]:::collection
+    ExamenGenerado[ExamenGenerado]:::collection
+    Pagina{{Pagina}}:::embedded
+    MapaVariante{{MapaVariante}}:::embedded
+    MapaOmr{{MapaOmr}}:::embedded
+    Entrega[Entrega]:::collection
+    Calificacion[Calificacion]:::collection
+    Fraccion{{Fraccion}}:::embedded
+    Respuestas{{RespuestasDetectadas}}:::embedded
+    BanderaRevision[BanderaRevision]:::collection
+    CodigoAcceso[CodigoAcceso]:::collection
+    Sincronizacion[Sincronizacion]:::collection
+  end
+
+  Docente -->|ref docenteId| Periodo
+  Docente -->|ref docenteId| Alumno
+  Periodo -->|ref periodoId| Alumno
+
+  Docente -->|ref docenteId| BancoPregunta
+  Periodo -->|ref periodoId opcional| BancoPregunta
+  BancoPregunta -->|embed versiones array| VersionPregunta
+  VersionPregunta -->|embed opciones 5| Opcion
+
+  Docente -->|ref docenteId| ExamenPlantilla
+  Periodo -->|ref periodoId| ExamenPlantilla
+  ExamenPlantilla -->|ref preguntasIds array| BancoPregunta
+
+  ExamenPlantilla -->|ref plantillaId| ExamenGenerado
+  Periodo -->|ref periodoId| ExamenGenerado
+  Alumno -->|ref alumnoId opcional| ExamenGenerado
+  ExamenGenerado -->|embed paginas array| Pagina
+  ExamenGenerado -->|embed mapas| MapaVariante
+  ExamenGenerado -->|embed mapas| MapaOmr
+
+  ExamenGenerado -->|ref examenGeneradoId| Entrega
+  Alumno -->|ref alumnoId| Entrega
+  Docente -->|ref docenteId| Entrega
+
+  ExamenGenerado -->|ref examenGeneradoId| Calificacion
+  Alumno -->|ref alumnoId| Calificacion
+  Docente -->|ref docenteId| Calificacion
+  Periodo -->|ref periodoId| Calificacion
+  Calificacion -->|embed fraccion| Fraccion
+  Calificacion -->|embed respuestasDetectadas| Respuestas
+
+  ExamenGenerado -->|ref examenGeneradoId| BanderaRevision
+  Alumno -->|ref alumnoId| BanderaRevision
+  Docente -->|ref docenteId| BanderaRevision
+
+  Docente -->|ref docenteId| CodigoAcceso
+  Periodo -->|ref periodoId| CodigoAcceso
+
+  Docente -->|ref docenteId| Sincronizacion

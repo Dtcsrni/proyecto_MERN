@@ -1,0 +1,22 @@
+flowchart LR
+  classDef collection fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+  classDef embedded fill:#fef9c3,stroke:#ca8a04,color:#713f12;
+  classDef note fill:#f5f5f4,stroke:#78716c,color:#1c1917;
+
+  subgraph CloudDB["MongoDB Cloud (documentos)"]
+    CodigoAcceso[CodigoAcceso]:::collection
+    ResultadoAlumno[ResultadoAlumno]:::collection
+    SesionAlumno[SesionAlumno]:::collection
+    Banderas{{Banderas array}}:::embedded
+  end
+
+  External[(IDs externos\nperiodoId / alumnoId / docenteId)]:::note
+
+  CodigoAcceso -->|valores| External
+  ResultadoAlumno -->|valores| External
+  SesionAlumno -->|valores| External
+
+  CodigoAcceso -->|ref periodoId| ResultadoAlumno
+  SesionAlumno -->|ref alumnoId| ResultadoAlumno
+  SesionAlumno -->|ref periodoId| ResultadoAlumno
+  ResultadoAlumno -->|embed banderas array| Banderas
