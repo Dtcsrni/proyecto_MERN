@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Sistema de Evaluacion Universitaria</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #1b2430;
+      --ink-soft: #415a77;
+      --accent: #0b3a6b;
+      --accent-soft: #e6effa;
+      --warn: #fff1f0;
+      --ok: #e8f7ef;
+      --border: #d9e2ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Candara", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    header {
+      background: var(--accent);
+      color: #ffffff;
+      padding: 18px 24px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      padding: 18px;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      margin-bottom: 14px;
+    }
+    h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 10px 0;
+      color: var(--ink-soft);
+    }
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: var(--accent-soft);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      text-align: left;
+      transition: transform 0.05s ease, background 0.2s ease;
+    }
+    button:hover { background: #d9e9ff; }
+    button:active { transform: translateY(1px); }
+    .danger { background: var(--warn); }
+    .ok { background: var(--ok); }
+    .links a {
+      display: block;
+      text-decoration: none;
+      color: var(--accent);
+      padding: 6px 2px;
+      font-weight: 600;
+    }
+    .status-grid {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+    .status-grid span {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .log {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      height: 380px;
+      overflow: auto;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      display: inline-block;
+      background: #eef3f9;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard - Sistema de Evaluacion Universitaria</h1>
+  </header>
+  <main>
+    <div>
+      <section>
+        <h2>Inicio rapido</h2>
+        <div class="stack">
+          <button data-start="dev">Iniciar dev (Docker + Web)</button>
+          <button data-start="prod">Iniciar prod (Docker API)</button>
+          <button data-start="portal">Iniciar portal alumno (API)</button>
+        </div>
+      </section>
+      <section>
+        <h2>Control</h2>
+        <div class="stack">
+          <button class="danger" data-stop="dev">Detener dev</button>
+          <button class="danger" data-stop="prod">Detener prod</button>
+          <button class="danger" data-stop="portal">Detener portal alumno</button>
+          <button class="danger" data-run="docker-down">Docker compose down</button>
+        </div>
+      </section>
+      <section>
+        <h2>Abrir</h2>
+        <div class="links">
+          <a href="http://localhost:4173" target="_blank">Web docente (http://localhost:4173)</a>
+          <a href="http://localhost:4000/api/salud" target="_blank">API docente salud (http://localhost:4000/api/salud)</a>
+          <a href="http://localhost:8080/api/portal/salud" target="_blank">API portal salud (http://localhost:8080/api/portal/salud)</a>
+        </div>
+      </section>
+      <section>
+        <h2>Diagnostico</h2>
+        <div class="stack">
+          <button class="ok" data-run="status">Estado de servicios</button>
+          <button class="ok" data-run="docker-ps">Docker ps</button>
+          <button class="ok" id="clear-logs">Limpiar salida</button>
+        </div>
+      </section>
+    </div>
+    <div>
+      <section>
+        <h2>Estado</h2>
+        <div class="status-grid">
+          <div>Proyecto: <span id="root">-</span></div>
+          <div>Modo: <span id="mode">-</span></div>
+          <div>Node: <span id="node">-</span></div>
+          <div>npm: <span id="npm">-</span></div>
+          <div>Docker: <span id="docker">-</span></div>
+          <div>Procesos: <span id="running">-</span></div>
+        </div>
+      </section>
+      <section>
+        <h2>Salida</h2>
+        <div class="row">
+          <span class="pill" id="log-size">0 lineas</span>
+          <span class="pill" id="last-refresh">-</span>
+        </div>
+        <div class="log" id="log">Cargando...</div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function api(path, body) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      return res.json();
+    }
+
+    async function refreshStatus() {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      $('root').textContent = data.root;
+      $('mode').textContent = data.mode;
+      $('node').textContent = data.node;
+      $('npm').textContent = data.npm;
+      $('docker').textContent = data.docker;
+      $('running').textContent = data.running.length ? data.running.join(', ') : 'ninguno';
+      $('log-size').textContent = `${data.logSize} lineas`;
+      $('last-refresh').textContent = `Actualizado ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function refreshLogs() {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      $('log').textContent = data.lines.join('\n') || 'Sin salida';
+      $('log').scrollTop = $('log').scrollHeight;
+    }
+
+    document.querySelectorAll('[data-start]').forEach((btn) => {
+      btn.addEventListener('click', () => api('/api/start', { task: btn.dataset.start }));
+    });
+    document.querySelectorAll('[data-stop]').forEach((btn) => {
+      btn.addEventListener('click', () => api('/api/stop', { task: btn.dataset.stop }));
+    });
+    document.querySelectorAll('[data-run]').forEach((btn) => {
+      btn.addEventListener('click', () => api('/api/run', { task: btn.dataset.run }));
+    });
+    $('clear-logs').addEventListener('click', async () => {
+      await api('/api/logs/clear');
+      refreshLogs();
+    });
+
+    refreshStatus();
+    refreshLogs();
+    setInterval(refreshStatus, 3000);
+    setInterval(refreshLogs, 3000);
+  </script>
+</body>
+</html>
