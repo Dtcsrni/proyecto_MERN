@@ -61,9 +61,11 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Estado de servicios: `npm run status`
 
 ## Acceso directo (Windows)
-- Doble clic en scripts/launch-dev.cmd para levantar dev (Docker + web).
-- Doble clic en scripts/launch-prod.cmd para levantar prod (Docker API docente).
-- Para crear acceso directo: clic derecho en el .cmd > Crear acceso directo y mover al escritorio.
+- Doble clic en `scripts/launch-dev.cmd` para abrir el dashboard web y levantar dev (Docker + web).
+- Doble clic en `scripts/launch-prod.cmd` para abrir el dashboard web y levantar prod (Docker API docente).
+- En el dashboard web puedes iniciar/detener servicios, abrir URLs y ver logs.
+- Genera accesos con icono: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcuts.ps1` (usa el dashboard web).
+- Los `.lnk` quedan en `accesos-directos/`; puedes moverlos al escritorio o anclar a Inicio.
 - Asegurate de tener Docker Desktop iniciado antes de ejecutar.
 
 ## Pruebas automatizadas
@@ -82,6 +84,10 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Formato PDF y OMR: `docs/FORMATO_PDF.md`
 - Pruebas automatizadas: `docs/PRUEBAS.md`
 - Mapa de archivos: `docs/FILES.md`
+
+
+
+
 
 
 
