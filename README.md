@@ -60,6 +60,12 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Produccion portal alumno: `npm run start:portal`
 - Estado de servicios: `npm run status`
 
+## Acceso directo (Windows)
+- Doble clic en scripts/launch-dev.cmd para levantar dev (Docker + web).
+- Doble clic en scripts/launch-prod.cmd para levantar prod (Docker API docente).
+- Para crear acceso directo: clic derecho en el .cmd > Crear acceso directo y mover al escritorio.
+- Asegurate de tener Docker Desktop iniciado antes de ejecutar.
+
 ## Pruebas automatizadas
 - Backend (unitarias + smoke): `npm run test`
 - Backend directo: `npm --prefix apps/backend run test`
@@ -76,5 +82,6 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Formato PDF y OMR: `docs/FORMATO_PDF.md`
 - Pruebas automatizadas: `docs/PRUEBAS.md`
 - Mapa de archivos: `docs/FILES.md`
+
 
 
