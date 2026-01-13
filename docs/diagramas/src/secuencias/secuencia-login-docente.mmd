@@ -1,0 +1,23 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45}}}%%
+sequenceDiagram
+  actor Docente
+  participant Web as Web Docente Local UI #e8f1ff
+  participant API as API Docente Local #e8f1ff
+  participant DB as MongoDB Local docentes #dbeafe
+  %% LEYENDA_COLOR
+  Note over Docente,DB: Leyenda de color<br/>Azul oscuro: Usuario<br/>Azul claro: Servicio<br/>Azul medio: Base de datos<br/>Amarillo: Repositorio<br/>Gris: Externo
+
+  Docente->>Web: Ingresa correo + contrasena
+  Web->>API: POST /api/autenticacion/ingresar
+  API->>DB: Buscar docente y validar hash
+  DB-->>API: Docente
+  API-->>Web: JWT + perfil
+  Web->>Web: Guarda token
+
+  alt Registrar docente
+    Docente->>Web: Captura correo + contrasena
+    Web->>API: POST /api/autenticacion/registrar
+    API->>DB: Crear docente
+    DB-->>API: Docente
+    API-->>Web: JWT + perfil
+  end

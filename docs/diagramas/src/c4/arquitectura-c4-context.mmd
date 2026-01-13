@@ -1,0 +1,59 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45},"c4":{"fontSize":22}}}%%
+C4Context
+title Sistema de Evaluacion Universitaria - Contexto
+
+UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
+
+Person(docente, "Docente", "Opera el panel local")
+Person(alumno, "Alumno", "Consulta resultados")
+
+Boundary(local, "Entorno local", " ") {
+  System(webDoc, "Web Docente Local", "UI React app_docente")
+  System(apiDoc, "API Docente Local", "Express + TS (apps/backend)")
+  SystemDb(mongoLocal, "MongoDB Local", "Docentes + examenes")
+  System(pdfStore, "Repositorio PDFs locales", "Filesystem data/examenes")
+}
+
+Boundary(cloud, "Nube", " ") {
+  System(webAlu, "Web Alumno Portal", "UI React app_alumno")
+  System(apiPortal, "API Portal Alumno Cloud", "Express + TS (portal_alumno_cloud)")
+  SystemDb(mongoCloud, "MongoDB Cloud", "Resultados + sesiones")
+}
+
+System_Ext(mail, "Servicio Correo SMTP", "Opcional")
+
+Rel_D(docente, webDoc, "Usa", "HTTP")
+Rel_D(webDoc, apiDoc, "Consume API", "JSON")
+Rel_D(apiDoc, mongoLocal, "CRUD")
+Rel_D(apiDoc, pdfStore, "Lee/Escribe")
+Rel_R(apiDoc, apiPortal, "Publica calificaciones + PDF", "HTTP + API Key")
+Rel_D(alumno, webAlu, "Consulta", "HTTP")
+Rel_D(webAlu, apiPortal, "Consume API", "JSON")
+Rel_D(apiPortal, mongoCloud, "CRUD")
+Rel_L(apiDoc, mail, "Envia codigo acceso", "SMTP")
+
+%% LEYENDA_COLOR
+Boundary(leyenda, "Leyenda de color", " ") {
+  Person(legendUser, "Usuario", "")
+  System(legendSvc, "Servicio", "")
+  SystemDb(legendDb, "Base de datos", "")
+  System(legendRepo, "Repositorio", "")
+  System_Ext(legendExt, "Externo", "")
+}
+
+UpdateElementStyle(docente, $bgColor="#1e3a8a", $borderColor="#1e40af", $fontColor="#ffffff")
+UpdateElementStyle(alumno, $bgColor="#1e3a8a", $borderColor="#1e40af", $fontColor="#ffffff")
+UpdateElementStyle(webDoc, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(apiDoc, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(webAlu, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(apiPortal, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(mongoLocal, $bgColor="#dbeafe", $borderColor="#1d4ed8", $fontColor="#0b1f3a")
+UpdateElementStyle(mongoCloud, $bgColor="#dbeafe", $borderColor="#1d4ed8", $fontColor="#0b1f3a")
+UpdateElementStyle(pdfStore, $bgColor="#fef3c7", $borderColor="#f59e0b", $fontColor="#7c2d12")
+UpdateElementStyle(mail, $bgColor="#f1f5f9", $borderColor="#94a3b8", $fontColor="#0f172a")
+UpdateElementStyle(legendUser, $bgColor="#1e3a8a", $borderColor="#1e40af", $fontColor="#ffffff")
+UpdateElementStyle(legendSvc, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(legendDb, $bgColor="#dbeafe", $borderColor="#1d4ed8", $fontColor="#0b1f3a")
+UpdateElementStyle(legendRepo, $bgColor="#fef3c7", $borderColor="#f59e0b", $fontColor="#7c2d12")
+UpdateElementStyle(legendExt, $bgColor="#f1f5f9", $borderColor="#94a3b8", $fontColor="#0f172a")
+UpdateElementStyle(leyenda, $bgColor="#f8fafc", $borderColor="#e2e8f0", $fontColor="#0f172a")

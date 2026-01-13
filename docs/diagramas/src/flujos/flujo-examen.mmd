@@ -1,0 +1,32 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45}}}%%
+flowchart TD
+  classDef user fill:#1e3a8a,stroke:#1e40af,color:#ffffff;
+  classDef svc fill:#e8f1ff,stroke:#3b82f6,color:#0b1f3a;
+  classDef db fill:#dbeafe,stroke:#1d4ed8,color:#0b1f3a;
+  classDef repo fill:#fef3c7,stroke:#f59e0b,color:#7c2d12;
+  classDef ext fill:#f1f5f9,stroke:#94a3b8,color:#0f172a;
+
+  A[Docente crea periodo y alumnos] --> B[Docente crea banco de preguntas]
+  B --> C[Crear plantilla de examen]
+  C --> D[Generar examen y PDF con QR]
+  D --> E[Vincular entrega folio-alumno]
+  E --> F[Escaneo OMR y verificacion]
+  F --> G[Calificar con mapa variante]
+  G --> H[Analiticas y exportar CSV]
+  G --> I[Generar codigo de acceso alumno]
+  I --> J[Publicar resultados al portal cloud]
+  J --> K[Alumno consulta resultados y PDF]
+
+  class A,K user
+  class B,C,D,E,F,G,H,I,J svc
+
+%% LEYENDA_COLOR
+  subgraph Leyenda["Leyenda de color"]
+    direction TB
+    lgUser[Usuario]:::user
+    lgSvc[Servicio]:::svc
+    lgDb[(Base de datos)]:::db
+    lgRepo[[Repositorio]]:::repo
+    lgExt[Externo]:::ext
+  end
+  style Leyenda fill:#f8fafc,stroke:#e2e8f0,stroke-width:1px,rx:6,ry:6
