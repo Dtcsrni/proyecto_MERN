@@ -20,6 +20,8 @@ generados o lockfiles no deben editarse manualmente.
 - `docs/FORMATO_PDF.md`: reglas de PDF carta y OMR.
 - `docs/PRUEBAS.md`: alcance y ejecucion de pruebas.
 - `docs/FILES.md`: este mapa de archivos.
+- `docs/diagramas/src/`: fuentes Mermaid (codigo).
+- `docs/diagramas/rendered/`: SVG renderizados.
 
 ## scripts/
 - `scripts/dashboard.mjs`: verificacion rapida de API y web.
@@ -190,4 +192,5 @@ generados o lockfiles no deben editarse manualmente.
 - `apps/portal_alumno_cloud/tests/setup.ts`: setup de entorno portal.
 - `apps/portal_alumno_cloud/tests/utils/mongo.ts`: Mongo en memoria para pruebas.
 - `apps/portal_alumno_cloud/tests/integracion/portal.test.ts`: flujo de portal alumno.
+
 

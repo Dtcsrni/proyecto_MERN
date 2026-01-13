@@ -1,0 +1,44 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45}}}%%
+flowchart TB
+    classDef user fill:#1e3a8a,stroke:#1e40af,color:#ffffff;
+    classDef svc fill:#e8f1ff,stroke:#3b82f6,color:#0b1f3a;
+    classDef db fill:#dbeafe,stroke:#1d4ed8,color:#0b1f3a;
+    classDef repo fill:#fef3c7,stroke:#f59e0b,color:#7c2d12;
+    classDef ext fill:#f1f5f9,stroke:#94a3b8,color:#0f172a;
+
+  subgraph Docker["Docker Compose (local)"]
+    mongo_local[(MongoDB Local)]:::db
+    api_docente_local[API Docente Local<br/>apps backend]:::svc
+    web_docente_local[Web Docente Local<br/>apps frontend]:::svc
+    pdf_local[[Repositorio PDFs locales<br/>data/examenes]]:::repo
+  end
+
+  docente[Docente]:::user --> web_docente_local
+  web_docente_local --> api_docente_local
+  api_docente_local --> mongo_local
+  api_docente_local --> pdf_local
+
+  subgraph CloudRun["Nube (Cloud Run / similar)"]
+    portal_api[API Portal Alumno Cloud<br/>portal_alumno_cloud]:::svc
+    mongo_cloud[(MongoDB Cloud<br/>resultados)]:::db
+  end
+
+  subgraph Static["Hosting estatico"]
+    web_alumno[Web Alumno Portal<br/>build app_alumno]:::svc
+  end
+
+  alumno[Alumno]:::user --> web_alumno
+  web_alumno --> portal_api
+  api_docente_local -->|sync + API Key| portal_api
+  portal_api --> mongo_cloud
+
+%% LEYENDA_COLOR
+  subgraph Leyenda["Leyenda de color"]
+    direction TB
+    lgUser[Usuario]:::user
+    lgSvc[Servicio]:::svc
+    lgDb[(Base de datos)]:::db
+    lgRepo[[Repositorio]]:::repo
+    lgExt[Externo]:::ext
+  end
+  style Leyenda fill:#f8fafc,stroke:#e2e8f0,stroke-width:1px,rx:6,ry:6

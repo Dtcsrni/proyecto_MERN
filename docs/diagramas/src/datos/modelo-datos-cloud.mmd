@@ -1,0 +1,31 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45}}}%%
+flowchart TB
+    classDef collection fill:#dbeafe,stroke:#1d4ed8,color:#0b1f3a;
+    classDef embedded fill:#fef3c7,stroke:#f59e0b,color:#7c2d12;
+    classDef note fill:#f1f5f9,stroke:#94a3b8,color:#0f172a;
+
+  subgraph CloudDB["MongoDB Cloud (documentos)"]
+    CodigoAcceso[CodigoAcceso<br/>Coleccion]:::collection
+    SesionAlumno[SesionAlumno<br/>Coleccion]:::collection
+    ResultadoAlumno[ResultadoAlumno<br/>Coleccion]:::collection
+    Banderas{{BanderasRevision<br/>Embebido}}:::embedded
+  end
+
+  External[(IDs externos<br/>periodoId, alumnoId, docenteId)]:::note
+
+  External -.-> CodigoAcceso
+  External -.-> SesionAlumno
+  External -.-> ResultadoAlumno
+
+  CodigoAcceso -->|ref periodoId| ResultadoAlumno
+  SesionAlumno -->|ref periodoId + alumnoId| ResultadoAlumno
+  ResultadoAlumno -->|embed banderas array| Banderas
+
+%% LEYENDA_COLOR
+  subgraph Leyenda["Leyenda de color"]
+    direction TB
+    lgCollection[Documento]:::collection
+    lgEmbedded{{Embebido}}:::embedded
+    lgNote[Nota]:::note
+  end
+  style Leyenda fill:#f8fafc,stroke:#e2e8f0,stroke-width:1px,rx:6,ry:6

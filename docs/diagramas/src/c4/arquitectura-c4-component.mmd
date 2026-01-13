@@ -1,0 +1,44 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45},"c4":{"fontSize":22}}%%
+C4Component
+title Sistema de Evaluacion Universitaria - Componentes API Docente (Core)
+
+UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
+
+Person(docente, "Docente", "Opera el panel local")
+Container(webDoc, "Web Docente Local", "React app_docente", "UI docente local")
+
+Boundary(api, "API Docente Local", " ") {
+  Component(router, "Router HTTP (Express)", "Express routes", "Entrada HTTP")
+  Component(modulos, "Servicios de dominio", "Express handlers", "Autenticacion, Alumnos,<br/>Banco, PDF, Vinculacion,<br/>OMR, Calificacion, Analiticas,<br/>Sincronizacion")
+  Component(modelos, "Modelos Mongoose", "Mongoose", "Acceso a colecciones")
+}
+
+ContainerDb(mongoLocal, "MongoDB Local", "MongoDB", "Docentes + examenes")
+
+Rel_D(docente, webDoc, "Usa", "HTTP")
+Rel_D(webDoc, router, "Consume API", "HTTP JSON")
+Rel_D(router, modulos, "Enruta")
+Rel_D(modulos, modelos, "Acceso datos")
+Rel_D(modelos, mongoLocal, "CRUD")
+
+%% LEYENDA_COLOR
+Boundary(leyenda, "Leyenda de color", " ") {
+  Person(legendUser, "Usuario", "")
+  Component(legendSvc, "Servicio", "", "")
+  ContainerDb(legendDb, "Base de datos", "", "")
+  Container(legendRepo, "Repositorio", "", "")
+  System_Ext(legendExt, "Externo", "")
+}
+
+UpdateElementStyle(docente, $bgColor="#1e3a8a", $borderColor="#1e40af", $fontColor="#ffffff")
+UpdateElementStyle(webDoc, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(router, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(modulos, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(modelos, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(mongoLocal, $bgColor="#dbeafe", $borderColor="#1d4ed8", $fontColor="#0b1f3a")
+UpdateElementStyle(legendUser, $bgColor="#1e3a8a", $borderColor="#1e40af", $fontColor="#ffffff")
+UpdateElementStyle(legendSvc, $bgColor="#e8f1ff", $borderColor="#3b82f6", $fontColor="#0b1f3a")
+UpdateElementStyle(legendDb, $bgColor="#dbeafe", $borderColor="#1d4ed8", $fontColor="#0b1f3a")
+UpdateElementStyle(legendRepo, $bgColor="#fef3c7", $borderColor="#f59e0b", $fontColor="#7c2d12")
+UpdateElementStyle(legendExt, $bgColor="#f1f5f9", $borderColor="#94a3b8", $fontColor="#0f172a")
+UpdateElementStyle(leyenda, $bgColor="#f8fafc", $borderColor="#e2e8f0", $fontColor="#0f172a")

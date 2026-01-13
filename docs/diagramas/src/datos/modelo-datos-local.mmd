@@ -1,0 +1,90 @@
+%%{init: {"theme":"base","fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"themeVariables":{"fontFamily":"Segoe UI, Arial, sans-serif","fontSize":22,"primaryColor":"#e8f1ff","primaryBorderColor":"#3b82f6","primaryTextColor":"#0b1f3a","secondaryColor":"#f0f9ff","tertiaryColor":"#f8fafc","lineColor":"#334155","textColor":"#0f172a","noteBkgColor":"#fff7cc","noteTextColor":"#713f12","noteBorderColor":"#eab308","actorBkg":"#1e3a8a","actorBorder":"#1e40af","actorTextColor":"#ffffff","labelBoxBkgColor":"#e8f1ff","labelBoxBorderColor":"#3b82f6","labelTextColor":"#0b1f3a"},"flowchart":{"curve":"linear","nodeSpacing":110,"rankSpacing":150},"sequence":{"actorMargin":70,"messageMargin":45}}}%%
+flowchart LR
+    classDef collection fill:#dbeafe,stroke:#1d4ed8,color:#0b1f3a;
+    classDef embedded fill:#fef3c7,stroke:#f59e0b,color:#7c2d12;
+    classDef note fill:#f1f5f9,stroke:#94a3b8,color:#0f172a;
+
+  subgraph Identidad["Identidad docente y alumnos"]
+    direction TB
+    Docente[Docente<br/>Coleccion]:::collection
+    Periodo[Periodo<br/>Coleccion]:::collection
+    Alumno[Alumno<br/>Coleccion]:::collection
+    Docente -->|ref docenteId| Periodo
+    Periodo -->|ref periodoId| Alumno
+    Docente -.->|ref docenteId| Alumno
+  end
+
+  subgraph Banco["Banco de preguntas"]
+    direction TB
+    BancoPregunta[BancoPregunta<br/>Coleccion]:::collection
+    VersionPregunta{{VersionPregunta<br/>Embebido}}:::embedded
+    Opcion{{Opcion<br/>Embebido}}:::embedded
+    BancoPregunta -->|embed versiones array| VersionPregunta
+    VersionPregunta -->|embed opciones 5| Opcion
+  end
+
+  subgraph Plantillas["Plantillas y examenes"]
+    direction TB
+    ExamenPlantilla[ExamenPlantilla<br/>Coleccion]:::collection
+    ExamenGenerado[ExamenGenerado<br/>Coleccion]:::collection
+    Pagina{{Pagina<br/>Embebido}}:::embedded
+    MapaVariante{{MapaVariante<br/>Embebido}}:::embedded
+    MapaOmr{{MapaOmr<br/>Embebido}}:::embedded
+    ExamenPlantilla -->|ref plantillaId| ExamenGenerado
+    ExamenGenerado -->|embed paginas array| Pagina
+    ExamenGenerado -->|embed mapas| MapaVariante
+    ExamenGenerado -->|embed mapas| MapaOmr
+  end
+
+  subgraph Evaluacion["Entrega y resultados"]
+    direction TB
+    Entrega[Entrega<br/>Coleccion]:::collection
+    Calificacion[Calificacion<br/>Coleccion]:::collection
+    BanderaRevision[BanderaRevision<br/>Coleccion]:::collection
+    Fraccion{{Fraccion<br/>Embebido}}:::embedded
+    Respuestas{{RespuestasDetectadas<br/>Embebido}}:::embedded
+    Calificacion -->|embed fraccion| Fraccion
+    Calificacion -->|embed respuestasDetectadas| Respuestas
+  end
+
+  subgraph Sync["Sincronizacion"]
+    direction TB
+    CodigoAcceso[CodigoAcceso<br/>Coleccion]:::collection
+    Sincronizacion[Sincronizacion<br/>Coleccion]:::collection
+  end
+
+  DocenteNote["docenteId en:<br/>Periodo, Alumno, BancoPregunta,<br/>ExamenPlantilla, ExamenGenerado,<br/>Entrega, Calificacion, BanderaRevision,<br/>CodigoAcceso, Sincronizacion"]:::note
+  Docente -.-> DocenteNote
+
+  Docente -->|ref docenteId| BancoPregunta
+  Periodo -.->|ref periodoId opcional| BancoPregunta
+
+  Periodo -->|ref periodoId| ExamenPlantilla
+  BancoPregunta -->|ref preguntasIds array| ExamenPlantilla
+
+  Periodo -->|ref periodoId| ExamenGenerado
+  Alumno -.->|ref alumnoId opcional| ExamenGenerado
+
+  ExamenGenerado -->|ref examenGeneradoId| Entrega
+  Alumno -->|ref alumnoId| Entrega
+
+  ExamenGenerado -->|ref examenGeneradoId| Calificacion
+  Alumno -->|ref alumnoId| Calificacion
+  Periodo -->|ref periodoId| Calificacion
+
+  ExamenGenerado -->|ref examenGeneradoId| BanderaRevision
+  Alumno -->|ref alumnoId| BanderaRevision
+
+  Docente -->|ref docenteId| CodigoAcceso
+  Periodo -->|ref periodoId| CodigoAcceso
+
+  Docente -->|ref docenteId| Sincronizacion
+
+%% LEYENDA_COLOR
+  subgraph Leyenda["Leyenda de color"]
+    direction TB
+    lgCollection[Documento]:::collection
+    lgEmbedded{{Embebido}}:::embedded
+    lgNote[Nota]:::note
+  end
+  style Leyenda fill:#f8fafc,stroke:#e2e8f0,stroke-width:1px,rx:6,ry:6
