@@ -369,6 +369,45 @@
       color: var(--ink-soft);
     }
 
+    .link-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 32px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+    }
+
+    .health-dot.ok {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    .health-dot.down {
+      background: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+    }
+
+    .health-text {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .health-latency {
+      margin-left: auto;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
+
     .metrics {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -702,7 +741,6 @@
                 <span class="toggle-state" data-state>Detenido</span>
               </button>
             </div>
-          </div>
 
           <div class="card">
             <h2>
@@ -726,7 +764,7 @@
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 4h16v16H4V4zm2 2v4h12V6H6zm0 6v6h12v-6H6z"/>
               </svg>
-              Resumen rapido
+              Estado del stack
             </h2>
             <div class="summary-grid">
               <div class="summary-card">
@@ -736,10 +774,6 @@
               <div class="summary-card">
                 <div class="label">Procesos activos</div>
                 <div class="value" id="running">-</div>
-              </div>
-              <div class="summary-card">
-                <div class="label">Ruido filtrado</div>
-                <div class="value" id="noise-total">0</div>
               </div>
               <div class="summary-card">
                 <div class="label">Ultima actualizacion</div>
@@ -754,23 +788,9 @@
           <div class="card">
             <h2>
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3l7 4v6c0 4-3.2 7.5-7 9-3.8-1.5-7-5-7-9V7l7-4zm0 2.2L7 7.2V13c0 3 2.2 5.8 5 7 2.8-1.2 5-4 5-7V7.2l-5-2z"/>
-              </svg>
-              Mensaje para docentes
-            </h2>
-            <div class="quote">
-              <div class="quote-tag">Pedagogia de la liberacion</div>
-              <p class="quote-text">La docencia transforma cuando dialoga con la realidad, acompana a las y los estudiantes a leer el mundo y abre caminos para reescribirlo con justicia.</p>
-              <div class="quote-author">Inspirado en Paulo Freire y la pedagogia de la liberacion</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M10 6h8v8h-2V9.4l-9.3 9.3-1.4-1.4L14.6 8H10V6z"/>
               </svg>
-              Accesos rapidos por modo
+              Accesos y salud
             </h2>
             <p class="hint">El acceso a la Web Docente se ajusta al modo activo. Dev usa Vite (5173) y prod usa serve (4173).</p>
             <div class="links">
@@ -783,9 +803,14 @@
                   </div>
                   <span class="link-chip dev" id="web-docente-chip">DEV</span>
                 </a>
-                <div class="link-note" id="web-docente-note">Ajustado al modo activo.</div>
+                <div class="link-note" id="web-docente-note">Se ajusta al modo activo.</div>
+                <div class="link-status">
+                  <span class="health-dot" id="health-web-docente-dot"></span>
+                  <span class="health-text" id="health-web-docente-text">Sin comprobar</span>
+                  <span class="health-latency" id="health-web-docente-latency">--</span>
+                </div>
               </div>
-              <div class="link-item">
+              <div class="link-item" id="api-docente-item">
                 <a href="http://localhost:4000/api/salud" target="_blank">
                   <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l2-4 4 8 2-4h4"/></svg>
                   <div class="link-copy">
@@ -795,8 +820,13 @@
                   <span class="link-chip api">API</span>
                 </a>
                 <div class="link-note">Disponible cuando el backend docente esta activo.</div>
+                <div class="link-status">
+                  <span class="health-dot" id="health-api-docente-dot"></span>
+                  <span class="health-text" id="health-api-docente-text">Sin comprobar</span>
+                  <span class="health-latency" id="health-api-docente-latency">--</span>
+                </div>
               </div>
-              <div class="link-item">
+              <div class="link-item" id="api-portal-item">
                 <a href="http://localhost:8080/api/portal/salud" target="_blank">
                   <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l2-4 4 8 2-4h4"/></svg>
                   <div class="link-copy">
@@ -806,30 +836,12 @@
                   <span class="link-chip api">API</span>
                 </a>
                 <div class="link-note">Disponible cuando el portal alumno esta activo.</div>
+                <div class="link-status">
+                  <span class="health-dot" id="health-api-portal-dot"></span>
+                  <span class="health-text" id="health-api-portal-text">Sin comprobar</span>
+                  <span class="health-latency" id="health-api-portal-latency">--</span>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 4a8 8 0 100 16 8 8 0 000-16zm1 4v4l3 2-1 1-4-2V8h2z"/>
-              </svg>
-              Diagnostico rapido
-            </h2>
-            <div class="stack">
-              <button class="ok" data-run="status">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16v2H4v-2zM6 4h4v11H6V4zm6 3h4v8h-4V7z"/></svg>
-                Estado de servicios
-              </button>
-              <button class="ok" data-run="docker-ps">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM7 10h4v4H7z"/></svg>
-                Docker ps
-              </button>
-              <button class="ok" id="clear-logs">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z"/></svg>
-                Limpiar salida
-              </button>
             </div>
           </div>
         </div>
@@ -852,16 +864,8 @@
                 <div class="value" id="node">-</div>
               </div>
               <div class="metric">
-                <div class="label">npm</div>
-                <div class="value" id="npm">-</div>
-              </div>
-              <div class="metric">
                 <div class="label">Docker</div>
                 <div class="value" id="docker">-</div>
-              </div>
-              <div class="metric">
-                <div class="label">Ruido filtrado</div>
-                <div class="value" id="noise-total-status">0</div>
               </div>
             </div>
             <div class="status-grid">
@@ -869,7 +873,7 @@
               <div>Modo: <span id="mode-status">-</span></div>
               <div>Proyecto: <span id="root-status">-</span></div>
             </div>
-            <div class="pills" id="noise-pills"></div>
+            
           </div>
         </div>
 
@@ -919,6 +923,12 @@
     // Small helper to access DOM elements.
     const $ = (id) => document.getElementById(id);
 
+    // Small helper to set text safely.
+    const setText = (id, value) => {
+      const el = $(id);
+      if (el) el.textContent = value;
+    };
+
     const state = {
       showFull: false,
       autoScroll: true,
@@ -926,7 +936,10 @@
       filter: '',
       running: new Set(),
       logsVisible: false,
-      activeTab: 'main'
+      activeTab: 'main',
+      mode: 'none',
+      health: {},
+      lastHealthAt: 0
     };
 
     const HOLD_DEFAULT = 1200;
@@ -948,14 +961,18 @@
       wrap.appendChild(toast);
       setTimeout(() => toast.remove(), 2600);
     }
+
 
     function setRunningDot(active) {
       const dot = $('running-dot');
+      if (!dot) return;
       dot.classList.toggle('active', active);
     }
+
 
     function renderNoisePills(noise) {
       const container = $('noise-pills');
+      if (!container) return;
       container.innerHTML = '';
       const entries = Object.entries(noise || {});
       if (!entries.length) return;
@@ -1012,6 +1029,27 @@
         updateEnvButton(button, state.running.has(env));
       });
     }
+
+    function setHealthItem(prefix, info) {
+      const dot = $(`health-${prefix}-dot`);
+      const text = $(`health-${prefix}-text`);
+      const latency = $(`health-${prefix}-latency`);
+      if (!dot || !text || !latency) return;
+
+      if (!info) {
+        dot.className = 'health-dot';
+        text.textContent = 'Sin comprobar';
+        latency.textContent = '--';
+        return;
+      }
+
+      const ok = info.ok;
+      const statusLabel = ok ? 'OK' : (info.status ? `HTTP ${info.status}` : 'Sin respuesta');
+      dot.className = `health-dot ${ok ? 'ok' : 'down'}`;
+      text.textContent = statusLabel;
+      latency.textContent = info.ms ? `${info.ms} ms` : '--';
+    }
+
     function updateWebDocenteLink(mode) {
       const item = $("web-docente-item");
       const link = $("web-docente-link");
@@ -1048,6 +1086,30 @@
       } else {
         note.textContent = `Detectado ${isProd ? 'prod' : 'dev'} activo. Acceso listo.`;
       }
+
+      const infoKey = isProd ? 'webDocenteProd' : 'webDocenteDev';
+      setHealthItem('web-docente', state.health?.[infoKey]);
+    }
+
+
+    async function refreshHealth(force = false) {
+      const now = Date.now();
+      const reuse = !force && now - state.lastHealthAt < 4000;
+      if (!reuse) state.lastHealthAt = now;
+
+      if (!reuse) {
+        try {
+          const res = await fetch('/api/health');
+          const data = await res.json();
+          state.health = data.services || {};
+        } catch {
+          state.health = {};
+        }
+      }
+
+      setHealthItem('api-docente', state.health.apiDocente);
+      setHealthItem('api-portal', state.health.apiPortal);
+      updateWebDocenteLink(state.mode);
     }
 
     function setLogsVisible(visible) {
@@ -1114,37 +1176,50 @@
       });
       button.addEventListener('keyup', cancelHold);
     }
+
 
     async function refreshStatus() {
       const res = await fetch('/api/status');
       const data = await res.json();
 
-      $('root').textContent = data.root;
-      $('mode').textContent = data.mode;
-      $('running').textContent = renderRunning(data.running);
-      $('noise-total').textContent = data.noiseTotal || 0;
-      $('last-refresh').textContent = `Actualizado ${new Date().toLocaleTimeString()}`;
+      state.mode = data.mode;
 
-      $('root-status').textContent = data.root;
-      $('mode-status').textContent = data.mode;
-      $('running-status').textContent = renderRunning(data.running);
-      $('node').textContent = data.node;
-      $('npm').textContent = data.npm;
-      $('docker').textContent = data.docker;
-      $('noise-total-status').textContent = data.noiseTotal || 0;
+      setText('root', data.root);
+      setText('mode', data.mode);
+      setText('running', renderRunning(data.running));
+      setText('noise-total', data.noiseTotal || 0);
+      setText('last-refresh', `Actualizado ${new Date().toLocaleTimeString()}`);
 
-      $('mode-chip').textContent = `Modo: ${data.mode}`;
-      $('running-chip').textContent = `Procesos: ${data.running.length || 0}`;
-      $('log-size').textContent = `${data.logSize} lineas`;
-      $('raw-size').textContent = `${data.rawSize} en bruto`;
-      $('last-refresh-status').textContent = `Actualizado ${new Date().toLocaleTimeString()}`;
+      setText('root-status', data.root);
+      setText('mode-status', data.mode);
+      setText('running-status', renderRunning(data.running));
+      setText('node', data.node);
+      setText('npm', data.npm);
+      setText('docker', data.docker);
+      setText('noise-total-status', data.noiseTotal || 0);
+
+      setText('mode-chip', `Modo: ${data.mode}`);
+      setText('running-chip', `Procesos: ${data.running.length || 0}`);
+      setText('log-size', `${data.logSize} lineas`);
+      setText('raw-size', `${data.rawSize} en bruto`);
+      setText('last-refresh-status', `Actualizado ${new Date().toLocaleTimeString()}`);
 
       setRunningDot(data.running.length > 0);
       renderNoisePills(data.noise);
 
       state.running = new Set(data.running);
       updateEnvButtons();
-      updateWebDocenteLink(data.mode);
+
+      const apiDocenteItem = $('api-docente-item');
+      if (apiDocenteItem) {
+        apiDocenteItem.classList.toggle('inactive', !(state.running.has('dev') || state.running.has('prod')));
+      }
+      const apiPortalItem = $('api-portal-item');
+      if (apiPortalItem) {
+        apiPortalItem.classList.toggle('inactive', !state.running.has('portal'));
+      }
+
+      await refreshHealth();
     }
 
     function renderLogs(entries) {
@@ -1274,6 +1349,17 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -130,6 +130,36 @@ function safeExec(command, fallback) {
   }
 }
 
+// Check a local endpoint with a small timeout for health reporting.
+async function checkHealth(url, timeoutMs = 1500) {
+  const controller = new AbortController();
+  const started = Date.now();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return { ok: res.ok, status: res.status, ms: Date.now() - started };
+  } catch (error) {
+    return { ok: false, error: error?.name || 'error', ms: Date.now() - started };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Aggregate health checks for the main services used by the dashboard.
+async function collectHealth() {
+  const targets = {
+    apiDocente: 'http://localhost:4000/api/salud',
+    apiPortal: 'http://localhost:8080/api/portal/salud',
+    webDocenteDev: 'http://localhost:5173',
+    webDocenteProd: 'http://localhost:4173'
+  };
+
+  const entries = await Promise.all(
+    Object.entries(targets).map(async ([name, url]) => [name, await checkHealth(url)])
+  );
+  return Object.fromEntries(entries);
+}
+
 function truncateLine(text) {
   const limit = 900;
   if (text.length <= limit) return text;
@@ -160,14 +190,16 @@ function classifyLine(text) {
     normalized.includes('"msg":"Connection ended"') ||
     normalized.includes('"msg":"Connection accepted"') ||
     normalized.includes('"msg":"Received first command"') ||
-    normalized.includes('"msg":"client metadata"')
+    normalized.includes('"msg":"client metadata"') ||
+    normalized.includes('"msg":"Connection not authenticating"')
   );
 
-  const isMongoVerbose = lower.includes('mongo') && (
+  const isMongoVerbose = (lower.includes('mongo') || lower.includes('mongo_local')) && (
     lower.includes('connection ended') ||
     lower.includes('connection accepted') ||
     lower.includes('received first command') ||
-    lower.includes('client metadata')
+    lower.includes('client metadata') ||
+    lower.includes('not authenticating')
   );
 
   let level = 'info';
@@ -403,6 +435,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathName === '/api/health') {
+    const services = await collectHealth();
+    sendJson(res, 200, { checkedAt: Date.now(), services });
+    return;
+  }
+
   if (req.method === 'GET' && pathName === '/api/logs') {
     const wantFull = reqUrl.searchParams.get('full') === '1';
     const entries = wantFull ? rawLines : logLines;
@@ -500,3 +538,4 @@ function isPortFree(port) {
       .listen(port, '127.0.0.1');
   });
 }
+

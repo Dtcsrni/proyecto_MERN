@@ -2,6 +2,8 @@
 services:
   mongo_local:
     image: mongo:latest
+    # Reduce noisy connection logs for local use.
+    command: ["mongod", "--quiet"]
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -78,3 +80,4 @@ services:
 
 volumes:
   mongo-data:
+
