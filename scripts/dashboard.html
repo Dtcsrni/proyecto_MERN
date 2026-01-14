@@ -139,9 +139,21 @@
 
     .panel-grid {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
       gap: 18px;
+      align-items: start;
     }
+
+    .right-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      align-items: start;
+    }
+
+    .right-grid .card { margin-top: 0; }
+
+    .card.wide { grid-column: 1 / -1; }
 
     .card {
       background: var(--panel);
@@ -475,6 +487,106 @@
       font-weight: 700;
     }
 
+    .analytics-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .chart-block {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--ink-soft);
+    }
+
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 72px;
+      padding: 6px 0;
+    }
+
+    .mini-bar {
+      width: 10px;
+      border-radius: 6px 6px 4px 4px;
+      background: linear-gradient(180deg, #1d6fb8, #4fb5e6);
+      opacity: 0.85;
+    }
+
+    .mini-bar.down {
+      background: linear-gradient(180deg, #ef4444, #f97316);
+      opacity: 0.75;
+    }
+
+    .activity-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f8fbff;
+    }
+
+    .activity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+    }
+
+    .activity-dot.ok {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    .activity-dot.warn {
+      background: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    .activity-dot.down {
+      background: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+    }
+
+    .activity-text {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .activity-time {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .activity-empty {
+      font-size: 12px;
+      color: var(--ink-soft);
+      padding: 12px;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
     .quote {
       background: linear-gradient(135deg, #edf4ff, #ffffff);
       border: 1px solid rgba(29, 111, 184, 0.18);
@@ -663,10 +775,15 @@
 
     @media (max-width: 1050px) {
       .panel-grid { grid-template-columns: 1fr; }
+      .right-grid { grid-template-columns: 1fr; }
       header { position: static; }
     }
 
-    @media (prefers-reduced-motion: reduce) {
+    @media (min-width: 1200px) {
+      .analytics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+@media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
     }
   </style>
@@ -741,6 +858,7 @@
                 <span class="toggle-state" data-state>Detenido</span>
               </button>
             </div>
+          </div>
 
           <div class="card">
             <h2>
@@ -758,8 +876,8 @@
           </div>
         </div>
 
-        <div>
-          <div class="card">
+        <div class="right-grid">
+          <div class="card wide">
             <h2>
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 4h16v16H4V4zm2 2v4h12V6H6zm0 6v6h12v-6H6z"/>
@@ -770,6 +888,10 @@
               <div class="summary-card">
                 <div class="label">Modo actual</div>
                 <div class="value" id="mode">-</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Entornos activos</div>
+                <div class="value" id="running-count">-</div>
               </div>
               <div class="summary-card">
                 <div class="label">Procesos activos</div>
@@ -786,6 +908,51 @@
           </div>
 
           <div class="card">
+            <h2>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19h16v2H4v-2zM5 5h4v11H5V5zm7 3h4v8h-4V8z"/>
+              </svg>
+              Analitica rapida
+            </h2>
+            <p class="hint">Indicadores de salud y actividad recientes (ventana de 15 min).</p>
+            <div class="summary-grid analytics-grid">
+              <div class="summary-card">
+                <div class="label">Servicios OK</div>
+                <div class="value" id="health-ok">-</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Servicios caidos</div>
+                <div class="value" id="health-down">-</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Eventos recientes</div>
+                <div class="value" id="recent-events">-</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Tiempo de sesion</div>
+                <div class="value" id="session-mins">-</div>
+              </div>
+            </div>
+            <div class="chart-block">
+              <div class="chart-title">Salud reciente (ultimos ciclos)</div>
+              <div class="mini-chart" id="health-history"></div>
+              <div class="hint" id="last-event">Sin actividad reciente.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm0-6a10 10 0 11-7.1 2.9A10 10 0 0112 2zm0 2a8 8 0 100 16 8 8 0 000-16z"/>
+              </svg>
+              Actividad reciente
+            </h2>
+            <ul class="activity-list" id="activity-list">
+              <li class="activity-empty">Sin actividad reciente.</li>
+            </ul>
+          </div>
+
+          <div class="card wide">
             <h2>
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M10 6h8v8h-2V9.4l-9.3 9.3-1.4-1.4L14.6 8H10V6z"/>
@@ -864,6 +1031,10 @@
                 <div class="value" id="node">-</div>
               </div>
               <div class="metric">
+                <div class="label">NPM</div>
+                <div class="value" id="npm">-</div>
+              </div>
+              <div class="metric">
                 <div class="label">Docker</div>
                 <div class="value" id="docker">-</div>
               </div>
@@ -889,6 +1060,10 @@
               <button class="ok" id="toggle-logs">
                 <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 7-7 7-1.4-1.4L15.2 13H5v-2h10.2l-4.6-4.6L12 5z"/></svg>
                 Mostrar salida
+              </button>
+              <button class="danger" id="clear-logs">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v2H6V7zm2 3h8l-1 9H9l-1-9zm3-6h2l1 2H10l1-2z"/></svg>
+                Limpiar salida
               </button>
               <label class="toggle">
                 <input type="checkbox" id="full-logs" />
@@ -919,7 +1094,7 @@
     </section>
   </main>
 
-  <script>
+    <script>
     // Small helper to access DOM elements.
     const $ = (id) => document.getElementById(id);
 
@@ -927,6 +1102,12 @@
     const setText = (id, value) => {
       const el = $(id);
       if (el) el.textContent = value;
+    };
+
+    const ENV_LABELS = {
+      dev: 'Dev local',
+      prod: 'Prod local',
+      portal: 'Portal alumno'
     };
 
     const state = {
@@ -939,10 +1120,17 @@
       activeTab: 'main',
       mode: 'none',
       health: {},
-      lastHealthAt: 0
+      lastHealthAt: 0,
+      events: [],
+      healthHistory: [],
+      sessionStarted: Date.now(),
+      hasLoaded: false
     };
 
     const HOLD_DEFAULT = 1200;
+    const MAX_EVENTS = 6;
+    const MAX_HEALTH_HISTORY = 16;
+    const RECENT_EVENT_WINDOW_MS = 15 * 60 * 1000;
 
     async function api(path, body) {
       const res = await fetch(path, {
@@ -955,79 +1143,22 @@
 
     function showToast(text, type = 'info') {
       const wrap = $('toast-wrap');
+      if (!wrap) return;
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
       toast.textContent = text;
       wrap.appendChild(toast);
       setTimeout(() => toast.remove(), 2600);
     }
-
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     function setRunningDot(active) {
       const dot = $('running-dot');
       if (!dot) return;
       dot.classList.toggle('active', active);
-    }
-
-
-    function renderNoisePills(noise) {
-      const container = $('noise-pills');
-      if (!container) return;
-      container.innerHTML = '';
-      const entries = Object.entries(noise || {});
-      if (!entries.length) return;
-      entries.forEach(([name, count]) => {
-        const pill = document.createElement('span');
-        pill.className = 'pill';
-        pill.textContent = `${name}: ${count}`;
-        container.appendChild(pill);
-      });
-    }
-
-    function renderRunning(list) {
-      if (!list.length) return 'ninguno';
-      return list.join(', ');
-    }
-
-    function updateEnvButton(button, isRunning) {
-      const pending = button.dataset.pending;
-      const done = pending
-        ? (pending === 'start' && isRunning) || (pending === 'stop' && !isRunning)
-        : false;
-
-      if (done) {
-        delete button.dataset.pending;
-        button.classList.remove('pending');
-        showToast('Estado actualizado', 'ok');
-      }
-
-      const isPending = Boolean(button.dataset.pending);
-      button.classList.toggle('active', isRunning);
-      button.setAttribute('aria-pressed', isRunning ? 'true' : 'false');
-
-      const stateEl = button.querySelector('[data-state]');
-      const subEl = button.querySelector('[data-sub]');
-
-      if (stateEl) {
-        if (isPending) {
-          stateEl.textContent = pending === 'start' ? 'Iniciando...' : 'Deteniendo...';
-        } else {
-          stateEl.textContent = isRunning ? 'Activo' : 'Detenido';
-        }
-      }
-
-      if (subEl) {
-        subEl.textContent = isRunning
-          ? 'Mantener presionado para detener'
-          : 'Mantener presionado para iniciar';
-      }
-    }
-
-    function updateEnvButtons() {
-      document.querySelectorAll('[data-env]').forEach((button) => {
-        const env = button.dataset.env;
-        updateEnvButton(button, state.running.has(env));
-      });
     }
 
     function setHealthItem(prefix, info) {
@@ -1036,7 +1167,7 @@
       const latency = $(`health-${prefix}-latency`);
       if (!dot || !text || !latency) return;
 
-      if (!info) {
+      if (!info || typeof info.ok !== 'boolean') {
         dot.className = 'health-dot';
         text.textContent = 'Sin comprobar';
         latency.textContent = '--';
@@ -1047,15 +1178,161 @@
       const statusLabel = ok ? 'OK' : (info.status ? `HTTP ${info.status}` : 'Sin respuesta');
       dot.className = `health-dot ${ok ? 'ok' : 'down'}`;
       text.textContent = statusLabel;
-      latency.textContent = info.ms ? `${info.ms} ms` : '--';
+      latency.textContent = typeof info.ms === 'number' ? `${info.ms} ms` : '--';
+    }
+
+    function renderRunning(list) {
+      if (!Array.isArray(list) || list.length === 0) return '-';
+      return list.map((item) => ENV_LABELS[item] || item).join(', ');
+    }
+
+    function updateEnvButton(button, running) {
+      if (!button) return;
+      const stateEl = button.querySelector('[data-state]');
+      const subEl = button.querySelector('[data-sub]');
+
+      button.classList.toggle('active', running);
+      button.classList.remove('pending');
+      button.removeAttribute('data-pending');
+
+      if (stateEl) stateEl.textContent = running ? 'Activo' : 'Detenido';
+      if (subEl) {
+        subEl.textContent = running
+          ? 'Mantener presionado para detener'
+          : 'Mantener presionado para iniciar';
+      }
+
+      button.setAttribute('aria-pressed', running ? 'true' : 'false');
+    }
+
+    function updateEnvButtons() {
+      document.querySelectorAll('[data-env]').forEach((button) => {
+        updateEnvButton(button, state.running.has(button.dataset.env));
+      });
+    }
+
+    function recordEvent(type, label) {
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        type,
+        label,
+        time: Date.now()
+      };
+
+      state.events.unshift(entry);
+      if (state.events.length > MAX_EVENTS) {
+        state.events.splice(MAX_EVENTS);
+      }
+
+      renderActivity();
+      updateAnalytics();
+    }
+
+    function renderActivity() {
+      const list = $('activity-list');
+      if (!list) return;
+
+      list.innerHTML = '';
+
+      if (state.events.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'activity-empty';
+        empty.textContent = 'Sin actividad reciente.';
+        list.appendChild(empty);
+        setText('last-event', 'Sin actividad reciente.');
+        return;
+      }
+
+      state.events.forEach((entry) => {
+        const li = document.createElement('li');
+        li.className = 'activity-item';
+
+        const dot = document.createElement('span');
+        dot.className = `activity-dot ${entry.type === 'start' ? 'ok' : 'down'}`;
+
+        const text = document.createElement('span');
+        text.className = 'activity-text';
+        text.textContent = `${entry.type === 'start' ? 'Inicio' : 'Detencion'}: ${entry.label}`;
+
+        const time = document.createElement('span');
+        time.className = 'activity-time';
+        time.textContent = formatTime(entry.time);
+
+        li.appendChild(dot);
+        li.appendChild(text);
+        li.appendChild(time);
+        list.appendChild(li);
+      });
+
+      const last = state.events[0];
+      if (last) {
+        setText('last-event', `Ultima accion: ${last.label} (${last.type === 'start' ? 'inicio' : 'detenido'})`);
+      }
+    }
+
+    function renderHealthHistory() {
+      const container = $('health-history');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      if (state.healthHistory.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'chart-empty';
+        empty.textContent = 'Sin historial de salud por ahora.';
+        container.appendChild(empty);
+        return;
+      }
+
+      state.healthHistory.forEach((entry) => {
+        const ratio = entry.total ? entry.okCount / entry.total : 0;
+        const height = Math.max(10, Math.round(12 + ratio * 52));
+        const bar = document.createElement('div');
+        bar.className = `mini-bar ${entry.downCount > 0 ? 'down' : ''}`.trim();
+        bar.style.height = `${height}px`;
+        bar.title = `${formatTime(entry.ts)} | OK ${entry.okCount}/${entry.total}`;
+        container.appendChild(bar);
+      });
+    }
+
+    function updateAnalytics() {
+      const entries = Object.values(state.health || {}).filter(Boolean);
+      const okCount = entries.filter((item) => item.ok).length;
+      const downCount = entries.filter((item) => item.ok === false).length;
+      const hasHealth = entries.length > 0;
+
+      setText('health-ok', hasHealth ? String(okCount) : '-');
+      setText('health-down', hasHealth ? String(downCount) : '-');
+
+      const now = Date.now();
+      const recentEvents = state.events.filter((entry) => now - entry.time <= RECENT_EVENT_WINDOW_MS).length;
+      setText('recent-events', String(recentEvents));
+
+      const minutes = Math.max(1, Math.floor((now - state.sessionStarted) / 60000));
+      setText('session-mins', `${minutes} min`);
+    }
+
+    function buildHealthSnapshot() {
+      const entries = Object.values(state.health || {}).filter(Boolean);
+      if (entries.length === 0) return null;
+
+      const okCount = entries.filter((item) => item.ok).length;
+      const downCount = entries.filter((item) => item.ok === false).length;
+
+      return {
+        ts: Date.now(),
+        okCount,
+        downCount,
+        total: entries.length
+      };
     }
 
     function updateWebDocenteLink(mode) {
-      const item = $("web-docente-item");
-      const link = $("web-docente-link");
-      const meta = $("web-docente-meta");
-      const chip = $("web-docente-chip");
-      const note = $("web-docente-note");
+      const item = $('web-docente-item');
+      const link = $('web-docente-link');
+      const meta = $('web-docente-meta');
+      const chip = $('web-docente-chip');
+      const note = $('web-docente-note');
       if (!item || !link || !meta || !chip || !note) return;
 
       const runningDev = state.running.has('dev');
@@ -1091,7 +1368,6 @@
       setHealthItem('web-docente', state.health?.[infoKey]);
     }
 
-
     async function refreshHealth(force = false) {
       const now = Date.now();
       const reuse = !force && now - state.lastHealthAt < 4000;
@@ -1105,17 +1381,30 @@
         } catch {
           state.health = {};
         }
+
+        const snapshot = buildHealthSnapshot();
+        if (snapshot) {
+          state.healthHistory.push(snapshot);
+          if (state.healthHistory.length > MAX_HEALTH_HISTORY) {
+            state.healthHistory.splice(0, state.healthHistory.length - MAX_HEALTH_HISTORY);
+          }
+          renderHealthHistory();
+        }
       }
 
       setHealthItem('api-docente', state.health.apiDocente);
       setHealthItem('api-portal', state.health.apiPortal);
       updateWebDocenteLink(state.mode);
+      updateAnalytics();
     }
 
     function setLogsVisible(visible) {
       state.logsVisible = visible;
-      $('log-shell').classList.toggle('collapsed', !visible);
-      $('toggle-logs').innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 7-7 7-1.4-1.4L15.2 13H5v-2h10.2l-4.6-4.6L12 5z"/></svg> ' + (visible ? 'Ocultar salida' : 'Mostrar salida');
+      const shell = $('log-shell');
+      const toggle = $('toggle-logs');
+      if (!shell || !toggle) return;
+      shell.classList.toggle('collapsed', !visible);
+      toggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 7-7 7-1.4-1.4L15.2 13H5v-2h10.2l-4.6-4.6L12 5z"/></svg> ' + (visible ? 'Ocultar salida' : 'Mostrar salida');
       if (visible) refreshLogs();
     }
 
@@ -1176,39 +1465,52 @@
       });
       button.addEventListener('keyup', cancelHold);
     }
-
+
+    function syncEnvEvents(previous, current) {
+      previous.forEach((env) => {
+        if (!current.has(env)) recordEvent('stop', ENV_LABELS[env] || env);
+      });
+      current.forEach((env) => {
+        if (!previous.has(env)) recordEvent('start', ENV_LABELS[env] || env);
+      });
+    }
 
     async function refreshStatus() {
       const res = await fetch('/api/status');
       const data = await res.json();
 
+      const runningList = Array.isArray(data.running) ? data.running : [];
+      const runningCount = runningList.length;
+      const previousRunning = new Set(state.running);
+
       state.mode = data.mode;
+      state.running = new Set(runningList);
 
       setText('root', data.root);
       setText('mode', data.mode);
-      setText('running', renderRunning(data.running));
-      setText('noise-total', data.noiseTotal || 0);
+      setText('running-count', String(runningCount));
+      setText('running', renderRunning(runningList));
       setText('last-refresh', `Actualizado ${new Date().toLocaleTimeString()}`);
 
       setText('root-status', data.root);
       setText('mode-status', data.mode);
-      setText('running-status', renderRunning(data.running));
+      setText('running-status', renderRunning(runningList));
       setText('node', data.node);
       setText('npm', data.npm);
       setText('docker', data.docker);
-      setText('noise-total-status', data.noiseTotal || 0);
-
       setText('mode-chip', `Modo: ${data.mode}`);
-      setText('running-chip', `Procesos: ${data.running.length || 0}`);
+      setText('running-chip', `Procesos: ${runningCount}`);
       setText('log-size', `${data.logSize} lineas`);
       setText('raw-size', `${data.rawSize} en bruto`);
       setText('last-refresh-status', `Actualizado ${new Date().toLocaleTimeString()}`);
 
-      setRunningDot(data.running.length > 0);
-      renderNoisePills(data.noise);
-
-      state.running = new Set(data.running);
+      setRunningDot(runningCount > 0);
       updateEnvButtons();
+
+      if (state.hasLoaded) {
+        syncEnvEvents(previousRunning, state.running);
+      }
+      state.hasLoaded = true;
 
       const apiDocenteItem = $('api-docente-item');
       if (apiDocenteItem) {
@@ -1225,6 +1527,7 @@
     function renderLogs(entries) {
       const filter = state.filter.trim().toLowerCase();
       const log = $('log');
+      if (!log) return;
       log.innerHTML = '';
 
       const fragment = document.createDocumentFragment();
@@ -1310,35 +1613,58 @@
       });
     });
 
-    $('clear-logs').addEventListener('click', async () => {
-      await api('/api/logs/clear');
-      showToast('Logs limpiados', 'ok');
-      refreshLogs();
-      refreshStatus();
-    });
+    const clearButton = $('clear-logs');
+    if (clearButton) {
+      clearButton.addEventListener('click', async () => {
+        await api('/api/logs/clear');
+        showToast('Logs limpiados', 'ok');
+        refreshLogs();
+        refreshStatus();
+      });
+    }
 
-    $('toggle-logs').addEventListener('click', () => {
-      setLogsVisible(!state.logsVisible);
-    });
+    const toggleLogsButton = $('toggle-logs');
+    if (toggleLogsButton) {
+      toggleLogsButton.addEventListener('click', () => {
+        setLogsVisible(!state.logsVisible);
+      });
+    }
 
     // UI toggles.
-    $('full-logs').addEventListener('change', (event) => {
-      state.showFull = event.target.checked;
-      refreshLogs();
-    });
-    $('auto-scroll').addEventListener('change', (event) => {
-      state.autoScroll = event.target.checked;
-    });
-    $('pause-updates').addEventListener('change', (event) => {
-      state.paused = event.target.checked;
-    });
-    $('log-filter').addEventListener('input', (event) => {
-      state.filter = event.target.value;
-      refreshLogs();
-    });
+    const fullLogs = $('full-logs');
+    if (fullLogs) {
+      fullLogs.addEventListener('change', (event) => {
+        state.showFull = event.target.checked;
+        refreshLogs();
+      });
+    }
+
+    const autoScroll = $('auto-scroll');
+    if (autoScroll) {
+      autoScroll.addEventListener('change', (event) => {
+        state.autoScroll = event.target.checked;
+      });
+    }
+
+    const pauseUpdates = $('pause-updates');
+    if (pauseUpdates) {
+      pauseUpdates.addEventListener('change', (event) => {
+        state.paused = event.target.checked;
+      });
+    }
+
+    const logFilter = $('log-filter');
+    if (logFilter) {
+      logFilter.addEventListener('input', (event) => {
+        state.filter = event.target.value;
+        refreshLogs();
+      });
+    }
 
     // Initial load and periodic refresh.
     setLogsVisible(false);
+    renderActivity();
+    renderHealthHistory();
     refreshStatus();
 
     setInterval(() => {
@@ -1349,6 +1675,17 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
