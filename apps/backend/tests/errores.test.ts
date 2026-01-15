@@ -16,6 +16,10 @@ describe('manejadorErrores', () => {
     throw new Error('Falla inesperada');
   });
 
+  app.get('/cast', (_req, _res, next) => {
+    next({ name: 'CastError' });
+  });
+
   app.use(manejadorErrores);
 
   it('serializa errores de aplicacion con detalles', async () => {
@@ -44,5 +48,10 @@ describe('manejadorErrores', () => {
     } finally {
       process.env.NODE_ENV = anterior;
     }
+  });
+
+  it('normaliza CastError como 400', async () => {
+    const respuesta = await request(app).get('/cast').expect(400);
+    expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
   });
 });

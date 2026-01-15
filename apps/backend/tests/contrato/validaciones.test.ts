@@ -71,7 +71,67 @@ describe('validaciones de payload', () => {
     const respuesta = await request(app)
       .post('/api/analiticas/banderas')
       .set({ Authorization: `Bearer ${token}` })
-      .send({ examenGeneradoId: 'x', alumnoId: 'y', tipo: 'no-existe' })
+      .send({ examenGeneradoId: '507f1f77bcf86cd799439011', alumnoId: '507f1f77bcf86cd799439012', tipo: 'no-existe' })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza analizar OMR sin folio', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/omr/analizar')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ imagenBase64: 'x'.repeat(20) })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza crear plantilla sin campos requeridos', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/examenes/plantillas')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ tipo: 'parcial' })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza crear plantilla con preguntasIds invalidos', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/examenes/plantillas')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        tipo: 'parcial',
+        titulo: 'Plantilla',
+        totalReactivos: 5,
+        preguntasIds: ['no-es-objectid']
+      })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza generar examen con plantillaId invalido', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/examenes/generados')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ plantillaId: 'no-es-objectid' })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza generar codigo de acceso con periodoId invalido', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/sincronizaciones/codigo-acceso')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ periodoId: 'no-es-objectid' })
       .expect(400);
 
     expect(respuesta.body.error.codigo).toBe('VALIDACION');

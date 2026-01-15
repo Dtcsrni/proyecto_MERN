@@ -19,6 +19,23 @@ export function manejadorErrores(
 ) {
   void _next;
 
+  // IDs malformados u otros errores de casteo (p. ej. CastError/BSONError).
+  // Se normalizan como 400 para evitar 500 por input del cliente.
+  const nombreError = typeof error === 'object' && error ? (error as { name?: unknown }).name : undefined;
+  if (
+    nombreError === 'CastError' ||
+    nombreError === 'BSONError' ||
+    nombreError === 'BSONTypeError'
+  ) {
+    res.status(400).json({
+      error: {
+        codigo: 'DATOS_INVALIDOS',
+        mensaje: 'Id invalido'
+      }
+    });
+    return;
+  }
+
   if (error instanceof ErrorAplicacion) {
     res.status(error.estadoHttp).json({
       error: {
