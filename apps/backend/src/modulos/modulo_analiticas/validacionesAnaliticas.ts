@@ -2,10 +2,11 @@
  * Validaciones de banderas de revision.
  */
 import { z } from 'zod';
+import { esquemaObjectId } from '../../compartido/validaciones/esquemas';
 
 export const esquemaCrearBandera = z.object({
-  examenGeneradoId: z.string().min(1),
-  alumnoId: z.string().min(1),
+  examenGeneradoId: esquemaObjectId,
+  alumnoId: esquemaObjectId,
   tipo: z.enum(['similitud', 'patron', 'duplicado', 'otro']),
   severidad: z.enum(['baja', 'media', 'alta']).optional(),
   descripcion: z.string().optional(),

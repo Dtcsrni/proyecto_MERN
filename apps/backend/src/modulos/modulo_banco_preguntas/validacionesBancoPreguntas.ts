@@ -2,6 +2,7 @@
  * Validaciones de banco de preguntas.
  */
 import { z } from 'zod';
+import { esquemaObjectId } from '../../compartido/validaciones/esquemas';
 
 const esquemaOpcion = z.object({
   texto: z.string().min(1),
@@ -10,7 +11,7 @@ const esquemaOpcion = z.object({
 
 export const esquemaCrearPregunta = z
   .object({
-    periodoId: z.string().optional(),
+    periodoId: esquemaObjectId.optional(),
     tema: z.string().optional(),
     enunciado: z.string().min(1),
     imagenUrl: z.string().url().optional(),
