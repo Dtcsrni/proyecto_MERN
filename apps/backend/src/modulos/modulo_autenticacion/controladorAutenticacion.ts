@@ -142,7 +142,11 @@ export async function salirDocente(req: Request, res: Response) {
 
 export async function definirContrasenaDocente(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
-  const { contrasenaNueva } = req.body as { contrasenaNueva?: unknown };
+  const { contrasenaNueva, contrasenaActual, credential } = req.body as {
+    contrasenaNueva?: unknown;
+    contrasenaActual?: unknown;
+    credential?: unknown;
+  };
 
   const docente = await Docente.findById(docenteId);
   if (!docente) {
@@ -150,6 +154,41 @@ export async function definirContrasenaDocente(req: SolicitudDocente, res: Respo
   }
   if (!docente.activo) {
     throw new ErrorAplicacion('DOCENTE_INACTIVO', 'Docente inactivo', 403);
+  }
+
+  const contrasenaActualStr = typeof contrasenaActual === 'string' ? contrasenaActual : '';
+  const credentialStr = typeof credential === 'string' ? credential : '';
+
+  // Reautenticacion requerida para una accion sensible.
+  // - Si existe password, se puede validar con contrasenaActual.
+  // - Si existe Google vinculado, se puede validar con credential (ID token).
+  let reautenticado = false;
+
+  if (docente.hashContrasena && contrasenaActualStr.trim()) {
+    const ok = await compararContrasena(contrasenaActualStr, docente.hashContrasena);
+    if (!ok) {
+      throw new ErrorAplicacion('CREDENCIALES_INVALIDAS', 'Credenciales invalidas', 401);
+    }
+    reautenticado = true;
+  }
+
+  if (!reautenticado && docente.googleSub && credentialStr.trim()) {
+    const perfil = await verificarCredencialGoogle(credentialStr);
+    if (perfil.correo !== String(docente.correo).toLowerCase()) {
+      throw new ErrorAplicacion('GOOGLE_CUENTA_NO_COINCIDE', 'Cuenta Google no coincide con el docente', 401);
+    }
+    if (perfil.sub !== docente.googleSub) {
+      throw new ErrorAplicacion('GOOGLE_SUB_MISMATCH', 'Cuenta Google no coincide con el docente', 401);
+    }
+    reautenticado = true;
+  }
+
+  if (!reautenticado) {
+    throw new ErrorAplicacion(
+      'REAUTENTICACION_REQUERIDA',
+      'Reautenticacion requerida para definir o cambiar contrasena',
+      401
+    );
   }
 
   docente.hashContrasena = await crearHash(String(contrasenaNueva ?? ''));
@@ -164,5 +203,13 @@ export async function perfilDocente(req: SolicitudDocente, res: Response) {
   if (!docente) {
     throw new ErrorAplicacion('DOCENTE_NO_ENCONTRADO', 'Docente no encontrado', 404);
   }
-  res.json({ docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+  res.json({
+    docente: {
+      id: docente._id,
+      nombreCompleto: docente.nombreCompleto,
+      correo: docente.correo,
+      tieneContrasena: Boolean(docente.hashContrasena),
+      tieneGoogle: Boolean(docente.googleSub)
+    }
+  });
 }

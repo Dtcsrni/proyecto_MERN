@@ -15,7 +15,7 @@ este documento se actualiza automáticamente al regenerar.
 - `LIMITE_JSON` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/contrato/limitesPayload.test.ts)
 - `MONGO_URI` (usado en: apps/backend/src/configuracion.ts)
 - `MONGODB_URI` (usado en: apps/backend/src/configuracion.ts)
-- `NODE_ENV` (usado en: apps/backend/src/compartido/errores/manejadorErrores.ts, apps/backend/src/configuracion.ts, apps/backend/tests/errores.test.ts, apps/backend/tests/setup.ts)
+- `NODE_ENV` (usado en: apps/backend/src/compartido/errores/manejadorErrores.ts, apps/backend/src/configuracion.ts, apps/backend/src/modulos/modulo_autenticacion/rutasAutenticacion.ts, apps/backend/tests/errores.test.ts, apps/backend/tests/setup.ts)
 - `OMR_IMAGEN_BASE64_MAX_CHARS` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/contrato/limitesPayload.test.ts)
 - `PORT` (usado en: apps/backend/src/configuracion.ts)
 - `PORTAL_ALUMNO_API_KEY` (usado en: apps/backend/src/configuracion.ts)
