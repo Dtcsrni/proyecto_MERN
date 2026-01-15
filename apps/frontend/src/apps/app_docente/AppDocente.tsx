@@ -19,7 +19,15 @@ import { obtenerSessionId } from '../../ui/ux/sesion';
 
 const clienteApi = crearClienteApi();
 
-type Docente = { id: string; nombreCompleto: string; correo: string; tieneContrasena?: boolean; tieneGoogle?: boolean };
+type Docente = {
+  id: string;
+  nombreCompleto: string;
+  nombres?: string;
+  apellidos?: string;
+  correo: string;
+  tieneContrasena?: boolean;
+  tieneGoogle?: boolean;
+};
 
 type Alumno = { _id: string; matricula: string; nombreCompleto: string; nombres?: string; apellidos?: string; grupo?: string };
 
@@ -404,7 +412,7 @@ export function AppDocente() {
       </div>
       {docente && (
         <InlineMensaje tipo="ok">
-          Sesion: {docente.nombreCompleto} ({docente.correo})
+          Sesion: {[docente.nombres, docente.apellidos].filter(Boolean).join(' ').trim() || docente.nombreCompleto} ({docente.correo})
         </InlineMensaje>
       )}
       {contenido}
