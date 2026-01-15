@@ -5,10 +5,11 @@ param(
 )
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot ".." )).Path
-$target = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+$target = Join-Path $env:WINDIR "System32\wscript.exe"
 $iconDir = Join-Path $root "scripts\icons"
 $iconDev = Join-Path $iconDir "dashboard-dev.ico"
 $iconProd = Join-Path $iconDir "dashboard-prod.ico"
+.
 
 $outPath = Join-Path $root $OutputDir
 if (-not (Test-Path $outPath)) {
@@ -132,7 +133,7 @@ function New-Shortcut([string]$name, [string]$mode, [string]$iconPath) {
   $lnkPath = Join-Path $outPath ($name + ".lnk")
   $shortcut = $wsh.CreateShortcut($lnkPath)
   $shortcut.TargetPath = $target
-  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File `"$root\scripts\launcher-dashboard.ps1`" -Mode $mode -Port 4519"
+  $shortcut.Arguments = "//nologo `"$root\scripts\launcher-dashboard-hidden.vbs`" $mode 4519"
   $shortcut.WorkingDirectory = $root
   $shortcut.Description = "Dashboard $name"
   $shortcut.IconLocation = $iconPath
