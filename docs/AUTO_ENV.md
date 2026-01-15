@@ -40,6 +40,7 @@ este documento se actualiza automáticamente al regenerar.
 ## Frontend
 - `VITE_API_BASE_URL` (usado en: apps/frontend/src/servicios_api/clienteApi.ts)
 - `VITE_APP_DESTINO` (usado en: apps/frontend/src/App.tsx)
+- `VITE_DOMINIOS_CORREO_PERMITIDOS` (usado en: apps/frontend/src/apps/app_docente/AppDocente.tsx)
 - `VITE_GOOGLE_CLIENT_ID` (usado en: apps/frontend/src/App.tsx, apps/frontend/src/apps/app_docente/AppDocente.tsx)
 - `VITE_PORTAL_BASE_URL` (usado en: apps/frontend/src/apps/app_alumno/AppAlumno.tsx, apps/frontend/src/servicios_api/clientePortal.ts)
 

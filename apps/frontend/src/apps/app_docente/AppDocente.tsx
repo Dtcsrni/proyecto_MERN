@@ -66,6 +66,33 @@ function mensajeDeError(error: unknown, fallback: string) {
   return mensajeUsuarioDeErrorConSugerencia(error, fallback);
 }
 
+function obtenerDominiosCorreoPermitidosFrontend(): string[] {
+  return String(import.meta.env.VITE_DOMINIOS_CORREO_PERMITIDOS || '')
+    .split(',')
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean);
+}
+
+function obtenerDominioCorreo(correo: string): string | null {
+  const valor = String(correo || '').trim().toLowerCase();
+  const at = valor.lastIndexOf('@');
+  if (at < 0) return null;
+  const dominio = valor.slice(at + 1).trim();
+  return dominio ? dominio : null;
+}
+
+function esCorreoDeDominioPermitidoFrontend(correo: string, dominiosPermitidos: string[]): boolean {
+  const lista = Array.isArray(dominiosPermitidos) ? dominiosPermitidos : [];
+  if (lista.length === 0) return true;
+  const dominio = obtenerDominioCorreo(correo);
+  if (!dominio) return false;
+  return lista.includes(dominio);
+}
+
+function textoDominiosPermitidos(dominios: string[]): string {
+  return dominios.map((d) => `@${d}`).join(', ');
+}
+
 export function AppDocente() {
   const [estadoApi, setEstadoApi] = useState<EstadoApi>({ estado: 'cargando', texto: 'Verificando API...' });
   const [docente, setDocente] = useState<Docente | null>(null);
@@ -409,6 +436,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     ? (!googleDisponible || mostrarFormularioIngresar)
     : (!googleDisponible || mostrarFormularioRegistrar || Boolean(credentialRegistroGoogle));
 
+  const dominiosPermitidos = obtenerDominiosCorreoPermitidosFrontend();
+  const politicaDominiosTexto = dominiosPermitidos.length > 0 ? textoDominiosPermitidos(dominiosPermitidos) : '';
+
+  function correoPermitido(correoAValidar: string) {
+    return esCorreoDeDominioPermitidoFrontend(correoAValidar, dominiosPermitidos);
+  }
+
   function decodificarPayloadJwt(jwt: string): Record<string, unknown> | null {
     const partes = String(jwt || '').split('.');
     if (partes.length < 2) return null;
@@ -427,6 +461,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   async function ingresar() {
     try {
       const inicio = Date.now();
+      if (dominiosPermitidos.length > 0 && !correoPermitido(correo)) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente('login', false);
+        return;
+      }
       setEnviando(true);
       setMensaje('');
       const respuesta = await clienteApi.enviar<{ token: string }>('/autenticacion/ingresar', { correo, contrasena });
@@ -452,6 +493,15 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   async function ingresarConGoogle(credential: string) {
     try {
       const inicio = Date.now();
+      const payload = decodificarPayloadJwt(credential);
+      const email = typeof payload?.email === 'string' ? payload.email : undefined;
+      if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente('login_google', false);
+        return;
+      }
       setEnviando(true);
       setMensaje('');
       const respuesta = await clienteApi.enviar<{ token: string }>('/autenticacion/google', { credential });
@@ -483,6 +533,17 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
         setMensaje('Reautentica con Google para recuperar.');
         return;
       }
+
+      const payload = decodificarPayloadJwt(credentialRecuperarGoogle);
+      const email = typeof payload?.email === 'string' ? payload.email : undefined;
+      if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente('recuperar_contrasena_google', false);
+        return;
+      }
+
       const respuesta = await clienteApi.enviar<{ token: string }>('/autenticacion/recuperar-contrasena-google', {
         credential: credentialRecuperarGoogle,
         contrasenaNueva: contrasenaRecuperar
@@ -509,6 +570,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   async function registrar() {
     try {
       const inicio = Date.now();
+      if (dominiosPermitidos.length > 0 && !correoPermitido(correo)) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente(credentialRegistroGoogle ? 'registrar_google' : 'registrar', false);
+        return;
+      }
       setEnviando(true);
       setMensaje('');
       const nombre = nombreCompleto.trim();
@@ -596,6 +664,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
             <p className="nota nota--mt">
               Acceso principal: Google (correo institucional).
             </p>
+            {dominiosPermitidos.length > 0 && (
+              <p className="nota nota--mt">Solo se permiten: {politicaDominiosTexto}</p>
+            )}
 
             <div className="acciones acciones--mt">
               <button
@@ -623,6 +694,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
             {mostrarRecuperar && (
               <div className="panel mt-10">
                 <p className="nota">Si tu cuenta tiene Google vinculado, puedes establecer una nueva contrasena.</p>
+                {dominiosPermitidos.length > 0 && (
+                  <p className="nota nota--mt">Solo se permiten: {politicaDominiosTexto}</p>
+                )}
                 <GoogleLogin
                   onSuccess={(cred) => {
                     const token = cred.credential;
@@ -703,6 +777,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
                 const email = typeof payload?.email === 'string' ? payload.email : undefined;
                 const name = typeof payload?.name === 'string' ? payload.name : undefined;
 
+                if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+                  const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+                  setMensaje(msg);
+                  emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+                  return;
+                }
+
                 if (email) setCorreo(email);
                 if (name && !nombreCompleto.trim()) setNombreCompleto(name);
                 setCredentialRegistroGoogle(token);
@@ -745,6 +826,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
             <p className="nota nota--mt">
               Registro principal: Google (correo institucional).
             </p>
+            {dominiosPermitidos.length > 0 && (
+              <p className="nota nota--mt">Solo se permiten: {politicaDominiosTexto}</p>
+            )}
           </div>
         )}
 
@@ -1217,11 +1301,22 @@ function SeccionAlumnos({
   const [mensaje, setMensaje] = useState('');
   const [creando, setCreando] = useState(false);
 
-  const puedeCrear = Boolean(matricula.trim() && nombreCompleto.trim() && periodoId);
+  const dominiosPermitidos = obtenerDominiosCorreoPermitidosFrontend();
+  const politicaDominiosTexto = dominiosPermitidos.length > 0 ? textoDominiosPermitidos(dominiosPermitidos) : '';
+  const correoValido = !correo.trim() || esCorreoDeDominioPermitidoFrontend(correo, dominiosPermitidos);
+
+  const puedeCrear = Boolean(matricula.trim() && nombreCompleto.trim() && periodoId && correoValido);
 
   async function crearAlumno() {
     try {
       const inicio = Date.now();
+      if (dominiosPermitidos.length > 0 && correo.trim() && !correoValido) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente('crear_alumno', false);
+        return;
+      }
       setCreando(true);
       setMensaje('');
       await clienteApi.enviar('/alumnos', {
@@ -1267,7 +1362,11 @@ function SeccionAlumnos({
       <label className="campo">
         Correo
         <input value={correo} onChange={(event) => setCorreo(event.target.value)} />
+        {dominiosPermitidos.length > 0 && <span className="ayuda">Opcional. Solo se permiten: {politicaDominiosTexto}</span>}
       </label>
+      {dominiosPermitidos.length > 0 && correo.trim() && !correoValido && (
+        <InlineMensaje tipo="error">Correo no permitido por politicas. Usa un correo institucional.</InlineMensaje>
+      )}
       <label className="campo">
         Grupo
         <input value={grupo} onChange={(event) => setGrupo(event.target.value)} />
