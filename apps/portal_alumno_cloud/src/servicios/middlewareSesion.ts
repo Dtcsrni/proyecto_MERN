@@ -1,5 +1,10 @@
 /**
  * Middleware de autenticacion para alumnos.
+ *
+ * Formato esperado: `Authorization: Bearer <token>`.
+ *
+ * El token en si no se persiste; se guarda y consulta por hash (SHA-256) para
+ * reducir impacto si la base de datos se filtra.
  */
 import type { NextFunction, Request, Response } from 'express';
 import { SesionAlumno } from '../modelos/modeloSesionAlumno';

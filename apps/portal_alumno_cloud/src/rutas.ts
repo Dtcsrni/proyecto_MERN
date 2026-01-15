@@ -1,5 +1,14 @@
 /**
  * Rutas del portal alumno (solo lectura + sync).
+ *
+ * Superficies de acceso:
+ * - Endpoints de sync/limpieza: protegidos con `x-api-key` (solo backend).
+ * - Endpoints de alumno: protegidos con token de sesion (Bearer) emitido tras
+ *   validar `codigo` + `matricula`.
+ *
+ * Nota:
+ * - El portal es una vista derivada (read-model) de la informacion del backend.
+ * - La telemetria se maneja best-effort (no debe interrumpir la UX).
  */
 import { Router, type Request, type Response } from 'express';
 import { gunzipSync } from 'zlib';
@@ -17,6 +26,11 @@ function responderError(res: Response, status: number, codigo: string, mensaje: 
   res.status(status).json({ error: { codigo, mensaje } });
 }
 
+/**
+ * Gate de autenticacion para operaciones internas (sync desde backend).
+ *
+ * Se usa header en lugar de cookies para simplificar despliegue cloud.
+ */
 function requerirApiKey(req: Request, res: Response): boolean {
   const apiKey = req.headers['x-api-key'];
   if (!configuracion.portalApiKey || apiKey !== configuracion.portalApiKey) {
@@ -30,6 +44,11 @@ function normalizarString(valor: unknown): string {
   return typeof valor === 'string' ? valor.trim() : String(valor ?? '').trim();
 }
 
+/**
+ * Normaliza el numero de dias de retencion para evitar valores peligrosos.
+ *
+ * Esto protege contra borrados accidentales por payload malicioso o typo.
+ */
 function parsearDiasRetencion(valor: unknown, porDefecto: number) {
   const n = typeof valor === 'number' ? valor : Number(valor);
   if (!Number.isFinite(n)) return porDefecto;
@@ -82,6 +101,7 @@ router.post('/sincronizar', async (req, res) => {
     banderasMap.set(clave, lista);
   });
 
+  // Upsert por folio: el portal se mantiene idempotente frente a reintentos.
   for (const calificacion of calificaciones) {
     const alumno = alumnosMap.get(String(calificacion.alumnoId));
     if (!alumno) continue;
@@ -139,9 +159,11 @@ router.post('/ingresar', async (req, res) => {
     return;
   }
 
+  // Codigo de acceso de un solo uso.
   registro.usado = true;
   await registro.save();
 
+  // Se devuelve el token al cliente, pero solo se guarda el hash en DB.
   const { token, hash } = generarTokenSesion();
   const expiraEn = new Date(Date.now() + configuracion.codigoAccesoHoras * 60 * 60 * 1000);
   await SesionAlumno.create({
@@ -223,6 +245,7 @@ router.get('/examen/:folio', requerirSesionAlumno, async (req: SolicitudAlumno, 
   }
 
   try {
+    // El PDF se almacena comprimido para reducir costos de almacenamiento/egreso.
     const buffer = gunzipSync(Buffer.from(resultado.pdfComprimidoBase64, 'base64'));
     res.setHeader('Content-Type', 'application/pdf');
     res.send(buffer);
@@ -237,6 +260,7 @@ router.post('/limpiar', async (req, res) => {
   const { dias } = req.body ?? {};
   const diasRetencion = parsearDiasRetencion(dias, 60);
   const limite = new Date(Date.now() - diasRetencion * 24 * 60 * 60 * 1000);
+  // Se purga por fecha de publicacion para no romper sincronizaciones recientes.
   await ResultadoAlumno.deleteMany({ publicadoEn: { $lt: limite } });
   res.json({ mensaje: 'Datos purgados', diasRetencion });
 });
