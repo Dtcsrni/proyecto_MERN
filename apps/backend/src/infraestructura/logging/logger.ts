@@ -17,6 +17,8 @@ function serializarError(error: unknown) {
 }
 
 export function log(level: NivelLog, msg: string, meta: Meta = {}) {
+  // Logging estructurado: una linea JSON por evento.
+  // Esto facilita parseo por herramientas (ELK/Datadog/CloudWatch, etc.).
   const entry = {
     ts: new Date().toISOString(),
     service: servicio,

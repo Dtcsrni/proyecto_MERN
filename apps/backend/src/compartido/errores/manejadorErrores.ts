@@ -1,5 +1,11 @@
 /**
  * Middleware de manejo de errores para el API.
+ *
+ * Contrato:
+ * - Si se lanza/propaga `ErrorAplicacion`, se serializa tal cual (codigo/estado/detalles).
+ * - Para errores no esperados, se registra (excepto en tests) y se devuelve 500.
+ *
+ * Nota: el formato del envelope de error es parte del contrato publico del API.
  */
 import type { NextFunction, Request, Response } from 'express';
 import { ErrorAplicacion } from './errorAplicacion';

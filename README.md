@@ -54,6 +54,7 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Pruebas backend: `npm run test`
 - Pruebas portal alumno: `npm run test:portal`
 - Pruebas frontend: `npm run test:frontend`
+- Pruebas CI (con reintentos + lint): `npm run test:ci`
 - Lint: `npm run lint`
 - Build: `npm run build`
 - Produccion API (Docker): `npm start`
@@ -71,6 +72,7 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 ## Pruebas automatizadas
 - Backend (unitarias + smoke): `npm run test`
 - Backend directo: `npm --prefix apps/backend run test`
+- CI (robusto en Windows, con reintentos): `npm run test:ci`
 
 ## API base
 - GET `/api/salud` devuelve `{ estado, tiempoActivo, db }`.
