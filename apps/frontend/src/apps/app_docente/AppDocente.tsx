@@ -432,6 +432,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   }
 
   const googleDisponible = hayGoogleConfigurado();
+  const esDev = import.meta.env.DEV;
   const mostrarFormulario = modo === 'ingresar'
     ? (!googleDisponible || mostrarFormularioIngresar)
     : (!googleDisponible || mostrarFormularioRegistrar || Boolean(credentialRegistroGoogle));
@@ -639,7 +640,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
             </li>
           ) : (
             <li>
-              <Icono nombre="info" /> Google no configurado (define VITE_GOOGLE_CLIENT_ID).
+              <Icono nombre="inicio" /> Acceso con correo y contrasena.
             </li>
           )}
           <li>
@@ -653,6 +654,12 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
       </div>
 
       <div className="auth-form">
+        {!googleDisponible && esDev && (
+          <InlineMensaje tipo="info">
+            Inicio de sesion con Google deshabilitado en este entorno. Para habilitarlo en desarrollo, define
+            {' '}VITE_GOOGLE_CLIENT_ID en el .env del root y reinicia Vite.
+          </InlineMensaje>
+        )}
         {googleDisponible && modo === 'ingresar' && (
           <div className="auth-google auth-google--mb">
             <GoogleLogin
