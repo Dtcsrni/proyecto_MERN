@@ -85,7 +85,9 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     const pregunta = mapaPreguntas.get(idPregunta);
     if (!pregunta) return;
 
-    const version = pregunta.versiones.find((item) => item.numeroVersion === pregunta.versionActual) ?? pregunta.versiones[0];
+    const version =
+      pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
+      pregunta.versiones[0];
     const ordenOpciones = examen.mapaVariante?.ordenOpcionesPorPregunta?.[idPregunta] ?? [0, 1, 2, 3, 4];
     const letraCorrecta = obtenerLetraCorrecta(version.opciones, ordenOpciones);
     const respuesta = respuestasPorNumero.get(idx + 1);
