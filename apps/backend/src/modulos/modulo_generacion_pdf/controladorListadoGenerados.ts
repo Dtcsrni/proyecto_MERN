@@ -1,5 +1,9 @@
 /**
  * Controlador para listado de examenes generados.
+ *
+ * Seguridad:
+ * - Todas las consultas se filtran por `docenteId` para evitar acceso entre docentes.
+ * - `descargarPdf` solo sirve PDFs cuyo path proviene del propio documento del examen.
  */
 import type { Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
@@ -7,6 +11,9 @@ import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion
 import { ExamenGenerado } from './modeloExamenGenerado';
 import { promises as fs } from 'fs';
 
+/**
+ * Lista examenes generados del docente, con filtros opcionales (periodo, alumno, folio).
+ */
 export async function listarExamenesGenerados(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const filtro: Record<string, string> = { docenteId };
@@ -20,6 +27,9 @@ export async function listarExamenesGenerados(req: SolicitudDocente, res: Respon
   res.json({ examenes });
 }
 
+/**
+ * Obtiene un examen por folio (multi-tenant por docente).
+ */
 export async function obtenerExamenPorFolio(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const folio = String(req.params.folio || '').trim().toUpperCase();
@@ -30,6 +40,12 @@ export async function obtenerExamenPorFolio(req: SolicitudDocente, res: Response
   res.json({ examen });
 }
 
+/**
+ * Descarga el PDF asociado a un examen.
+ *
+ * Nota: este endpoint hace IO a disco (almacen local). Si el archivo desaparecio,
+ * se responde con error 500 para indicar inconsistencia de almacenamiento.
+ */
 export async function descargarPdf(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const examenId = String(req.params.id || '');

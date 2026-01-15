@@ -1,5 +1,10 @@
 /**
  * Controlador de calificaciones.
+ *
+ * Nota de seguridad:
+ * - Todas estas rutas asumen que el request ya paso por `requerirDocente`.
+ * - `obtenerDocenteId(req)` actua como guard (y contrato) para obtener el docente autenticado.
+ * - La autorizacion por objeto se aplica verificando que el examen/plantilla pertenezca al docente.
  */
 import type { Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
@@ -24,6 +29,14 @@ function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: n
   return String.fromCharCode(65 + posicion);
 }
 
+/**
+ * Califica un examen generado.
+ *
+ * Contrato de autorizacion por objeto:
+ * - El `examenGeneradoId` debe pertenecer al `docenteId` autenticado.
+ * - Se recalcula el numero de aciertos si se proporcionan `respuestasDetectadas`.
+ * - El endpoint persiste la calificacion y marca el examen como `calificado`.
+ */
 export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const {
     examenGeneradoId,

@@ -1,5 +1,9 @@
 /**
  * Controlador de analiticas y banderas.
+ *
+ * Notas:
+ * - Todo se particiona por `docenteId` (multi-tenancy).
+ * - Telemetria (`registrarEventosUso`) es best-effort: no debe romper la UX.
  */
 import type { Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
@@ -10,6 +14,11 @@ import { Calificacion } from '../modulo_calificacion/modeloCalificacion';
 import { Alumno } from '../modulo_alumnos/modeloAlumno';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 
+/**
+ * Registra eventos de uso asociados al docente.
+ *
+ * Best-effort: si algunos documentos fallan (duplicados/validaciones), se responde 201.
+ */
 export async function registrarEventosUso(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const eventos = (req.body?.eventos ?? []) as Array<{
@@ -59,6 +68,12 @@ export async function crearBandera(req: SolicitudDocente, res: Response) {
   res.status(201).json({ bandera });
 }
 
+/**
+ * Exporta CSV generico (sin persistencia).
+ *
+ * Seguridad: se invoca `obtenerDocenteId` para asegurar que la ruta este autenticada,
+ * aunque el contenido lo provea el cliente.
+ */
 export function exportarCsv(req: SolicitudDocente, res: Response) {
   obtenerDocenteId(req);
   const { columnas, filas } = req.body;
@@ -68,6 +83,12 @@ export function exportarCsv(req: SolicitudDocente, res: Response) {
   res.send(csv);
 }
 
+/**
+ * Exporta CSV de calificaciones de un periodo del docente.
+ *
+ * Contrato de autorizacion por objeto:
+ * - `periodoId` se valida y se usa junto con `docenteId` para acotar datos.
+ */
 export async function exportarCsvCalificaciones(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const periodoId = String(req.query.periodoId || '').trim();

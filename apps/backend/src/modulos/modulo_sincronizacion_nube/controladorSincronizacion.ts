@@ -1,5 +1,17 @@
 /**
  * Controlador de sincronizacion con la nube.
+ *
+ * Objetivo:
+ * - Publicar (push) un subconjunto de datos al portal alumno cloud.
+ * - Registrar auditoria local (coleccion `sincronizaciones`) para trazabilidad.
+ *
+ * Seguridad:
+ * - Se autentica al docente via JWT (middleware `requerirDocente`).
+ * - El portal cloud valida `x-api-key` (secreto compartido backend → portal).
+ *
+ * Resiliencia:
+ * - PDFs se incluyen como best-effort (si falla lectura/compresion se omiten).
+ * - El envio al portal puede fallar; se registra intento y se retorna error.
  */
 import type { Response } from 'express';
 import { gzipSync } from 'zlib';
@@ -18,6 +30,7 @@ import { randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 
 function generarCodigoSimple() {
+  // 8 hex chars (A-F0-9) en mayusculas: simple de dictar y transcribir.
   return randomBytes(4).toString('hex').toUpperCase();
 }
 
@@ -38,6 +51,8 @@ export async function listarSincronizaciones(req: SolicitudDocente, res: Respons
 export async function generarCodigoAcceso(req: SolicitudDocente, res: Response) {
   const { periodoId } = req.body;
   const docenteId = obtenerDocenteId(req);
+
+  // Se intenta evitar colisiones de `codigo` (hay indice unique en Mongo).
   let codigo = generarCodigoSimple();
   let intentos = 0;
   while (intentos < 5) {

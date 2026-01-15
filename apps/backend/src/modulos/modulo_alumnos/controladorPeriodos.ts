@@ -1,11 +1,18 @@
 /**
  * Controlador de periodos.
+ *
+ * Contrato:
+ * - Los periodos pertenecen a un docente; siempre se filtran/crean con `docenteId`.
+ * - Las fechas se normalizan a `Date` al persistir.
  */
 import type { Response } from 'express';
 import { obtenerDocenteId } from '../modulo_autenticacion/middlewareAutenticacion';
 import type { SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { Periodo } from './modeloPeriodo';
 
+/**
+ * Lista periodos del docente autenticado.
+ */
 export async function listarPeriodos(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const filtro: Record<string, string> = { docenteId };
@@ -16,6 +23,9 @@ export async function listarPeriodos(req: SolicitudDocente, res: Response) {
   res.json({ periodos });
 }
 
+/**
+ * Crea un periodo asociado al docente.
+ */
 export async function crearPeriodo(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const periodo = await Periodo.create({
