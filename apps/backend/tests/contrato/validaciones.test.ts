@@ -291,6 +291,40 @@ describe('validaciones de payload', () => {
     expect(respuesta.body.error.codigo).toBe('VALIDACION');
   });
 
+  it('rechaza exportar-csv con campos extra (top-level)', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/analiticas/exportar-csv')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ columnas: ['a'], filas: [{ a: 1 }], extra: 'NO' })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza exportar-csv con valor no primitivo en fila', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/analiticas/exportar-csv')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ columnas: ['a'], filas: [{ a: { nested: true } }] })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
+  it('rechaza exportar-csv con demasiadas filas', async () => {
+    const token = tokenDocentePrueba();
+    const filas = Array.from({ length: 5001 }, () => ({ a: 1 }));
+    const respuesta = await request(app)
+      .post('/api/analiticas/exportar-csv')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ columnas: ['a'], filas })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
   it('rechaza eventos-uso con campos extra en evento', async () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)

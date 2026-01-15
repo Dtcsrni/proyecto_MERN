@@ -19,6 +19,7 @@ export const esquemaCrearPregunta = z
     imagenUrl: z.string().url().optional(),
     opciones: z.array(esquemaOpcion)
   })
+  .strict()
   .refine((data) => data.opciones.length === 5, {
     message: 'Se requieren 5 opciones'
   })
