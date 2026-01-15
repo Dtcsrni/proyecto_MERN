@@ -1,5 +1,11 @@
 /**
  * Controlador de vinculacion al recibir examenes.
+ *
+ * Objetivo: asociar un `ExamenGenerado` con un alumno cuando se entrega/identifica.
+ *
+ * Contrato de seguridad:
+ * - La vinculacion siempre se restringe al `docenteId` autenticado.
+ * - Se registra una `Entrega` como bitacora de la operacion.
  */
 import type { Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
@@ -7,6 +13,13 @@ import { ExamenGenerado } from '../modulo_generacion_pdf/modeloExamenGenerado';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { Entrega } from './modeloEntrega';
 
+/**
+ * Vincula un examen por id.
+ *
+ * Reglas:
+ * - El examen debe existir y pertenecer al docente autenticado.
+ * - Marca el examen como `entregado`.
+ */
 export async function vincularEntrega(req: SolicitudDocente, res: Response) {
   const { examenGeneradoId, alumnoId } = req.body;
   const docenteId = obtenerDocenteId(req);
@@ -34,6 +47,12 @@ export async function vincularEntrega(req: SolicitudDocente, res: Response) {
   res.status(201).json({ entrega });
 }
 
+/**
+ * Vincula un examen por folio.
+ *
+ * Nota: aqui la autorizacion por objeto se implementa filtrando directamente
+ * por `{ folio, docenteId }`.
+ */
 export async function vincularEntregaPorFolio(req: SolicitudDocente, res: Response) {
   const folio = String(req.body.folio || '').toUpperCase();
   const { alumnoId } = req.body;

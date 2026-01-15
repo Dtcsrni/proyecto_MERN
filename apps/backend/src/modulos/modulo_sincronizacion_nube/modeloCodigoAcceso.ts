@@ -1,5 +1,10 @@
 /**
  * Modelo de codigo de acceso para portal alumno.
+ *
+ * Flujo:
+ * - El backend genera un codigo por periodo y docente.
+ * - El alumno usa el codigo + matricula en el portal cloud para crear sesion.
+ * - El codigo es de un solo uso y expira.
  */
 import { Schema, model } from 'mongoose';
 

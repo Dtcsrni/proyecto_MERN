@@ -1,5 +1,12 @@
 /**
  * Controlador para plantillas y examenes generados.
+ *
+ * Contrato de seguridad:
+ * - Todas las operaciones son multi-tenant por `docenteId`.
+ * - Para acciones sobre una plantilla existente, se valida propiedad (`plantilla.docenteId`).
+ *
+ * Efectos laterales:
+ * - `generarExamen` escribe el PDF a almacenamiento local y crea un `ExamenGenerado`.
  */
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
@@ -14,6 +21,9 @@ import { ExamenPlantilla } from './modeloExamenPlantilla';
 import { generarPdfExamen } from './servicioGeneracionPdf';
 import { generarVariante } from './servicioVariantes';
 
+/**
+ * Lista plantillas del docente autenticado (opcionalmente filtradas por periodo).
+ */
 export async function listarPlantillas(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const filtro: Record<string, string> = { docenteId };
@@ -25,12 +35,25 @@ export async function listarPlantillas(req: SolicitudDocente, res: Response) {
   res.json({ plantillas });
 }
 
+/**
+ * Crea una plantilla asociandola al docente autenticado.
+ */
 export async function crearPlantilla(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const plantilla = await ExamenPlantilla.create({ ...req.body, docenteId });
   res.status(201).json({ plantilla });
 }
 
+/**
+ * Genera un examen a partir de una plantilla.
+ *
+ * Contrato de autorizacion por objeto:
+ * - La plantilla debe pertenecer al docente autenticado.
+ *
+ * Notas de implementacion:
+ * - `folio` se deriva de `randomUUID()` para minimizar colisiones.
+ * - El PDF se persiste en almacenamiento local y se registra la ruta.
+ */
 export async function generarExamen(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const { plantillaId, alumnoId } = req.body;

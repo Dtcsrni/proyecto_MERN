@@ -1,11 +1,18 @@
 /**
  * Controlador de banco de preguntas.
+ *
+ * Contrato:
+ * - El banco de preguntas es multi-tenant por `docenteId`.
+ * - Al crear una pregunta se inicializa con `versionActual = 1` y una sola version.
  */
 import type { Response } from 'express';
 import { obtenerDocenteId } from '../modulo_autenticacion/middlewareAutenticacion';
 import type { SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { BancoPregunta } from './modeloBancoPregunta';
 
+/**
+ * Lista preguntas del docente (opcionalmente por periodo).
+ */
 export async function listarBancoPreguntas(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const filtro: Record<string, string> = { docenteId };
@@ -17,6 +24,9 @@ export async function listarBancoPreguntas(req: SolicitudDocente, res: Response)
   res.json({ preguntas });
 }
 
+/**
+ * Crea una pregunta en el banco del docente.
+ */
 export async function crearPregunta(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const { periodoId, tema, enunciado, imagenUrl, opciones } = req.body;

@@ -1,5 +1,11 @@
 /**
  * Modelo de sincronizacion local -> cloud.
+ *
+ * Se usa como bitacora/auditoria:
+ * - quien (docenteId)
+ * - que (tipo)
+ * - resultado (estado)
+ * - cuando (ejecutadoEn + timestamps)
  */
 import { Schema, model } from 'mongoose';
 
