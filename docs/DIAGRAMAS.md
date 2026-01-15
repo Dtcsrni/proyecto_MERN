@@ -31,7 +31,7 @@ puedes desactivar temporalmente el check con `DIAGRAMAS_RENDER_CHECK=0`.
 Valida que las rutas HTTP mencionadas en los diagramas de secuencia correspondan con el codigo:
 
 - Portal alumno cloud: valida metodo + path exacto.
-- Backend: valida que el montaje (primer segmento tras `/api`) exista.
+- Backend: valida metodo + path exacto (derivado de los routers montados); si no puede resolver algun router, hace fallback a validar el montaje.
 
 Comando: `npm run diagramas:consistencia:check`
 
