@@ -5,6 +5,8 @@ import { Schema, model, models } from 'mongoose';
 
 const DocenteSchema = new Schema(
   {
+    nombres: { type: String },
+    apellidos: { type: String },
     nombreCompleto: { type: String, required: true },
     correo: { type: String, required: true, unique: true, lowercase: true },
     hashContrasena: { type: String },
