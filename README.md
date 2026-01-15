@@ -55,6 +55,7 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - Pruebas portal alumno: `npm run test:portal`
 - Pruebas frontend: `npm run test:frontend`
 - Pruebas CI (con reintentos + lint): `npm run test:ci`
+- Guardarrail de rutas (anti-regresion validacion/auth): `npm run routes:check`
 - Docs auto (generar): `npm run docs:generate`
 - Docs auto (validar en CI): `npm run docs:check`
 - Lint: `npm run lint`
@@ -79,6 +80,12 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 Nota CI:
 - `test:frontend:ci` reintenta y, si detecta fallo intermitente con `--pool=forks`,
   reintenta usando `--pool=threads` como fallback.
+
+Opcional (flags para `routes:check`):
+- `ROUTES_CHECK_STRICT_PATHS=0`: desactiva la regla que exige paths literales (string) en `router.post/put/patch`.
+- `ROUTES_CHECK_STRICT_PORTAL_METHODS=0`: desactiva la regla "solo POST" para endpoints sensibles del portal (`/sincronizar`, `/limpiar`, `/eventos-uso`).
+
+Estos flags son utiles si necesitas una excepcion temporal (idealmente, mantenerlos encendidos en CI).
 
 ## API base
 - GET `/api/salud` devuelve `{ estado, tiempoActivo, db }`.
