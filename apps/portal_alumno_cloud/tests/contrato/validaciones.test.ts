@@ -247,4 +247,40 @@ describe('contrato (portal)', () => {
 
     vi.resetModules();
   });
+
+  it('rechaza eventos-uso con meta anidado y no escribe en DB', async () => {
+    const insertar = vi.fn().mockResolvedValue([]);
+
+    vi.resetModules();
+    vi.doMock('../../src/servicios/middlewareSesion', () => {
+      return {
+        requerirSesionAlumno: (req: RequestConSesion, _res: Response, next: NextFunction) => {
+          req.periodoId = '507f1f77bcf86cd799439011';
+          req.alumnoId = '507f1f77bcf86cd799439012';
+          next();
+        }
+      };
+    });
+    vi.doMock('../../src/modelos/modeloEventoUsoAlumno', () => {
+      return {
+        EventoUsoAlumno: {
+          insertMany: insertar
+        }
+      };
+    });
+
+    const { crearApp } = await import('../../src/app');
+    const app = crearApp();
+
+    const respuesta = await request(app)
+      .post('/api/portal/eventos-uso')
+      .set({ Authorization: 'Bearer token' })
+      .send({ eventos: [{ accion: 'click', meta: { a: { b: 1 } } }] })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
+    expect(insertar).not.toHaveBeenCalled();
+
+    vi.resetModules();
+  });
 });

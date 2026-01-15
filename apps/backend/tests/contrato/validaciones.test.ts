@@ -336,6 +336,17 @@ describe('validaciones de payload', () => {
     expect(respuesta.body.error.codigo).toBe('VALIDACION');
   });
 
+  it('rechaza eventos-uso con meta anidado (objeto dentro de objeto)', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .post('/api/analiticas/eventos-uso')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ eventos: [{ accion: 'click', meta: { a: { b: 1 } } }] })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+  });
+
   it('requiere periodoId en calificaciones-csv', async () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)
