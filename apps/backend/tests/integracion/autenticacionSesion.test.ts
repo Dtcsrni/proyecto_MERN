@@ -121,7 +121,7 @@ describe('autenticacion (sesiones)', () => {
     await request(app)
       .post('/api/autenticacion/definir-contrasena')
       .set('Authorization', `Bearer ${registro.body.token}`)
-      .send({ contrasenaNueva: 'Secreto123!' })
+      .send({ contrasenaNueva: 'Secreto123!', credential: 'fake-id-token' })
       .expect(204);
 
     const loginPwd = await request(app)

@@ -19,7 +19,7 @@ import { obtenerSessionId } from '../../ui/ux/sesion';
 
 const clienteApi = crearClienteApi();
 
-type Docente = { id: string; nombreCompleto: string; correo: string };
+type Docente = { id: string; nombreCompleto: string; correo: string; tieneContrasena?: boolean; tieneGoogle?: boolean };
 
 type Alumno = { _id: string; matricula: string; nombreCompleto: string; grupo?: string };
 
@@ -342,7 +342,7 @@ export function AppDocente() {
         />
       )}
 
-      {vista === 'cuenta' && <SeccionCuenta />}
+      {vista === 'cuenta' && <SeccionCuenta docente={docente} />}
     </div>
   ) : (
     <SeccionAutenticacion
@@ -703,26 +703,43 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   );
 }
 
-function SeccionCuenta() {
+function SeccionCuenta({ docente }: { docente: Docente }) {
   const [contrasenaNueva, setContrasenaNueva] = useState('');
   const [contrasenaNueva2, setContrasenaNueva2] = useState('');
+  const [contrasenaActual, setContrasenaActual] = useState('');
+  const [credentialReauth, setCredentialReauth] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   const coincide = contrasenaNueva && contrasenaNueva === contrasenaNueva2;
-  const puedeGuardar = Boolean(contrasenaNueva.trim().length >= 8 && coincide);
+  const requierePwdActual = Boolean(docente.tieneContrasena);
+  const requiereGoogle = Boolean(docente.tieneGoogle && !docente.tieneContrasena);
+
+  const reauthOk = requierePwdActual ? Boolean(contrasenaActual.trim()) : requiereGoogle ? Boolean(credentialReauth) : Boolean(contrasenaActual.trim() || credentialReauth);
+  const puedeGuardar = Boolean(contrasenaNueva.trim().length >= 8 && coincide && reauthOk);
+
+  function hayGoogleConfigurado() {
+    return Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
+  }
 
   async function guardar() {
     try {
       const inicio = Date.now();
       setGuardando(true);
       setMensaje('');
-      await clienteApi.enviar('/autenticacion/definir-contrasena', { contrasenaNueva });
+
+      const payload: Record<string, unknown> = { contrasenaNueva };
+      if (contrasenaActual.trim()) payload.contrasenaActual = contrasenaActual;
+      if (credentialReauth) payload.credential = credentialReauth;
+
+      await clienteApi.enviar('/autenticacion/definir-contrasena', payload);
       setMensaje('Contrasena actualizada');
       emitToast({ level: 'ok', title: 'Cuenta', message: 'Contrasena actualizada', durationMs: 2400 });
       registrarAccionDocente('definir_contrasena', true, Date.now() - inicio);
       setContrasenaNueva('');
       setContrasenaNueva2('');
+      setContrasenaActual('');
+      setCredentialReauth(null);
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo actualizar la contrasena');
       setMensaje(msg);
@@ -744,7 +761,51 @@ function SeccionCuenta() {
       <h2>
         <Icono nombre="info" /> Cuenta
       </h2>
-      <p className="nota">Define una contrasena para poder ingresar sin Google (o cambiarla).</p>
+      <p className="nota">Define o cambia tu contrasena. Por seguridad, se requiere reautenticacion.</p>
+
+      <div className="meta" aria-label="Estado de la cuenta">
+        <span className={docente.tieneGoogle ? 'badge ok' : 'badge'}>
+          <span className="dot" aria-hidden="true" /> Google {docente.tieneGoogle ? 'vinculado' : 'no vinculado'}
+        </span>
+        <span className={docente.tieneContrasena ? 'badge ok' : 'badge'}>
+          <span className="dot" aria-hidden="true" /> Contrasena {docente.tieneContrasena ? 'definida' : 'no definida'}
+        </span>
+      </div>
+
+      {Boolean(docente.tieneGoogle && hayGoogleConfigurado()) && (
+        <div className="auth-google auth-google--mb">
+          <p className="nota">Reautenticacion con Google (recomendado).</p>
+          <GoogleLogin
+            onSuccess={(cred) => {
+              const token = cred.credential;
+              if (!token) {
+                setMensaje('No se recibio credencial de Google.');
+                return;
+              }
+              setCredentialReauth(token);
+              setMensaje('Reautenticacion con Google lista.');
+            }}
+            onError={() => setMensaje('No se pudo reautenticar con Google.')}
+          />
+          <div className="acciones acciones--mt">
+            <button type="button" className="chip" disabled={!credentialReauth} onClick={() => setCredentialReauth(null)}>
+              Limpiar reauth
+            </button>
+          </div>
+        </div>
+      )}
+
+      {docente.tieneContrasena && (
+        <label className="campo">
+          Contrasena actual
+          <input
+            type="password"
+            value={contrasenaActual}
+            onChange={(event) => setContrasenaActual(event.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+      )}
 
       <label className="campo">
         Nueva contrasena

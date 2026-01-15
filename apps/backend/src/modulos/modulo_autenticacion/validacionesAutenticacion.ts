@@ -28,7 +28,12 @@ export const esquemaRegistrarDocenteGoogle = z.object({
 });
 
 export const esquemaDefinirContrasenaDocente = z.object({
-  contrasenaNueva: z.string().min(8)
+  contrasenaNueva: z.string().min(8),
+  // Reautenticacion: via password actual o via Google.
+  contrasenaActual: z.string().min(1).optional(),
+  credential: z.string().min(10).optional()
+}).refine((data) => Boolean(data.contrasenaActual || data.credential), {
+  message: 'Reautenticacion requerida'
 });
 
 export const esquemaBodyVacioOpcional = z.object({}).strict().optional();
