@@ -12,6 +12,8 @@ import {
 } from '../../servicios_api/clienteApi';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono, Spinner } from '../../ui/iconos';
+import { Boton } from '../../ui/ux/componentes/Boton';
+import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 
 const clienteApi = crearClienteApi();
 
@@ -184,9 +186,9 @@ export function AppDocente() {
           <span>{estadoApi.texto}</span>
         </div>
         {cargandoDatos && (
-          <p className="mensaje" role="status">
-            <Spinner /> Cargando datos…
-          </p>
+          <InlineMensaje tipo="info" leading={<Spinner />}>
+            Cargando datos…
+          </InlineMensaje>
         )}
       </div>
 
@@ -297,30 +299,41 @@ export function AppDocente() {
   return (
     <section className="card anim-entrada">
       <div className="cabecera">
-        <p className="eyebrow">
-          <Icono nombre="docente" /> Plataforma Docente
-        </p>
+        <div>
+          <p className="eyebrow">
+            <Icono nombre="docente" /> Plataforma Docente
+          </p>
+          <h1>Banco y Examenes</h1>
+        </div>
         {docente && (
-          <button
-            className="boton secundario"
+          <Boton
+            variante="secundario"
             type="button"
+            icono={<Icono nombre="salir" />}
             onClick={() => {
               limpiarTokenDocente();
               setDocente(null);
               emitToast({ level: 'info', title: 'Sesion', message: 'Sesion cerrada', durationMs: 2200 });
               void clienteApi.registrarEventosUso({
-                eventos: [{ sessionId: sessionStorage.getItem('sesionDocenteId') ?? undefined, pantalla: 'docente', accion: 'logout', exito: true }]
+                eventos: [
+                  {
+                    sessionId: sessionStorage.getItem('sesionDocenteId') ?? undefined,
+                    pantalla: 'docente',
+                    accion: 'logout',
+                    exito: true
+                  }
+                ]
               });
             }}
           >
-            <Icono nombre="salir" /> Salir
-          </button>
+            Salir
+          </Boton>
         )}
       </div>
       {docente && (
-        <p className="mensaje" role="status">
-          <Icono nombre="ok" /> Sesion: {docente.nombreCompleto} ({docente.correo})
-        </p>
+        <InlineMensaje tipo="ok">
+          Sesion: {docente.nombreCompleto} ({docente.correo})
+        </InlineMensaje>
       )}
       {contenido}
     </section>
@@ -451,28 +464,18 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
         )}
       </label>
       <div className="acciones">
-        <button
-          className="boton"
+        <Boton
           type="button"
-          disabled={enviando || (modo === 'ingresar' ? !puedeIngresar : !puedeRegistrar)}
+          icono={<Icono nombre={modo === 'ingresar' ? 'entrar' : 'nuevo'} />}
+          cargando={enviando}
+          disabled={modo === 'ingresar' ? !puedeIngresar : !puedeRegistrar}
           onClick={modo === 'ingresar' ? ingresar : registrar}
         >
-          {modo === 'ingresar' ? (
-            <>
-              <Icono nombre="entrar" /> {enviando ? 'Ingresando…' : 'Ingresar'}
-            </>
-          ) : (
-            <>
-              <Icono nombre="nuevo" /> {enviando ? 'Creando…' : 'Crear cuenta'}
-            </>
-          )}
-        </button>
+          {modo === 'ingresar' ? (enviando ? 'Ingresando…' : 'Ingresar') : enviando ? 'Creando…' : 'Crear cuenta'}
+        </Boton>
       </div>
       {mensaje && (
-        <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
-          <Icono nombre={esMensajeError(mensaje) ? 'alerta' : 'ok'} />
-          {mensaje}
-        </p>
+        <InlineMensaje tipo={esMensajeError(mensaje) ? 'error' : 'ok'}>{mensaje}</InlineMensaje>
       )}
     </div>
   );
@@ -564,9 +567,9 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
           Correcta
         </label>
       ))}
-      <button className="boton" type="button" disabled={!puedeGuardar || guardando} onClick={guardar}>
-        <Icono nombre="ok" /> {guardando ? 'Guardando…' : 'Guardar'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="ok" />} cargando={guardando} disabled={!puedeGuardar} onClick={guardar}>
+        {guardando ? 'Guardando…' : 'Guardar'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -644,17 +647,15 @@ function SeccionPeriodos({
         <input type="date" value={fechaFin} onChange={(event) => setFechaFin(event.target.value)} />
       </label>
       {fechaInicio && fechaFin && fechaFin < fechaInicio && (
-        <p className="mensaje error" role="status">
-          <Icono nombre="alerta" /> La fecha fin debe ser igual o posterior a la fecha inicio.
-        </p>
+        <InlineMensaje tipo="error">La fecha fin debe ser igual o posterior a la fecha inicio.</InlineMensaje>
       )}
       <label className="campo">
         Grupos (separados por coma)
         <input value={grupos} onChange={(event) => setGrupos(event.target.value)} />
       </label>
-      <button className="boton" type="button" disabled={!puedeCrear || creando} onClick={crearPeriodo}>
-        <Icono nombre="nuevo" /> {creando ? 'Creando…' : 'Crear periodo'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crearPeriodo}>
+        {creando ? 'Creando…' : 'Crear periodo'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -750,9 +751,9 @@ function SeccionAlumnos({
           ))}
         </select>
       </label>
-      <button className="boton" type="button" disabled={!puedeCrear || creando} onClick={crearAlumno}>
-        <Icono nombre="nuevo" /> {creando ? 'Creando…' : 'Crear alumno'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crearAlumno}>
+        {creando ? 'Creando…' : 'Crear alumno'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -878,9 +879,9 @@ function SeccionPlantillas({
           ))}
         </select>
       </label>
-      <button className="boton" type="button" disabled={!puedeCrear || creando} onClick={crear}>
-        <Icono nombre="nuevo" /> {creando ? 'Creando…' : 'Crear plantilla'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crear}>
+        {creando ? 'Creando…' : 'Crear plantilla'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -915,10 +916,12 @@ function SeccionPlantillas({
           ))}
         </select>
       </label>
-      <button
+      <Boton
         className="boton"
         type="button"
-        disabled={!puedeGenerar || generando}
+        icono={<Icono nombre="pdf" />}
+        cargando={generando}
+        disabled={!puedeGenerar}
         onClick={async () => {
           try {
             const inicio = Date.now();
@@ -941,8 +944,8 @@ function SeccionPlantillas({
           }
         }}
       >
-        <Icono nombre="pdf" /> {generando ? 'Generando…' : 'Generar'}
-      </button>
+        {generando ? 'Generando…' : 'Generar'}
+      </Boton>
       {mensajeGeneracion && (
         <p className={esMensajeError(mensajeGeneracion) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensajeGeneracion}
@@ -1008,9 +1011,9 @@ function SeccionRecepcion({
           ))}
         </select>
       </label>
-      <button className="boton" type="button" disabled={!puedeVincular || vinculando} onClick={vincular}>
-        <Icono nombre="recepcion" /> {vinculando ? 'Vinculando…' : 'Vincular'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="recepcion" />} cargando={vinculando} disabled={!puedeVincular} onClick={vincular}>
+        {vinculando ? 'Vinculando…' : 'Vincular'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -1092,9 +1095,9 @@ function SeccionEscaneo({
         Imagen
         <input type="file" accept="image/*" onChange={cargarArchivo} />
       </label>
-      <button className="boton" type="button" disabled={!puedeAnalizar || analizando} onClick={analizar}>
-        <Icono nombre="escaneo" /> {analizando ? 'Analizando…' : 'Analizar'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="escaneo" />} cargando={analizando} disabled={!puedeAnalizar} onClick={analizar}>
+        {analizando ? 'Analizando…' : 'Analizar'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -1232,9 +1235,9 @@ function SeccionCalificar({
         Proyecto (global)
         <input type="number" value={proyecto} onChange={(event) => setProyecto(Math.max(0, Number(event.target.value)))} />
       </label>
-      <button className="boton" type="button" disabled={!puedeCalificar || guardando} onClick={calificar}>
-        <Icono nombre="calificar" /> {guardando ? 'Guardando…' : 'Calificar'}
-      </button>
+      <Boton type="button" icono={<Icono nombre="calificar" />} cargando={guardando} disabled={!puedeCalificar} onClick={calificar}>
+        {guardando ? 'Guardando…' : 'Calificar'}
+      </Boton>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -1324,12 +1327,19 @@ function SeccionPublicar({
         </select>
       </label>
       <div className="acciones">
-        <button className="boton" type="button" disabled={!puedeAccionar || publicando} onClick={publicar}>
-          <Icono nombre="publicar" /> {publicando ? 'Publicando…' : 'Publicar'}
-        </button>
-        <button className="boton secundario" type="button" disabled={!puedeAccionar || generando} onClick={generarCodigo}>
-          <Icono nombre="info" /> {generando ? 'Generando…' : 'Generar codigo'}
-        </button>
+        <Boton type="button" icono={<Icono nombre="publicar" />} cargando={publicando} disabled={!puedeAccionar} onClick={publicar}>
+          {publicando ? 'Publicando…' : 'Publicar'}
+        </Boton>
+        <Boton
+          type="button"
+          variante="secundario"
+          icono={<Icono nombre="info" />}
+          cargando={generando}
+          disabled={!puedeAccionar}
+          onClick={generarCodigo}
+        >
+          {generando ? 'Generando…' : 'Generar codigo'}
+        </Boton>
       </div>
       {codigo && (
         <p>
