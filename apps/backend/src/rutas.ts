@@ -1,5 +1,11 @@
 /**
  * Registro central de rutas del API docente.
+ *
+ * Convenciones:
+ * - Las rutas publicas se montan antes del middleware de autenticacion.
+ * - A partir de `requerirDocente`, todo requiere JWT (Bearer) de docente.
+ *
+ * Nota: El orden de `router.use(...)` es parte del contrato de seguridad.
  */
 import { Router } from 'express';
 import rutasSalud from './compartido/salud/rutasSalud';
@@ -18,9 +24,11 @@ import rutasSincronizacionNube from './modulos/modulo_sincronizacion_nube/rutasS
 export function crearRouterApi() {
   const router = Router();
 
+  // Endpoints sin autenticacion (usados por health checks y login).
   router.use('/salud', rutasSalud);
   router.use('/autenticacion', rutasAutenticacion);
 
+  // A partir de aqui: todas las rutas requieren sesion de docente.
   router.use(requerirDocente);
   router.use('/alumnos', rutasAlumnos);
   router.use('/periodos', rutasPeriodos);

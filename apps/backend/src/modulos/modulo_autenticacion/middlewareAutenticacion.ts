@@ -1,5 +1,9 @@
 /**
  * Middleware para requerir sesion docente via JWT.
+ *
+ * Formato esperado: `Authorization: Bearer <token>`.
+ * Si el token es valido, se adjunta `docenteId` al request para que los
+ * controladores puedan aplicar autorizacion por objeto.
  */
 import type { NextFunction, Request, Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
@@ -21,12 +25,14 @@ export function requerirDocente(req: SolicitudDocente, _res: Response, next: Nex
     req.docenteId = payload.docenteId;
     next();
   } catch {
+    // `jsonwebtoken.verify` lanza si el token es invalido o expiro.
     next(new ErrorAplicacion('TOKEN_INVALIDO', 'Token invalido o expirado', 401));
   }
 }
 
 export function obtenerDocenteId(req: SolicitudDocente) {
   if (!req.docenteId) {
+    // Error de uso interno (p. ej., se llamo sin `requerirDocente` antes).
     throw new ErrorAplicacion('NO_AUTORIZADO', 'Sesion requerida', 401);
   }
   return req.docenteId;
