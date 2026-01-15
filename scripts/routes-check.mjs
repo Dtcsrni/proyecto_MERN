@@ -195,6 +195,16 @@ function checarBackend() {
     const txt = leerTexto(archivo);
     const calls = extraerLlamadasRouter(txt, metodos);
     for (const call of calls) {
+      const m = call.match(/^router\.(post|put|patch)\(\s*(['"`])([^'"`]+)\2/);
+      if (!m) {
+        violaciones.push({
+          archivo: normalizarRuta(path.relative(repoRoot, archivo)),
+          metodo: metodos.find((mm) => call.startsWith(`router.${mm}(`)) ?? '?',
+          razon: 'ruta no literal: el path debe ser string literal en router.post/put/patch'
+        });
+        continue;
+      }
+
       const tieneValidar = call.includes('validarCuerpo(');
       const tieneStrict = call.includes('strict: true');
       if (!tieneValidar || !tieneStrict) {
