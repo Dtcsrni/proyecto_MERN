@@ -11,6 +11,9 @@ import {
 } from '../../servicios_api/clientePortal';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono, IlustracionSinResultados, Spinner } from '../../ui/iconos';
+import { Boton } from '../../ui/ux/componentes/Boton';
+import { CampoTexto } from '../../ui/ux/componentes/CampoTexto';
+import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 
 const clientePortal = crearClientePortal();
 const basePortal = import.meta.env.VITE_PORTAL_BASE_URL || 'http://localhost:8080/api/portal';
@@ -143,21 +146,13 @@ export function AppAlumno() {
       <h1>Resultados de examen</h1>
 
       {mensaje && (
-        <p
-          className={
-            mensaje.toLowerCase().includes('no se pudo') || mensaje.toLowerCase().includes('error')
-              ? 'mensaje error'
-              : 'mensaje ok'
+        <InlineMensaje
+          tipo={
+            mensaje.toLowerCase().includes('no se pudo') || mensaje.toLowerCase().includes('error') ? 'error' : 'ok'
           }
-          role="status"
         >
-          <Icono
-            nombre={
-              mensaje.toLowerCase().includes('no se pudo') || mensaje.toLowerCase().includes('error') ? 'alerta' : 'ok'
-            }
-          />
           {mensaje}
-        </p>
+        </InlineMensaje>
       )}
 
       {cargando && (
@@ -168,58 +163,37 @@ export function AppAlumno() {
 
       {!token && (
         <>
-          <label className="campo">
-            Codigo de acceso
-            {codigoValido ? (
-              <input
-                value={codigo}
-                onChange={(event) => setCodigo(event.target.value)}
-                placeholder="ABC123"
-                autoComplete="one-time-code"
-                inputMode="text"
-              />
-            ) : (
-              <input
-                value={codigo}
-                onChange={(event) => setCodigo(event.target.value)}
-                placeholder="ABC123"
-                autoComplete="one-time-code"
-                inputMode="text"
-                aria-invalid="true"
-              />
-            )}
-            {!codigoValido && <small className="ayuda error">Usa 4-12 caracteres alfanumericos.</small>}
-          </label>
-          <label className="campo">
-            Matricula
-            {matriculaValida ? (
-              <input
-                value={matricula}
-                onChange={(event) => setMatricula(event.target.value)}
-                placeholder="2024-001"
-                autoComplete="username"
-                inputMode="text"
-              />
-            ) : (
-              <input
-                value={matricula}
-                onChange={(event) => setMatricula(event.target.value)}
-                placeholder="2024-001"
-                autoComplete="username"
-                inputMode="text"
-                aria-invalid="true"
-              />
-            )}
-            {!matriculaValida && <small className="ayuda error">Usa 3-20 caracteres (letras/numeros/guion).</small>}
-          </label>
-          <button
+          <CampoTexto
+            etiqueta="Codigo de acceso"
+            value={codigo}
+            onChange={(event) => setCodigo(event.target.value)}
+            placeholder="ABC123"
+            autoComplete="one-time-code"
+            inputMode="text"
+            error={
+              !codigoValido && codigo.trim() ? 'Usa 4-12 caracteres alfanumericos.' : undefined
+            }
+          />
+          <CampoTexto
+            etiqueta="Matricula"
+            value={matricula}
+            onChange={(event) => setMatricula(event.target.value)}
+            placeholder="2024-001"
+            autoComplete="username"
+            inputMode="text"
+            error={
+              !matriculaValida && matricula.trim() ? 'Usa 3-20 caracteres (letras/numeros/guion).' : undefined
+            }
+          />
+          <Boton
             type="button"
-            className="boton"
-            disabled={!puedeIngresar || !codigoValido || !matriculaValida || cargando}
+            icono={<Icono nombre="entrar" />}
+            cargando={cargando}
+            disabled={!puedeIngresar || !codigoValido || !matriculaValida}
             onClick={ingresar}
           >
-            <Icono nombre="entrar" /> Consultar
-          </button>
+            Consultar
+          </Boton>
         </>
       )}
 
