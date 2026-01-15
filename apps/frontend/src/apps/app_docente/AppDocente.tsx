@@ -603,11 +603,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
       const respuesta = credentialRegistroGoogle
         ? await clienteApi.enviar<{ token: string }>('/autenticacion/registrar-google', {
             credential: credentialRegistroGoogle,
-            nombreCompleto: nombre,
+            nombres: nombres.trim(),
+            apellidos: apellidos.trim(),
             ...(debeEnviarContrasena ? { contrasena } : {})
           })
         : await clienteApi.enviar<{ token: string }>('/autenticacion/registrar', {
-            nombreCompleto: nombre,
+            nombres: nombres.trim(),
+            apellidos: apellidos.trim(),
             correo: correoFinal,
             contrasena
           });

@@ -13,7 +13,7 @@ import { cerrarSesionDocente, emitirSesionDocente, refrescarSesionDocente, revoc
 import { verificarCredencialGoogle } from './servicioGoogle';
 
 export async function registrarDocente(req: Request, res: Response) {
-  const { nombreCompleto, correo, contrasena } = req.body;
+  const { nombres, apellidos, nombreCompleto, correo, contrasena } = req.body;
   const correoFinal = String(correo || '').toLowerCase();
 
   if (
@@ -35,7 +35,9 @@ export async function registrarDocente(req: Request, res: Response) {
 
   const hashContrasena = await crearHash(contrasena);
   const docente = await Docente.create({
-    nombreCompleto,
+    ...(typeof nombres === 'string' && nombres.trim() ? { nombres: nombres.trim() } : {}),
+    ...(typeof apellidos === 'string' && apellidos.trim() ? { apellidos: apellidos.trim() } : {}),
+    nombreCompleto: String(nombreCompleto ?? '').trim(),
     correo: correoFinal,
     hashContrasena,
     activo: true,
@@ -44,12 +46,23 @@ export async function registrarDocente(req: Request, res: Response) {
 
   await emitirSesionDocente(res, String(docente._id));
   const token = crearTokenDocente({ docenteId: String(docente._id) });
-  res.status(201).json({ token, docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+  res.status(201).json({
+    token,
+    docente: {
+      id: docente._id,
+      nombreCompleto: docente.nombreCompleto,
+      ...(docente.nombres ? { nombres: docente.nombres } : {}),
+      ...(docente.apellidos ? { apellidos: docente.apellidos } : {}),
+      correo: docente.correo
+    }
+  });
 }
 
 export async function registrarDocenteGoogle(req: Request, res: Response) {
-  const { credential, nombreCompleto, contrasena } = req.body as {
+  const { credential, nombres, apellidos, nombreCompleto, contrasena } = req.body as {
     credential?: unknown;
+    nombres?: unknown;
+    apellidos?: unknown;
     nombreCompleto?: unknown;
     contrasena?: unknown;
   };
@@ -64,8 +77,12 @@ export async function registrarDocenteGoogle(req: Request, res: Response) {
 
   const contrasenaStr = typeof contrasena === 'string' ? contrasena : '';
   const hashContrasena = contrasenaStr.trim() ? await crearHash(contrasenaStr) : undefined;
+  const nombreCompletoReq = String(nombreCompleto ?? '').trim();
+  const nombreCompletoFinal = nombreCompletoReq || String(perfil.nombreCompleto ?? '').trim();
   const docente = await Docente.create({
-    nombreCompleto: String(nombreCompleto ?? perfil.nombreCompleto ?? '').trim(),
+    ...(typeof nombres === 'string' && String(nombres).trim() ? { nombres: String(nombres).trim() } : {}),
+    ...(typeof apellidos === 'string' && String(apellidos).trim() ? { apellidos: String(apellidos).trim() } : {}),
+    ...(nombreCompletoFinal ? { nombreCompleto: nombreCompletoFinal } : { nombreCompleto: String(perfil.nombreCompleto ?? '').trim() }),
     correo,
     ...(hashContrasena ? { hashContrasena } : {}),
     googleSub: perfil.sub,
@@ -75,7 +92,16 @@ export async function registrarDocenteGoogle(req: Request, res: Response) {
 
   await emitirSesionDocente(res, String(docente._id));
   const token = crearTokenDocente({ docenteId: String(docente._id) });
-  res.status(201).json({ token, docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+  res.status(201).json({
+    token,
+    docente: {
+      id: docente._id,
+      nombreCompleto: docente.nombreCompleto,
+      ...(docente.nombres ? { nombres: docente.nombres } : {}),
+      ...(docente.apellidos ? { apellidos: docente.apellidos } : {}),
+      correo: docente.correo
+    }
+  });
 }
 
 export async function ingresarDocente(req: Request, res: Response) {
@@ -119,7 +145,16 @@ export async function ingresarDocente(req: Request, res: Response) {
 
   await emitirSesionDocente(res, String(docente._id));
   const token = crearTokenDocente({ docenteId: String(docente._id) });
-  res.json({ token, docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+  res.json({
+    token,
+    docente: {
+      id: docente._id,
+      nombreCompleto: docente.nombreCompleto,
+      ...(docente.nombres ? { nombres: docente.nombres } : {}),
+      ...(docente.apellidos ? { apellidos: docente.apellidos } : {}),
+      correo: docente.correo
+    }
+  });
 }
 
 export async function ingresarDocenteGoogle(req: Request, res: Response) {
@@ -147,7 +182,16 @@ export async function ingresarDocenteGoogle(req: Request, res: Response) {
 
   await emitirSesionDocente(res, String(docente._id));
   const token = crearTokenDocente({ docenteId: String(docente._id) });
-  res.json({ token, docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+  res.json({
+    token,
+    docente: {
+      id: docente._id,
+      nombreCompleto: docente.nombreCompleto,
+      ...(docente.nombres ? { nombres: docente.nombres } : {}),
+      ...(docente.apellidos ? { apellidos: docente.apellidos } : {}),
+      correo: docente.correo
+    }
+  });
 }
 
 export async function recuperarContrasenaGoogle(req: Request, res: Response) {
