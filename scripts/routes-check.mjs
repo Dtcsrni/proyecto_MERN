@@ -210,6 +210,42 @@ function checarBackend() {
   return violaciones;
 }
 
+function checarBackendRutasPublicas() {
+  const archivo = path.join(repoRoot, 'apps/backend/src/rutas.ts');
+  const txt = leerTexto(archivo);
+
+  const violaciones = [];
+
+  const idxAuth = txt.indexOf('router.use(requerirDocente');
+  if (idxAuth < 0) {
+    violaciones.push({
+      archivo: normalizarRuta(path.relative(repoRoot, archivo)),
+      metodo: 'use',
+      razon: 'no se encontró router.use(requerirDocente)'
+    });
+    return violaciones;
+  }
+
+  const antes = txt.slice(0, idxAuth);
+  const reUseConPath = /router\.use\(\s*(['"`])([^'"`]+)\1\s*,/g;
+  const permitidas = new Set(['/salud', '/autenticacion']);
+
+  let m;
+  // eslint-disable-next-line no-cond-assign
+  while ((m = reUseConPath.exec(antes))) {
+    const ruta = m[2];
+    if (!permitidas.has(ruta)) {
+      violaciones.push({
+        archivo: normalizarRuta(path.relative(repoRoot, archivo)),
+        metodo: 'use',
+        razon: `ruta pública no permitida antes de requerirDocente: ${ruta}`
+      });
+    }
+  }
+
+  return violaciones;
+}
+
 function checarPortal() {
   const portalFile = path.join(repoRoot, 'apps/portal_alumno_cloud/src/rutas.ts');
   const txt = leerTexto(portalFile);
@@ -259,7 +295,7 @@ function checarPortal() {
 }
 
 function main() {
-  const violaciones = [...checarBackend(), ...checarPortal()];
+  const violaciones = [...checarBackend(), ...checarBackendRutasPublicas(), ...checarPortal()];
 
   if (violaciones.length === 0) {
     console.log('[routes-check] ok');
