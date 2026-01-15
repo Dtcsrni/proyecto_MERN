@@ -134,4 +134,29 @@ describe('autenticacion (sesiones)', () => {
 
     expect(loginPwd.body.token).toBeTruthy();
   });
+
+  it('permite recuperar contrasena via Google y luego ingresar con password', async () => {
+    // Registrar con Google (vincula googleSub).
+    await request(app)
+      .post('/api/autenticacion/registrar-google')
+      .send({
+        credential: 'fake-id-token',
+        nombreCompleto: 'Docente Registro Google'
+      })
+      .expect(201);
+
+    const recupero = await request(app)
+      .post('/api/autenticacion/recuperar-contrasena-google')
+      .send({ credential: 'fake-id-token', contrasenaNueva: 'Nueva12345!' })
+      .expect(200);
+
+    expect(recupero.body.token).toBeTruthy();
+
+    const loginPwd = await request(app)
+      .post('/api/autenticacion/ingresar')
+      .send({ correo: 'docente@prueba.test', contrasena: 'Nueva12345!' })
+      .expect(200);
+
+    expect(loginPwd.body.token).toBeTruthy();
+  });
 });

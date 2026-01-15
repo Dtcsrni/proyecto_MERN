@@ -394,6 +394,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   const [enviando, setEnviando] = useState(false);
   const [credentialRegistroGoogle, setCredentialRegistroGoogle] = useState<string | null>(null);
   const [crearContrasenaAhora, setCrearContrasenaAhora] = useState(true);
+  const [mostrarRecuperar, setMostrarRecuperar] = useState(false);
+  const [credentialRecuperarGoogle, setCredentialRecuperarGoogle] = useState<string | null>(null);
+  const [contrasenaRecuperar, setContrasenaRecuperar] = useState('');
 
   function hayGoogleConfigurado() {
     return Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
@@ -459,6 +462,38 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
         action: accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('login_google', false);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function recuperarConGoogle() {
+    try {
+      const inicio = Date.now();
+      setEnviando(true);
+      setMensaje('');
+      if (!credentialRecuperarGoogle) {
+        setMensaje('Reautentica con Google para recuperar.');
+        return;
+      }
+      const respuesta = await clienteApi.enviar<{ token: string }>('/autenticacion/recuperar-contrasena-google', {
+        credential: credentialRecuperarGoogle,
+        contrasenaNueva: contrasenaRecuperar
+      });
+      onIngresar(respuesta.token);
+      emitToast({ level: 'ok', title: 'Cuenta', message: 'Contrasena actualizada', durationMs: 2600 });
+      registrarAccionDocente('recuperar_contrasena_google', true, Date.now() - inicio);
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo recuperar la contrasena');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'No se pudo recuperar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('recuperar_contrasena_google', false);
     } finally {
       setEnviando(false);
     }
@@ -554,6 +589,58 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
             <p className="nota nota--mt">
               Opcional: acceso rapido con Google.
             </p>
+
+            <div className="acciones acciones--mt">
+              <button
+                type="button"
+                className="chip"
+                onClick={() => {
+                  setMostrarRecuperar((v) => !v);
+                  setMensaje('');
+                }}
+              >
+                {mostrarRecuperar ? 'Cerrar recuperacion' : 'Recuperar contrasena con Google'}
+              </button>
+            </div>
+
+            {mostrarRecuperar && (
+              <div className="panel mt-10">
+                <p className="nota">Si tu cuenta tiene Google vinculado, puedes establecer una nueva contrasena.</p>
+                <GoogleLogin
+                  onSuccess={(cred) => {
+                    const token = cred.credential;
+                    if (!token) {
+                      setMensaje('No se recibio credencial de Google.');
+                      return;
+                    }
+                    setCredentialRecuperarGoogle(token);
+                    setMensaje('Google listo. Define tu nueva contrasena.');
+                  }}
+                  onError={() => setMensaje('No se pudo reautenticar con Google.')}
+                />
+                <label className="campo mt-10">
+                  Nueva contrasena
+                  <input
+                    type="password"
+                    value={contrasenaRecuperar}
+                    onChange={(event) => setContrasenaRecuperar(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <span className="ayuda">Minimo 8 caracteres.</span>
+                </label>
+                <div className="acciones">
+                  <Boton
+                    type="button"
+                    icono={<Icono nombre="ok" />}
+                    cargando={enviando}
+                    disabled={!credentialRecuperarGoogle || contrasenaRecuperar.trim().length < 8}
+                    onClick={recuperarConGoogle}
+                  >
+                    {enviando ? 'Actualizando…' : 'Actualizar contrasena'}
+                  </Boton>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
