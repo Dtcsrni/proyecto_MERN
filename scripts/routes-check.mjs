@@ -217,14 +217,41 @@ function checarPortal() {
 
   const violaciones = [];
   for (const call of calls) {
+    const m = call.match(/^router\.(post|put|patch)\(\s*(['"`])([^'"`]+)\2/);
+    const ruta = m?.[3] ?? '';
+
     // Regla simple: cada POST/PUT/PATCH del portal debe validar keys del body
     // con tieneSoloClavesPermitidas (es el patrón del proyecto).
     if (!call.includes('tieneSoloClavesPermitidas(')) {
       violaciones.push({
         archivo: normalizarRuta(path.relative(repoRoot, portalFile)),
-        metodo: ['post', 'put', 'patch'].find((m) => call.startsWith(`router.${m}(`)) ?? '?',
+        metodo: ['post', 'put', 'patch'].find((mm) => call.startsWith(`router.${mm}(`)) ?? '?',
         razon: 'falta tieneSoloClavesPermitidas(...)'
       });
+    }
+
+    // Reglas de auth específicas (anti-regresión)
+    if (ruta === '/sincronizar' || ruta === '/limpiar') {
+      // Debe validar api key al inicio del handler.
+      const tieneApiKey = /requerirApiKey\s*\(\s*req\s*,\s*res\s*\)/.test(call);
+      if (!tieneApiKey) {
+        violaciones.push({
+          archivo: normalizarRuta(path.relative(repoRoot, portalFile)),
+          metodo: 'post',
+          razon: `falta requerirApiKey(req, res) en ${ruta}`
+        });
+      }
+    }
+
+    if (ruta === '/eventos-uso') {
+      // Debe exigir sesión (middleware) para el alumno.
+      if (!call.includes('requerirSesionAlumno')) {
+        violaciones.push({
+          archivo: normalizarRuta(path.relative(repoRoot, portalFile)),
+          metodo: 'post',
+          razon: 'falta requerirSesionAlumno en /eventos-uso'
+        });
+      }
     }
   }
 
