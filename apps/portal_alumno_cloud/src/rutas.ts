@@ -62,6 +62,42 @@ function tieneSoloClavesPermitidas(valor: unknown, clavesPermitidas: string[]): 
   return claves.every((clave) => clavesPermitidas.includes(clave));
 }
 
+function esMetaSeguro(meta: unknown): boolean {
+  if (meta == null) return true;
+
+  if (typeof meta === 'string') return meta.length <= 500;
+  if (typeof meta === 'number') return Number.isFinite(meta);
+  if (typeof meta === 'boolean') return true;
+
+  const esPrimitivo = (v: unknown) => v == null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+
+  if (Array.isArray(meta)) {
+    if (meta.length > 50) return false;
+    return meta.every((v) => {
+      if (!esPrimitivo(v)) return false;
+      if (typeof v === 'string' && v.length > 500) return false;
+      if (typeof v === 'number' && !Number.isFinite(v)) return false;
+      return true;
+    });
+  }
+
+  if (typeof meta === 'object') {
+    const record = meta as Record<string, unknown>;
+    const claves = Object.keys(record);
+    if (claves.length > 50) return false;
+    return claves.every((k) => {
+      if (!k || k.length > 50) return false;
+      const v = record[k];
+      if (!esPrimitivo(v)) return false;
+      if (typeof v === 'string' && v.length > 500) return false;
+      if (typeof v === 'number' && !Number.isFinite(v)) return false;
+      return true;
+    });
+  }
+
+  return false;
+}
+
 router.get('/salud', (_req, res) => {
   res.json({ estado: 'ok', tiempoActivo: process.uptime() });
 });
@@ -272,6 +308,12 @@ router.post('/eventos-uso', requerirSesionAlumno, async (req: SolicitudAlumno, r
   for (const evento of eventosLimitados) {
     if (!tieneSoloClavesPermitidas(evento, clavesEventoPermitidas)) {
       responderError(res, 400, 'DATOS_INVALIDOS', 'Payload invalido');
+      return;
+    }
+
+    const meta = (evento as { meta?: unknown } | null)?.meta;
+    if (!esMetaSeguro(meta)) {
+      responderError(res, 400, 'DATOS_INVALIDOS', 'meta invalido');
       return;
     }
   }
