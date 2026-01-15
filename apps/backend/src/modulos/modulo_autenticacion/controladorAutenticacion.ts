@@ -7,7 +7,7 @@ import { Docente } from './modeloDocente';
 import { crearHash, compararContrasena } from './servicioHash';
 import { crearTokenDocente } from './servicioTokens';
 import { obtenerDocenteId, type SolicitudDocente } from './middlewareAutenticacion';
-import { cerrarSesionDocente, emitirSesionDocente, refrescarSesionDocente } from './servicioSesiones';
+import { cerrarSesionDocente, emitirSesionDocente, refrescarSesionDocente, revocarSesionesDocente } from './servicioSesiones';
 import { verificarCredencialGoogle } from './servicioGoogle';
 
 export async function registrarDocente(req: Request, res: Response) {
@@ -118,6 +118,38 @@ export async function ingresarDocenteGoogle(req: Request, res: Response) {
   await emitirSesionDocente(res, String(docente._id));
   const token = crearTokenDocente({ docenteId: String(docente._id) });
   res.json({ token, docente: { id: docente._id, nombreCompleto: docente.nombreCompleto, correo: docente.correo } });
+}
+
+export async function recuperarContrasenaGoogle(req: Request, res: Response) {
+  const { credential, contrasenaNueva } = req.body as { credential?: unknown; contrasenaNueva?: unknown };
+  const perfil = await verificarCredencialGoogle(String(credential ?? ''));
+
+  const docente = await Docente.findOne({ correo: perfil.correo });
+  if (!docente) {
+    throw new ErrorAplicacion('DOCENTE_NO_ENCONTRADO', 'Docente no encontrado', 404);
+  }
+  if (!docente.activo) {
+    throw new ErrorAplicacion('DOCENTE_INACTIVO', 'Docente inactivo', 403);
+  }
+
+  // Requiere cuenta Google vinculada y que coincida con el subject.
+  if (!docente.googleSub) {
+    throw new ErrorAplicacion('GOOGLE_NO_VINCULADO', 'La cuenta no tiene Google vinculado', 401);
+  }
+  if (docente.googleSub !== perfil.sub) {
+    throw new ErrorAplicacion('GOOGLE_SUB_MISMATCH', 'Cuenta Google no coincide con el docente', 401);
+  }
+
+  docente.hashContrasena = await crearHash(String(contrasenaNueva ?? ''));
+  docente.ultimoAcceso = new Date();
+  await docente.save();
+
+  // Revoca todas las sesiones previas y emite una nueva.
+  await revocarSesionesDocente(String(docente._id));
+  await emitirSesionDocente(res, String(docente._id));
+
+  const token = crearTokenDocente({ docenteId: String(docente._id) });
+  res.json({ token });
 }
 
 export async function refrescarDocente(req: Request, res: Response) {

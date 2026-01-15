@@ -37,3 +37,8 @@ export const esquemaDefinirContrasenaDocente = z.object({
 });
 
 export const esquemaBodyVacioOpcional = z.object({}).strict().optional();
+
+export const esquemaRecuperarContrasenaGoogle = z.object({
+  credential: z.string().min(10),
+  contrasenaNueva: z.string().min(8)
+});

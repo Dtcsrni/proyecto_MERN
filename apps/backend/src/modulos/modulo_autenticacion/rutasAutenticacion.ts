@@ -10,6 +10,7 @@ import {
 	ingresarDocente,
 	ingresarDocenteGoogle,
 	perfilDocente,
+	recuperarContrasenaGoogle,
 	refrescarDocente,
 	registrarDocente,
 	registrarDocenteGoogle,
@@ -21,6 +22,7 @@ import {
 	esquemaDefinirContrasenaDocente,
 	esquemaIngresarDocente,
 	esquemaIngresarDocenteGoogle,
+	esquemaRecuperarContrasenaGoogle,
 	esquemaRegistrarDocente,
 	esquemaRegistrarDocenteGoogle
 } from './validacionesAutenticacion';
@@ -63,6 +65,12 @@ router.post('/registrar', limiterCredenciales, validarCuerpo(esquemaRegistrarDoc
 router.post('/registrar-google', limiterCredenciales, validarCuerpo(esquemaRegistrarDocenteGoogle, { strict: true }), registrarDocenteGoogle);
 router.post('/ingresar', limiterCredenciales, validarCuerpo(esquemaIngresarDocente, { strict: true }), ingresarDocente);
 router.post('/google', limiterCredenciales, validarCuerpo(esquemaIngresarDocenteGoogle, { strict: true }), ingresarDocenteGoogle);
+router.post(
+	'/recuperar-contrasena-google',
+	limiterCredenciales,
+	validarCuerpo(esquemaRecuperarContrasenaGoogle, { strict: true }),
+	recuperarContrasenaGoogle
+);
 router.post('/refrescar', limiterRefresco, validarCuerpo(esquemaBodyVacioOpcional, { strict: true }), refrescarDocente);
 router.post('/salir', validarCuerpo(esquemaBodyVacioOpcional, { strict: true }), salirDocente);
 router.post(

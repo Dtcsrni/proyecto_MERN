@@ -103,3 +103,10 @@ export async function cerrarSesionDocente(req: Request, res: Response) {
 
   res.clearCookie(COOKIE_REFRESH_DOCENTE, { path: '/api/autenticacion' });
 }
+
+export async function revocarSesionesDocente(docenteId: string) {
+  await SesionDocente.updateMany(
+    { docenteId, revocadoEn: { $exists: false } },
+    { $set: { revocadoEn: new Date() } }
+  );
+}
