@@ -3,7 +3,9 @@
  */
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Dotenv v17 puede emitir logs informativos; se silencian para mantener
+// pruebas y consola limpias.
+dotenv.config({ quiet: true });
 
 const puerto = Number(process.env.PUERTO_PORTAL ?? process.env.PORT ?? 8080);
 const mongoUri = process.env.MONGODB_URI ?? '';

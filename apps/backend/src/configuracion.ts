@@ -3,7 +3,9 @@
  */
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Dotenv v17 puede emitir logs informativos; se silencian para mantener
+// pruebas y consola limpias.
+dotenv.config({ quiet: true });
 
 const puerto = Number(process.env.PUERTO_API ?? process.env.PORT ?? 4000);
 const mongoUri = process.env.MONGODB_URI ?? process.env.MONGO_URI ?? '';
@@ -13,7 +15,13 @@ const corsOrigenes = (process.env.CORS_ORIGENES ?? 'http://localhost:5173')
   .split(',')
   .map((origen) => origen.trim())
   .filter(Boolean);
-const jwtSecreto = process.env.JWT_SECRETO ?? 'cambia-este-secreto';
+// En producción, el secreto JWT debe ser proporcionado por entorno.
+// En desarrollo/test se permite un valor por defecto para facilitar el setup.
+const jwtSecreto = process.env.JWT_SECRETO ?? '';
+if (entorno === 'production' && !jwtSecreto) {
+  throw new Error('JWT_SECRETO es requerido en producción');
+}
+const jwtSecretoEfectivo = jwtSecreto || 'cambia-este-secreto';
 const jwtExpiraHoras = Number(process.env.JWT_EXPIRA_HORAS ?? 8);
 const codigoAccesoHoras = Number(process.env.CODIGO_ACCESO_HORAS ?? 12);
 const portalAlumnoUrl = process.env.PORTAL_ALUMNO_URL ?? '';
@@ -25,7 +33,7 @@ export const configuracion = {
   entorno,
   limiteJson,
   corsOrigenes,
-  jwtSecreto,
+  jwtSecreto: jwtSecretoEfectivo,
   jwtExpiraHoras,
   codigoAccesoHoras,
   portalAlumnoUrl,
