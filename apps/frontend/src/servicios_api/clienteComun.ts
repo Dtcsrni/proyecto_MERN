@@ -243,13 +243,21 @@ export function sugerenciaUsuarioDeError(error: unknown): string | undefined {
   if (error instanceof ErrorRemoto) {
     const detalle = error.detalle;
     const status = detalle?.status;
-    if (status === 401) return 'Tip: inicia sesion de nuevo.';
+    const codigo = typeof detalle?.codigo === 'string' ? detalle.codigo.toUpperCase() : undefined;
+
+    if (status === 401) {
+      if (codigo?.includes('CREDENCIALES_INVALIDAS')) return undefined;
+      if (codigo?.includes('DOCENTE_NO_REGISTRADO')) return 'Tip: crea tu cuenta desde "Registrar".';
+      if (codigo?.includes('DOCENTE_SIN_CONTRASENA')) return 'Tip: ingresa con Google o define una contrasena.';
+      if (codigo?.includes('GOOGLE_SUB_MISMATCH')) return 'Tip: usa la misma cuenta de Google vinculada.';
+      return 'Tip: inicia sesion de nuevo.';
+    }
     if (status === 403) return 'Tip: revisa tus permisos o el rol.';
     if (status === 408) return 'Tip: revisa tu conexion e intenta de nuevo.';
     if (status === 429) return 'Tip: espera unos segundos e intenta de nuevo.';
     if (typeof status === 'number' && status >= 500) return 'Tip: intenta mas tarde.';
 
-    const codigo = detalle?.codigo?.toUpperCase();
+    // Fallback por codigo cuando no hay status.
     if (codigo?.includes('TOKEN')) return 'Tip: inicia sesion de nuevo.';
     if (codigo?.includes('NO_AUTORIZ')) return 'Tip: revisa tus permisos o el rol.';
     if (codigo?.includes('DATOS_INVALID')) return 'Tip: revisa los campos e intenta de nuevo.';
