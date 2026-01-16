@@ -16,6 +16,7 @@ import { Icono, Spinner } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 import { obtenerSessionId } from '../../ui/ux/sesion';
+import { tipoMensajeInline } from './mensajeInline';
 
 const clienteApi = crearClienteApi();
 
@@ -63,11 +64,6 @@ function registrarAccionDocente(accion: string, exito: boolean, duracionMs?: num
       }
     ]
   });
-}
-
-function esMensajeError(texto: string) {
-  const lower = texto.toLowerCase();
-  return lower.includes('no se pudo') || lower.includes('falta') || lower.includes('inval') || lower.includes('error');
 }
 
 function mensajeDeError(error: unknown, fallback: string) {
@@ -1020,7 +1016,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
           </div>
         )}
 
-        {mensaje && <InlineMensaje tipo={esMensajeError(mensaje) ? 'error' : 'ok'}>{mensaje}</InlineMensaje>}
+        {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
       </div>
     </div>
   );
@@ -1168,7 +1164,7 @@ function SeccionCuenta({ docente }: { docente: Docente }) {
         </Boton>
       </div>
 
-      {mensaje && <InlineMensaje tipo={esMensajeError(mensaje) ? 'error' : 'ok'}>{mensaje}</InlineMensaje>}
+      {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
     </div>
   );
 }
