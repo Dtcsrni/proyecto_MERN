@@ -78,7 +78,31 @@ async function intentarEmbedImagen(pdfDoc: PDFDocument, src?: string): Promise<L
       return { image: image as unknown as Awaited<ReturnType<PDFDocument['embedPng']>>, width: image.width, height: image.height };
     }
 
-    const ruta = path.isAbsolute(s) ? s : path.resolve(process.cwd(), s);
+    const candidatos = (() => {
+      if (path.isAbsolute(s)) return [s];
+      const cwd = process.cwd();
+      // En monorepo, el cwd suele ser apps/backend. Intenta subir niveles.
+      return [
+        path.resolve(cwd, s),
+        path.resolve(cwd, '..', s),
+        path.resolve(cwd, '..', '..', s),
+        path.resolve(cwd, '..', '..', '..', s)
+      ];
+    })();
+
+    const ruta = await (async () => {
+      for (const c of candidatos) {
+        try {
+          await fs.access(c);
+          return c;
+        } catch {
+          // sigue intentando
+        }
+      }
+      // Mantener el comportamiento anterior (para mensajes/paths raros)
+      return path.isAbsolute(s) ? s : path.resolve(process.cwd(), s);
+    })();
+
     const buffer = await fs.readFile(ruta);
     const ext = path.extname(ruta).toLowerCase();
     if (ext === '.jpg' || ext === '.jpeg') {
@@ -472,10 +496,19 @@ export async function generarPdfExamen({
   const alumnoGrupo = String(encabezado?.alumno?.grupo ?? '').trim();
   const instrucciones = String(encabezado?.instrucciones ?? '').trim() || INSTRUCCIONES_DEFAULT;
 
-  const logos = {
-    izquierda: await intentarEmbedImagen(pdfDoc, encabezado?.logos?.izquierdaPath ?? process.env.EXAMEN_LOGO_IZQ_PATH),
-    derecha: await intentarEmbedImagen(pdfDoc, encabezado?.logos?.derechaPath ?? process.env.EXAMEN_LOGO_DER_PATH)
-  };
+  const logoIzqSrc = encabezado?.logos?.izquierdaPath ?? process.env.EXAMEN_LOGO_IZQ_PATH ?? 'logos/cuh.png';
+  const logoDerSrc = encabezado?.logos?.derechaPath ?? process.env.EXAMEN_LOGO_DER_PATH ?? 'logos/isc.png';
+
+  const izquierda =
+    (await intentarEmbedImagen(pdfDoc, logoIzqSrc)) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/cuh.jpg')) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/cuh.jpeg'));
+  const derecha =
+    (await intentarEmbedImagen(pdfDoc, logoDerSrc)) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/isc.jpg')) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/isc.jpeg'));
+
+  const logos = { izquierda, derecha };
 
   const preguntasOrdenadas = ordenarPreguntas(preguntas, mapaVariante);
   let indicePregunta = 0;
@@ -573,13 +606,13 @@ export async function generarPdfExamen({
         page.drawText(lineasLema[0] ?? '', { x: xTexto, y: yTop - 58, size: 9, font: fuenteItalica, color: colorGris });
       }
 
-      const metaY = yTop - 72;
+      const metaY = yTop - 70;
       const meta = [materia ? `Materia: ${materia}` : '', docente ? `Docente: ${docente}` : '', `Pagina: ${numeroPagina}`].filter(Boolean).join('   |   ');
       const metaLineas = partirEnLineas({ texto: meta, maxWidth: maxWidthEnc, font: fuente, size: sizeMeta });
       page.drawText(metaLineas[0] ?? '', { x: xTexto, y: metaY, size: sizeMeta, font: fuente, color: colorGris });
 
       // Campos de alumno/grupo (subidos un poco para no chocar con instrucciones)
-      const yCampos = metaY - 14;
+      const yCampos = metaY - 12;
       page.drawText('Alumno:', { x: xTexto, y: yCampos, size: 10, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
       page.drawLine({ start: { x: xTexto + 52, y: yCampos + 3 }, end: { x: xTexto + 300, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
       if (alumnoNombre) {
@@ -599,25 +632,28 @@ export async function generarPdfExamen({
         const wInst = Math.min(420, xDerechaTexto - xInst - 10);
         const textoInst = instrucciones;
         const lineasInst = partirEnLineas({ texto: textoInst, maxWidth: wInst - 16, font: fuente, size: 8 });
-        const yInst = yCaja + 8;
+        const yInst = yCaja + 6;
 
         // No permitir que la caja invada el area de Alumno/Grupo.
-        const maxH = Math.max(32, yCampos - yInst - 6);
-        const hDeseada = Math.max(32, 8 + lineasInst.length * 10);
-        const hInst = Math.min(maxH, hDeseada);
+        const espacioDisponible = yCampos - 6 - yInst;
+        if (espacioDisponible >= 18) {
+          const maxH = espacioDisponible;
+          const hDeseada = Math.max(18, 22 + lineasInst.length * 9.5);
+          const hInst = Math.min(maxH, hDeseada);
 
-        // Recortar líneas para que quepan.
-        const lineasMax = Math.max(1, Math.min(2, Math.floor((hInst - 24) / 9.5)));
-        const lineasVisibles = lineasInst.slice(0, lineasMax);
+          // Recortar lineas para que quepan.
+          const lineasMax = Math.max(1, Math.floor((hInst - 22) / 9.5));
+          const lineasVisibles = lineasInst.slice(0, Math.min(3, lineasMax));
 
-        page.drawRectangle({ x: xInst, y: yInst, width: wInst, height: hInst, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
-        page.drawText('Instrucciones:', { x: xInst + 8, y: yInst + hInst - 14, size: 8.5, font: fuenteBold, color: colorPrimario });
-        // Texto debajo del label
-        let yTexto = yInst + hInst - 24;
-        for (const linea of lineasVisibles) {
-          page.drawText(linea, { x: xInst + 8, y: yTexto, size: 8, font: fuente, color: colorGris });
-          yTexto -= 9.5;
-          if (yTexto < yInst + 6) break;
+          page.drawRectangle({ x: xInst, y: yInst, width: wInst, height: hInst, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+          page.drawText('Instrucciones:', { x: xInst + 8, y: yInst + hInst - 14, size: 8.5, font: fuenteBold, color: colorPrimario });
+          // Texto debajo del label
+          let yTexto = yInst + hInst - 24;
+          for (const linea of lineasVisibles) {
+            page.drawText(linea, { x: xInst + 8, y: yTexto, size: 8, font: fuente, color: colorGris });
+            yTexto -= 9.5;
+            if (yTexto < yInst + 6) break;
+          }
         }
       }
     } else {
