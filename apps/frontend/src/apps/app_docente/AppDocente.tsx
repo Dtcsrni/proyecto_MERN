@@ -66,7 +66,9 @@ type Plantilla = {
   _id: string;
   titulo: string;
   tipo: 'parcial' | 'global';
-  totalReactivos: number;
+  numeroPaginas: number;
+  // Legacy (deprecado): puede existir en plantillas antiguas.
+  totalReactivos?: number;
   periodoId?: string;
   preguntasIds?: string[];
   temas?: string[];
@@ -3314,7 +3316,7 @@ function SeccionPlantillas({
   const [titulo, setTitulo] = useState('');
   const [tipo, setTipo] = useState<'parcial' | 'global'>('parcial');
   const [periodoId, setPeriodoId] = useState('');
-  const [totalReactivos, setTotalReactivos] = useState(10);
+  const [numeroPaginas, setNumeroPaginas] = useState(2);
   const [temasSeleccionados, setTemasSeleccionados] = useState<string[]>([]);
   const [instrucciones, setInstrucciones] = useState('');
   const [margenMm, setMargenMm] = useState<number>(10);
@@ -3339,10 +3341,10 @@ function SeccionPlantillas({
 
   type PreviewPlantilla = {
     plantillaId: string;
-    totalReactivos: number;
-    totalSolicitados?: number;
+    numeroPaginas: number;
     totalDisponibles?: number;
     totalUsados?: number;
+    fraccionVaciaUltimaPagina?: number;
     advertencias?: string[];
     conteoPorTema?: Array<{ tema: string; disponibles: number }>;
     temasDisponiblesEnMateria?: Array<{ tema: string; disponibles: number }>;
@@ -3610,8 +3612,7 @@ function SeccionPlantillas({
     titulo.trim() &&
       periodoId &&
       temasSeleccionados.length > 0 &&
-      totalReactivos > 0 &&
-      totalReactivos <= totalDisponiblePorTemas
+      numeroPaginas > 0
   );
   const puedeGenerar = Boolean(plantillaId);
 
@@ -3635,7 +3636,7 @@ function SeccionPlantillas({
     setTitulo(String(plantilla.titulo || ''));
     setTipo(plantilla.tipo);
     setPeriodoId(String(plantilla.periodoId || ''));
-    setTotalReactivos(Number(plantilla.totalReactivos || 1));
+    setNumeroPaginas(Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas ?? 1));
     setTemasSeleccionados(Array.isArray(plantilla.temas) ? plantilla.temas : []);
     setInstrucciones(String(plantilla.instrucciones || ''));
     setMargenMm(Number(plantilla.configuracionPdf?.margenMm ?? 10));
@@ -3648,7 +3649,7 @@ function SeccionPlantillas({
     setTitulo('');
     setTipo('parcial');
     setPeriodoId('');
-    setTotalReactivos(10);
+    setNumeroPaginas(2);
     setTemasSeleccionados([]);
     setInstrucciones('');
     setMargenMm(10);
@@ -3665,7 +3666,7 @@ function SeccionPlantillas({
       const payload: Record<string, unknown> = {
         titulo: titulo.trim(),
         tipo,
-        totalReactivos: Math.max(1, Math.floor(totalReactivos)),
+        numeroPaginas: Math.max(1, Math.floor(numeroPaginas)),
         instrucciones: String(instrucciones || '').trim() || undefined,
         configuracionPdf: { margenMm: Math.max(1, Math.floor(Number(margenMm) || 10)) }
       };
@@ -3860,7 +3861,7 @@ function SeccionPlantillas({
         tipo,
         titulo: titulo.trim(),
         instrucciones: String(instrucciones || '').trim() || undefined,
-        totalReactivos: Math.max(1, Math.floor(totalReactivos)),
+        numeroPaginas: Math.max(1, Math.floor(numeroPaginas)),
         temas: temasSeleccionados
         ,
         configuracionPdf: { margenMm: Math.max(1, Math.floor(Number(margenMm) || 10)) }
@@ -3905,14 +3906,14 @@ function SeccionPlantillas({
             <b>Materia:</b> la materia a la que pertenece.
           </li>
           <li>
-            <b>Total reactivos:</b> numero de preguntas del examen (entero mayor o igual a 1).
+            <b>Numero de paginas:</b> cuantas paginas debe tener el examen (entero mayor o igual a 1).
           </li>
           <li>
             <b>Temas:</b> selecciona uno o mas; el examen toma preguntas al azar de esos temas.
           </li>
         </ul>
         <p>
-          Ejemplo: titulo <code>Parcial 1 - Programacion</code>, tipo <code>parcial</code>, total reactivos <code>10</code>, temas: <code>Arreglos</code> + <code>Funciones</code>.
+          Ejemplo: titulo <code>Parcial 1 - Programacion</code>, tipo <code>parcial</code>, paginas <code>2</code>, temas: <code>Arreglos</code> + <code>Funciones</code>.
         </p>
       </AyudaFormulario>
       <div className="ayuda">
@@ -3948,11 +3949,11 @@ function SeccionPlantillas({
         </select>
       </label>
       <label className="campo">
-        Total reactivos
+        Numero de paginas
         <input
           type="number"
-          value={totalReactivos}
-          onChange={(event) => setTotalReactivos(Number(event.target.value))}
+          value={numeroPaginas}
+          onChange={(event) => setNumeroPaginas(Number(event.target.value))}
         />
       </label>
 
@@ -4007,11 +4008,9 @@ function SeccionPlantillas({
         )}
         {temasSeleccionados.length > 0 && (
           <span className="ayuda">
-            Total disponible en temas seleccionados: {totalDisponiblePorTemas}. Reactivos solicitados: {Math.max(1, Math.floor(totalReactivos))}.
+            Total disponible en temas seleccionados: {totalDisponiblePorTemas}. Paginas solicitadas: {Math.max(1, Math.floor(numeroPaginas))}.
+            {' '}Si faltan preguntas, el sistema avisara; solo bloqueara si la ultima pagina queda mas de la mitad vacia.
           </span>
-        )}
-        {temasSeleccionados.length > 0 && totalReactivos > totalDisponiblePorTemas && (
-          <span className="ayuda error">No hay suficientes preguntas en esos temas para cubrir el total de reactivos.</span>
         )}
       </label>
       <div className="acciones acciones--mt">
@@ -4063,7 +4062,7 @@ function SeccionPlantillas({
                     <div className="item-meta">
                       <span>ID: {idCortoMateria(plantilla._id)}</span>
                       <span>Tipo: {plantilla.tipo}</span>
-                      <span>Reactivos: {plantilla.totalReactivos}</span>
+                      <span>Paginas: {Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas ?? 0) || '-'}</span>
                       <span>Materia: {materia ? etiquetaMateria(materia) : '-'}</span>
                     </div>
                     <div className="item-sub">{modo}</div>
@@ -4260,14 +4259,23 @@ function SeccionPlantillas({
               const inicio = Date.now();
               setGenerando(true);
               setMensajeGeneracion('');
-              const payload = await clienteApi.enviar<{ examenGenerado: ExamenGeneradoResumen }>('/examenes/generados', {
+              const payload = await clienteApi.enviar<{ examenGenerado: ExamenGeneradoResumen; advertencias?: string[] }>(
+                '/examenes/generados',
+                {
                 plantillaId,
                 alumnoId: alumnoId || undefined
-              });
+                }
+              );
               const ex = payload?.examenGenerado ?? null;
+              const adv = Array.isArray(payload?.advertencias) ? payload.advertencias : [];
               setUltimoGenerado(ex);
               setMensajeGeneracion(ex ? `Examen generado. Folio: ${ex.folio} (ID: ${idCortoMateria(ex._id)})` : 'Examen generado');
-              emitToast({ level: 'ok', title: 'Examen', message: 'Examen generado', durationMs: 2200 });
+              emitToast({
+                level: adv.length > 0 ? 'warn' : 'ok',
+                title: 'Examen',
+                message: adv.length > 0 ? `Examen generado. ${adv.join(' ')}` : 'Examen generado',
+                durationMs: adv.length > 0 ? 6000 : 2200
+              });
               registrarAccionDocente('generar_examen', true, Date.now() - inicio);
               await cargarExamenesGenerados();
             } catch (error) {
