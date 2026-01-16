@@ -10,7 +10,7 @@ import {
   limpiarTokenDocente,
   obtenerTokenDocente
 } from '../../servicios_api/clienteApi';
-import { accionToastSesionParaError, mensajeUsuarioDeErrorConSugerencia, onSesionInvalidada } from '../../servicios_api/clienteComun';
+import { ErrorRemoto, accionToastSesionParaError, mensajeUsuarioDeErrorConSugerencia, onSesionInvalidada } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono, Spinner } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
@@ -472,6 +472,17 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     }
   }
 
+  function invitarARegistrar() {
+    setModo('registrar');
+    setMostrarFormularioRegistrar(true);
+    setCredentialRegistroGoogle(null);
+    setCrearContrasenaAhora(true);
+    setNombres('');
+    setApellidos('');
+    setContrasena('');
+    setMensaje('No existe una cuenta para ese correo. Completa tus datos para registrarte.');
+  }
+
   async function ingresar() {
     try {
       const inicio = Date.now();
@@ -491,12 +502,18 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo ingresar');
       setMensaje(msg);
+
+      const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
+      const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
+
       emitToast({
         level: 'error',
         title: 'No se pudo ingresar',
         message: msg,
         durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
+        action: esNoRegistrado
+          ? { label: 'Registrar', onClick: invitarARegistrar }
+          : accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('login', false);
     } finally {
@@ -525,12 +542,18 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo ingresar con Google');
       setMensaje(msg);
+
+      const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
+      const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
+
       emitToast({
         level: 'error',
         title: 'No se pudo ingresar',
         message: msg,
         durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
+        action: esNoRegistrado
+          ? { label: 'Registrar', onClick: () => setModo('registrar') }
+          : accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('login_google', false);
     } finally {
