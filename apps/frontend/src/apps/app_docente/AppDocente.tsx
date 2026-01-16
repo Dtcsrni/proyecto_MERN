@@ -1481,6 +1481,7 @@ function SeccionBanco({
 
   const [ajusteTemaId, setAjusteTemaId] = useState<string | null>(null);
   const [ajustePaginasObjetivo, setAjustePaginasObjetivo] = useState<number>(1);
+  const [ajusteAccion, setAjusteAccion] = useState<'mover' | 'quitar'>('mover');
   const [ajusteTemaDestinoId, setAjusteTemaDestinoId] = useState<string>('');
   const [ajusteSeleccion, setAjusteSeleccion] = useState<Set<string>>(new Set());
   const [moviendoTema, setMoviendoTema] = useState(false);
@@ -1673,39 +1674,59 @@ function SeccionBanco({
     const id = t._id;
     const key = normalizarNombreTema(t.nombre).toLowerCase();
     const actuales = paginasPorTema.get(key) ?? 1;
+    const hayDestinos = temasBanco.some((x) => x._id !== t._id);
     setAjusteTemaId(id);
     setAjustePaginasObjetivo(Math.max(1, Number(actuales || 1)));
     setAjusteSeleccion(new Set());
+    setAjusteAccion(hayDestinos ? 'mover' : 'quitar');
     setAjusteTemaDestinoId('');
   }
 
   function cerrarAjusteTema() {
     setAjusteTemaId(null);
     setAjusteSeleccion(new Set());
+    setAjusteAccion('mover');
     setAjusteTemaDestinoId('');
   }
 
-  async function moverSeleccionATema() {
+  async function aplicarAjusteTema() {
     if (!periodoId) return;
     if (!ajusteTemaId) return;
-    if (!ajusteTemaDestinoId) return;
     const ids = Array.from(ajusteSeleccion);
     if (ids.length === 0) return;
+
+    if (ajusteAccion === 'mover' && !ajusteTemaDestinoId) return;
     try {
       setMoviendoTema(true);
       setMensaje('');
-      await clienteApi.enviar('/banco-preguntas/mover-tema', {
-        periodoId,
-        temaIdDestino: ajusteTemaDestinoId,
-        preguntasIds: ids
-      });
-      emitToast({ level: 'ok', title: 'Banco', message: `Movidas ${ids.length} preguntas`, durationMs: 2200 });
+
+      if (ajusteAccion === 'mover') {
+        await clienteApi.enviar('/banco-preguntas/mover-tema', {
+          periodoId,
+          temaIdDestino: ajusteTemaDestinoId,
+          preguntasIds: ids
+        });
+        emitToast({ level: 'ok', title: 'Banco', message: `Movidas ${ids.length} preguntas`, durationMs: 2200 });
+      } else {
+        await clienteApi.enviar('/banco-preguntas/quitar-tema', {
+          periodoId,
+          preguntasIds: ids
+        });
+        emitToast({ level: 'ok', title: 'Banco', message: `Quitado el tema a ${ids.length} preguntas`, durationMs: 2400 });
+      }
+
       cerrarAjusteTema();
       onRefrescar();
     } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudieron mover las preguntas');
+      const msg = mensajeDeError(error, ajusteAccion === 'mover' ? 'No se pudieron mover las preguntas' : 'No se pudo quitar el tema');
       setMensaje(msg);
-      emitToast({ level: 'error', title: 'No se pudo mover', message: msg, durationMs: 5200, action: accionToastSesionParaError(error, 'docente') });
+      emitToast({
+        level: 'error',
+        title: ajusteAccion === 'mover' ? 'No se pudo mover' : 'No se pudo actualizar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
     } finally {
       setMoviendoTema(false);
     }
@@ -2079,7 +2100,7 @@ function SeccionBanco({
                 {ajusteTemaId === t._id && (
                   <div className="ajuste-tema">
                     <div className="ayuda">
-                      Objetivo: reducir este tema a un numero de paginas estimado. Sugerencia: mueve preguntas a un tema "extra".
+                      Ajusta el tamano del tema segun <b>paginas estimadas</b>. Puedes <b>mover</b> preguntas a otro tema o <b>dejarlas sin tema</b>.
                     </div>
                     <div className="ajuste-controles">
                       <label className="campo ajuste-campo ajuste-campo--paginas">
@@ -2090,6 +2111,20 @@ function SeccionBanco({
                           value={String(ajustePaginasObjetivo)}
                           onChange={(event) => setAjustePaginasObjetivo(Math.max(1, Number(event.target.value || 1)))}
                         />
+                      </label>
+                      <label className="campo ajuste-campo ajuste-campo--tema">
+                        Accion
+                        <select
+                          value={ajusteAccion}
+                          onChange={(event) => {
+                            const next = event.target.value === 'quitar' ? 'quitar' : 'mover';
+                            setAjusteAccion(next);
+                            if (next === 'quitar') setAjusteTemaDestinoId('');
+                          }}
+                        >
+                          <option value="mover">Mover a otro tema</option>
+                          <option value="quitar">Dejar sin tema</option>
+                        </select>
                       </label>
                       <label className="campo ajuste-campo ajuste-campo--tema">
                         Tema destino
@@ -2103,6 +2138,7 @@ function SeccionBanco({
                               </option>
                             ))}
                         </select>
+                        {ajusteAccion === 'quitar' && <span className="ayuda">No aplica si eliges “Dejar sin tema”.</span>}
                       </label>
 
                       <Boton
@@ -2148,7 +2184,7 @@ function SeccionBanco({
                             </span>
                           </div>
                           <div className="ayuda ajuste-ayuda">
-                            Marca manualmente o usa “Sugerir”. Se recortan preguntas antiguas primero.
+                            Tip: “Sugerir” marca preguntas antiguas (del final) hasta acercarse al objetivo. La estimacion depende del largo del texto.
                           </div>
                           <div className="ajuste-scroll">
                             <ul className="lista">
@@ -2184,10 +2220,16 @@ function SeccionBanco({
                               type="button"
                               icono={<Icono nombre="ok" />}
                               cargando={moviendoTema}
-                              disabled={!ajusteTemaDestinoId || ajusteSeleccion.size === 0}
-                              onClick={moverSeleccionATema}
+                              disabled={(ajusteAccion === 'mover' && !ajusteTemaDestinoId) || ajusteSeleccion.size === 0}
+                              onClick={aplicarAjusteTema}
                             >
-                              {moviendoTema ? 'Moviendo…' : 'Mover seleccionadas'}
+                              {moviendoTema
+                                ? ajusteAccion === 'mover'
+                                  ? 'Moviendo…'
+                                  : 'Actualizando…'
+                                : ajusteAccion === 'mover'
+                                  ? 'Mover seleccionadas'
+                                  : 'Quitar tema a seleccionadas'}
                             </Boton>
                           </div>
                         </>
@@ -3498,90 +3540,92 @@ function SeccionPlantillas({
           ))}
         </select>
       </label>
-      <Boton
-        className="boton"
-        type="button"
-        icono={<Icono nombre="pdf" />}
-        cargando={generando}
-        disabled={!puedeGenerar}
-        onClick={async () => {
-          try {
-            const inicio = Date.now();
-            setGenerando(true);
-            setMensajeGeneracion('');
-            const payload = await clienteApi.enviar<{ examenGenerado: ExamenGeneradoResumen }>('/examenes/generados', {
-              plantillaId,
-              alumnoId: alumnoId || undefined
-            });
-            const ex = payload?.examenGenerado ?? null;
-            setUltimoGenerado(ex);
-            setMensajeGeneracion(ex ? `Examen generado. Folio: ${ex.folio} (ID: ${idCortoMateria(ex._id)})` : 'Examen generado');
-            emitToast({ level: 'ok', title: 'Examen', message: 'Examen generado', durationMs: 2200 });
-            registrarAccionDocente('generar_examen', true, Date.now() - inicio);
-            await cargarExamenesGenerados();
-          } catch (error) {
-            const msg = mensajeDeError(error, 'No se pudo generar');
-            setMensajeGeneracion(msg);
-            emitToast({
-              level: 'error',
-              title: 'No se pudo generar',
-              message: msg,
-              durationMs: 5200,
-              action: accionToastSesionParaError(error, 'docente')
-            });
-            registrarAccionDocente('generar_examen', false);
-          } finally {
-            setGenerando(false);
-          }
-        }}
-      >
-        {generando ? 'Generando…' : 'Generar'}
-      </Boton>
+      <div className="acciones acciones--mt">
+        <Boton
+          className="boton"
+          type="button"
+          icono={<Icono nombre="pdf" />}
+          cargando={generando}
+          disabled={!puedeGenerar}
+          onClick={async () => {
+            try {
+              const inicio = Date.now();
+              setGenerando(true);
+              setMensajeGeneracion('');
+              const payload = await clienteApi.enviar<{ examenGenerado: ExamenGeneradoResumen }>('/examenes/generados', {
+                plantillaId,
+                alumnoId: alumnoId || undefined
+              });
+              const ex = payload?.examenGenerado ?? null;
+              setUltimoGenerado(ex);
+              setMensajeGeneracion(ex ? `Examen generado. Folio: ${ex.folio} (ID: ${idCortoMateria(ex._id)})` : 'Examen generado');
+              emitToast({ level: 'ok', title: 'Examen', message: 'Examen generado', durationMs: 2200 });
+              registrarAccionDocente('generar_examen', true, Date.now() - inicio);
+              await cargarExamenesGenerados();
+            } catch (error) {
+              const msg = mensajeDeError(error, 'No se pudo generar');
+              setMensajeGeneracion(msg);
+              emitToast({
+                level: 'error',
+                title: 'No se pudo generar',
+                message: msg,
+                durationMs: 5200,
+                action: accionToastSesionParaError(error, 'docente')
+              });
+              registrarAccionDocente('generar_examen', false);
+            } finally {
+              setGenerando(false);
+            }
+          }}
+        >
+          {generando ? 'Generando…' : 'Generar'}
+        </Boton>
 
-      <Boton
-        type="button"
-        variante="secundario"
-        icono={<Icono nombre="pdf" />}
-        cargando={generandoLote}
-        disabled={!plantillaId || !plantillaSeleccionada?.periodoId}
-        onClick={async () => {
-          const ok = globalThis.confirm(
-            '¿Generar examenes para TODOS los alumnos activos de la materia de esta plantilla? Esto puede tardar.'
-          );
-          if (!ok) return;
-          try {
-            const inicio = Date.now();
-            setGenerandoLote(true);
-            setMensajeGeneracion('');
-            const payload = await clienteApi.enviar<{ totalAlumnos: number; examenesGenerados: Array<{ folio: string }> }>(
-              '/examenes/generados/lote',
-              { plantillaId, confirmarMasivo: true },
-              { timeoutMs: 120_000 }
+        <Boton
+          type="button"
+          variante="secundario"
+          icono={<Icono nombre="pdf" />}
+          cargando={generandoLote}
+          disabled={!plantillaId || !plantillaSeleccionada?.periodoId}
+          onClick={async () => {
+            const ok = globalThis.confirm(
+              '¿Generar examenes para TODOS los alumnos activos de la materia de esta plantilla? Esto puede tardar.'
             );
-            const total = Number(payload?.totalAlumnos ?? 0);
-            const generados = Array.isArray(payload?.examenesGenerados) ? payload.examenesGenerados.length : 0;
-            setMensajeGeneracion(`Generacion masiva lista. Alumnos: ${total}. Examenes creados: ${generados}.`);
-            emitToast({ level: 'ok', title: 'Examenes', message: 'Generacion masiva completada', durationMs: 2200 });
-            registrarAccionDocente('generar_examenes_lote', true, Date.now() - inicio);
-            await cargarExamenesGenerados();
-          } catch (error) {
-            const msg = mensajeDeError(error, 'No se pudo generar en lote');
-            setMensajeGeneracion(msg);
-            emitToast({
-              level: 'error',
-              title: 'No se pudo generar en lote',
-              message: msg,
-              durationMs: 5200,
-              action: accionToastSesionParaError(error, 'docente')
-            });
-            registrarAccionDocente('generar_examenes_lote', false);
-          } finally {
-            setGenerandoLote(false);
-          }
-        }}
-      >
-        {generandoLote ? 'Generando para todos…' : 'Generar para todos los alumnos'}
-      </Boton>
+            if (!ok) return;
+            try {
+              const inicio = Date.now();
+              setGenerandoLote(true);
+              setMensajeGeneracion('');
+              const payload = await clienteApi.enviar<{ totalAlumnos: number; examenesGenerados: Array<{ folio: string }> }>(
+                '/examenes/generados/lote',
+                { plantillaId, confirmarMasivo: true },
+                { timeoutMs: 120_000 }
+              );
+              const total = Number(payload?.totalAlumnos ?? 0);
+              const generados = Array.isArray(payload?.examenesGenerados) ? payload.examenesGenerados.length : 0;
+              setMensajeGeneracion(`Generacion masiva lista. Alumnos: ${total}. Examenes creados: ${generados}.`);
+              emitToast({ level: 'ok', title: 'Examenes', message: 'Generacion masiva completada', durationMs: 2200 });
+              registrarAccionDocente('generar_examenes_lote', true, Date.now() - inicio);
+              await cargarExamenesGenerados();
+            } catch (error) {
+              const msg = mensajeDeError(error, 'No se pudo generar en lote');
+              setMensajeGeneracion(msg);
+              emitToast({
+                level: 'error',
+                title: 'No se pudo generar en lote',
+                message: msg,
+                durationMs: 5200,
+                action: accionToastSesionParaError(error, 'docente')
+              });
+              registrarAccionDocente('generar_examenes_lote', false);
+            } finally {
+              setGenerandoLote(false);
+            }
+          }}
+        >
+          {generandoLote ? 'Generando para todos…' : 'Generar para todos los alumnos'}
+        </Boton>
+      </div>
 
       {plantillaId && !plantillaSeleccionada?.periodoId && (
         <div className="ayuda error">Esta plantilla no tiene materia (periodoId). No se puede generar en lote.</div>
@@ -3603,11 +3647,26 @@ function SeccionPlantillas({
           {Array.isArray(ultimoGenerado.paginas) && ultimoGenerado.paginas.length > 0 && (
             <details>
               <summary>Previsualizacion por pagina ({ultimoGenerado.paginas.length})</summary>
+              {(() => {
+                const tieneRangos = ultimoGenerado.paginas.some(
+                  (p) => Number(p.preguntasDel ?? 0) > 0 && Number(p.preguntasAl ?? 0) > 0
+                );
+                return (
+                  !tieneRangos && (
+                    <div className="ayuda">
+                      Rango por pagina no disponible en este examen (probablemente fue generado con una version anterior). Regenera para recalcular.
+                    </div>
+                  )
+                );
+              })()}
               <ul className="lista">
                 {ultimoGenerado.paginas.map((p) => {
                   const del = Number(p.preguntasDel ?? 0);
                   const al = Number(p.preguntasAl ?? 0);
-                  const rango = del && al ? `Preguntas ${del}–${al}` : 'Pagina extra (sin preguntas)';
+                  const tieneRangos = ultimoGenerado.paginas.some(
+                    (x) => Number(x.preguntasDel ?? 0) > 0 && Number(x.preguntasAl ?? 0) > 0
+                  );
+                  const rango = del && al ? `Preguntas ${del}–${al}` : tieneRangos ? 'Sin preguntas (pagina extra)' : 'Rango no disponible';
                   return (
                     <li key={p.numero}>
                       Pagina {p.numero}: {rango}
@@ -3655,11 +3714,26 @@ function SeccionPlantillas({
                         {Array.isArray(examen.paginas) && examen.paginas.length > 0 && (
                           <details>
                             <summary>Previsualizacion por pagina ({examen.paginas.length})</summary>
+                            {(() => {
+                              const tieneRangos = examen.paginas.some(
+                                (p) => Number(p.preguntasDel ?? 0) > 0 && Number(p.preguntasAl ?? 0) > 0
+                              );
+                              return (
+                                !tieneRangos && (
+                                  <div className="ayuda">
+                                    Rango por pagina no disponible en este examen. Regenera si necesitas la previsualizacion.
+                                  </div>
+                                )
+                              );
+                            })()}
                             <ul className="lista">
                               {examen.paginas.map((p) => {
                                 const del = Number(p.preguntasDel ?? 0);
                                 const al = Number(p.preguntasAl ?? 0);
-                                const rango = del && al ? `Preguntas ${del}–${al}` : 'Pagina extra (sin preguntas)';
+                                const tieneRangos = examen.paginas.some(
+                                  (x) => Number(x.preguntasDel ?? 0) > 0 && Number(x.preguntasAl ?? 0) > 0
+                                );
+                                const rango = del && al ? `Preguntas ${del}–${al}` : tieneRangos ? 'Sin preguntas (pagina extra)' : 'Rango no disponible';
                                 return (
                                   <li key={p.numero}>
                                     Pagina {p.numero}: {rango}

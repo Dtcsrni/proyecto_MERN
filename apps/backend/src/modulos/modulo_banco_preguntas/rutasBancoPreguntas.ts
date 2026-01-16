@@ -11,6 +11,7 @@ import {
 	eliminarTemaBanco,
 	eliminarPregunta,
 	moverPreguntasTemaBanco,
+	quitarTemaBanco,
 	listarTemasBanco,
 	listarBancoPreguntas
 } from './controladorBancoPreguntas';
@@ -19,7 +20,8 @@ import {
 	esquemaActualizarTemaBanco,
 	esquemaCrearTemaBanco,
 	esquemaCrearPregunta,
-	esquemaMoverPreguntasTemaBanco
+	esquemaMoverPreguntasTemaBanco,
+	esquemaQuitarTemaBanco
 } from './validacionesBancoPreguntas';
 
 const router = Router();
@@ -34,6 +36,7 @@ router.delete('/temas/:temaId', eliminarTemaBanco);
 router.post('/', validarCuerpo(esquemaCrearPregunta, { strict: true }), crearPregunta);
 router.post('/:preguntaId/actualizar', validarCuerpo(esquemaActualizarPregunta, { strict: true }), actualizarPregunta);
 router.post('/mover-tema', validarCuerpo(esquemaMoverPreguntasTemaBanco, { strict: true }), moverPreguntasTemaBanco);
+router.post('/quitar-tema', validarCuerpo(esquemaQuitarTemaBanco, { strict: true }), quitarTemaBanco);
 router.delete('/:preguntaId', eliminarPregunta);
 
 export default router;

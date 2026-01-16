@@ -78,3 +78,10 @@ export const esquemaMoverPreguntasTemaBanco = z
     preguntasIds: z.array(esquemaObjectId).min(1)
   })
   .strict();
+
+export const esquemaQuitarTemaBanco = z
+  .object({
+    periodoId: esquemaObjectId,
+    preguntasIds: z.array(esquemaObjectId).min(1)
+  })
+  .strict();
