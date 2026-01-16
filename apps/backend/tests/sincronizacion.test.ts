@@ -173,6 +173,92 @@ describe('sincronizacion nube', () => {
     expect(alumnoImportado?.nombreCompleto).toBe('Ana Lopez');
   });
 
+  it('bloquea importacion si el checksum no coincide (anti-corrupcion)', async () => {
+    const docenteId = '507f1f77bcf86cd799439032';
+    const periodoId = '507f1f77bcf86cd799439031';
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Quimica',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    await Alumno.create({
+      docenteId,
+      periodoId,
+      matricula: '2024-003',
+      nombres: 'Maria',
+      apellidos: 'Gomez',
+      nombreCompleto: 'Maria Gomez',
+      grupo: 'C'
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+    };
+
+    // Limpia DB para validar que no se re-inserta si el checksum es incorrecto.
+    await Promise.all([Alumno.deleteMany({ docenteId }), Periodo.deleteMany({ docenteId })]);
+    expect(await Periodo.countDocuments({ docenteId })).toBe(0);
+
+    await expect(
+      importarPaquete(
+        { body: { paqueteBase64: payload.paqueteBase64, checksumSha256: '0'.repeat(64) }, docenteId } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({ codigo: 'SYNC_CHECKSUM' });
+
+    expect(await Periodo.countDocuments({ docenteId })).toBe(0);
+    expect(await Alumno.countDocuments({ docenteId })).toBe(0);
+  });
+
+  it('permite dryRun para validar sin aplicar cambios', async () => {
+    const docenteId = '507f1f77bcf86cd799439042';
+    const periodoId = '507f1f77bcf86cd799439041';
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Programacion',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+    await Alumno.create({
+      docenteId,
+      periodoId,
+      matricula: '2024-004',
+      nombres: 'Jose',
+      apellidos: 'Hernandez',
+      nombreCompleto: 'Jose Hernandez',
+      grupo: 'A'
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+      conteos: Record<string, number>;
+    };
+
+    await Promise.all([Alumno.deleteMany({ docenteId }), Periodo.deleteMany({ docenteId })]);
+
+    const resDry = crearRespuesta();
+    await importarPaquete(
+      { body: { paqueteBase64: payload.paqueteBase64, checksumSha256: payload.checksumSha256, dryRun: true }, docenteId } as SolicitudDocente,
+      resDry
+    );
+
+    const dryPayload = (resDry.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { conteos?: Record<string, number> };
+    expect(dryPayload.conteos?.periodos).toBe(payload.conteos.periodos);
+    expect(await Periodo.countDocuments({ docenteId })).toBe(0);
+    expect(await Alumno.countDocuments({ docenteId })).toBe(0);
+  });
+
   it('no sobreescribe registros mas nuevos (LWW por updatedAt)', async () => {
     const docenteId = '507f1f77bcf86cd799439022';
     const periodoId = '507f1f77bcf86cd799439021';

@@ -51,6 +51,10 @@ function sha256Hex(input: string) {
   return createHash('sha256').update(input).digest('hex');
 }
 
+function sha256HexBuffer(buf: Buffer) {
+  return createHash('sha256').update(buf).digest('hex');
+}
+
 type PaqueteSincronizacionV1 = {
   schemaVersion: 1;
   exportadoEn: string;
@@ -66,7 +70,7 @@ type PaqueteSincronizacionV1 = {
   entregas: unknown[];
   calificaciones: unknown[];
   banderas: unknown[];
-  pdfs: Array<{ examenGeneradoId: string; pdfComprimidoBase64: string }>;
+  pdfs: Array<{ examenGeneradoId: string; pdfComprimidoBase64: string; pdfSha256?: string }>;
 };
 
 async function upsertLwwPorUpdatedAt({
@@ -307,7 +311,7 @@ export async function exportarPaquete(req: SolicitudDocente, res: Response) {
       : Promise.resolve([])
   ]);
 
-  const pdfs: Array<{ examenGeneradoId: string; pdfComprimidoBase64: string }> = [];
+  const pdfs: Array<{ examenGeneradoId: string; pdfComprimidoBase64: string; pdfSha256?: string }> = [];
   if (incluirPdfs) {
     // Guardrail: evita payloads gigantes.
     const MAX_PDFS = 120;
@@ -320,10 +324,11 @@ export async function exportarPaquete(req: SolicitudDocente, res: Response) {
       if (!examenId || !rutaPdf) continue;
       try {
         const contenido = await fs.readFile(rutaPdf);
+        const pdfSha256 = sha256HexBuffer(contenido);
         const comprimido = gzipSync(contenido);
         total += comprimido.length;
         if (total > MAX_TOTAL_COMPRESSED_BYTES) break;
-        pdfs.push({ examenGeneradoId: examenId, pdfComprimidoBase64: comprimido.toString('base64') });
+        pdfs.push({ examenGeneradoId: examenId, pdfComprimidoBase64: comprimido.toString('base64'), pdfSha256 });
       } catch {
         // omitir PDF si no se encuentra/no se puede leer
       }
@@ -360,7 +365,9 @@ export async function exportarPaquete(req: SolicitudDocente, res: Response) {
 
   const json = JSON.stringify(paquete);
   const checksumSha256 = sha256Hex(json);
-  const paqueteBase64 = comprimirBase64(Buffer.from(json));
+  const gzipBytes = gzipSync(Buffer.from(json));
+  const checksumGzipSha256 = sha256HexBuffer(gzipBytes);
+  const paqueteBase64 = gzipBytes.toString('base64');
 
   await Sincronizacion.create({
     docenteId,
@@ -370,14 +377,28 @@ export async function exportarPaquete(req: SolicitudDocente, res: Response) {
     ejecutadoEn: new Date()
   });
 
-  res.json({ paqueteBase64, checksumSha256, exportadoEn: paquete.exportadoEn, conteos: paquete.conteos });
+  res.json({
+    paqueteBase64,
+    checksumSha256,
+    checksumGzipSha256,
+    exportadoEn: paquete.exportadoEn,
+    conteos: paquete.conteos
+  });
 }
 
 export async function importarPaquete(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const paqueteBase64 = String((req.body as { paqueteBase64?: unknown })?.paqueteBase64 ?? '').trim();
+  const checksumEsperado = String((req.body as { checksumSha256?: unknown })?.checksumSha256 ?? '').trim();
+  const dryRun = Boolean((req.body as { dryRun?: unknown })?.dryRun);
   if (!paqueteBase64) {
     throw new ErrorAplicacion('SYNC_PAQUETE_VACIO', 'Paquete vacio', 400);
+  }
+
+  // Guardrail simple para evitar payloads absurdos (base64 aprox 4/3 del binario).
+  const MAX_BASE64_CHARS = 60_000_000; // ~45MB binario aprox
+  if (paqueteBase64.length > MAX_BASE64_CHARS) {
+    throw new ErrorAplicacion('SYNC_PAQUETE_GRANDE', 'Paquete demasiado grande', 413);
   }
 
   const registro = await Sincronizacion.create({
@@ -389,9 +410,15 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
   });
 
   try {
-    const buffer = descomprimirBase64(paqueteBase64);
+    const gzipBytes = Buffer.from(paqueteBase64, 'base64');
+    const buffer = gunzipSync(gzipBytes);
     const json = buffer.toString('utf8');
     const parsed = JSON.parse(json) as PaqueteSincronizacionV1;
+
+    const checksumActual = sha256Hex(json);
+    if (checksumEsperado && checksumEsperado.toLowerCase() !== checksumActual.toLowerCase()) {
+      throw new ErrorAplicacion('SYNC_CHECKSUM', 'Checksum invalido: el paquete parece corrupto o fue modificado', 400);
+    }
 
     if (!parsed || parsed.schemaVersion !== 1) {
       throw new ErrorAplicacion('SYNC_VERSION', 'Version de paquete no soportada', 400);
@@ -399,6 +426,16 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
     if (String(parsed.docenteId || '') !== String(docenteId)) {
       throw new ErrorAplicacion('SYNC_DOCENTE_MISMATCH', 'El paquete no corresponde a este docente', 403);
     }
+
+    // Validacion minima de que los docs del paquete pertenecen al docente.
+    const assertDocente = (docs: Array<Record<string, unknown>>, nombre: string) => {
+      for (const doc of docs) {
+        const d = String((doc as any)?.docenteId ?? '');
+        if (d && d !== String(docenteId)) {
+          throw new ErrorAplicacion('SYNC_DOCENTE_MISMATCH', `El paquete contiene ${nombre} de otro docente`, 403);
+        }
+      }
+    };
 
     const examenesDocs = Array.isArray(parsed.examenes) ? parsed.examenes : [];
     const examenesIds = examenesDocs.map((e) => String((e as any)?._id ?? '')).filter(Boolean);
@@ -412,6 +449,38 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
     const entregasDocs = (Array.isArray(parsed.entregas) ? parsed.entregas : []) as Array<Record<string, unknown>>;
     const calificacionesDocs = (Array.isArray(parsed.calificaciones) ? parsed.calificaciones : []) as Array<Record<string, unknown>>;
     const banderasDocs = (Array.isArray(parsed.banderas) ? parsed.banderas : []) as Array<Record<string, unknown>>;
+
+    assertDocente(periodosDocs, 'periodos');
+    assertDocente(alumnosDocs, 'alumnos');
+    assertDocente(bancoDocs, 'bancoPreguntas');
+    assertDocente(plantillasDocs, 'plantillas');
+    assertDocente(examenesDocs, 'examenes');
+    assertDocente(entregasDocs, 'entregas');
+    assertDocente(calificacionesDocs, 'calificaciones');
+    assertDocente(banderasDocs, 'banderas');
+
+    if (dryRun) {
+      await Sincronizacion.updateOne(
+        { _id: (registro as any)?._id },
+        {
+          $set: {
+            estado: 'exitoso',
+            tipo: 'paquete_validar',
+            detalles: {
+              checksum: checksumActual,
+              checksumProvisto: checksumEsperado || null,
+              conteos: parsed.conteos
+            }
+          }
+        }
+      );
+      res.json({
+        mensaje: 'Paquete valido',
+        checksumSha256: checksumActual,
+        conteos: parsed.conteos
+      });
+      return;
+    }
 
     resultados.push(await upsertLwwPorUpdatedAt({ modelName: 'Periodo', Model: Periodo as any, docs: periodosDocs }));
     resultados.push(await upsertLwwPorUpdatedAt({ modelName: 'Alumno', Model: Alumno as any, docs: alumnosDocs }));
@@ -428,12 +497,13 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
     resultados.push(await upsertLwwPorUpdatedAt({ modelName: 'Calificacion', Model: Calificacion as any, docs: calificacionesFiltradas }));
     resultados.push(await upsertLwwPorUpdatedAt({ modelName: 'BanderaRevision', Model: BanderaRevision as any, docs: banderasFiltradas }));
 
-    // PDFs best-effort: guarda en almacen local y actualiza rutaPdf si corresponde.
+    // PDFs best-effort: valida checksum y guarda en almacen local.
     let pdfsGuardados = 0;
     const pdfs = Array.isArray(parsed.pdfs) ? parsed.pdfs : [];
     for (const item of pdfs) {
       const examenGeneradoId = String((item as any)?.examenGeneradoId ?? '').trim();
       const pdfB64 = String((item as any)?.pdfComprimidoBase64 ?? '').trim();
+      const pdfSha256Esperado = String((item as any)?.pdfSha256 ?? '').trim();
       if (!examenGeneradoId || !pdfB64) continue;
 
       const examen = await ExamenGenerado.findById(examenGeneradoId).lean();
@@ -441,6 +511,12 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
 
       try {
         const pdfBytes = gunzipSync(Buffer.from(pdfB64, 'base64'));
+        if (pdfSha256Esperado) {
+          const actual = sha256HexBuffer(Buffer.from(pdfBytes));
+          if (actual.toLowerCase() !== pdfSha256Esperado.toLowerCase()) {
+            continue;
+          }
+        }
         const folio = String((examen as any)?.folio ?? 'examen').trim() || 'examen';
         const nombre = `examen_folio-${folio}.pdf`;
         const rutaPdf = await guardarPdfExamen(nombre, Buffer.from(pdfBytes));
