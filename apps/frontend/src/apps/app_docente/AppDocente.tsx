@@ -94,6 +94,29 @@ function obtenerVersionPregunta(pregunta: Pregunta): Pregunta['versiones'][numbe
   return actual ?? versiones[versiones.length - 1] ?? null;
 }
 
+function pareceCodigo(texto: string): boolean {
+  const t = String(texto ?? '');
+  if (!t.trim()) return false;
+  // Señales explícitas (markdown): inline/backticks o bloques.
+  if (t.includes('```')) return true;
+  if (t.includes('`')) return true;
+  // Señales típicas de código (heurística conservadora).
+  const lineas = t.split(/\r?\n/);
+  if (lineas.some((l) => /^\s{2,}\S+/.test(l))) return true; // indentación
+  if (/[{}();<>]=?>|=>|\/\*|\*\//.test(t)) return true;
+  if (/\b(function|const|let|var|return|class|import|export)\b/.test(t)) return true;
+  if (/\b(display\s*:\s*flex|justify-content\s*:\s*center|align-items\s*:\s*center|box-sizing\s*:\s*border-box)\b/.test(t)) return true;
+  return false;
+}
+
+function preguntaTieneCodigo(pregunta: Pregunta): boolean {
+  const v = obtenerVersionPregunta(pregunta);
+  if (!v) return false;
+  if (pareceCodigo(String(v.enunciado ?? ''))) return true;
+  const ops = Array.isArray(v.opciones) ? v.opciones : [];
+  return ops.some((o) => pareceCodigo(String(o?.texto ?? '')));
+}
+
 type ResultadoOmr = {
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   advertencias: string[];
@@ -1486,6 +1509,10 @@ function SeccionBanco({
   const [ajusteSeleccion, setAjusteSeleccion] = useState<Set<string>>(new Set());
   const [moviendoTema, setMoviendoTema] = useState(false);
 
+  const [sinTemaDestinoId, setSinTemaDestinoId] = useState<string>('');
+  const [sinTemaSeleccion, setSinTemaSeleccion] = useState<Set<string>>(new Set());
+  const [moviendoSinTema, setMoviendoSinTema] = useState(false);
+
   useEffect(() => {
     if (periodoId) return;
     if (!Array.isArray(periodos) || periodos.length === 0) return;
@@ -1541,6 +1568,11 @@ function SeccionBanco({
       return String(b._id).localeCompare(String(a._id));
     });
   }, [preguntas, periodoId]);
+
+  const preguntasSinTema = useMemo(() => {
+    const lista = Array.isArray(preguntasMateria) ? preguntasMateria : [];
+    return lista.filter((p) => !normalizarNombreTema(p.tema));
+  }, [preguntasMateria]);
 
   const conteoPorTema = useMemo(() => {
     const mapa = new Map<string, number>();
@@ -1729,6 +1761,31 @@ function SeccionBanco({
       });
     } finally {
       setMoviendoTema(false);
+    }
+  }
+
+  async function asignarSinTemaATema() {
+    if (!periodoId) return;
+    if (!sinTemaDestinoId) return;
+    const ids = Array.from(sinTemaSeleccion);
+    if (ids.length === 0) return;
+    try {
+      setMoviendoSinTema(true);
+      setMensaje('');
+      await clienteApi.enviar('/banco-preguntas/mover-tema', {
+        periodoId,
+        temaIdDestino: sinTemaDestinoId,
+        preguntasIds: ids
+      });
+      emitToast({ level: 'ok', title: 'Banco', message: `Asignadas ${ids.length} preguntas`, durationMs: 2200 });
+      setSinTemaSeleccion(new Set());
+      onRefrescar();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudieron asignar las preguntas');
+      setMensaje(msg);
+      emitToast({ level: 'error', title: 'No se pudo asignar', message: msg, durationMs: 5200, action: accionToastSesionParaError(error, 'docente') });
+    } finally {
+      setMoviendoSinTema(false);
     }
   }
 
@@ -2241,6 +2298,87 @@ function SeccionBanco({
             </li>
           ))}
         </ul>
+
+        {periodoId && (
+          <details className="colapsable mt-10" open={false}>
+            <summary>
+              <b>Sin tema</b>
+              {` (${preguntasSinTema.length})`}
+            </summary>
+            <div className="ayuda">
+              Preguntas que quedaron sin tema (por ejemplo, al recortar paginas). Puedes asignarlas a un tema aqui.
+            </div>
+
+            {preguntasSinTema.length === 0 ? (
+              <div className="ayuda">No hay preguntas sin tema en esta materia.</div>
+            ) : (
+              <>
+                <div className="ajuste-controles">
+                  <label className="campo ajuste-campo ajuste-campo--tema">
+                    Asignar a tema
+                    <select value={sinTemaDestinoId} onChange={(event) => setSinTemaDestinoId(event.target.value)}>
+                      <option value="">Selecciona</option>
+                      {temasBanco.map((x) => (
+                        <option key={x._id} value={x._id}>
+                          {x.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Boton
+                    type="button"
+                    variante="secundario"
+                    onClick={() => setSinTemaSeleccion(new Set(preguntasSinTema.map((p) => p._id)))}
+                    disabled={preguntasSinTema.length === 0}
+                  >
+                    Seleccionar todo
+                  </Boton>
+                  <Boton type="button" variante="secundario" onClick={() => setSinTemaSeleccion(new Set())}>
+                    Limpiar
+                  </Boton>
+                  <Boton
+                    type="button"
+                    icono={<Icono nombre="ok" />}
+                    cargando={moviendoSinTema}
+                    disabled={!sinTemaDestinoId || sinTemaSeleccion.size === 0}
+                    onClick={asignarSinTemaATema}
+                  >
+                    {moviendoSinTema ? 'Asignando…' : `Asignar (${sinTemaSeleccion.size})`}
+                  </Boton>
+                </div>
+
+                <div className="ajuste-scroll">
+                  <ul className="lista">
+                    {preguntasSinTema.map((p) => {
+                      const v = obtenerVersionPregunta(p);
+                      const marcado = sinTemaSeleccion.has(p._id);
+                      const titulo = String(v?.enunciado ?? 'Pregunta').slice(0, 120);
+                      return (
+                        <li key={p._id}>
+                          <label className="ajuste-check">
+                            <input
+                              type="checkbox"
+                              checked={marcado}
+                              onChange={() => {
+                                setSinTemaSeleccion((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(p._id)) next.delete(p._id);
+                                  else next.add(p._id);
+                                  return next;
+                                });
+                              }}
+                            />
+                            <span>{titulo}</span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
+            )}
+          </details>
+        )}
       </details>
 
       <div className="campo">
@@ -2357,6 +2495,7 @@ function SeccionBanco({
               {(() => {
                 const version = obtenerVersionPregunta(pregunta);
                 const opcionesActuales = Array.isArray(version?.opciones) ? version?.opciones : [];
+                const tieneCodigo = preguntaTieneCodigo(pregunta);
                 return (
                   <div className="item-glass">
                     <div className="item-row">
@@ -2365,6 +2504,11 @@ function SeccionBanco({
                         <div className="item-meta">
                           <span>ID: {idCortoMateria(pregunta._id)}</span>
                           <span>Tema: {pregunta.tema ? pregunta.tema : '-'}</span>
+                          {tieneCodigo && (
+                            <span className="badge" title="Se detecto codigo (inline/backticks, bloques o patrones tipicos)">
+                              <span className="dot" /> Codigo
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="item-actions">
