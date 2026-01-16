@@ -240,6 +240,14 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     Docente.findById(docenteId).lean()
   ]);
 
+  const numeroPaginas = (() => {
+    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
+    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
+    if (Number.isFinite(legacy) && legacy >= 1) return (plantilla as unknown as { tipo?: string })?.tipo === 'global' ? 4 : 2;
+    return 1;
+  })();
+
   const { pdfBytes, paginas, mapaOmr } = await generarPdfExamen({
     titulo: String(plantilla.titulo ?? ''),
     folio,
@@ -247,6 +255,7 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     // Reutiliza la variante para mantener el orden de preguntas/opciones.
     mapaVariante: (examen as unknown as { mapaVariante?: unknown })?.mapaVariante as never,
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
+    totalPaginas: numeroPaginas,
     margenMm: (plantilla as unknown as { configuracionPdf?: { margenMm?: number } })?.configuracionPdf?.margenMm ?? 10,
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),

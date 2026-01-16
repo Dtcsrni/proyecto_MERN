@@ -46,22 +46,25 @@ describe('regenerar examen generado', () => {
       .expect(201);
     const periodoId = periodoResp.body.periodo._id as string;
 
-    const preguntaResp = await request(app)
-      .post('/api/banco-preguntas')
-      .set(auth)
-      .send({
-        periodoId,
-        enunciado: 'Pregunta 1',
-        opciones: [
-          { texto: 'Opcion A', esCorrecta: true },
-          { texto: 'Opcion B', esCorrecta: false },
-          { texto: 'Opcion C', esCorrecta: false },
-          { texto: 'Opcion D', esCorrecta: false },
-          { texto: 'Opcion E', esCorrecta: false }
-        ]
-      })
-      .expect(201);
-    const preguntaId = preguntaResp.body.pregunta._id as string;
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      const preguntaResp = await request(app)
+        .post('/api/banco-preguntas')
+        .set(auth)
+        .send({
+          periodoId,
+          enunciado: `Pregunta ${i + 1}`,
+          opciones: [
+            { texto: 'Opcion A', esCorrecta: true },
+            { texto: 'Opcion B', esCorrecta: false },
+            { texto: 'Opcion C', esCorrecta: false },
+            { texto: 'Opcion D', esCorrecta: false },
+            { texto: 'Opcion E', esCorrecta: false }
+          ]
+        })
+        .expect(201);
+      preguntasIds.push(preguntaResp.body.pregunta._id as string);
+    }
 
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
@@ -70,8 +73,8 @@ describe('regenerar examen generado', () => {
         periodoId,
         tipo: 'parcial',
         titulo: 'Parcial 1',
-        totalReactivos: 1,
-        preguntasIds: [preguntaId]
+        numeroPaginas: 1,
+        preguntasIds
       })
       .expect(201);
     const plantillaId = plantillaResp.body.plantilla._id as string;

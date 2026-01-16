@@ -49,13 +49,13 @@ describe('periodos (materias)', () => {
     return alumnoResp.body.alumno._id as string;
   }
 
-  async function crearPregunta(token: string, periodoId: string) {
+  async function crearPregunta(token: string, periodoId: string, enunciado: string) {
     const preguntaResp = await request(app)
       .post('/api/banco-preguntas')
       .set({ Authorization: `Bearer ${token}` })
       .send({
         periodoId,
-        enunciado: 'Pregunta A',
+        enunciado,
         opciones: [
           { texto: 'A', esCorrecta: true },
           { texto: 'B', esCorrecta: false },
@@ -68,7 +68,7 @@ describe('periodos (materias)', () => {
     return preguntaResp.body.pregunta._id as string;
   }
 
-  async function crearPlantilla(token: string, periodoId: string, preguntaId: string) {
+  async function crearPlantilla(token: string, periodoId: string, preguntasIds: string[]) {
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
       .set({ Authorization: `Bearer ${token}` })
@@ -76,8 +76,8 @@ describe('periodos (materias)', () => {
         periodoId,
         tipo: 'parcial',
         titulo: 'Plantilla A',
-        totalReactivos: 1,
-        preguntasIds: [preguntaId]
+        numeroPaginas: 1,
+        preguntasIds
       })
       .expect(201);
     return plantillaResp.body.plantilla._id as string;
@@ -115,8 +115,13 @@ describe('periodos (materias)', () => {
 
     const periodoId = await crearPeriodo(token, 'Materia A');
     await crearAlumno(token, periodoId);
-    const preguntaId = await crearPregunta(token, periodoId);
-    const plantillaId = await crearPlantilla(token, periodoId, preguntaId);
+
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      preguntasIds.push(await crearPregunta(token, periodoId, `Pregunta ${i + 1}`));
+    }
+
+    const plantillaId = await crearPlantilla(token, periodoId, preguntasIds);
     await generarExamen(token, plantillaId);
 
     const borrar = await request(app)
@@ -162,7 +167,7 @@ describe('periodos (materias)', () => {
 
     const periodoId = await crearPeriodo(token, 'Materia Archivable');
     await crearAlumno(token, periodoId);
-    await crearPregunta(token, periodoId);
+    await crearPregunta(token, periodoId, 'Pregunta A');
 
     const archivar = await request(app)
       .post(`/api/periodos/${periodoId}/archivar`)

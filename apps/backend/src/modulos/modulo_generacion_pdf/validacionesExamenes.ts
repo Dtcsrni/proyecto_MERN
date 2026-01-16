@@ -9,7 +9,9 @@ export const esquemaCrearPlantilla = z.object({
   tipo: z.enum(['parcial', 'global']),
   titulo: z.string().min(1),
   instrucciones: z.string().optional(),
-  totalReactivos: z.number().int().positive(),
+  numeroPaginas: z.number().int().positive().max(50),
+  // Legacy (deprecado): se acepta para compatibilidad, pero ya no se usa.
+  totalReactivos: z.number().int().positive().optional(),
   preguntasIds: z.array(esquemaObjectId).optional(),
   temas: z.array(z.string().min(1)).optional(),
   configuracionPdf: z
@@ -59,6 +61,8 @@ export const esquemaActualizarPlantilla = z
     tipo: z.enum(['parcial', 'global']).optional(),
     titulo: z.string().min(1).optional(),
     instrucciones: z.string().optional(),
+    numeroPaginas: z.number().int().positive().max(50).optional(),
+    // Legacy (deprecado)
     totalReactivos: z.number().int().positive().optional(),
     preguntasIds: z.array(esquemaObjectId).optional(),
     temas: z.array(z.string().min(1)).optional(),

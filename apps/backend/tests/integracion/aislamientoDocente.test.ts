@@ -49,26 +49,30 @@ describe('aislamiento por docente', () => {
     return alumnoResp.body.alumno._id as string;
   }
 
-  async function crearPregunta(token: string, periodoId: string) {
-    const preguntaResp = await request(app)
-      .post('/api/banco-preguntas')
-      .set({ Authorization: `Bearer ${token}` })
-      .send({
-        periodoId,
-        enunciado: 'Pregunta A',
-        opciones: [
-          { texto: 'A', esCorrecta: true },
-          { texto: 'B', esCorrecta: false },
-          { texto: 'C', esCorrecta: false },
-          { texto: 'D', esCorrecta: false },
-          { texto: 'E', esCorrecta: false }
-        ]
-      })
-      .expect(201);
-    return preguntaResp.body.pregunta._id as string;
+  async function crearPreguntas(token: string, periodoId: string) {
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      const preguntaResp = await request(app)
+        .post('/api/banco-preguntas')
+        .set({ Authorization: `Bearer ${token}` })
+        .send({
+          periodoId,
+          enunciado: `Pregunta ${i + 1}`,
+          opciones: [
+            { texto: 'A', esCorrecta: true },
+            { texto: 'B', esCorrecta: false },
+            { texto: 'C', esCorrecta: false },
+            { texto: 'D', esCorrecta: false },
+            { texto: 'E', esCorrecta: false }
+          ]
+        })
+        .expect(201);
+      preguntasIds.push(preguntaResp.body.pregunta._id as string);
+    }
+    return preguntasIds;
   }
 
-  async function crearPlantilla(token: string, periodoId: string, preguntaId: string) {
+  async function crearPlantilla(token: string, periodoId: string, preguntasIds: string[]) {
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
       .set({ Authorization: `Bearer ${token}` })
@@ -76,8 +80,8 @@ describe('aislamiento por docente', () => {
         periodoId,
         tipo: 'parcial',
         titulo: 'Plantilla A',
-        totalReactivos: 1,
-        preguntasIds: [preguntaId]
+        numeroPaginas: 1,
+        preguntasIds
       })
       .expect(201);
     return plantillaResp.body.plantilla._id as string;
@@ -98,10 +102,10 @@ describe('aislamiento por docente', () => {
   async function prepararEscenarioBase(token: string) {
     const periodoId = await crearPeriodo(token);
     const alumnoId = await crearAlumno(token, periodoId);
-    const preguntaId = await crearPregunta(token, periodoId);
-    const plantillaId = await crearPlantilla(token, periodoId, preguntaId);
+    const preguntasIds = await crearPreguntas(token, periodoId);
+    const plantillaId = await crearPlantilla(token, periodoId, preguntasIds);
     const { examenGeneradoId, folio } = await generarExamen(token, plantillaId);
-    return { periodoId, alumnoId, preguntaId, plantillaId, examenGeneradoId, folio };
+    return { periodoId, alumnoId, preguntasIds, plantillaId, examenGeneradoId, folio };
   }
 
   it('no lista recursos de otro docente (periodos/alumnos/banco/plantillas)', async () => {
@@ -230,22 +234,25 @@ describe('aislamiento por docente', () => {
       .expect(201);
     const periodoId = periodoResp.body.periodo._id as string;
 
-    const preguntaResp = await request(app)
-      .post('/api/banco-preguntas')
-      .set({ Authorization: `Bearer ${tokenA}` })
-      .send({
-        periodoId,
-        enunciado: 'Pregunta A',
-        opciones: [
-          { texto: 'A', esCorrecta: true },
-          { texto: 'B', esCorrecta: false },
-          { texto: 'C', esCorrecta: false },
-          { texto: 'D', esCorrecta: false },
-          { texto: 'E', esCorrecta: false }
-        ]
-      })
-      .expect(201);
-    const preguntaId = preguntaResp.body.pregunta._id as string;
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      const preguntaResp = await request(app)
+        .post('/api/banco-preguntas')
+        .set({ Authorization: `Bearer ${tokenA}` })
+        .send({
+          periodoId,
+          enunciado: `Pregunta A-${i + 1}`,
+          opciones: [
+            { texto: 'A', esCorrecta: true },
+            { texto: 'B', esCorrecta: false },
+            { texto: 'C', esCorrecta: false },
+            { texto: 'D', esCorrecta: false },
+            { texto: 'E', esCorrecta: false }
+          ]
+        })
+        .expect(201);
+      preguntasIds.push(preguntaResp.body.pregunta._id as string);
+    }
 
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
@@ -254,8 +261,8 @@ describe('aislamiento por docente', () => {
         periodoId,
         tipo: 'parcial',
         titulo: 'Plantilla A',
-        totalReactivos: 1,
-        preguntasIds: [preguntaId]
+        numeroPaginas: 1,
+        preguntasIds
       })
       .expect(201);
     const plantillaId = plantillaResp.body.plantilla._id as string;

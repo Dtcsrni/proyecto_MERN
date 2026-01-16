@@ -387,6 +387,7 @@ export async function generarPdfExamen({
   preguntas,
   mapaVariante,
   tipoExamen,
+  totalPaginas,
   margenMm = 10,
   encabezado
 }: {
@@ -395,6 +396,7 @@ export async function generarPdfExamen({
   preguntas: PreguntaBase[];
   mapaVariante: MapaVariante;
   tipoExamen: 'parcial' | 'global';
+  totalPaginas: number;
   margenMm?: number;
   encabezado?: {
     institucion?: string;
@@ -411,7 +413,7 @@ export async function generarPdfExamen({
   const fuenteItalica = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
   const fuenteMono = await pdfDoc.embedFont(StandardFonts.Courier);
   const margen = mmAPuntos(margenMm);
-  const paginasMinimas = tipoExamen === 'parcial' ? 2 : 4;
+  const paginasObjetivo = Number.isFinite(totalPaginas) ? Math.max(1, Math.floor(totalPaginas)) : 1;
 
   const colorPrimario = rgb(0.07, 0.22, 0.42);
   const colorGris = rgb(0.38, 0.38, 0.38);
@@ -459,6 +461,7 @@ export async function generarPdfExamen({
   let indicePregunta = 0;
   let numeroPagina = 1;
   const paginasMeta: { numero: number; qrTexto: string; preguntasDel: number; preguntasAl: number }[] = [];
+  const metricasPaginas: Array<{ numero: number; fraccionVacia: number; preguntas: number }> = [];
   // Se guarda el mapa de posiciones para el escaneo OMR posterior.
   const paginasOmr: Array<{
     numeroPagina: number;
@@ -469,7 +472,7 @@ export async function generarPdfExamen({
     }>;
   }> = [];
 
-  while (indicePregunta < preguntasOrdenadas.length || numeroPagina <= paginasMinimas) {
+  while (numeroPagina <= paginasObjetivo) {
     const page = pdfDoc.addPage([ANCHO_CARTA, ALTO_CARTA]);
     const qrTexto = String(folio ?? '').trim().toUpperCase();
     let preguntasDel = 0;
@@ -554,9 +557,10 @@ export async function generarPdfExamen({
       page.drawText(meta, { x: margen + 10, y: yTop - 42, size: 9, font: fuente, color: colorGris });
     }
 
-    let cursorY = yTop - altoEncabezado - 18;
+  const cursorYInicio = yTop - altoEncabezado - 18;
+  let cursorY = cursorYInicio;
 
-    const alturaDisponibleMin = margen + 60;
+  const alturaDisponibleMin = margen + 60;
 
     const calcularAlturaPregunta = (pregunta: PreguntaBase, numero: number) => {
       const lineasEnunciado = envolverTextoMixto({
@@ -721,6 +725,11 @@ export async function generarPdfExamen({
       mapaPagina.push({ numeroPregunta: numero, idPregunta: pregunta.id, opciones: opcionesOmr });
     }
 
+    const alturaUtil = Math.max(1, cursorYInicio - alturaDisponibleMin);
+    const alturaRestante = Math.max(0, cursorY - alturaDisponibleMin);
+    const fraccionVacia = Math.max(0, Math.min(1, alturaRestante / alturaUtil));
+    metricasPaginas.push({ numero: numeroPagina, fraccionVacia, preguntas: mapaPagina.length });
+
     paginasMeta.push({ numero: numeroPagina, qrTexto, preguntasDel, preguntasAl });
 
     paginasOmr.push({ numeroPagina, preguntas: mapaPagina });
@@ -728,5 +737,5 @@ export async function generarPdfExamen({
   }
 
   const pdfBytes = await pdfDoc.save();
-  return { pdfBytes: Buffer.from(pdfBytes), paginas: paginasMeta, mapaOmr: { margenMm, paginas: paginasOmr } };
+  return { pdfBytes: Buffer.from(pdfBytes), paginas: paginasMeta, metricasPaginas, mapaOmr: { margenMm, paginas: paginasOmr } };
 }

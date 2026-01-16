@@ -208,7 +208,12 @@ export async function actualizarPlantilla(req: SolicitudDocente, res: Response) 
     tipo: (patch as { tipo?: unknown }).tipo ?? actual.tipo,
     titulo: (patch as { titulo?: unknown }).titulo ?? actual.titulo,
     instrucciones: (patch as { instrucciones?: unknown }).instrucciones ?? actual.instrucciones,
-    totalReactivos: (patch as { totalReactivos?: unknown }).totalReactivos ?? actual.totalReactivos,
+    numeroPaginas:
+      (patch as { numeroPaginas?: unknown }).numeroPaginas ??
+      (actual as unknown as { numeroPaginas?: unknown }).numeroPaginas,
+    totalReactivos:
+      (patch as { totalReactivos?: unknown }).totalReactivos ??
+      (actual as unknown as { totalReactivos?: unknown }).totalReactivos,
     preguntasIds: (patch as { preguntasIds?: unknown }).preguntasIds ?? actual.preguntasIds,
     temas: (patch as { temas?: unknown }).temas ?? (actual as unknown as { temas?: unknown }).temas,
     configuracionPdf: (patch as { configuracionPdf?: unknown }).configuracionPdf ?? actual.configuracionPdf
@@ -344,16 +349,15 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas disponibles para previsualizar', 400);
   }
 
-  const totalSolicitados = Math.max(1, Math.floor(Number(plantilla.totalReactivos ?? 0)));
   const totalDisponibles = preguntasDb.length;
-  const totalUsados = Math.min(totalSolicitados, totalDisponibles);
-  const advertencias: string[] = [];
-  if (totalDisponibles < totalSolicitados) {
-    advertencias.push(
-      `Plantilla solicita ${totalSolicitados} reactivos, pero solo hay ${totalDisponibles} disponibles. ` +
-        `La previsualizacion usara ${totalUsados}.`
-    );
-  }
+  const numeroPaginas = (() => {
+    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
+    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+    // Compatibilidad legacy: si no existe numeroPaginas pero sí totalReactivos, preserva el comportamiento histórico.
+    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
+    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
+    return 1;
+  })();
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -368,20 +372,21 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
   });
 
   const seed = hash32(String(plantilla._id));
-  const preguntasSeleccionadas = barajarDeterminista(preguntasBase, seed).slice(0, totalUsados);
-  const mapaVarianteDet = generarVarianteDeterminista(preguntasSeleccionadas, `plantilla:${plantilla._id}`);
+  const preguntasCandidatas = barajarDeterminista(preguntasBase, seed);
+  const mapaVarianteDet = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}`);
 
   const [periodo, docenteDb] = await Promise.all([
     plantilla.periodoId ? Periodo.findById(plantilla.periodoId).lean() : Promise.resolve(null),
     Docente.findById(docenteId).lean()
   ]);
 
-  const { paginas } = await generarPdfExamen({
+  const { paginas, metricasPaginas, mapaOmr } = await generarPdfExamen({
     titulo: String(plantilla.titulo ?? ''),
     folio: 'PREVIEW',
-    preguntas: preguntasSeleccionadas,
+    preguntas: preguntasCandidatas,
     mapaVariante: mapaVarianteDet as unknown as ReturnType<typeof generarVariante>,
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
+    totalPaginas: numeroPaginas,
     margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
@@ -389,11 +394,30 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
     }
   });
 
-  const porId = new Map<string, (typeof preguntasSeleccionadas)[number]>();
-  for (const p of preguntasSeleccionadas) porId.set(p.id, p);
+  const porId = new Map<string, (typeof preguntasCandidatas)[number]>();
+  for (const p of preguntasCandidatas) porId.set(p.id, p);
   const ordenadas = (mapaVarianteDet.ordenPreguntas || []).map((id) => porId.get(id)).filter(Boolean) as Array<
-    (typeof preguntasSeleccionadas)[number]
+    (typeof preguntasCandidatas)[number]
   >;
+
+  const usadosSet = new Set<string>();
+  for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
+    for (const pr of pag.preguntas ?? []) {
+      const id = String(pr.idPregunta ?? '').trim();
+      if (id) usadosSet.add(id);
+    }
+  }
+  const totalUsados = usadosSet.size;
+  const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
+  const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
+  const consumioTodas = totalUsados >= totalDisponibles;
+  const advertencias: string[] = [];
+  if (consumioTodas && fraccionVaciaUltimaPagina > 0) {
+    advertencias.push(
+      `No hay suficientes preguntas para llenar ${numeroPaginas} pagina(s). ` +
+        `La ultima pagina queda ${(fraccionVaciaUltimaPagina * 100).toFixed(0)}% vacia.`
+    );
+  }
 
   const elementosBase = [
     'Titulo',
@@ -427,10 +451,10 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
 
   res.json({
     plantillaId: String(plantilla._id),
-    totalReactivos: plantilla.totalReactivos,
-    totalSolicitados,
+    numeroPaginas,
     totalDisponibles,
     totalUsados,
+    fraccionVaciaUltimaPagina,
     advertencias,
     conteoPorTema,
     temasDisponiblesEnMateria,
@@ -487,9 +511,13 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas disponibles para previsualizar', 400);
   }
 
-  const totalSolicitados = Math.max(1, Math.floor(Number(plantilla.totalReactivos ?? 0)));
-  const totalDisponibles = preguntasDb.length;
-  const totalUsados = Math.min(totalSolicitados, totalDisponibles);
+  const numeroPaginas = (() => {
+    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
+    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
+    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
+    return 1;
+  })();
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -504,8 +532,8 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
   });
 
   const seed = hash32(String(plantilla._id));
-  const preguntasSeleccionadas = barajarDeterminista(preguntasBase, seed).slice(0, totalUsados);
-  const mapaVarianteDet = generarVarianteDeterminista(preguntasSeleccionadas, `plantilla:${plantilla._id}`);
+  const preguntasCandidatas = barajarDeterminista(preguntasBase, seed);
+  const mapaVarianteDet = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}`);
 
   const [periodo, docenteDb] = await Promise.all([
     plantilla.periodoId ? Periodo.findById(plantilla.periodoId).lean() : Promise.resolve(null),
@@ -515,9 +543,10 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
   const { pdfBytes } = await generarPdfExamen({
     titulo: String(plantilla.titulo ?? ''),
     folio: 'PREVIEW',
-    preguntas: preguntasSeleccionadas,
+    preguntas: preguntasCandidatas,
     mapaVariante: mapaVarianteDet as unknown as ReturnType<typeof generarVariante>,
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
+    totalPaginas: numeroPaginas,
     margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
@@ -580,9 +609,13 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  if (plantilla.totalReactivos > preguntasDb.length) {
-    throw new ErrorAplicacion('REACTIVOS_INSUFICIENTES', 'No hay suficientes preguntas en el banco', 400);
-  }
+  const numeroPaginas = (() => {
+    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
+    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
+    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
+    return 1;
+  })();
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -596,8 +629,8 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     };
   });
 
-  const preguntasSeleccionadas = barajar(preguntasBase).slice(0, plantilla.totalReactivos);
-  const mapaVariante = generarVariante(preguntasSeleccionadas);
+  const preguntasCandidatas = barajar(preguntasBase);
+  const mapaVariante = generarVariante(preguntasCandidatas);
   const loteId = randomUUID().split('-')[0].toUpperCase();
   const folio = randomUUID().split('-')[0].toUpperCase();
 
@@ -606,18 +639,55 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     Docente.findById(docenteId).lean()
   ]);
 
-  const { pdfBytes, paginas, mapaOmr } = await generarPdfExamen({
+  const { pdfBytes, paginas, metricasPaginas, mapaOmr } = await generarPdfExamen({
     titulo: plantilla.titulo,
     folio,
-    preguntas: preguntasSeleccionadas,
+    preguntas: preguntasCandidatas,
     mapaVariante,
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
+    totalPaginas: numeroPaginas,
     margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
       docente: String((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto ?? '')
     }
   });
+
+  const usadosSet = new Set<string>();
+  for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
+    for (const pr of pag.preguntas ?? []) {
+      const id = String(pr.idPregunta ?? '').trim();
+      if (id) usadosSet.add(id);
+    }
+  }
+  const ordenUsado = (mapaVariante.ordenPreguntas ?? []).filter((id) => usadosSet.has(id));
+  const ordenOpcionesPorPreguntaUsado = Object.fromEntries(
+    ordenUsado.map((id) => [id, (mapaVariante as unknown as { ordenOpcionesPorPregunta?: Record<string, number[]> }).ordenOpcionesPorPregunta?.[id]])
+  ) as Record<string, number[]>;
+  const mapaVarianteUsada = {
+    ordenPreguntas: ordenUsado,
+    ordenOpcionesPorPregunta: ordenOpcionesPorPreguntaUsado
+  };
+
+  const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
+  const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
+  const consumioTodas = usadosSet.size >= preguntasDb.length;
+  const advertencias: string[] = [];
+  if (consumioTodas && fraccionVaciaUltimaPagina > 0.5) {
+    throw new ErrorAplicacion(
+      'PAGINAS_INSUFICIENTES',
+      `No hay suficientes preguntas para llenar ${numeroPaginas} pagina(s). La ultima pagina queda ${(fraccionVaciaUltimaPagina * 100).toFixed(
+        0
+      )}% vacia.`,
+      409,
+      { fraccionVaciaUltimaPagina, numeroPaginas }
+    );
+  }
+  if (consumioTodas && fraccionVaciaUltimaPagina > 0) {
+    advertencias.push(
+      `La ultima pagina queda ${(fraccionVaciaUltimaPagina * 100).toFixed(0)}% vacia por falta de preguntas.`
+    );
+  }
 
   const nombreArchivo = construirNombrePdfExamen({
     folio,
@@ -636,14 +706,14 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     loteId,
     folio,
     estado: 'generado',
-    preguntasIds: preguntasSeleccionadas.map((p) => p.id),
-    mapaVariante,
+    preguntasIds: ordenUsado,
+    mapaVariante: mapaVarianteUsada,
     paginas,
     mapaOmr,
     rutaPdf
   });
 
-  res.status(201).json({ examenGenerado });
+  res.status(201).json({ examenGenerado, advertencias });
 }
 
 /**
@@ -710,9 +780,13 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  if (plantilla.totalReactivos > preguntasDb.length) {
-    throw new ErrorAplicacion('REACTIVOS_INSUFICIENTES', 'No hay suficientes preguntas en el banco', 400);
-  }
+  const numeroPaginas = (() => {
+    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
+    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
+    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
+    return 1;
+  })();
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -726,25 +800,95 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
     };
   });
 
+  // Pre-chequeo: si ni usando TODO el banco alcanza para llenar las paginas, bloquea el lote.
+  {
+    const preguntasCandidatas = barajarDeterminista(preguntasBase, hash32(String(plantilla._id)));
+    const mapaVariante = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}:lote-precheck`);
+    const { metricasPaginas, mapaOmr } = await generarPdfExamen({
+      titulo: plantilla.titulo,
+      folio: 'PRECHECK',
+      preguntas: preguntasCandidatas,
+      mapaVariante: mapaVariante as unknown as ReturnType<typeof generarVariante>,
+      tipoExamen: plantilla.tipo as 'parcial' | 'global',
+      totalPaginas: numeroPaginas,
+      margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
+      encabezado: {
+        materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
+        docente: String((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto ?? '')
+      }
+    });
+    const usadosSet = new Set<string>();
+    for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
+      for (const pr of pag.preguntas ?? []) {
+        const id = String(pr.idPregunta ?? '').trim();
+        if (id) usadosSet.add(id);
+      }
+    }
+    const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
+    const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
+    const consumioTodas = usadosSet.size >= preguntasDb.length;
+    if (consumioTodas && fraccionVaciaUltimaPagina > 0.5) {
+      throw new ErrorAplicacion(
+        'PAGINAS_INSUFICIENTES',
+        `No hay suficientes preguntas para llenar ${numeroPaginas} pagina(s). La ultima pagina queda ${(fraccionVaciaUltimaPagina * 100).toFixed(
+          0
+        )}% vacia.`,
+        409,
+        { fraccionVaciaUltimaPagina, numeroPaginas }
+      );
+    }
+  }
+
   async function crearExamenParaAlumno(alumnoId: string) {
-    const preguntasSeleccionadas = barajar(preguntasBase).slice(0, plantilla.totalReactivos);
-    const mapaVariante = generarVariante(preguntasSeleccionadas);
+    const preguntasCandidatas = barajar(preguntasBase);
+    const mapaVariante = generarVariante(preguntasCandidatas);
 
     let folio = randomUUID().split('-')[0].toUpperCase();
     for (let intento = 0; intento < 3; intento += 1) {
       try {
-        const { pdfBytes, paginas, mapaOmr } = await generarPdfExamen({
+        const { pdfBytes, paginas, metricasPaginas, mapaOmr } = await generarPdfExamen({
           titulo: plantilla.titulo,
           folio,
-          preguntas: preguntasSeleccionadas,
+          preguntas: preguntasCandidatas,
           mapaVariante,
           tipoExamen: plantilla.tipo as 'parcial' | 'global',
+          totalPaginas: numeroPaginas,
           margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
           encabezado: {
             materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
             docente: String((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto ?? '')
           }
         });
+
+        const usadosSet = new Set<string>();
+        for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
+          for (const pr of pag.preguntas ?? []) {
+            const id = String(pr.idPregunta ?? '').trim();
+            if (id) usadosSet.add(id);
+          }
+        }
+        const ordenUsado = (mapaVariante.ordenPreguntas ?? []).filter((id) => usadosSet.has(id));
+        const ordenOpcionesPorPreguntaUsado = Object.fromEntries(
+          ordenUsado.map((id) => [id, (mapaVariante as unknown as { ordenOpcionesPorPregunta?: Record<string, number[]> }).ordenOpcionesPorPregunta?.[id]])
+        ) as Record<string, number[]>;
+        const mapaVarianteUsada = {
+          ordenPreguntas: ordenUsado,
+          ordenOpcionesPorPregunta: ordenOpcionesPorPreguntaUsado
+        };
+
+        const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
+        const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
+        const consumioTodas = usadosSet.size >= preguntasDb.length;
+        if (consumioTodas && fraccionVaciaUltimaPagina > 0.5) {
+          throw new ErrorAplicacion(
+            'PAGINAS_INSUFICIENTES',
+            `No hay suficientes preguntas para llenar ${numeroPaginas} pagina(s). La ultima pagina queda ${(fraccionVaciaUltimaPagina * 100).toFixed(
+              0
+            )}% vacia.`,
+            409,
+            { fraccionVaciaUltimaPagina, numeroPaginas }
+          );
+        }
 
         const nombreArchivo = construirNombrePdfExamen({
           folio,
@@ -763,8 +907,8 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           loteId,
           folio,
           estado: 'generado',
-          preguntasIds: preguntasSeleccionadas.map((p) => p.id),
-          mapaVariante,
+          preguntasIds: ordenUsado,
+          mapaVariante: mapaVarianteUsada,
           paginas,
           mapaOmr,
           rutaPdf
