@@ -1,7 +1,25 @@
 {
   "name": "sistema-evaluacion-universitaria",
+  "description": "Plataforma MERN para evaluación universitaria: generación de exámenes en PDF, vinculación por QR, calificación asistida (OMR) y operación local con Docker + dashboard.",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dtcsrni/sistema-evaluacion-universitaria"
+  },
+  "keywords": [
+    "mern",
+    "universidad",
+    "evaluacion",
+    "examenes",
+    "pdf",
+    "qr",
+    "omr",
+    "mongo",
+    "express",
+    "react",
+    "vite"
+  ],
   "workspaces": ["apps/backend", "apps/frontend", "apps/portal_alumno_cloud"],
   "engines": {
     "node": ">=24"

@@ -1,7 +1,13 @@
 {
   "name": "backend",
+  "description": "API docente (Express + TypeScript + MongoDB) para gestión de evaluaciones, autenticación y flujo de examen.",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dtcsrni/sistema-evaluacion-universitaria"
+  },
+  "keywords": ["api", "express", "typescript", "mongodb", "mongoose", "evaluacion", "docente"],
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

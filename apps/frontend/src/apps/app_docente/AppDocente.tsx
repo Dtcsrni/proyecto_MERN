@@ -449,10 +449,6 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   const dominiosPermitidos = obtenerDominiosCorreoPermitidosFrontend();
   const politicaDominiosTexto = dominiosPermitidos.length > 0 ? textoDominiosPermitidos(dominiosPermitidos) : '';
 
-  function nombreCompletoParaEnviar() {
-    return [nombres.trim(), apellidos.trim()].filter(Boolean).join(' ').trim();
-  }
-
   function correoPermitido(correoAValidar: string) {
     return esCorreoDeDominioPermitidoFrontend(correoAValidar, dominiosPermitidos);
   }
@@ -624,7 +620,6 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
       }
       setEnviando(true);
       setMensaje('');
-      const nombre = nombreCompletoParaEnviar();
       const correoFinal = correo.trim();
 
       const debeEnviarContrasena = Boolean(
