@@ -128,6 +128,27 @@ function textoDominiosPermitidos(dominios: string[]): string {
   return dominios.map((d) => `@${d}`).join(', ');
 }
 
+const LARGO_ID_MATERIA = 8;
+
+function idCortoMateria(id?: string, largo = LARGO_ID_MATERIA): string {
+  const valor = String(id || '').trim();
+  if (!valor) return '-';
+  if (valor.length <= largo) return valor;
+  return valor.slice(-largo);
+}
+
+function etiquetaMateriaConId(nombre?: string, id?: string): string {
+  const nombreLimpio = String(nombre || '').trim();
+  if (!nombreLimpio) return '-';
+  const idLimpio = String(id || '').trim();
+  if (!idLimpio) return nombreLimpio;
+  return `${nombreLimpio} (ID: ${idCortoMateria(idLimpio)})`;
+}
+
+function etiquetaMateria(periodo?: { _id?: string; nombre?: string } | null): string {
+  return etiquetaMateriaConId(periodo?.nombre, periodo?._id);
+}
+
 function AyudaFormulario({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <div className="panel">
@@ -1446,8 +1467,8 @@ function SeccionBanco({
         <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
           <option value="">Selecciona</option>
           {periodos.map((periodo) => (
-            <option key={periodo._id} value={periodo._id}>
-              {periodo.nombre}
+            <option key={periodo._id} value={periodo._id} title={periodo._id}>
+              {etiquetaMateria(periodo)}
             </option>
           ))}
         </select>
@@ -1529,13 +1550,6 @@ function SeccionPeriodos({
     return d.toLocaleDateString();
   }
 
-  function formatearIdMateria(id?: string) {
-    const valor = String(id || '').trim();
-    if (!valor) return '-';
-    if (valor.length <= 8) return valor;
-    return valor.slice(-8);
-  }
-
   function normalizarNombreMateria(valor: string): string {
     return String(valor || '')
       .trim()
@@ -1593,11 +1607,11 @@ function SeccionPeriodos({
 
   async function borrarMateria(periodo: Periodo) {
     const paso1 = globalThis.confirm(
-      `¿Borrar la materia "${periodo.nombre}"?\n\nSe borrara TODO lo asociado: alumnos, banco de preguntas, plantillas, examenes generados, calificaciones y codigos.`
+      `¿Borrar la materia "${etiquetaMateria(periodo)}"?\n\nSe borrara TODO lo asociado: alumnos, banco de preguntas, plantillas, examenes generados, calificaciones y codigos.`
     );
     if (!paso1) return;
     const paso2 = globalThis.confirm(
-      `CONFIRMACION FINAL:\n\nEsta accion NO se puede deshacer.\n\n¿Seguro que deseas borrar definitivamente "${periodo.nombre}"?`
+      `CONFIRMACION FINAL:\n\nEsta accion NO se puede deshacer.\n\n¿Seguro que deseas borrar definitivamente "${etiquetaMateria(periodo)}"?`
     );
     if (!paso2) return;
 
@@ -1628,7 +1642,7 @@ function SeccionPeriodos({
 
   async function archivarMateria(periodo: Periodo) {
     const confirmado = globalThis.confirm(
-      `¿Archivar la materia "${periodo.nombre}"?\n\nSe ocultara de la lista de activas, pero NO se borraran sus datos.`
+      `¿Archivar la materia "${etiquetaMateria(periodo)}"?\n\nSe ocultara de la lista de activas, pero NO se borraran sus datos.`
     );
     if (!confirmado) return;
 
@@ -1720,10 +1734,11 @@ function SeccionPeriodos({
       <ul className="lista">
         {periodos.map((periodo) => (
           <li key={periodo._id}>
-            <span className="item-principal">{periodo.nombre}</span>
+            <span className="item-principal" title={periodo._id}>
+              {etiquetaMateria(periodo)}
+            </span>
             <div className="ayuda">
-              ID: <span title={periodo._id}>{formatearIdMateria(periodo._id)}</span> · Inicio: {formatearFecha(periodo.fechaInicio)} · Fin:{' '}
-              {formatearFecha(periodo.fechaFin)}
+              Inicio: {formatearFecha(periodo.fechaInicio)} · Fin: {formatearFecha(periodo.fechaFin)}
               {Array.isArray(periodo.grupos) && periodo.grupos.length > 0 ? ` · Grupos: ${periodo.grupos.join(', ')}` : ''}
             </div>
             <Boton
@@ -1769,20 +1784,13 @@ function SeccionPeriodosArchivados({
     return d.toLocaleString();
   }
 
-  function formatearIdMateria(id?: string) {
-    const valor = String(id || '').trim();
-    if (!valor) return '-';
-    if (valor.length <= 8) return valor;
-    return valor.slice(-8);
-  }
-
   async function borrarMateria(periodo: Periodo) {
     const paso1 = globalThis.confirm(
-      `¿Borrar DEFINITIVAMENTE la materia archivada "${periodo.nombre}"?\n\nSe borrara TODO lo asociado: alumnos, banco de preguntas, plantillas, examenes generados, calificaciones y codigos.`
+      `¿Borrar DEFINITIVAMENTE la materia archivada "${etiquetaMateria(periodo)}"?\n\nSe borrara TODO lo asociado: alumnos, banco de preguntas, plantillas, examenes generados, calificaciones y codigos.`
     );
     if (!paso1) return;
     const paso2 = globalThis.confirm(
-      `CONFIRMACION FINAL:\n\nEsta accion NO se puede deshacer.\n\n¿Seguro que deseas borrar definitivamente "${periodo.nombre}"?`
+      `CONFIRMACION FINAL:\n\nEsta accion NO se puede deshacer.\n\n¿Seguro que deseas borrar definitivamente "${etiquetaMateria(periodo)}"?`
     );
     if (!paso2) return;
 
@@ -1841,10 +1849,11 @@ function SeccionPeriodosArchivados({
         <ul className="lista">
           {periodos.map((periodo) => (
             <li key={periodo._id}>
-              <span className="item-principal">{periodo.nombre}</span>
+              <span className="item-principal" title={periodo._id}>
+                {etiquetaMateria(periodo)}
+              </span>
               <div className="ayuda">
-                ID: <span title={periodo._id}>{formatearIdMateria(periodo._id)}</span> · Creada: {formatearFechaHora(periodo.createdAt)} ·
-                Archivada: {formatearFechaHora(periodo.archivadoEn)}
+                Creada: {formatearFechaHora(periodo.createdAt)} · Archivada: {formatearFechaHora(periodo.archivadoEn)}
               </div>
               {periodo.resumenArchivado && (
                 <div className="ayuda">
@@ -1941,7 +1950,8 @@ function SeccionAlumnos({
 
   const nombreMateriaSeleccionada = useMemo(() => {
     if (!periodoIdLista) return '';
-    return periodosTodos.find((p) => p._id === periodoIdLista)?.nombre ?? '';
+    const periodo = periodosTodos.find((p) => p._id === periodoIdLista);
+    return periodo ? etiquetaMateria(periodo) : '';
   }, [periodosTodos, periodoIdLista]);
 
   async function crearAlumno() {
@@ -2154,8 +2164,8 @@ function SeccionAlumnos({
         <select value={periodoIdNuevo} onChange={(event) => setPeriodoIdNuevo(event.target.value)}>
           <option value="">Selecciona</option>
           {periodosActivos.map((periodo) => (
-            <option key={periodo._id} value={periodo._id}>
-              {periodo.nombre}
+            <option key={periodo._id} value={periodo._id} title={periodo._id}>
+              {etiquetaMateria(periodo)}
             </option>
           ))}
         </select>
@@ -2195,8 +2205,8 @@ function SeccionAlumnos({
           {periodosTodos
             .filter((p) => p.activo !== false)
             .map((periodo) => (
-              <option key={periodo._id} value={periodo._id}>
-                {periodo.nombre}
+              <option key={periodo._id} value={periodo._id} title={periodo._id}>
+                {etiquetaMateria(periodo)}
               </option>
             ))}
         </select>
@@ -2342,8 +2352,8 @@ function SeccionPlantillas({
         <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
           <option value="">Selecciona</option>
           {periodos.map((periodo) => (
-            <option key={periodo._id} value={periodo._id}>
-              {periodo.nombre}
+            <option key={periodo._id} value={periodo._id} title={periodo._id}>
+              {etiquetaMateria(periodo)}
             </option>
           ))}
         </select>
@@ -2927,8 +2937,8 @@ function SeccionPublicar({
         <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
           <option value="">Selecciona</option>
           {periodos.map((periodo) => (
-            <option key={periodo._id} value={periodo._id}>
-              {periodo.nombre}
+            <option key={periodo._id} value={periodo._id} title={periodo._id}>
+              {etiquetaMateria(periodo)}
             </option>
           ))}
         </select>
