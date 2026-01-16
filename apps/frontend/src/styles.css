@@ -557,6 +557,15 @@ p {
   background: #cbd5f5;
 }
 
+.boton.peligro {
+  background: var(--peligroBg);
+  color: var(--peligroTexto);
+}
+
+.boton.peligro:hover {
+  background: #fecaca;
+}
+
 .acciones {
   display: flex;
   gap: 0.75rem;

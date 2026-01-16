@@ -16,6 +16,8 @@ import { generarPdfExamen } from './servicioGeneracionPdf';
 import { guardarPdfExamen } from '../../infraestructura/archivos/almacenLocal';
 import { Periodo } from '../modulo_alumnos/modeloPeriodo';
 import { normalizarParaNombreArchivo } from '../../compartido/utilidades/texto';
+import { Calificacion } from '../modulo_calificacion/modeloCalificacion';
+import { Entrega } from '../modulo_vinculacion_entrega/modeloEntrega';
 
 type BancoPreguntaLean = {
   _id: unknown;
@@ -271,4 +273,55 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
 
   const actualizado = await ExamenGenerado.findOne({ _id: examenId, docenteId }).lean();
   res.json({ examenGenerado: actualizado });
+}
+
+/**
+ * Elimina un examen generado.
+ *
+ * Regla de negocio:
+ * - Solo se permite eliminar si el examen esta en estado `generado` (no entregado/calificado).
+ * - Si existen registros de entrega o calificacion asociados, se bloquea.
+ *
+ * Nota: el borrado del archivo PDF es best-effort.
+ */
+export async function eliminarExamenGenerado(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const examenId = String(req.params.id || '').trim();
+
+  const examen = await ExamenGenerado.findOne({ _id: examenId, docenteId }).lean();
+  if (!examen) {
+    throw new ErrorAplicacion('EXAMEN_NO_ENCONTRADO', 'Examen no encontrado', 404);
+  }
+
+  const estado = String((examen as unknown as { estado?: unknown })?.estado ?? '');
+  if (estado && estado !== 'generado') {
+    throw new ErrorAplicacion('EXAMEN_NO_ELIMINABLE', 'No se puede eliminar un examen ya entregado o calificado', 409);
+  }
+
+  const [tieneEntrega, tieneCalificacion] = await Promise.all([
+    Entrega.exists({ docenteId, examenGeneradoId: examenId }),
+    Calificacion.exists({ docenteId, examenGeneradoId: examenId })
+  ]);
+
+  if (tieneEntrega) {
+    throw new ErrorAplicacion('EXAMEN_CON_ENTREGA', 'No se puede eliminar: el examen ya fue vinculado/entregado', 409);
+  }
+  if (tieneCalificacion) {
+    throw new ErrorAplicacion('EXAMEN_CON_CALIFICACION', 'No se puede eliminar: el examen ya tiene calificacion', 409);
+  }
+
+  const rutaPdf = String((examen as unknown as { rutaPdf?: unknown })?.rutaPdf ?? '').trim();
+
+  await ExamenGenerado.deleteOne({ _id: examenId, docenteId });
+
+  if (rutaPdf) {
+    try {
+      await fs.unlink(rutaPdf);
+    } catch (error) {
+      // Si el archivo no existe (o falla el borrado), no bloquea la operacion.
+      void error;
+    }
+  }
+
+  res.json({ ok: true });
 }
