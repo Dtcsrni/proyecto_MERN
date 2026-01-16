@@ -3740,7 +3740,6 @@ function SeccionPlantillas({
             action: {
               label: 'Ver generados',
               onClick: () => {
-                setVista('plantillas');
                 setPlantillaId(plantilla._id);
                 // Esperar un tick para que renderice la sección.
                 window.setTimeout(() => {
@@ -4087,7 +4086,7 @@ function SeccionPlantillas({
                         {preview && (
                           <>
                             {Array.isArray(preview.advertencias) && preview.advertencias.length > 0 && (
-                              <InlineMensaje tipo="alerta">{preview.advertencias.join(' ')}</InlineMensaje>
+                              <InlineMensaje tipo="info">{preview.advertencias.join(' ')}</InlineMensaje>
                             )}
 
                             {Array.isArray(preview.conteoPorTema) && preview.conteoPorTema.length > 0 && (
@@ -4360,11 +4359,14 @@ function SeccionPlantillas({
             <span>ID: {idCortoMateria(ultimoGenerado._id)}</span>
             <span>Generado: {formatearFechaHora(ultimoGenerado.generadoEn)}</span>
           </div>
-          {Array.isArray(ultimoGenerado.paginas) && ultimoGenerado.paginas.length > 0 && (
+          {(() => {
+            const paginas = Array.isArray(ultimoGenerado.paginas) ? ultimoGenerado.paginas : [];
+            if (paginas.length === 0) return null;
+            return (
             <details>
-              <summary>Previsualizacion por pagina ({ultimoGenerado.paginas.length})</summary>
+              <summary>Previsualizacion por pagina ({paginas.length})</summary>
               {(() => {
-                const tieneRangos = ultimoGenerado.paginas.some(
+                const tieneRangos = paginas.some(
                   (p) => Number(p.preguntasDel ?? 0) > 0 && Number(p.preguntasAl ?? 0) > 0
                 );
                 return (
@@ -4376,10 +4378,10 @@ function SeccionPlantillas({
                 );
               })()}
               <ul className="lista">
-                {ultimoGenerado.paginas.map((p) => {
+                {paginas.map((p) => {
                   const del = Number(p.preguntasDel ?? 0);
                   const al = Number(p.preguntasAl ?? 0);
-                  const tieneRangos = ultimoGenerado.paginas.some(
+                  const tieneRangos = paginas.some(
                     (x) => Number(x.preguntasDel ?? 0) > 0 && Number(x.preguntasAl ?? 0) > 0
                   );
                   const rango = del && al ? `Preguntas ${del}–${al}` : tieneRangos ? 'Sin preguntas (pagina extra)' : 'Rango no disponible';
@@ -4391,7 +4393,8 @@ function SeccionPlantillas({
                 })}
               </ul>
             </details>
-          )}
+            );
+          })()}
         </div>
       )}
 
@@ -4428,11 +4431,14 @@ function SeccionPlantillas({
                         <div className="item-sub">
                           Alumno: {alumno ? `${alumno.matricula} - ${alumno.nombreCompleto}` : examen.alumnoId ? `ID ${idCortoMateria(String(examen.alumnoId))}` : 'Sin alumno'}
                         </div>
-                        {Array.isArray(examen.paginas) && examen.paginas.length > 0 && (
+                        {(() => {
+                          const paginas = Array.isArray(examen.paginas) ? examen.paginas : [];
+                          if (paginas.length === 0) return null;
+                          return (
                           <details>
-                            <summary>Previsualizacion por pagina ({examen.paginas.length})</summary>
+                            <summary>Previsualizacion por pagina ({paginas.length})</summary>
                             {(() => {
-                              const tieneRangos = examen.paginas.some(
+                              const tieneRangos = paginas.some(
                                 (p) => Number(p.preguntasDel ?? 0) > 0 && Number(p.preguntasAl ?? 0) > 0
                               );
                               return (
@@ -4444,10 +4450,10 @@ function SeccionPlantillas({
                               );
                             })()}
                             <ul className="lista">
-                              {examen.paginas.map((p) => {
+                              {paginas.map((p) => {
                                 const del = Number(p.preguntasDel ?? 0);
                                 const al = Number(p.preguntasAl ?? 0);
-                                const tieneRangos = examen.paginas.some(
+                                const tieneRangos = paginas.some(
                                   (x) => Number(x.preguntasDel ?? 0) > 0 && Number(x.preguntasAl ?? 0) > 0
                                 );
                                 const rango = del && al ? `Preguntas ${del}–${al}` : tieneRangos ? 'Sin preguntas (pagina extra)' : 'Rango no disponible';
@@ -4459,7 +4465,8 @@ function SeccionPlantillas({
                               })}
                             </ul>
                           </details>
-                        )}
+                          );
+                        })()}
                       </div>
                       <div className="item-actions">
                         {regenerable && (
