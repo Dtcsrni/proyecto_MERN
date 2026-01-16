@@ -69,7 +69,7 @@ describe('validaciones de payload', () => {
       .set({ Authorization: `Bearer ${token}` })
       .send({
         periodoId: '507f1f77bcf86cd799439011',
-        matricula: 'A001',
+        matricula: 'CUH512410168',
         nombreCompleto: 'Alumno Prueba',
         extra: 'NO'
       })
@@ -234,7 +234,7 @@ describe('validaciones de payload', () => {
       .send({
         tipo: 'parcial',
         titulo: 'Plantilla',
-        totalReactivos: 5,
+        numeroPaginas: 1,
         preguntasIds: ['no-es-objectid']
       })
       .expect(400);
@@ -250,7 +250,7 @@ describe('validaciones de payload', () => {
       .send({
         tipo: 'parcial',
         titulo: 'Plantilla',
-        totalReactivos: 5,
+        numeroPaginas: 1,
         configuracionPdf: { margenMm: 10, extra: 'NO' }
       })
       .expect(400);

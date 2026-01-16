@@ -6,6 +6,7 @@ import {
   limpiarTokenDocente,
   obtenerTokenDocente
 } from '../src/servicios_api/clienteApi';
+import { mensajeUsuarioDeError } from '../src/servicios_api/clienteComun';
 
 describe('clienteApi', () => {
   it('administra tokens en localStorage', () => {
@@ -44,5 +45,51 @@ describe('clienteApi', () => {
     const cliente = crearClienteApi();
 
     await expect(cliente.obtener('/salud')).rejects.toThrow('API no disponible');
+  });
+
+  it('muestra el mensaje especifico del backend en 409 (envelope error)', async () => {
+    const cliente = crearClienteApi();
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: { codigo: 'PLANTILLA_CON_EXAMENES', mensaje: 'No se puede eliminar: hay 2 examenes.' } })
+    } as unknown as Response);
+
+    try {
+      await cliente.eliminar('/examenes/plantillas/123');
+    } catch (error) {
+      const msg = mensajeUsuarioDeError(error, 'No se pudo eliminar');
+      expect(msg).toContain('No se puede eliminar');
+      return;
+    }
+    throw new Error('Se esperaba excepcion');
+  });
+
+  it('usa body texto como mensaje cuando no hay JSON valido', async () => {
+    const cliente = crearClienteApi();
+
+    const respuesta = {
+      ok: false,
+      status: 409,
+      clone: () => ({
+        text: async () => 'No se puede eliminar: el examen ya fue vinculado/entregado'
+      }),
+      text: async () => 'No se puede eliminar: el examen ya fue vinculado/entregado',
+      json: async () => {
+        throw new Error('Invalid JSON');
+      }
+    } as unknown as Response;
+
+    vi.mocked(fetch).mockResolvedValueOnce(respuesta);
+
+    try {
+      await cliente.eliminar('/examenes/generados/123');
+    } catch (error) {
+      const msg = mensajeUsuarioDeError(error, 'No se pudo eliminar');
+      expect(msg).toContain('No se puede eliminar');
+      return;
+    }
+    throw new Error('Se esperaba excepcion');
   });
 });

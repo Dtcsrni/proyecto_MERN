@@ -605,6 +605,30 @@ function sendJson(res, status, payload) {
   res.end(data);
 }
 
+async function probeHttp(url, timeoutMs = 900) {
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(url);
+      const req = http.get({
+        hostname: u.hostname,
+        port: u.port ? Number(u.port) : 80,
+        path: u.pathname + (u.search || ''),
+        timeout: timeoutMs
+      }, (res) => {
+        res.resume();
+        resolve({ ok: true, status: res.statusCode || 0 });
+      });
+      req.on('error', () => resolve({ ok: false, status: 0 }));
+      req.on('timeout', () => {
+        try { req.destroy(); } catch {}
+        resolve({ ok: false, status: 0 });
+      });
+    } catch {
+      resolve({ ok: false, status: 0 });
+    }
+  });
+}
+
 async function pingDashboard(port) {
   return new Promise((resolve) => {
     const req = http.get({
@@ -624,13 +648,83 @@ async function pingDashboard(port) {
   });
 }
 
+async function fetchDashboardStatus(port) {
+  return new Promise((resolve) => {
+    const req = http.get({
+      hostname: '127.0.0.1',
+      port,
+      path: '/api/status',
+      timeout: 900
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        body += chunk;
+        if (body.length > 250_000) {
+          try { req.destroy(); } catch {}
+        }
+      });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      try { req.destroy(); } catch {}
+      resolve(null);
+    });
+  });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function terminateProcess(pid) {
+  if (!pid || !Number.isFinite(Number(pid))) return;
+  const id = String(pid);
+  try {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/T', '/F', '/PID', id], { windowsHide: true });
+      return;
+    }
+    process.kill(Number(pid), 'SIGTERM');
+  } catch {
+    // ignore
+  }
+}
+
 async function findExistingInstance() {
   if (!fs.existsSync(lockPath)) return null;
   try {
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
     if (!lock || !lock.port) return null;
     const ok = await pingDashboard(lock.port);
-    if (ok) return { port: lock.port };
+    if (ok) {
+      const status = await fetchDashboardStatus(lock.port);
+      const hasModeConfig = Boolean(status && typeof status === 'object' && 'modeConfig' in status);
+      const running = status && Array.isArray(status.running) ? status.running : [];
+      const inconsistent = status && status.mode === 'none' && (running.includes('dev') || running.includes('prod'));
+
+      // If instance is old (no modeConfig) or inconsistent, restart it so UI updates apply.
+      if (!hasModeConfig || inconsistent) {
+        logSystem('Instancia previa desactualizada detectada. Reiniciando...', 'warn', { console: true });
+        terminateProcess(Number(lock.pid || 0));
+        try { fs.unlinkSync(lockPath); } catch {}
+        for (let i = 0; i < 7; i++) {
+          await sleep(250);
+          const stillUp = await pingDashboard(lock.port);
+          if (!stillUp) break;
+        }
+        return null;
+      }
+
+      return { port: lock.port };
+    }
   } catch {
     // ignore
   }
@@ -646,6 +740,7 @@ function writeLock(port) {
   const payload = {
     pid: process.pid,
     port,
+    mode,
     startedAt: new Date().toISOString()
   };
   try {
@@ -679,7 +774,10 @@ const server = http.createServer(async (req, res) => {
   const pathName = reqUrl.pathname;
 
   if (req.method === 'GET' && pathName === '/') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
     res.end(dashboardHtml);
     return;
   }
@@ -705,14 +803,27 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathName === '/api/status') {
     const noise = noiseSnapshot();
     const noiseTotal = Object.values(noise).reduce((acc, val) => acc + val, 0);
+    const running = runningTasks();
+
+    const hasDev = running.includes('dev');
+    const hasProd = running.includes('prod');
+    let uiMode = mode;
+    if (mode !== 'dev' && mode !== 'prod') {
+      if (hasDev && !hasProd) uiMode = 'dev';
+      else if (hasProd && !hasDev) uiMode = 'prod';
+      else if (hasDev && hasProd) uiMode = 'dev';
+      else uiMode = 'none';
+    }
+
     const payload = {
       root,
-      mode,
+      mode: uiMode,
+      modeConfig: mode,
       port: listeningPort,
       node: safeExec('node -v', 'No detectado'),
       npm: safeExec('npm -v', 'No detectado'),
       docker: safeExec('docker version --format "{{.Server.Version}}"', 'No disponible'),
-      running: runningTasks(),
+      running,
       logSize: logLines.length,
       rawSize: rawLines.length,
       noise,
@@ -725,13 +836,24 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && pathName === '/api/install') {
     const pkg = readRootPackageInfo();
+    const running = runningTasks();
+    const hasDev = running.includes('dev');
+    const hasProd = running.includes('prod');
+    let uiMode = mode;
+    if (mode !== 'dev' && mode !== 'prod') {
+      if (hasDev && !hasProd) uiMode = 'dev';
+      else if (hasProd && !hasDev) uiMode = 'prod';
+      else if (hasDev && hasProd) uiMode = 'dev';
+      else uiMode = 'none';
+    }
     const payload = {
       app: {
         name: pkg.name || 'sistema-evaluacion-universitaria',
         version: pkg.version || ''
       },
       dashboard: {
-        mode,
+        mode: uiMode,
+        modeConfig: mode,
         port: listeningPort,
         pid: process.pid,
         startedAt: dashboardStartedAt,
@@ -763,6 +885,19 @@ const server = http.createServer(async (req, res) => {
       }
     };
     sendJson(res, 200, payload);
+    return;
+  }
+
+  if (req.method === 'GET' && pathName === '/api/mongo-express') {
+    const url = 'http://127.0.0.1:8081/';
+    const probe = await probeHttp(url);
+    // 401/403 suele indicar que el servicio esta arriba con basic auth.
+    const reachable = probe.ok && probe.status >= 100;
+    sendJson(res, 200, {
+      url,
+      reachable,
+      status: probe.status || 0
+    });
     return;
   }
 

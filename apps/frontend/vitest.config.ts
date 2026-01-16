@@ -8,10 +8,10 @@ export default defineConfig({
   test: {
     ...baseVitestConfig,
     environment: 'jsdom',
-    // En Windows, forks puede ser inestable en algunos entornos/CI.
-    // Se mantiene forzable via CLI: `vitest run --pool=forks`.
-    pool: process.platform === 'win32' ? 'threads' : 'forks',
-    include: ['tests/**/*.test.tsx'],
+    // En Windows, `threads` puede fallar en algunos entornos ("runner not found").
+    // Se mantiene forzable via CLI: `vitest run --pool=threads`.
+    pool: 'forks',
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     setupFiles: ['tests/setup.ts']
   }
 });

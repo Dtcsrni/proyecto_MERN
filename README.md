@@ -1,38 +1,70 @@
-# Sistema de Evaluacion Universitaria
+# Sistema de Evaluación Universitaria (MERN)
 
-Monorepo MERN del Sistema de Evaluacion Universitaria con backend docente local (Express + MongoDB) y frontend React.
-Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para calificación automatizada.
+Plataforma para diseñar, aplicar y calificar evaluaciones universitarias con foco en operación real: generación de exámenes en PDF, vinculación segura por QR, calificación semi-automatizada (OMR) y un stack local reproducible para desarrollo y pruebas.
+
+Este repositorio está pensado para crecer desde un uso “local/operativo” (docente + DB en Docker) hacia un despliegue más completo (servicios cloud para portal alumno, sincronización, analíticas y control por roles).
+
+## ¿Para qué sirve?
+- Reducir el tiempo de preparación y calificación de evaluaciones (PDF + plantillas + OMR).
+- Mantener trazabilidad del flujo del examen: generación → vinculación → captura → calificación → exportación.
+- Separar responsabilidades: API docente (escritura/gestión) y portal alumno (lectura/consulta).
+- Proveer herramientas de operación local en Windows (dashboard, logs, accesos directos) para equipos no técnicos.
+
+## Qué lo hace “productivo”
+- Stack local con Docker listo para levantar/bajar sin fricción.
+- Backend modular con validaciones, rate limit, seguridad base (Helmet) y suite de pruebas.
+- Frontend moderno (React/Vite) orientado a UX y flujos de docente/alumno.
+- Paneles de operación: dashboard local para salud/logs y panel web de Mongo para inspección.
 
 ## Arquitectura
-- `apps/backend/`: API docente modular en TypeScript con MongoDB.
-- `apps/frontend/`: UI React con apps docente y alumno.
-- `apps/portal_alumno_cloud/`: API del portal alumno (solo lectura).
-- `docs/`: decisiones de arquitectura, flujo de examen, seguridad y PDF.
-- `scripts/`: utilidades de consola para revisar estado del stack.
-- `docker-compose.yml`: stack local con Mongo, API y Web.
+- `apps/backend/`: API docente modular en TypeScript (Express + Mongoose).
+- `apps/frontend/`: UI React (docente/alumno) construida con Vite.
+- `apps/portal_alumno_cloud/`: API del portal alumno (enfoque de solo lectura).
+- `docs/`: arquitectura, seguridad, flujo del examen, formato PDF/OMR y despliegue.
+- `scripts/`: herramientas de operación local (dashboard, launchers, utilidades).
+- `docker-compose.yml`: stack local (MongoDB + API + panel de DB opcional).
+
+## Flujo (alto nivel)
+1) Configuras plantillas/bancos y generas exámenes (PDF).
+2) Vinculas exámenes a alumnos mediante QR.
+3) Capturas respuestas y procesas OMR (cuando aplica).
+4) Calificas y exportas resultados (CSV/reportes).
 
 ## Requisitos
 - Node.js 24+ (LTS)
 - npm 9+
 - Docker (requerido para backend local)
 
-## Configuracion
-1) Crea `.env` con los valores necesarios.
-2) Instala dependencias en el monorepo:
+## Inicio rápido (desarrollo local)
+1) Crea `.env` (ver lista más abajo y/o `docs/AUTO_ENV.md`).
+2) Instala dependencias:
    ```bash
    npm install
    ```
-3) Contenedores locales (dev):
+3) Levanta servicios locales (MongoDB + API) en Docker:
    ```bash
-   docker compose --profile dev up --build
+   npm run dev:backend
    ```
-   - Web: http://localhost:4173
-   - API: http://localhost:4000/api/salud
+4) Levanta la web en modo desarrollo (Vite):
+   ```bash
+   npm run dev:frontend
+   ```
+
+Endpoints comunes:
+- Web (prod local): http://localhost:4173
+- API: http://localhost:4000/api/salud
+
+Si prefieres levantar todo con Docker Compose directamente:
+```bash
+docker compose --profile dev up --build
+```
 
 ## Variables de entorno
 - `PUERTO_API` (o `PORT`): puerto de la API (default 4000).
 - `PUERTO_PORTAL`: puerto del portal alumno (default 8080).
 - `MONGODB_URI`: URI de MongoDB. Si no esta definido, la API no conecta.
+- `MONGOEXPRESS_USER`: usuario Basic Auth para el panel web de Mongo (mongo-express). Default: `admin`.
+- `MONGOEXPRESS_PASS`: password Basic Auth para el panel web de Mongo (mongo-express). Default: `admin`.
 - `CORS_ORIGENES`: lista separada por comas para CORS.
 - `LIMITE_JSON`: limite del body JSON en la API docente.
 - `VITE_API_BASE_URL`: base URL de la API para el frontend.
@@ -48,6 +80,24 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - `PORTAL_ALUMNO_API_KEY`: API key para publicar resultados (backend local).
 - `PORTAL_API_KEY`: API key de validacion en el portal cloud.
 - `WEB_URL`: usado por `scripts/dashboard.mjs` para verificar la web.
+
+Branding del PDF (opcional):
+- `EXAMEN_INSTITUCION`: texto en encabezado.
+- `EXAMEN_LEMA`: texto opcional bajo el título.
+- `EXAMEN_LOGO_IZQ_PATH`: ruta a logo izquierdo (ej. `logos/cuh.png`) o `data:image/png;base64,...`.
+- `EXAMEN_LOGO_DER_PATH`: ruta a logo derecho (ej. `logos/isc.png`) o `data:image/png;base64,...`.
+
+Seed de cuenta admin/docente (solo para entornos locales o controlados):
+- `SEED_ADMIN_EMAIL`: correo del docente a crear/asegurar.
+- `SEED_ADMIN_PASSWORD`: password inicial (se guarda hasheado).
+- `SEED_ADMIN_NOMBRE_COMPLETO`: nombre a mostrar (opcional).
+- `SEED_ADMIN_FORCE`: si es `true`, permite ejecutar el seed aun si `NODE_ENV=production`.
+
+Panel web de Mongo (mongo-express):
+- Si levantas el stack con Docker, se expone en http://127.0.0.1:8081/ (protegido por Basic Auth).
+- El dashboard local incluye una pestaña "Base de datos" para abrirlo o embeberlo en un iframe.
+
+Nota: para una lista más completa (y actualizada automáticamente), revisa `docs/AUTO_ENV.md`.
 
 ## Scripts principales (raiz)
 - Desarrollo full-stack: `npm run dev` (API en Docker + web local)
@@ -80,7 +130,7 @@ Incluye generacion de PDFs, vinculacion por QR, escaneo OMR (pipeline base) para
 - En el dashboard web puedes iniciar/detener servicios, abrir URLs y ver logs.
 - Genera accesos con icono: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcuts.ps1` (usa el dashboard web).
 - Los `.lnk` quedan en `accesos-directos/`; puedes moverlos al escritorio o anclar a Inicio.
-- Asegurate de tener Docker Desktop iniciado antes de ejecutar.
+- Asegúrate de tener Docker Desktop iniciado antes de ejecutar.
 
 ## Pruebas automatizadas
 - Backend (unitarias + smoke): `npm run test`
@@ -113,9 +163,21 @@ si no la defines al registrarte, puedes definirla despues desde la seccion "Cuen
 - GET `/api/salud` devuelve `{ estado, tiempoActivo, db }`.
 - GET `/api/analiticas/calificaciones-csv?periodoId=...` exporta CSV.
 
+## Proyección (roadmap sugerido)
+Este repositorio ya cubre el núcleo operativo, pero está diseñado para extenderse sin reescritura completa. Algunas líneas naturales de evolución:
+- Roles y permisos (RBAC) más completos: admin/coordinador/docente/lector.
+- Auditoría (eventos relevantes) y trazabilidad por período/examen.
+- Gestión avanzada de bancos de reactivos, variantes y versionado de plantillas.
+- Analíticas y tableros: desempeño por grupo, reactivo, cohorte; exportables.
+- Integraciones: SSO institucional, LMS (Moodle/Canvas) y sincronización de listas.
+- Mejoras OMR: calibración por plantilla, tolerancias, detección de anomalías.
+
+La idea es que el “modo local” siga funcionando como base sólida incluso si se incorpora un modo cloud/híbrido.
+
 ## Documentacion
 - Arquitectura: `docs/ARQUITECTURA.md`
 - Flujo del examen: `docs/FLUJO_EXAMEN.md`
+- Guia para llenar formularios (UI): `docs/GUIA_FORMULARIOS.md`
 - Despliegue local y cloud: `docs/DESPLIEGUE.md`
 - Seguridad: `docs/SEGURIDAD.md`
 - Formato PDF y OMR: `docs/FORMATO_PDF.md`

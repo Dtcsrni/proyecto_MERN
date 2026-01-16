@@ -25,8 +25,22 @@ export function accionToastSesionParaError(error: unknown, tipo: TipoSesion): To
     const detalle = error.detalle;
     const status = detalle?.status;
     const codigo = detalle?.codigo?.toUpperCase();
-    if (status === 401) return accionCerrarSesion(tipo);
+    // No mostrar accion de "Cerrar sesion" para flujos de login/registro que
+    // pueden devolver 401 (credenciales invalidas, cuenta no registrada, etc.).
+    const sinAccionCerrarSesion = new Set([
+      'CREDENCIALES_INVALIDAS',
+      'DOCENTE_NO_REGISTRADO',
+      'DOCENTE_SIN_CONTRASENA',
+      'GOOGLE_SUB_MISMATCH'
+    ]);
+
+    if (status === 401) {
+      if (codigo && sinAccionCerrarSesion.has(codigo)) return undefined;
+      return accionCerrarSesion(tipo);
+    }
+
     if (codigo?.includes('TOKEN')) return accionCerrarSesion(tipo);
+    if (codigo?.includes('NO_AUTORIZ') && status === 401) return accionCerrarSesion(tipo);
   }
   return undefined;
 }
@@ -61,6 +75,14 @@ function tieneJson(respuesta: unknown): respuesta is { json: () => Promise<unkno
   return esObjeto(respuesta) && typeof respuesta['json'] === 'function';
 }
 
+function tieneText(respuesta: unknown): respuesta is { text: () => Promise<string> } {
+  return esObjeto(respuesta) && typeof respuesta['text'] === 'function';
+}
+
+function tieneClone(respuesta: unknown): respuesta is { clone: () => unknown } {
+  return esObjeto(respuesta) && typeof respuesta['clone'] === 'function';
+}
+
 function obtenerStatus(respuesta: unknown): number | undefined {
   return esObjeto(respuesta) && typeof respuesta['status'] === 'number' ? (respuesta['status'] as number) : undefined;
 }
@@ -69,10 +91,38 @@ export async function leerErrorRemoto(respuesta: unknown): Promise<DetalleErrorR
   const status = obtenerStatus(respuesta);
   const base: DetalleErrorRemoto = { status };
 
-  if (!tieneJson(respuesta)) return base;
-
   try {
-    const data: unknown = await respuesta.json().catch(() => null);
+    let data: unknown = null;
+    let textoFallback: string | undefined;
+
+    // Preferimos leer el cuerpo como texto desde un clone() para poder:
+    // - parsear JSON manualmente (cuando el content-type es incorrecto)
+    // - conservar mensaje si el body no es JSON (texto/HTML)
+    if (tieneClone(respuesta) && tieneText(respuesta)) {
+      try {
+        const clon = respuesta.clone();
+        if (tieneText(clon)) {
+          const texto = await clon.text().catch(() => '');
+          const limpio = String(texto ?? '').trim();
+          if (limpio) {
+            textoFallback = limpio;
+            try {
+              data = JSON.parse(limpio);
+            } catch {
+              data = null;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Si no pudimos extraer desde clone/text, intentamos con json() directo.
+    if (data === null && tieneJson(respuesta)) {
+      data = await respuesta.json().catch(() => null);
+    }
+
     const err = esObjeto(data) ? data['error'] : undefined;
     if (esObjeto(err)) {
       return {
@@ -82,6 +132,27 @@ export async function leerErrorRemoto(respuesta: unknown): Promise<DetalleErrorR
         detalles: err['detalles']
       };
     }
+
+    // Formatos alternativos tolerados: { codigo, mensaje, detalles } o { message }.
+    if (esObjeto(data)) {
+      const mensaje =
+        typeof data['mensaje'] === 'string'
+          ? (data['mensaje'] as string)
+          : typeof data['message'] === 'string'
+            ? (data['message'] as string)
+            : undefined;
+      const codigo = typeof data['codigo'] === 'string' ? (data['codigo'] as string) : undefined;
+      const detalles = data['detalles'];
+      if (mensaje || codigo || detalles !== undefined) {
+        return { ...base, codigo, mensaje, detalles };
+      }
+    }
+
+    // Si el body era texto no-JSON, lo usamos como mensaje.
+    if (textoFallback) {
+      return { ...base, mensaje: textoFallback };
+    }
+
     return base;
   } catch {
     return base;
@@ -167,7 +238,9 @@ export function crearGestorEventosUso<EventoUso>(opts: {
 }
 
 function mensajeAmigablePorStatus(status?: number): string | undefined {
-  if (status === 401) return 'Tu sesion expiro. Inicia sesion de nuevo.';
+  // 401 puede ser: sesion/token expiro o credenciales invalidas. Preferimos
+  // resolver por `codigo` cuando este disponible y dejar aqui un fallback neutro.
+  if (status === 401) return 'No se pudo autenticar. Verifica tus datos e intenta de nuevo.';
   if (status === 403) return 'No tienes permiso para realizar esta accion.';
   if (status === 404) return 'No se encontro el recurso solicitado.';
   if (status === 408) return 'La solicitud tardo demasiado. Intenta de nuevo.';
@@ -182,9 +255,12 @@ function mensajeAmigablePorStatus(status?: number): string | undefined {
 function mensajeAmigablePorCodigo(codigo?: string): string | undefined {
   if (!codigo) return undefined;
   const c = codigo.toUpperCase();
+  if (c.includes('CREDENCIALES_INVALIDAS')) return 'Correo o contrasena incorrectos.';
+  if (c.includes('DOCENTE_NO_REGISTRADO')) return 'No existe una cuenta de docente para ese correo.';
+  if (c.includes('DOCENTE_SIN_CONTRASENA')) return 'Esta cuenta no tiene contrasena. Ingresa con Google o define una contrasena.';
+  if (c.includes('GOOGLE_SUB_MISMATCH')) return 'La cuenta de Google no coincide con el docente.';
   if (c.includes('TOKEN') && c.includes('INVALID')) return 'Tu sesion expiro. Inicia sesion de nuevo.';
   if (c.includes('TOKEN') && c.includes('EXPIR')) return 'Tu sesion expiro. Inicia sesion de nuevo.';
-  if (c.includes('NO_AUTORIZ')) return 'No tienes permiso para realizar esta accion.';
   if (c.includes('DATOS_INVALID')) return 'Datos invalidos. Revisa los campos e intenta de nuevo.';
   if (c.includes('EXAMEN_NO_ENCONTR')) return 'No se encontro el examen solicitado.';
   if (c.includes('PDF_NO_DISPON')) return 'El PDF no esta disponible aun.';
@@ -195,13 +271,26 @@ function mensajeAmigablePorCodigo(codigo?: string): string | undefined {
 export function mensajeUsuarioDeError(error: unknown, fallback: string): string {
   if (error instanceof ErrorRemoto) {
     const detalle = error.detalle;
+    const status = detalle?.status;
+    const codigo = typeof detalle?.codigo === 'string' ? detalle.codigo.toUpperCase() : undefined;
+
+    // Caso especial: "NO_AUTORIZADO" se usa tanto para 401 (sesion requerida)
+    // como para 403 (sin permisos). Lo resolvemos considerando el status.
+    if (codigo?.includes('NO_AUTORIZ')) {
+      if (status === 401) return 'Tu sesion expiro. Inicia sesion de nuevo.';
+      if (status === 403) return 'No tienes permiso para realizar esta accion.';
+    }
+
     const porCodigo = mensajeAmigablePorCodigo(detalle?.codigo);
     if (porCodigo) return porCodigo;
+
+    // Preferimos el mensaje específico del backend (cuando existe)
+    // antes de caer en un mensaje genérico por status (ej: 409).
+    if (detalle?.mensaje) return detalle.mensaje;
 
     const porStatus = mensajeAmigablePorStatus(detalle?.status);
     if (porStatus) return porStatus;
 
-    if (detalle?.mensaje) return detalle.mensaje;
     if (detalle?.codigo) return `Error: ${detalle.codigo}`;
     return fallback;
   }
@@ -214,13 +303,21 @@ export function sugerenciaUsuarioDeError(error: unknown): string | undefined {
   if (error instanceof ErrorRemoto) {
     const detalle = error.detalle;
     const status = detalle?.status;
-    if (status === 401) return 'Tip: inicia sesion de nuevo.';
+    const codigo = typeof detalle?.codigo === 'string' ? detalle.codigo.toUpperCase() : undefined;
+
+    if (status === 401) {
+      if (codigo?.includes('CREDENCIALES_INVALIDAS')) return undefined;
+      if (codigo?.includes('DOCENTE_NO_REGISTRADO')) return 'Tip: crea tu cuenta desde "Registrar".';
+      if (codigo?.includes('DOCENTE_SIN_CONTRASENA')) return 'Tip: ingresa con Google o define una contrasena.';
+      if (codigo?.includes('GOOGLE_SUB_MISMATCH')) return 'Tip: usa la misma cuenta de Google vinculada.';
+      return 'Tip: inicia sesion de nuevo.';
+    }
     if (status === 403) return 'Tip: revisa tus permisos o el rol.';
     if (status === 408) return 'Tip: revisa tu conexion e intenta de nuevo.';
     if (status === 429) return 'Tip: espera unos segundos e intenta de nuevo.';
     if (typeof status === 'number' && status >= 500) return 'Tip: intenta mas tarde.';
 
-    const codigo = detalle?.codigo?.toUpperCase();
+    // Fallback por codigo cuando no hay status.
     if (codigo?.includes('TOKEN')) return 'Tip: inicia sesion de nuevo.';
     if (codigo?.includes('NO_AUTORIZ')) return 'Tip: revisa tus permisos o el rol.';
     if (codigo?.includes('DATOS_INVALID')) return 'Tip: revisa los campos e intenta de nuevo.';
