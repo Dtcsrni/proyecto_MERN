@@ -158,6 +158,12 @@ export function AppAlumno() {
       </div>
       <h1>Resultados de examen</h1>
 
+      {!token && (
+        <p className="nota">
+          Ingresa con el codigo de acceso que te compartio tu docente y tu matricula. Ejemplos: codigo <b>ABC123</b> (4-12 alfanumericos) y matricula <b>2024-001</b>.
+        </p>
+      )}
+
       {mensaje && (
         <InlineMensaje
           tipo={
@@ -198,6 +204,7 @@ export function AppAlumno() {
               !matriculaValida && matricula.trim() ? 'Usa 3-20 caracteres (letras/numeros/guion).' : undefined
             }
           />
+          <p className="nota">Si no ves resultados tras ingresar, intenta "Recargar". Si el codigo expiro, solicita uno nuevo al docente.</p>
           <Boton
             type="button"
             icono={<Icono nombre="entrar" />}
