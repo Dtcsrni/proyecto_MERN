@@ -317,6 +317,46 @@ export async function moverPreguntasTemaBanco(req: SolicitudDocente, res: Respon
 }
 
 /**
+ * Quita el tema de multiples preguntas (quedan sin tema).
+ */
+export async function quitarTemaBanco(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const { periodoId, preguntasIds } = req.body as {
+    periodoId?: string;
+    preguntasIds?: string[];
+  };
+
+  const periodoIdFinal = String(periodoId ?? '').trim();
+  const ids = Array.isArray(preguntasIds) ? preguntasIds.map((id) => String(id).trim()).filter(Boolean) : [];
+
+  if (!periodoIdFinal) {
+    throw new ErrorAplicacion('PERIODO_REQUERIDO', 'Materia requerida', 400);
+  }
+  if (ids.length === 0) {
+    throw new ErrorAplicacion('PREGUNTAS_REQUERIDAS', 'Debes enviar al menos una pregunta', 400);
+  }
+
+  const materia = await Periodo.findOne({ _id: periodoIdFinal, docenteId }).lean();
+  if (!materia) {
+    throw new ErrorAplicacion('MATERIA_NO_ENCONTRADA', 'Materia no encontrada', 404);
+  }
+
+  const existentes = await BancoPregunta.find({ _id: { $in: ids }, docenteId, periodoId: periodoIdFinal, activo: true })
+    .select({ _id: 1 })
+    .lean();
+  if (existentes.length !== ids.length) {
+    throw new ErrorAplicacion('PREGUNTA_NO_ENCONTRADA', 'Alguna pregunta no existe (o no pertenece a esta materia)', 404);
+  }
+
+  const resultado = await BancoPregunta.updateMany(
+    { _id: { $in: ids }, docenteId, periodoId: periodoIdFinal, activo: true },
+    { $unset: { tema: 1 } }
+  );
+
+  res.json({ actualizadas: Number((resultado as unknown as { modifiedCount?: number }).modifiedCount ?? 0) });
+}
+
+/**
  * Lista temas del banco para una materia.
  */
 export async function listarTemasBanco(req: SolicitudDocente, res: Response) {
