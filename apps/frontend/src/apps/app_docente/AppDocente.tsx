@@ -1,7 +1,7 @@
 /**
  * App docente: panel basico para banco, examenes, recepcion, escaneo y calificacion.
  */
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import {
@@ -95,6 +95,17 @@ function esCorreoDeDominioPermitidoFrontend(correo: string, dominiosPermitidos: 
 
 function textoDominiosPermitidos(dominios: string[]): string {
   return dominios.map((d) => `@${d}`).join(', ');
+}
+
+function AyudaFormulario({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <div className="panel">
+      <h3>
+        <Icono nombre="info" /> {titulo}
+      </h3>
+      <div className="nota">{children}</div>
+    </div>
+  );
 }
 
 export function AppDocente() {
@@ -691,6 +702,32 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
       </div>
 
       <div className="auth-form">
+        <AyudaFormulario titulo="Como llenar este formulario">
+          <p>
+            <b>Proposito:</b> ingresar o crear tu cuenta de docente para administrar periodos, alumnos, banco de preguntas,
+            generar examenes y calificar.
+          </p>
+          <p>
+            <b>Ingresar:</b> usa tu correo y contrasena (o Google si esta habilitado). Si el boton "Ingresar" no se habilita,
+            revisa que ambos campos esten completos.
+          </p>
+          <p>
+            <b>Registrar:</b> completa nombres, apellidos y correo. La contrasena requiere minimo 8 caracteres.
+            Si registras con Google, el correo puede quedar bloqueado (tomado de Google) y la contrasena puede ser opcional.
+          </p>
+          <ul className="lista">
+            <li>
+              Ejemplo de correo: <code>docente@universidad.edu</code>
+            </li>
+            <li>
+              Ejemplo de nombres/apellidos: <code>Juan Carlos</code> / <code>Perez Lopez</code>
+            </li>
+          </ul>
+          <p>
+            <b>Politica institucional:</b> si se configuro una lista de dominios permitidos, solo podras usar correos de esos dominios.
+          </p>
+        </AyudaFormulario>
+
         {!googleDisponible && esDev && (
           <InlineMensaje tipo="info">
             Inicio de sesion con Google deshabilitado en este entorno. Para habilitarlo en desarrollo, define
@@ -1080,8 +1117,28 @@ function SeccionCuenta({ docente }: { docente: Docente }) {
       <h2>
         <Icono nombre="info" /> Cuenta
       </h2>
-      <p className="nota">Define o cambia tu contrasena. Por seguridad, se requiere reautenticacion.</p>
-      <p className="nota">Recomendacion: usa reauth con Google si aparece. La nueva contrasena debe tener minimo 8 caracteres y coincidir en ambos campos.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> definir o cambiar tu contrasena para acceder con correo/contrasena.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Contrasena actual:</b> requerida si tu cuenta ya tenia contrasena.
+          </li>
+          <li>
+            <b>Nueva contrasena:</b> minimo 8 caracteres.
+          </li>
+          <li>
+            <b>Confirmar contrasena:</b> debe coincidir exactamente.
+          </li>
+          <li>
+            <b>Reautenticacion:</b> si aparece Google, es la opcion recomendada para confirmar identidad.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: nueva contrasena <code>MiClaveSegura2026</code> (no uses contrasenas obvias).
+        </p>
+      </AyudaFormulario>
 
       <div className="meta" aria-label="Estado de la cuenta">
         <span className={docente.tieneGoogle ? 'badge ok' : 'badge'}>
@@ -1233,7 +1290,39 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
       <h2>
         <Icono nombre="banco" /> Banco de preguntas
       </h2>
-      <p className="nota">Completa enunciado, tema y las 5 opciones. Marca exactamente una opcion como correcta.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> construir el banco de reactivos (preguntas) que despues se usan en plantillas y examenes.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Enunciado:</b> el texto completo de la pregunta.
+          </li>
+          <li>
+            <b>Tema:</b> unidad/categoria (sirve para organizar).
+          </li>
+          <li>
+            <b>Opciones A–E:</b> todas deben llevar texto.
+          </li>
+          <li>
+            <b>Correcta:</b> marca exactamente una.
+          </li>
+        </ul>
+        <p>
+          Ejemplo:
+        </p>
+        <ul className="lista">
+          <li>
+            Enunciado: <code>¿Cuanto es 2 + 2?</code>
+          </li>
+          <li>
+            Tema: <code>Aritmetica</code>
+          </li>
+          <li>
+            Opciones: A=<code>4</code> (correcta), B=<code>3</code>, C=<code>5</code>, D=<code>22</code>, E=<code>0</code>
+          </li>
+        </ul>
+      </AyudaFormulario>
       <label className="campo">
         Enunciado
         <textarea value={enunciado} onChange={(event) => setEnunciado(event.target.value)} />
@@ -1339,7 +1428,25 @@ function SeccionPeriodos({
       <h2>
         <Icono nombre="periodos" /> Periodos
       </h2>
-      <p className="nota">Fecha fin debe ser igual o posterior a fecha inicio. Los grupos son opcionales y se escriben separados por coma (ej. 3A,3B,3C).</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> definir el periodo academico (ciclo) al que pertenecen alumnos, plantillas, examenes y publicaciones.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Nombre:</b> etiqueta corta del ciclo (ej. <code>2026-1</code> o <code>Ene-Jun 2026</code>).
+          </li>
+          <li>
+            <b>Fecha inicio/fin:</b> deben estar dentro del calendario del periodo; fin debe ser mayor o igual a inicio.
+          </li>
+          <li>
+            <b>Grupos:</b> lista opcional separada por comas.
+          </li>
+        </ul>
+        <p>
+          Ejemplos de grupos: <code>3A,3B,3C</code> o <code>A1,B1</code>.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Nombre
         <input value={nombre} onChange={(event) => setNombre(event.target.value)} />
@@ -1446,7 +1553,31 @@ function SeccionAlumnos({
       <h2>
         <Icono nombre="alumnos" /> Alumnos
       </h2>
-      <p className="nota">Matricula, nombres, apellidos y periodo son obligatorios. Correo y grupo son opcionales (si hay politica institucional, el correo debe cumplir el dominio permitido).</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> registrar alumnos dentro de un periodo para poder generar examenes, vincular folios y publicar resultados.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Matricula:</b> identificador del alumno (ej. <code>2024-001</code>).
+          </li>
+          <li>
+            <b>Nombres/Apellidos:</b> como aparecen en lista oficial.
+          </li>
+          <li>
+            <b>Correo:</b> opcional; si existe politica institucional, debe ser del dominio permitido.
+          </li>
+          <li>
+            <b>Grupo:</b> opcional (ej. <code>3A</code>).
+          </li>
+          <li>
+            <b>Periodo:</b> obligatorio; selecciona el periodo correspondiente.
+          </li>
+        </ul>
+        <p>
+          Ejemplo completo: matricula <code>2024-001</code>, nombres <code>Ana Maria</code>, apellidos <code>Gomez Ruiz</code>, grupo <code>3A</code>.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Matricula
         <input value={matricula} onChange={(event) => setMatricula(event.target.value)} />
@@ -1567,7 +1698,31 @@ function SeccionPlantillas({
       <h2>
         <Icono nombre="plantillas" /> Plantillas
       </h2>
-      <p className="nota">Para seleccionar varias preguntas, usa Ctrl + clic (Windows). Crea la plantilla y luego genera el examen PDF desde la seccion inferior.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> crear una plantilla de examen (estructura + reactivos) para generar examenes en PDF.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Titulo:</b> nombre descriptivo (ej. <code>Parcial 1 - Algebra</code>).
+          </li>
+          <li>
+            <b>Tipo:</b> <code>parcial</code> o <code>global</code> (afecta campos de calificacion).
+          </li>
+          <li>
+            <b>Periodo:</b> el ciclo al que pertenece.
+          </li>
+          <li>
+            <b>Total reactivos:</b> numero de preguntas del examen (entero mayor o igual a 1).
+          </li>
+          <li>
+            <b>Preguntas:</b> seleccion multiple; en Windows usa Ctrl + clic.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: titulo <code>Parcial 1 - Programacion</code>, tipo <code>parcial</code>, total reactivos <code>10</code>, preguntas: selecciona 10+ del banco.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Titulo
         <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
@@ -1629,7 +1784,22 @@ function SeccionPlantillas({
         ))}
       </ul>
       <h3>Generar examen</h3>
-      <p className="nota">Genera un examen a partir de una plantilla. Si seleccionas un alumno, el examen queda asociado. El folio del examen se usa despues en Recepcion y Escaneo OMR.</p>
+      <AyudaFormulario titulo="Generar examen (PDF)">
+        <p>
+          <b>Proposito:</b> crear un examen en PDF con <b>folio</b> y <b>QR por pagina</b>. Ese folio se usa para recepcion, escaneo OMR y calificacion.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Plantilla:</b> obligatoria.
+          </li>
+          <li>
+            <b>Alumno:</b> opcional; si lo eliges, el examen queda asociado desde el inicio.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: plantilla <code>Parcial 1 - Algebra</code>, alumno <code>2024-001 - Ana Maria Gomez Ruiz</code>.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Plantilla
         <select value={plantillaId} onChange={(event) => setPlantillaId(event.target.value)}>
@@ -1738,7 +1908,22 @@ function SeccionRecepcion({
       <h2>
         <Icono nombre="recepcion" /> Recepcion de examenes
       </h2>
-      <p className="nota">Captura el folio del examen (desde el PDF/QR) y vincúlalo con el alumno que entrego esa hoja.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> vincular el folio del examen entregado (papel) con el alumno correcto. Esto evita errores al calificar.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Folio:</b> copialo exactamente del examen (o del QR).
+          </li>
+          <li>
+            <b>Alumno:</b> selecciona al alumno que entrego ese examen.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: folio <code>FOLIO-000123</code> y alumno <code>2024-001 - Ana Maria</code>.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -1825,7 +2010,28 @@ function SeccionEscaneo({
       <h2>
         <Icono nombre="escaneo" /> Escaneo OMR
       </h2>
-      <p className="nota">Sube una foto/escaneo claro y completo de la hoja. Indica el numero de pagina (inicia en 1). Tras analizar, puedes corregir respuestas manualmente.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> analizar una imagen de la hoja para detectar QR/folio y respuestas (OMR). Luego puedes ajustar respuestas manualmente.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Folio:</b> debe coincidir con el examen generado.
+          </li>
+          <li>
+            <b>Pagina:</b> inicia en 1 (P1). Usa 2, 3, etc. si analizas mas paginas.
+          </li>
+          <li>
+            <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: folio <code>FOLIO-000123</code>, pagina <code>1</code>, imagen <code>hoja1.jpg</code>.
+        </p>
+        <p>
+          Tips: evita sombras; mantén la hoja recta; incluye el QR completo.
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -1960,7 +2166,26 @@ function SeccionCalificar({
       <h2>
         <Icono nombre="calificar" /> Calificar examen
       </h2>
-      <p className="nota">Primero ejecuta Escaneo OMR para que aparezcan Examen y Alumno. Ajusta los valores segun tu esquema (bono max 0.5).</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> guardar la calificacion del examen ya identificado por folio/OMR.
+          Esta seccion usa el examen y alumno detectados en "Escaneo OMR".
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Bono:</b> ajuste extra (0 a 0.5).
+          </li>
+          <li>
+            <b>Evaluacion continua:</b> puntaje adicional para parciales.
+          </li>
+          <li>
+            <b>Proyecto:</b> puntaje adicional para global.
+          </li>
+        </ul>
+        <p>
+          Ejemplo: bono <code>0.2</code>, evaluacion continua <code>1</code>, proyecto <code>0</code>.
+        </p>
+      </AyudaFormulario>
       <p>Examen: {examenId ?? 'Sin examen'}</p>
       <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
       <label className="campo">
@@ -2072,7 +2297,25 @@ function SeccionPublicar({
       <h2>
         <Icono nombre="publicar" /> Publicar en portal
       </h2>
-      <p className="nota">Selecciona un periodo. "Publicar" envia resultados al portal alumno. "Generar codigo" crea un codigo temporal que el alumno usa junto con su matricula.</p>
+      <AyudaFormulario titulo="Para que sirve y como llenarlo">
+        <p>
+          <b>Proposito:</b> enviar los resultados del periodo al portal alumno y emitir un codigo de acceso para consulta.
+        </p>
+        <ul className="lista">
+          <li>
+            <b>Periodo:</b> selecciona el periodo a publicar.
+          </li>
+          <li>
+            <b>Publicar:</b> sincroniza resultados del periodo hacia el portal.
+          </li>
+          <li>
+            <b>Generar codigo:</b> crea un codigo temporal; compartelo con alumnos junto con su matricula.
+          </li>
+        </ul>
+        <p>
+          Ejemplo de mensaje a alumnos: "Tu codigo es <code>ABC123</code>. Entra al portal y usa tu matricula <code>2024-001</code>."
+        </p>
+      </AyudaFormulario>
       <label className="campo">
         Periodo
         <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
