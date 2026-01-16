@@ -3,12 +3,13 @@
  */
 import { Router } from 'express';
 import { validarCuerpo } from '../../compartido/validaciones/validar';
-import { crearAlumno, listarAlumnos } from './controladorAlumnos';
-import { esquemaCrearAlumno } from './validacionesAlumnos';
+import { actualizarAlumno, crearAlumno, listarAlumnos } from './controladorAlumnos';
+import { esquemaActualizarAlumno, esquemaCrearAlumno } from './validacionesAlumnos';
 
 const router = Router();
 
 router.get('/', listarAlumnos);
 router.post('/', validarCuerpo(esquemaCrearAlumno, { strict: true }), crearAlumno);
+router.post('/:alumnoId/actualizar', validarCuerpo(esquemaActualizarAlumno, { strict: true }), actualizarAlumno);
 
 export default router;
