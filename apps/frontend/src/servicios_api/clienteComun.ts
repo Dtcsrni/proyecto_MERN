@@ -75,6 +75,14 @@ function tieneJson(respuesta: unknown): respuesta is { json: () => Promise<unkno
   return esObjeto(respuesta) && typeof respuesta['json'] === 'function';
 }
 
+function tieneText(respuesta: unknown): respuesta is { text: () => Promise<string> } {
+  return esObjeto(respuesta) && typeof respuesta['text'] === 'function';
+}
+
+function tieneClone(respuesta: unknown): respuesta is { clone: () => unknown } {
+  return esObjeto(respuesta) && typeof respuesta['clone'] === 'function';
+}
+
 function obtenerStatus(respuesta: unknown): number | undefined {
   return esObjeto(respuesta) && typeof respuesta['status'] === 'number' ? (respuesta['status'] as number) : undefined;
 }
@@ -83,10 +91,38 @@ export async function leerErrorRemoto(respuesta: unknown): Promise<DetalleErrorR
   const status = obtenerStatus(respuesta);
   const base: DetalleErrorRemoto = { status };
 
-  if (!tieneJson(respuesta)) return base;
-
   try {
-    const data: unknown = await respuesta.json().catch(() => null);
+    let data: unknown = null;
+    let textoFallback: string | undefined;
+
+    // Preferimos leer el cuerpo como texto desde un clone() para poder:
+    // - parsear JSON manualmente (cuando el content-type es incorrecto)
+    // - conservar mensaje si el body no es JSON (texto/HTML)
+    if (tieneClone(respuesta) && tieneText(respuesta)) {
+      try {
+        const clon = respuesta.clone();
+        if (tieneText(clon)) {
+          const texto = await clon.text().catch(() => '');
+          const limpio = String(texto ?? '').trim();
+          if (limpio) {
+            textoFallback = limpio;
+            try {
+              data = JSON.parse(limpio);
+            } catch {
+              data = null;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Si no pudimos extraer desde clone/text, intentamos con json() directo.
+    if (data === null && tieneJson(respuesta)) {
+      data = await respuesta.json().catch(() => null);
+    }
+
     const err = esObjeto(data) ? data['error'] : undefined;
     if (esObjeto(err)) {
       return {
@@ -96,6 +132,27 @@ export async function leerErrorRemoto(respuesta: unknown): Promise<DetalleErrorR
         detalles: err['detalles']
       };
     }
+
+    // Formatos alternativos tolerados: { codigo, mensaje, detalles } o { message }.
+    if (esObjeto(data)) {
+      const mensaje =
+        typeof data['mensaje'] === 'string'
+          ? (data['mensaje'] as string)
+          : typeof data['message'] === 'string'
+            ? (data['message'] as string)
+            : undefined;
+      const codigo = typeof data['codigo'] === 'string' ? (data['codigo'] as string) : undefined;
+      const detalles = data['detalles'];
+      if (mensaje || codigo || detalles !== undefined) {
+        return { ...base, codigo, mensaje, detalles };
+      }
+    }
+
+    // Si el body era texto no-JSON, lo usamos como mensaje.
+    if (textoFallback) {
+      return { ...base, mensaje: textoFallback };
+    }
+
     return base;
   } catch {
     return base;

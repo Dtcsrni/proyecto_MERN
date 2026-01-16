@@ -251,7 +251,8 @@ export async function eliminarPlantilla(req: SolicitudDocente, res: Response) {
     throw new ErrorAplicacion(
       'PLANTILLA_CON_EXAMENES',
       `No se puede eliminar: hay ${totalGenerados} examenes generados con esta plantilla.`,
-      409
+      409,
+      { totalGenerados }
     );
   }
 

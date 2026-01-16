@@ -151,6 +151,8 @@ describe('plantillas CRUD + previsualizacion', () => {
 
     await request(app).post('/api/examenes/generados').set(auth).send({ plantillaId }).expect(201);
 
-    await request(app).delete(`/api/examenes/plantillas/${plantillaId}`).set(auth).expect(409);
+    const delResp = await request(app).delete(`/api/examenes/plantillas/${plantillaId}`).set(auth).expect(409);
+    expect(delResp.body?.error?.codigo).toBe('PLANTILLA_CON_EXAMENES');
+    expect(delResp.body?.error?.detalles?.totalGenerados).toBe(1);
   });
 });
