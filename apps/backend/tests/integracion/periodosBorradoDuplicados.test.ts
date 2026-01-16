@@ -196,7 +196,7 @@ describe('periodos (materias)', () => {
     expect(alumnos.body.alumnos[0].activo).toBe(false);
 
     const banco = await request(app)
-      .get('/api/banco-preguntas')
+      .get(`/api/banco-preguntas?activo=0&periodoId=${periodoId}`)
       .set({ Authorization: `Bearer ${token}` })
       .expect(200);
     expect(banco.body.preguntas.length).toBe(1);
