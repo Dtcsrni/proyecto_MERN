@@ -37,7 +37,9 @@ type Alumno = {
   periodoId?: string;
   nombres?: string;
   apellidos?: string;
+  correo?: string;
   grupo?: string;
+  activo?: boolean;
 };
 
 type Periodo = {
@@ -1870,9 +1872,12 @@ function SeccionAlumnos({
   const [correo, setCorreo] = useState('');
   const [correoAuto, setCorreoAuto] = useState(true);
   const [grupo, setGrupo] = useState('');
-  const [periodoId, setPeriodoId] = useState('');
+  const [periodoIdNuevo, setPeriodoIdNuevo] = useState('');
+  const [periodoIdLista, setPeriodoIdLista] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [creando, setCreando] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   function normalizarMatricula(valor: string): string {
     return String(valor || '')
@@ -1891,7 +1896,37 @@ function SeccionAlumnos({
   const politicaDominiosTexto = dominiosPermitidos.length > 0 ? textoDominiosPermitidos(dominiosPermitidos) : '';
   const correoValido = !correo.trim() || esCorreoDeDominioPermitidoFrontend(correo, dominiosPermitidos);
 
-  const puedeCrear = Boolean(matricula.trim() && matriculaValida && nombres.trim() && apellidos.trim() && periodoId && correoValido);
+  useEffect(() => {
+    if (!Array.isArray(periodosActivos) || periodosActivos.length === 0) return;
+    if (!periodoIdLista) setPeriodoIdLista(periodosActivos[0]._id);
+  }, [periodosActivos, periodoIdLista]);
+
+  const puedeCrear = Boolean(
+    matricula.trim() &&
+      matriculaValida &&
+      nombres.trim() &&
+      apellidos.trim() &&
+      periodoIdNuevo &&
+      correoValido &&
+      !editandoId
+  );
+
+  const puedeGuardarEdicion = Boolean(
+    editandoId && matricula.trim() && matriculaValida && nombres.trim() && apellidos.trim() && periodoIdNuevo && correoValido
+  );
+
+  const alumnosDeMateria = useMemo(() => {
+    const lista = Array.isArray(alumnos) ? alumnos : [];
+    if (!periodoIdLista) return [];
+    return lista
+      .filter((a) => a.periodoId === periodoIdLista)
+      .sort((a, b) => String(a.matricula).localeCompare(String(b.matricula)));
+  }, [alumnos, periodoIdLista]);
+
+  const nombreMateriaSeleccionada = useMemo(() => {
+    if (!periodoIdLista) return '';
+    return periodosTodos.find((p) => p._id === periodoIdLista)?.nombre ?? '';
+  }, [periodosTodos, periodoIdLista]);
 
   async function crearAlumno() {
     try {
@@ -1911,7 +1946,7 @@ function SeccionAlumnos({
         apellidos: apellidos.trim(),
         ...(correo.trim() ? { correo: correo.trim() } : {}),
         ...(grupo.trim() ? { grupo: grupo.trim() } : {}),
-        periodoId
+        periodoId: periodoIdNuevo
       });
       setMensaje('Alumno creado');
       emitToast({ level: 'ok', title: 'Alumnos', message: 'Alumno creado', durationMs: 2200 });
@@ -1922,7 +1957,7 @@ function SeccionAlumnos({
       setCorreo('');
       setCorreoAuto(true);
       setGrupo('');
-      setPeriodoId('');
+      setPeriodoIdNuevo('');
       onRefrescar();
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo crear el alumno');
@@ -1937,6 +1972,82 @@ function SeccionAlumnos({
       registrarAccionDocente('crear_alumno', false);
     } finally {
       setCreando(false);
+    }
+  }
+
+  function iniciarEdicion(alumno: Alumno) {
+    setMensaje('');
+    setEditandoId(alumno._id);
+    setMatricula(alumno.matricula || '');
+    setNombres(alumno.nombres || '');
+    setApellidos(alumno.apellidos || '');
+    setGrupo(alumno.grupo || '');
+    setCorreoAuto(false);
+    setCorreo(alumno.correo || (alumno.matricula ? `${normalizarMatricula(alumno.matricula)}@cuh.mx` : ''));
+    setPeriodoIdNuevo(alumno.periodoId || '');
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null);
+    setMensaje('');
+    setMatricula('');
+    setNombres('');
+    setApellidos('');
+    setCorreo('');
+    setCorreoAuto(true);
+    setGrupo('');
+    setPeriodoIdNuevo('');
+  }
+
+  async function guardarEdicion() {
+    if (!editandoId) return;
+
+    try {
+      const inicio = Date.now();
+      if (dominiosPermitidos.length > 0 && correo.trim() && !correoValido) {
+        const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
+        setMensaje(msg);
+        emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
+        registrarAccionDocente('editar_alumno', false);
+        return;
+      }
+
+      setGuardandoEdicion(true);
+      setMensaje('');
+      await clienteApi.enviar(`/alumnos/${editandoId}/actualizar`, {
+        matricula: matriculaNormalizada,
+        nombres: nombres.trim(),
+        apellidos: apellidos.trim(),
+        ...(correo.trim() ? { correo: correo.trim() } : {}),
+        ...(grupo.trim() ? { grupo: grupo.trim() } : {}),
+        periodoId: periodoIdNuevo
+      });
+
+      setMensaje('Alumno actualizado');
+      emitToast({ level: 'ok', title: 'Alumnos', message: 'Alumno actualizado', durationMs: 2200 });
+      registrarAccionDocente('editar_alumno', true, Date.now() - inicio);
+      setEditandoId(null);
+      setMatricula('');
+      setNombres('');
+      setApellidos('');
+      setCorreo('');
+      setCorreoAuto(true);
+      setGrupo('');
+      setPeriodoIdNuevo('');
+      onRefrescar();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo actualizar el alumno');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'No se pudo actualizar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('editar_alumno', false);
+    } finally {
+      setGuardandoEdicion(false);
     }
   }
 
@@ -1967,9 +2078,14 @@ function SeccionAlumnos({
           </li>
         </ul>
         <p>
-          Ejemplo completo: matricula <code>2024-001</code>, nombres <code>Ana Maria</code>, apellidos <code>Gomez Ruiz</code>, grupo <code>3A</code>.
+          Ejemplo completo: matricula <code>CUH512410168</code>, nombres <code>Ana Maria</code>, apellidos <code>Gomez Ruiz</code>, grupo <code>3A</code>.
         </p>
       </AyudaFormulario>
+      {editandoId && (
+        <InlineMensaje tipo="info">
+          Editando alumno. Modifica los campos y pulsa "Guardar cambios".
+        </InlineMensaje>
+      )}
       <label className="campo">
         Matricula
         <input
@@ -2019,7 +2135,7 @@ function SeccionAlumnos({
       </label>
       <label className="campo">
         Materia
-        <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
+        <select value={periodoIdNuevo} onChange={(event) => setPeriodoIdNuevo(event.target.value)}>
           <option value="">Selecciona</option>
           {periodosActivos.map((periodo) => (
             <option key={periodo._id} value={periodo._id}>
@@ -2028,22 +2144,67 @@ function SeccionAlumnos({
           ))}
         </select>
       </label>
-      <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crearAlumno}>
-        {creando ? 'Creando…' : 'Crear alumno'}
-      </Boton>
+      <div className="acciones">
+        {!editandoId ? (
+          <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crearAlumno}>
+            {creando ? 'Creando…' : 'Crear alumno'}
+          </Boton>
+        ) : (
+          <>
+            <Boton
+              type="button"
+              icono={<Icono nombre="ok" />}
+              cargando={guardandoEdicion}
+              disabled={!puedeGuardarEdicion}
+              onClick={guardarEdicion}
+            >
+              {guardandoEdicion ? 'Guardando…' : 'Guardar cambios'}
+            </Boton>
+            <Boton variante="secundario" type="button" onClick={cancelarEdicion}>
+              Cancelar
+            </Boton>
+          </>
+        )}
+      </div>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
         </p>
       )}
-      <h3>Alumnos recientes</h3>
+      <h3>Alumnos de la materia</h3>
+      <label className="campo">
+        Materia seleccionada
+        <select value={periodoIdLista} onChange={(event) => setPeriodoIdLista(event.target.value)}>
+          <option value="">Selecciona</option>
+          {periodosTodos
+            .filter((p) => p.activo !== false)
+            .map((periodo) => (
+              <option key={periodo._id} value={periodo._id}>
+                {periodo.nombre}
+              </option>
+            ))}
+        </select>
+        {Boolean(nombreMateriaSeleccionada) && (
+          <span className="ayuda">Mostrando todos los alumnos de: {nombreMateriaSeleccionada}</span>
+        )}
+      </label>
       <ul className="lista">
-        {alumnos.slice(0, 10).map((alumno) => (
-          <li key={alumno._id}>
-            {alumno.matricula} - {alumno.nombreCompleto}
-            {alumno.periodoId ? ` (Materia: ${periodosTodos.find((p) => p._id === alumno.periodoId)?.nombre ?? '—'})` : ''}
-          </li>
-        ))}
+        {!periodoIdLista && <li>Selecciona una materia para ver sus alumnos.</li>}
+        {periodoIdLista && alumnosDeMateria.length === 0 && <li>No hay alumnos registrados en esta materia.</li>}
+        {periodoIdLista &&
+          alumnosDeMateria.map((alumno) => (
+            <li key={alumno._id}>
+              <span>
+                {alumno.matricula} - {alumno.nombreCompleto}
+                {alumno.grupo ? ` (Grupo: ${alumno.grupo})` : ''}
+              </span>
+              <div className="acciones">
+                <Boton variante="secundario" type="button" onClick={() => iniciarEdicion(alumno)}>
+                  Editar
+                </Boton>
+              </div>
+            </li>
+          ))}
       </ul>
     </div>
   );
