@@ -540,15 +540,16 @@ export function AppDocente() {
             clienteApi.enviar<{
               paqueteBase64: string;
               checksumSha256: string;
+              checksumGzipSha256?: string;
               exportadoEn: string;
               conteos: Record<string, number>;
             }>('/sincronizaciones/paquete/exportar', payload)
           }
-          onImportarPaquete={(paqueteBase64) =>
-            clienteApi.enviar<{ mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }>(
-              '/sincronizaciones/paquete/importar',
-              { paqueteBase64 }
-            )
+          onImportarPaquete={(payload) =>
+            clienteApi.enviar<
+              | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
+              | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
+            >('/sincronizaciones/paquete/importar', payload)
           }
         />
       )}
@@ -5084,10 +5085,14 @@ function SeccionPaqueteSincronizacion({
   onExportar: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<{
     paqueteBase64: string;
     checksumSha256: string;
+    checksumGzipSha256?: string;
     exportadoEn: string;
     conteos: Record<string, number>;
   }>;
-  onImportar: (paqueteBase64: string) => Promise<{ mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }>;
+  onImportar: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean }) => Promise<
+    | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
+    | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
+  >;
 }) {
   const [periodoId, setPeriodoId] = useState('');
   const [desde, setDesde] = useState('');
@@ -5164,14 +5169,34 @@ function SeccionPaqueteSincronizacion({
       setMensaje('');
 
       const texto = await archivo.text();
-      const json = JSON.parse(texto) as { paqueteBase64?: string };
+      const json = JSON.parse(texto) as { paqueteBase64?: string; checksumSha256?: string; conteos?: Record<string, number> };
       const paqueteBase64 = String(json?.paqueteBase64 || '').trim();
+      const checksumSha256 = String(json?.checksumSha256 || '').trim();
       if (!paqueteBase64) {
         throw new Error('Archivo invalido: no contiene paqueteBase64');
       }
 
-      const resp = await onImportar(paqueteBase64);
-      setMensaje(resp.mensaje || 'Paquete importado');
+      // 1) Validar en servidor (dry-run) para detectar corrupcion antes de escribir.
+      const validacion = await onImportar({ paqueteBase64, checksumSha256: checksumSha256 || undefined, dryRun: true });
+      const conteos = (validacion as { conteos?: Record<string, number> })?.conteos;
+      const resumen = conteos
+        ? `\n\nContenido: ${Object.entries(conteos)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(', ')}`
+        : '';
+
+      const ok = window.confirm(
+        `Paquete valido.${resumen}\n\n¿Deseas importar y aplicar los cambios en esta computadora?\n\nRecomendacion: haz un export antes de importar.`
+      );
+      if (!ok) {
+        setMensaje('Importacion cancelada');
+        registrarAccionDocente('sync_paquete_importar_cancelado', true, Date.now() - inicio);
+        return;
+      }
+
+      // 2) Importar realmente.
+      const resp = await onImportar({ paqueteBase64, checksumSha256: checksumSha256 || undefined });
+      setMensaje((resp as { mensaje?: string })?.mensaje || 'Paquete importado');
       emitToast({ level: 'ok', title: 'Sincronizacion', message: 'Paquete importado', durationMs: 2600 });
       registrarAccionDocente('sync_paquete_importar', true, Date.now() - inicio);
     } catch (error) {
@@ -5205,6 +5230,9 @@ function SeccionPaqueteSincronizacion({
           </li>
           <li>
             <b>Importar:</b> selecciona ese archivo en la otra computadora (misma cuenta docente).
+          </li>
+          <li>
+            <b>Integridad:</b> el sistema valida checksum antes de aplicar (si no coincide, se bloquea).
           </li>
           <li>
             <b>Conflictos:</b> se conserva el registro mas nuevo (por fecha de actualizacion).
@@ -5244,14 +5272,14 @@ function SeccionPaqueteSincronizacion({
         <Boton type="button" icono={<Icono nombre="publicar" />} cargando={exportando} onClick={exportar}>
           {exportando ? 'Exportando…' : 'Exportar paquete'}
         </Boton>
-        <label className="boton boton--secundario" aria-disabled={importando}>
+        <label className={importando ? 'boton boton--secundario boton--disabled' : 'boton boton--secundario'}>
           <Icono nombre="entrar" /> {importando ? 'Importando…' : 'Importar paquete'}
           <input
             type="file"
             accept="application/json,.json,.seu-sync.json"
             onChange={importar}
             disabled={importando}
-            style={{ display: 'none' }}
+            className="input-file-oculto"
           />
         </label>
       </div>
@@ -5286,13 +5314,17 @@ function SeccionSincronizacion({
   onExportarPaquete: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<{
     paqueteBase64: string;
     checksumSha256: string;
+    checksumGzipSha256?: string;
     exportadoEn: string;
     conteos: Record<string, number>;
   }>;
-  onImportarPaquete: (paqueteBase64: string) => Promise<{ mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }>;
+  onImportarPaquete: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean }) => Promise<
+    | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
+    | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
+  >;
 }) {
   return (
-    <div className="grid" style={{ gap: 12 }}>
+    <div className="sincronizacion-grid">
       <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
       <SeccionPaqueteSincronizacion periodos={periodos} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
     </div>

@@ -49,6 +49,29 @@
   margin-right: 0;
 }
 
+/* Sincronizacion (export/import paquete) */
+.sincronizacion-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.input-file-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.boton--disabled {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
 .spinner {
   display: inline-block;
   vertical-align: -0.125em;
