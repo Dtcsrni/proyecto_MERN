@@ -15,7 +15,7 @@ scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 rootDir = fso.GetParentFolderName(scriptDir)
 
 Dim mode, port
-mode = "none"
+mode = "dev"
 port = "0"
 If WScript.Arguments.Count >= 1 Then mode = WScript.Arguments(0)
 If WScript.Arguments.Count >= 2 Then port = WScript.Arguments(1)
@@ -83,9 +83,25 @@ If port <> "0" And port <> "" Then
     If Not (splashExec Is Nothing) Then
       splashExec.Terminate
     End If
+    ' Fallback: ensure no lingering mshta.exe stays open.
+    KillSplashByWmi
     On Error GoTo 0
   End If
 End If
+
+Sub KillSplashByWmi()
+  On Error Resume Next
+  Dim svc, procs, p, cmd
+  Set svc = GetObject("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
+  Set procs = svc.ExecQuery("SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='mshta.exe'")
+  For Each p In procs
+    cmd = LCase(CStr("" & p.CommandLine))
+    If InStr(1, cmd, "dashboard-splash.hta", vbTextCompare) > 0 Then
+      p.Terminate
+    End If
+  Next
+  On Error GoTo 0
+End Sub
 
 Function HttpOk(ByVal u)
   On Error Resume Next

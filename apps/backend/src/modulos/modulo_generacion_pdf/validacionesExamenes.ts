@@ -9,8 +9,11 @@ export const esquemaCrearPlantilla = z.object({
   tipo: z.enum(['parcial', 'global']),
   titulo: z.string().min(1),
   instrucciones: z.string().optional(),
-  totalReactivos: z.number().int().positive(),
+  numeroPaginas: z.number().int().positive().max(50),
+  // Legacy (deprecado): se acepta para compatibilidad, pero ya no se usa.
+  totalReactivos: z.number().int().positive().optional(),
   preguntasIds: z.array(esquemaObjectId).optional(),
+  temas: z.array(z.string().min(1)).optional(),
   configuracionPdf: z
     .object({
       margenMm: z.number().positive().optional(),
@@ -18,9 +21,57 @@ export const esquemaCrearPlantilla = z.object({
     })
     .strict()
     .optional()
+}).superRefine((data, ctx) => {
+  const preguntasIds = Array.isArray(data.preguntasIds) ? data.preguntasIds : [];
+  const temas = Array.isArray(data.temas) ? data.temas : [];
+  if (preguntasIds.length === 0 && temas.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'La plantilla debe incluir preguntasIds o temas'
+    });
+  }
+  if (temas.length > 0 && !data.periodoId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'periodoId es obligatorio cuando se usan temas'
+    });
+  }
 });
 
 export const esquemaGenerarExamen = z.object({
   plantillaId: esquemaObjectId,
   alumnoId: esquemaObjectId.optional()
 });
+
+export const esquemaGenerarExamenesLote = z.object({
+  plantillaId: esquemaObjectId,
+  confirmarMasivo: z.boolean().optional()
+});
+
+export const esquemaRegenerarExamenGenerado = z
+  .object({
+    // Si el examen ya fue descargado, se requiere confirmación explícita.
+    forzar: z.boolean().optional()
+  })
+  .strict();
+
+export const esquemaActualizarPlantilla = z
+  .object({
+    periodoId: esquemaObjectId.optional(),
+    tipo: z.enum(['parcial', 'global']).optional(),
+    titulo: z.string().min(1).optional(),
+    instrucciones: z.string().optional(),
+    numeroPaginas: z.number().int().positive().max(50).optional(),
+    // Legacy (deprecado)
+    totalReactivos: z.number().int().positive().optional(),
+    preguntasIds: z.array(esquemaObjectId).optional(),
+    temas: z.array(z.string().min(1)).optional(),
+    configuracionPdf: z
+      .object({
+        margenMm: z.number().positive().optional(),
+        layout: z.string().optional()
+      })
+      .strict()
+      .optional()
+  })
+  .strict();

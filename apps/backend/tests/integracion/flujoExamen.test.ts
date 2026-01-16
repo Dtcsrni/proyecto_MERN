@@ -52,7 +52,7 @@ describe('flujo de examen', () => {
       .set(auth)
       .send({
         periodoId,
-        matricula: '2025-001',
+        matricula: 'CUH512410168',
         nombreCompleto: 'Alumno Prueba',
         correo: 'alumno@prueba.test',
         grupo: 'A'
@@ -60,22 +60,25 @@ describe('flujo de examen', () => {
       .expect(201);
     const alumnoId = alumnoResp.body.alumno._id as string;
 
-    const preguntaResp = await request(app)
-      .post('/api/banco-preguntas')
-      .set(auth)
-      .send({
-        periodoId,
-        enunciado: 'Pregunta 1',
-        opciones: [
-          { texto: 'Opcion A', esCorrecta: true },
-          { texto: 'Opcion B', esCorrecta: false },
-          { texto: 'Opcion C', esCorrecta: false },
-          { texto: 'Opcion D', esCorrecta: false },
-          { texto: 'Opcion E', esCorrecta: false }
-        ]
-      })
-      .expect(201);
-    const preguntaId = preguntaResp.body.pregunta._id as string;
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      const preguntaResp = await request(app)
+        .post('/api/banco-preguntas')
+        .set(auth)
+        .send({
+          periodoId,
+          enunciado: `Pregunta ${i + 1}`,
+          opciones: [
+            { texto: 'Opcion A', esCorrecta: true },
+            { texto: 'Opcion B', esCorrecta: false },
+            { texto: 'Opcion C', esCorrecta: false },
+            { texto: 'Opcion D', esCorrecta: false },
+            { texto: 'Opcion E', esCorrecta: false }
+          ]
+        })
+        .expect(201);
+      preguntasIds.push(preguntaResp.body.pregunta._id as string);
+    }
 
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
@@ -84,8 +87,8 @@ describe('flujo de examen', () => {
         periodoId,
         tipo: 'parcial',
         titulo: 'Parcial 1',
-        totalReactivos: 1,
-        preguntasIds: [preguntaId]
+        numeroPaginas: 1,
+        preguntasIds
       })
       .expect(201);
     const plantillaId = plantillaResp.body.plantilla._id as string;
@@ -97,6 +100,9 @@ describe('flujo de examen', () => {
       .expect(201);
     const examenId = examenResp.body.examenGenerado._id as string;
     const folio = examenResp.body.examenGenerado.folio as string;
+    const totalReactivosExamen = Array.isArray(examenResp.body.examenGenerado.preguntasIds)
+      ? examenResp.body.examenGenerado.preguntasIds.length
+      : 1;
 
     await request(app)
       .post('/api/entregas/vincular-folio')
@@ -110,8 +116,8 @@ describe('flujo de examen', () => {
       .send({
         examenGeneradoId: examenId,
         alumnoId,
-        aciertos: 1,
-        totalReactivos: 1,
+        aciertos: totalReactivosExamen,
+        totalReactivos: totalReactivosExamen,
         bonoSolicitado: 0.5,
         evaluacionContinua: 5
       })

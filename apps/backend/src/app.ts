@@ -22,7 +22,15 @@ export function crearApp() {
   app.disable('x-powered-by');
 
   app.use(helmet());
-  app.use(cors({ origin: configuracion.corsOrigenes, credentials: true }));
+  app.use(
+    cors({
+      origin: configuracion.corsOrigenes,
+      credentials: true,
+      // Permite que el frontend lea el nombre real del PDF (Content-Disposition)
+      // al descargar via fetch.
+      exposedHeaders: ['Content-Disposition']
+    })
+  );
   app.use(express.json({ limit: configuracion.limiteJson }));
   app.use(sanitizarMongo());
   app.use(

@@ -1,7 +1,9 @@
 /**
  * Generacion de PDFs en formato carta con marcas y QR por pagina.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFPage } from 'pdf-lib';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import QRCode from 'qrcode';
 import type { MapaVariante, PreguntaBase } from './servicioVariantes';
 
@@ -31,11 +33,16 @@ function agregarMarcasRegistro(page: PDFPage, margen: number) {
 }
 
 async function agregarQr(pdfDoc: PDFDocument, page: PDFPage, qrTexto: string, margen: number) {
-  const qrDataUrl = await QRCode.toDataURL(qrTexto, { margin: 1, width: 140 });
+  const qrDataUrl = await QRCode.toDataURL(qrTexto, {
+    margin: 2,
+    width: 220,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#000000', light: '#FFFFFF' }
+  });
   const base64 = qrDataUrl.replace(/^data:image\/png;base64,/, '');
   const qrBytes = Uint8Array.from(Buffer.from(base64, 'base64'));
   const qrImage = await pdfDoc.embedPng(qrBytes);
-  const qrSize = 90;
+  const qrSize = 96;
 
   page.drawImage(qrImage, {
     x: ANCHO_CARTA - margen - qrSize,
@@ -43,6 +50,70 @@ async function agregarQr(pdfDoc: PDFDocument, page: PDFPage, qrTexto: string, ma
     width: qrSize,
     height: qrSize
   });
+
+  return { qrSize };
+}
+
+type LogoEmbed = {
+  image: Awaited<ReturnType<PDFDocument['embedPng']>>;
+  width: number;
+  height: number;
+};
+
+async function intentarEmbedImagen(pdfDoc: PDFDocument, src?: string): Promise<LogoEmbed | undefined> {
+  const s = String(src ?? '').trim();
+  if (!s) return undefined;
+
+  try {
+    if (s.startsWith('data:image/png;base64,')) {
+      const base64 = s.replace(/^data:image\/png;base64,/, '');
+      const bytes = Uint8Array.from(Buffer.from(base64, 'base64'));
+      const image = await pdfDoc.embedPng(bytes);
+      return { image, width: image.width, height: image.height };
+    }
+    if (s.startsWith('data:image/jpeg;base64,') || s.startsWith('data:image/jpg;base64,')) {
+      const base64 = s.replace(/^data:image\/(jpeg|jpg);base64,/, '');
+      const bytes = Uint8Array.from(Buffer.from(base64, 'base64'));
+      const image = await pdfDoc.embedJpg(bytes);
+      return { image: image as unknown as Awaited<ReturnType<PDFDocument['embedPng']>>, width: image.width, height: image.height };
+    }
+
+    const candidatos = (() => {
+      if (path.isAbsolute(s)) return [s];
+      const cwd = process.cwd();
+      // En monorepo, el cwd suele ser apps/backend. Intenta subir niveles.
+      return [
+        path.resolve(cwd, s),
+        path.resolve(cwd, '..', s),
+        path.resolve(cwd, '..', '..', s),
+        path.resolve(cwd, '..', '..', '..', s)
+      ];
+    })();
+
+    const ruta = await (async () => {
+      for (const c of candidatos) {
+        try {
+          await fs.access(c);
+          return c;
+        } catch {
+          // sigue intentando
+        }
+      }
+      // Mantener el comportamiento anterior (para mensajes/paths raros)
+      return path.isAbsolute(s) ? s : path.resolve(process.cwd(), s);
+    })();
+
+    const buffer = await fs.readFile(ruta);
+    const ext = path.extname(ruta).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') {
+      const image = await pdfDoc.embedJpg(buffer);
+      return { image: image as unknown as Awaited<ReturnType<PDFDocument['embedPng']>>, width: image.width, height: image.height };
+    }
+    const image = await pdfDoc.embedPng(buffer);
+    return { image, width: image.width, height: image.height };
+  } catch {
+    return undefined;
+  }
 }
 
 function ordenarPreguntas(preguntas: PreguntaBase[], mapa: MapaVariante) {
@@ -52,30 +123,398 @@ function ordenarPreguntas(preguntas: PreguntaBase[], mapa: MapaVariante) {
     .filter((pregunta): pregunta is PreguntaBase => Boolean(pregunta));
 }
 
+function normalizarEspacios(valor: string) {
+  return valor.replace(/\s+/g, ' ').trim();
+}
+
+type SegmentoTexto = { texto: string; font: PDFFont; size: number; esCodigo?: boolean };
+type LineaSegmentos = { segmentos: SegmentoTexto[]; lineHeight: number };
+
+function partirCodigoEnLineas(texto: string) {
+  // Preserva saltos de linea; expande tabs.
+  return String(texto ?? '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.replace(/\t/g, '  '));
+}
+
+function partirBloquesCodigo(texto: string) {
+  const src = String(texto ?? '');
+  const bloques: Array<{ tipo: 'texto' | 'codigo'; contenido: string }> = [];
+
+  let i = 0;
+  while (i < src.length) {
+    const idx = src.indexOf('```', i);
+    if (idx === -1) {
+      bloques.push({ tipo: 'texto', contenido: src.slice(i) });
+      break;
+    }
+
+    if (idx > i) bloques.push({ tipo: 'texto', contenido: src.slice(i, idx) });
+
+    const fin = src.indexOf('```', idx + 3);
+    if (fin === -1) {
+      // Sin cierre: trata como texto normal.
+      bloques.push({ tipo: 'texto', contenido: src.slice(idx) });
+      break;
+    }
+
+    const cuerpo = src.slice(idx + 3, fin);
+    // Permite un "lenguaje" en la primera linea tipo ```js
+    const lineas = partirCodigoEnLineas(cuerpo);
+    const primera = lineas[0] ?? '';
+    const resto = lineas.slice(1);
+    const pareceLang = primera.trim().length > 0 && resto.length > 0;
+    const contenido = (pareceLang ? resto : lineas).join('\n');
+    bloques.push({ tipo: 'codigo', contenido });
+    i = fin + 3;
+  }
+
+  return bloques;
+}
+
+function partirInlineCodigo(texto: string) {
+  // Divide por `...` (sin escapes). Devuelve segmentos alternando texto/codigo.
+  const src = String(texto ?? '');
+  const out: Array<{ tipo: 'texto' | 'codigo'; contenido: string }> = [];
+  let actual = '';
+  let enCodigo = false;
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '`') {
+      out.push({ tipo: enCodigo ? 'codigo' : 'texto', contenido: actual });
+      actual = '';
+      enCodigo = !enCodigo;
+      continue;
+    }
+    actual += ch;
+  }
+  out.push({ tipo: enCodigo ? 'codigo' : 'texto', contenido: actual });
+  return out;
+}
+
+function widthSeg(seg: SegmentoTexto) {
+  return seg.font.widthOfTextAtSize(seg.texto, seg.size);
+}
+
+function envolverSegmentos({ segmentos, maxWidth, preservarEspaciosIniciales }: { segmentos: SegmentoTexto[]; maxWidth: number; preservarEspaciosIniciales?: boolean }) {
+  const lineas: SegmentoTexto[][] = [];
+  let actual: SegmentoTexto[] = [];
+  let anchoActual = 0;
+
+  const pushLinea = () => {
+    lineas.push(actual);
+    actual = [];
+    anchoActual = 0;
+  };
+
+  for (const seg of segmentos) {
+    const texto = String(seg.texto ?? '');
+    if (!texto) continue;
+
+    const esCodigo = Boolean(seg.esCodigo);
+    const tokens = esCodigo ? [texto] : texto.split(/(\s+)/).filter((p) => p.length > 0);
+
+    for (const token of tokens) {
+      const esSoloEspacios = /^\s+$/.test(token);
+      if (!preservarEspaciosIniciales && actual.length === 0 && esSoloEspacios) continue;
+
+      const tokenSeg: SegmentoTexto = { ...seg, texto: token };
+      const w = widthSeg(tokenSeg);
+      if (anchoActual + w <= maxWidth) {
+        actual.push(tokenSeg);
+        anchoActual += w;
+        continue;
+      }
+
+      if (actual.length > 0) {
+        pushLinea();
+        if (!preservarEspaciosIniciales && esSoloEspacios) continue;
+      }
+
+      // Token demasiado ancho: trocea por caracter.
+      if (w > maxWidth) {
+        let chunk = '';
+        for (const ch of token) {
+          const c2 = chunk + ch;
+          const w2 = seg.font.widthOfTextAtSize(c2, seg.size);
+          if (w2 <= maxWidth) {
+            chunk = c2;
+            continue;
+          }
+          if (chunk) {
+            actual.push({ ...seg, texto: chunk });
+            pushLinea();
+          }
+          chunk = ch;
+        }
+        if (chunk) {
+          actual.push({ ...seg, texto: chunk });
+          anchoActual = widthSeg({ ...seg, texto: chunk });
+        }
+        continue;
+      }
+
+      actual.push(tokenSeg);
+      anchoActual = w;
+    }
+  }
+
+  if (actual.length > 0) lineas.push(actual);
+  return lineas.length > 0 ? lineas : [[]];
+}
+
+function envolverTextoMixto({
+  texto,
+  maxWidth,
+  fuente,
+  fuenteMono,
+  sizeTexto,
+  sizeCodigoInline,
+  sizeCodigoBloque,
+  lineHeightTexto,
+  lineHeightCodigo
+}: {
+  texto: string;
+  maxWidth: number;
+  fuente: PDFFont;
+  fuenteMono: PDFFont;
+  sizeTexto: number;
+  sizeCodigoInline: number;
+  sizeCodigoBloque: number;
+  lineHeightTexto: number;
+  lineHeightCodigo: number;
+}) {
+  const bloques = partirBloquesCodigo(texto);
+  const lineas: LineaSegmentos[] = [];
+
+  for (const bloque of bloques) {
+    if (bloque.tipo === 'codigo') {
+      const rawLines = partirCodigoEnLineas(bloque.contenido);
+      for (const raw of rawLines) {
+        const seg: SegmentoTexto = { texto: String(raw ?? ''), font: fuenteMono, size: sizeCodigoBloque, esCodigo: true };
+        const env = envolverSegmentos({ segmentos: [seg], maxWidth, preservarEspaciosIniciales: true });
+        for (const linea of env) {
+          lineas.push({ segmentos: linea.length > 0 ? linea : [{ ...seg, texto: '' }], lineHeight: lineHeightCodigo });
+        }
+      }
+      continue;
+    }
+
+    const textoPlano = String(bloque.contenido ?? '');
+    const inline = partirInlineCodigo(textoPlano);
+    const segmentos: SegmentoTexto[] = [];
+    for (const s of inline) {
+      if (!s.contenido) continue;
+      if (s.tipo === 'codigo') {
+        // Mantener lo escrito, pero evita whitespace extremo.
+        const t = String(s.contenido).replace(/\s+/g, ' ').trim();
+        if (!t) continue;
+        segmentos.push({ texto: t, font: fuenteMono, size: sizeCodigoInline, esCodigo: true });
+      } else {
+        const t = normalizarEspacios(String(s.contenido));
+        if (!t) continue;
+        segmentos.push({ texto: t, font: fuente, size: sizeTexto, esCodigo: false });
+      }
+    }
+
+    if (segmentos.length === 0) {
+      lineas.push({ segmentos: [{ texto: '', font: fuente, size: sizeTexto }], lineHeight: lineHeightTexto });
+      continue;
+    }
+
+    // Insertar espacios entre segmentos cuando cambian de tipo y no hay espacio explicito.
+    const conEspacios: SegmentoTexto[] = [];
+    for (let idx = 0; idx < segmentos.length; idx++) {
+      const seg = segmentos[idx];
+      if (conEspacios.length > 0) {
+        const prev = conEspacios[conEspacios.length - 1];
+        const prevEndsSpace = /\s$/.test(prev.texto);
+        const segStartsSpace = /^\s/.test(seg.texto);
+        if (!prevEndsSpace && !segStartsSpace) {
+          conEspacios.push({ texto: ' ', font: fuente, size: sizeTexto, esCodigo: false });
+        }
+      }
+      conEspacios.push(seg);
+    }
+
+    const env = envolverSegmentos({ segmentos: conEspacios, maxWidth });
+    for (const linea of env) {
+      lineas.push({ segmentos: linea.length > 0 ? linea : [{ texto: '', font: fuente, size: sizeTexto }], lineHeight: lineHeightTexto });
+    }
+  }
+
+  return lineas.length > 0 ? lineas : [{ segmentos: [{ texto: '', font: fuente, size: sizeTexto }], lineHeight: lineHeightTexto }];
+}
+
+function dibujarLineasMixtas({ page, lineas, x, y, colorTexto }: { page: PDFPage; lineas: LineaSegmentos[]; x: number; y: number; colorTexto?: ReturnType<typeof rgb> }) {
+  let cursorY = y;
+  for (const linea of lineas) {
+    let cursorX = x;
+    for (const seg of linea.segmentos) {
+      const t = String(seg.texto ?? '');
+      if (t) {
+        page.drawText(t, { x: cursorX, y: cursorY, size: seg.size, font: seg.font, color: colorTexto });
+        cursorX += seg.font.widthOfTextAtSize(t, seg.size);
+      }
+    }
+    cursorY -= linea.lineHeight;
+  }
+  return cursorY;
+}
+
+function partirEnLineas({ texto, maxWidth, font, size }: { texto: string; maxWidth: number; font: PDFFont; size: number }) {
+  const limpio = normalizarEspacios(String(texto ?? ''));
+  if (!limpio) return [''];
+
+  const palabras = limpio.split(' ');
+  const lineas: string[] = [];
+  let actual = '';
+
+  const cabe = (t: string) => font.widthOfTextAtSize(t, size) <= maxWidth;
+
+  for (const palabra of palabras) {
+    const candidato = actual ? `${actual} ${palabra}` : palabra;
+    if (cabe(candidato)) {
+      actual = candidato;
+      continue;
+    }
+
+    if (actual) lineas.push(actual);
+
+    // Si la palabra sola no cabe, se trocea por caracteres.
+    if (!cabe(palabra)) {
+      let chunk = '';
+      for (const ch of palabra) {
+        const c2 = chunk + ch;
+        if (cabe(c2)) {
+          chunk = c2;
+        } else {
+          if (chunk) lineas.push(chunk);
+          chunk = ch;
+        }
+      }
+      actual = chunk;
+    } else {
+      actual = palabra;
+    }
+  }
+
+  if (actual) lineas.push(actual);
+  return lineas.length > 0 ? lineas : [''];
+}
+
 export async function generarPdfExamen({
   titulo,
   folio,
   preguntas,
   mapaVariante,
   tipoExamen,
-  margenMm = 10
+  totalPaginas,
+  margenMm = 10,
+  encabezado
 }: {
   titulo: string;
   folio: string;
   preguntas: PreguntaBase[];
   mapaVariante: MapaVariante;
   tipoExamen: 'parcial' | 'global';
+  totalPaginas: number;
   margenMm?: number;
+  encabezado?: {
+    institucion?: string;
+    lema?: string;
+    materia?: string;
+    docente?: string;
+    instrucciones?: string;
+    alumno?: { nombre?: string; grupo?: string };
+    mostrarInstrucciones?: boolean;
+    logos?: { izquierdaPath?: string; derechaPath?: string };
+  };
 }) {
   const pdfDoc = await PDFDocument.create();
   const fuente = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fuenteBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fuenteItalica = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+  const fuenteMono = await pdfDoc.embedFont(StandardFonts.Courier);
   const margen = mmAPuntos(margenMm);
-  const paginasMinimas = tipoExamen === 'parcial' ? 2 : 4;
+  const paginasObjetivo = Number.isFinite(totalPaginas) ? Math.max(1, Math.floor(totalPaginas)) : 1;
+
+  const colorPrimario = rgb(0.07, 0.22, 0.42);
+  const colorGris = rgb(0.38, 0.38, 0.38);
+  const colorLinea = rgb(0.75, 0.79, 0.84);
+
+  // Tipografías más compactas para encajar más preguntas sin sacrificar legibilidad.
+  const sizeTitulo = 14;
+  const sizeMeta = 9;
+  const sizePregunta = 10;
+  const sizeOpcion = 9;
+  const sizeNota = 8.5;
+
+  // Codigo: monospace ligeramente mas pequeno y con interlineado mas compacto.
+  const sizeCodigoInline = 9;
+  const sizeCodigoBloque = 8.5;
+
+  const lineaPregunta = 12;
+  const lineaOpcion = 11;
+  const lineaNota = 11;
+  const separacionPregunta = 4;
+
+  const lineaCodigoInline = lineaPregunta; // mismo alto para no afectar layout
+  const lineaCodigoBloque = 10;
+
+  // OMR: burbujas A–E con espaciado fijo para evitar superposiciones.
+  const OMR_TOTAL_LETRAS = 5;
+  const omrRadio = 5.2;
+  const omrPasoY = 13;
+  const omrPadding = 8;
+  const omrExtraTitulo = 18;
+
+  const anchoColRespuesta = 120;
+  const gutterRespuesta = 10;
+  const xColRespuesta = ANCHO_CARTA - margen - anchoColRespuesta;
+  const xDerechaTexto = xColRespuesta - gutterRespuesta;
+
+  const xNumeroPregunta = margen;
+  const xTextoPregunta = margen + 18;
+  const anchoTextoPregunta = Math.max(60, xDerechaTexto - xTextoPregunta);
+
+  const INSTRUCCIONES_DEFAULT =
+    'Por favor conteste las siguientes preguntas referentes al parcial. ' +
+    'Rellene el círculo de la respuesta más adecuada, evitando salirse del mismo. ' +
+    'Cada pregunta vale 10 puntos si está completa y es correcta.';
+
+  const institucion = String(
+    encabezado?.institucion ?? process.env.EXAMEN_INSTITUCION ?? 'Sistema de Evaluacion Universitaria'
+  ).trim();
+  const lema = String(encabezado?.lema ?? process.env.EXAMEN_LEMA ?? '').trim();
+  const materia = String(encabezado?.materia ?? '').trim();
+  const docente = String(encabezado?.docente ?? '').trim();
+  const mostrarInstrucciones = encabezado?.mostrarInstrucciones !== false;
+  const alumnoNombre = String(encabezado?.alumno?.nombre ?? '').trim();
+  const alumnoGrupo = String(encabezado?.alumno?.grupo ?? '').trim();
+  const instrucciones = String(encabezado?.instrucciones ?? '').trim() || INSTRUCCIONES_DEFAULT;
+
+  const logoIzqSrc = encabezado?.logos?.izquierdaPath ?? process.env.EXAMEN_LOGO_IZQ_PATH ?? 'logos/cuh.png';
+  const logoDerSrc = encabezado?.logos?.derechaPath ?? process.env.EXAMEN_LOGO_DER_PATH ?? 'logos/isc.png';
+
+  const izquierda =
+    (await intentarEmbedImagen(pdfDoc, logoIzqSrc)) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/cuh.jpg')) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/cuh.jpeg'));
+  const derecha =
+    (await intentarEmbedImagen(pdfDoc, logoDerSrc)) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/isc.jpg')) ??
+    (await intentarEmbedImagen(pdfDoc, 'logos/isc.jpeg'));
+
+  const logos = { izquierda, derecha };
 
   const preguntasOrdenadas = ordenarPreguntas(preguntas, mapaVariante);
   let indicePregunta = 0;
   let numeroPagina = 1;
-  const paginasMeta: { numero: number; qrTexto: string }[] = [];
+  const paginasMeta: { numero: number; qrTexto: string; preguntasDel: number; preguntasAl: number }[] = [];
+  const metricasPaginas: Array<{ numero: number; fraccionVacia: number; preguntas: number }> = [];
   // Se guarda el mapa de posiciones para el escaneo OMR posterior.
   const paginasOmr: Array<{
     numeroPagina: number;
@@ -86,64 +525,321 @@ export async function generarPdfExamen({
     }>;
   }> = [];
 
-  while (indicePregunta < preguntasOrdenadas.length || numeroPagina <= paginasMinimas) {
+  while (numeroPagina <= paginasObjetivo) {
     const page = pdfDoc.addPage([ANCHO_CARTA, ALTO_CARTA]);
-    const qrTexto = `EXAMEN:${folio}:P${numeroPagina}`;
-    paginasMeta.push({ numero: numeroPagina, qrTexto });
+    const qrTexto = String(folio ?? '').trim().toUpperCase();
+    let preguntasDel = 0;
+    let preguntasAl = 0;
     const mapaPagina: Array<{
       numeroPregunta: number;
       idPregunta: string;
       opciones: Array<{ letra: string; x: number; y: number }>;
     }> = [];
 
+    const yTop = ALTO_CARTA - margen;
+    const esPrimera = numeroPagina === 1;
+    const altoEncabezado = esPrimera ? 118 : 70;
+    const xCaja = margen + 2;
+    const wCaja = ANCHO_CARTA - 2 * margen - 4;
+    const yCaja = yTop - altoEncabezado;
+
+    // Fondo sutil dentro del area util (no tapa marcas)
+    page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: rgb(0.97, 0.98, 0.99) });
+    page.drawLine({ start: { x: xCaja, y: yCaja }, end: { x: xCaja + wCaja, y: yCaja }, color: colorLinea, thickness: 1 });
+
+    // Marcas y QR (OMR/escaneo)
     agregarMarcasRegistro(page, margen);
-    await agregarQr(pdfDoc, page, qrTexto, margen);
+    const { qrSize } = await agregarQr(pdfDoc, page, qrTexto, margen);
 
-    page.drawText(titulo, { x: margen, y: ALTO_CARTA - margen - 24, size: 16, font: fuente });
-    page.drawText(`Folio: ${folio} | Pagina ${numeroPagina}`, {
-      x: margen,
-      y: ALTO_CARTA - margen - 44,
-      size: 10,
-      font: fuente
-    });
+    // Folio impreso debajo del QR
+    const xQr = ANCHO_CARTA - margen - qrSize;
+    const yQr = ALTO_CARTA - margen - qrSize;
+    page.drawText(qrTexto, { x: xQr, y: yQr - 12, size: 9, font: fuenteBold, color: colorPrimario });
 
-    let cursorY = ALTO_CARTA - margen - 70;
-    const espacioLinea = 14;
+    // Logos opcionales
+    const logoMaxH = esPrimera ? 44 : 34;
+    if (logos.izquierda) {
+      const escala = Math.min(1, logoMaxH / Math.max(1, logos.izquierda.height));
+      const w = logos.izquierda.width * escala;
+      const h = logos.izquierda.height * escala;
+      page.drawImage(logos.izquierda.image, { x: margen + 8, y: yTop - h - 8, width: w, height: h });
+    }
+    if (logos.derecha) {
+      const escala = Math.min(1, logoMaxH / Math.max(1, logos.derecha.height));
+      const w = logos.derecha.width * escala;
+      const h = logos.derecha.height * escala;
+      // Intenta colocar a la izquierda del QR sin invadir el area
+      const xMax = xQr - 10;
+      const x = Math.max(margen + 8, xMax - w);
+      if (x + w <= xMax) {
+        page.drawImage(logos.derecha.image, { x, y: yTop - h - 8, width: w, height: h });
+      }
+    }
 
-    while (indicePregunta < preguntasOrdenadas.length && cursorY > margen + 60) {
+    // Texto del encabezado
+    const xTexto = margen + 70;
+    if (esPrimera) {
+      // Reservar placeholders de logo si no hay imagen para evitar "huecos" y mantener consistencia visual.
+      const logoPlaceholderW = 56;
+      const logoPlaceholderH = 36;
+      if (!logos.izquierda) {
+        page.drawRectangle({ x: margen + 8, y: yTop - logoPlaceholderH - 8, width: logoPlaceholderW, height: logoPlaceholderH, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+        page.drawText('LOGO', { x: margen + 18, y: yTop - 30, size: 9, font: fuenteBold, color: colorGris });
+      }
+      if (!logos.derecha) {
+        const xMax = xQr - 10;
+        const x = Math.max(margen + 8, xMax - logoPlaceholderW);
+        if (x + logoPlaceholderW <= xMax) {
+          page.drawRectangle({ x, y: yTop - logoPlaceholderH - 8, width: logoPlaceholderW, height: logoPlaceholderH, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+          page.drawText('LOGO', { x: x + 10, y: yTop - 30, size: 9, font: fuenteBold, color: colorGris });
+        }
+      }
+
+      const maxWidthEnc = Math.max(120, xQr - 12 - xTexto);
+      const lineasInsti = partirEnLineas({ texto: institucion, maxWidth: maxWidthEnc, font: fuenteBold, size: 12 });
+      page.drawText(lineasInsti[0] ?? '', { x: xTexto, y: yTop - 22, size: 12, font: fuenteBold, color: colorPrimario });
+
+      const lineasTitulo = partirEnLineas({ texto: titulo, maxWidth: maxWidthEnc, font: fuenteBold, size: sizeTitulo });
+      page.drawText(lineasTitulo[0] ?? '', { x: xTexto, y: yTop - 42, size: sizeTitulo, font: fuenteBold, color: rgb(0.1, 0.1, 0.1) });
+      if (lema) {
+        const lineasLema = partirEnLineas({ texto: lema, maxWidth: maxWidthEnc, font: fuenteItalica, size: 9 });
+        page.drawText(lineasLema[0] ?? '', { x: xTexto, y: yTop - 58, size: 9, font: fuenteItalica, color: colorGris });
+      }
+
+      const metaY = yTop - 70;
+      const meta = [materia ? `Materia: ${materia}` : '', docente ? `Docente: ${docente}` : '', `Pagina: ${numeroPagina}`].filter(Boolean).join('   |   ');
+      const metaLineas = partirEnLineas({ texto: meta, maxWidth: maxWidthEnc, font: fuente, size: sizeMeta });
+      page.drawText(metaLineas[0] ?? '', { x: xTexto, y: metaY, size: sizeMeta, font: fuente, color: colorGris });
+
+      // Campos de alumno/grupo (subidos un poco para no chocar con instrucciones)
+      const yCampos = metaY - 12;
+      page.drawText('Alumno:', { x: xTexto, y: yCampos, size: 10, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
+      page.drawLine({ start: { x: xTexto + 52, y: yCampos + 3 }, end: { x: xTexto + 300, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
+      if (alumnoNombre) {
+        const alumnoLinea = partirEnLineas({ texto: alumnoNombre, maxWidth: 240, font: fuente, size: 10 })[0] ?? '';
+        page.drawText(alumnoLinea, { x: xTexto + 56, y: yCampos, size: 10, font: fuente, color: rgb(0.1, 0.1, 0.1) });
+      }
+
+      page.drawText('Grupo:', { x: xTexto + 320, y: yCampos, size: 10, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
+      page.drawLine({ start: { x: xTexto + 365, y: yCampos + 3 }, end: { x: xTexto + 470, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
+      if (alumnoGrupo) {
+        const grupoLinea = partirEnLineas({ texto: alumnoGrupo, maxWidth: 100, font: fuente, size: 10 })[0] ?? '';
+        page.drawText(grupoLinea, { x: xTexto + 370, y: yCampos, size: 10, font: fuente, color: rgb(0.1, 0.1, 0.1) });
+      }
+
+      if (mostrarInstrucciones) {
+        const xInst = margen + 10;
+        const wInst = Math.min(420, xDerechaTexto - xInst - 10);
+        const textoInst = instrucciones;
+        const lineasInst = partirEnLineas({ texto: textoInst, maxWidth: wInst - 16, font: fuente, size: 8 });
+        const yInst = yCaja + 6;
+
+        // No permitir que la caja invada el area de Alumno/Grupo.
+        const espacioDisponible = yCampos - 6 - yInst;
+        if (espacioDisponible >= 18) {
+          const maxH = espacioDisponible;
+          const hDeseada = Math.max(18, 22 + lineasInst.length * 9.5);
+          const hInst = Math.min(maxH, hDeseada);
+
+          // Recortar lineas para que quepan.
+          const lineasMax = Math.max(1, Math.floor((hInst - 22) / 9.5));
+          const lineasVisibles = lineasInst.slice(0, Math.min(3, lineasMax));
+
+          page.drawRectangle({ x: xInst, y: yInst, width: wInst, height: hInst, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+          page.drawText('Instrucciones:', { x: xInst + 8, y: yInst + hInst - 14, size: 8.5, font: fuenteBold, color: colorPrimario });
+          // Texto debajo del label
+          let yTexto = yInst + hInst - 24;
+          for (const linea of lineasVisibles) {
+            page.drawText(linea, { x: xInst + 8, y: yTexto, size: 8, font: fuente, color: colorGris });
+            yTexto -= 9.5;
+            if (yTexto < yInst + 6) break;
+          }
+        }
+      }
+    } else {
+      page.drawText(titulo, { x: margen + 10, y: yTop - 26, size: 12, font: fuenteBold, color: colorPrimario });
+      const meta = [`Pagina: ${numeroPagina}`, materia ? `Materia: ${materia}` : ''].filter(Boolean).join('   |   ');
+      page.drawText(meta, { x: margen + 10, y: yTop - 42, size: 9, font: fuente, color: colorGris });
+    }
+
+  const cursorYInicio = yTop - altoEncabezado - 10;
+  let cursorY = cursorYInicio;
+
+  const alturaDisponibleMin = margen + 60;
+
+    const calcularAlturaPregunta = (pregunta: PreguntaBase, numero: number) => {
+      const lineasEnunciado = envolverTextoMixto({
+        texto: pregunta.enunciado,
+        maxWidth: anchoTextoPregunta,
+        fuente,
+        fuenteMono,
+        sizeTexto: sizePregunta,
+        sizeCodigoInline,
+        sizeCodigoBloque,
+        lineHeightTexto: lineaPregunta,
+        lineHeightCodigo: lineaCodigoBloque
+      });
+      const tieneImagen = Boolean(String(pregunta.imagenUrl ?? '').trim());
+      let alto = lineasEnunciado.reduce((acc, l) => acc + l.lineHeight, 0);
+      if (tieneImagen) alto += lineaNota;
+
+      const ordenOpciones = mapaVariante.ordenOpcionesPorPregunta[pregunta.id] ?? [0, 1, 2, 3, 4];
+      const totalOpciones = ordenOpciones.length;
+      const mitad = Math.ceil(totalOpciones / 2);
+
+      const anchoOpcionesTotal = Math.max(80, xDerechaTexto - xTextoPregunta);
+      const gutterCols = 10;
+      const colWidth = totalOpciones > 1 ? (anchoOpcionesTotal - gutterCols) / 2 : anchoOpcionesTotal;
+      const prefixWidth = fuenteBold.widthOfTextAtSize('E) ', sizeOpcion);
+      const maxTextWidth = Math.max(30, colWidth - prefixWidth);
+
+      const cols = [ordenOpciones.slice(0, mitad), ordenOpciones.slice(mitad)];
+      const alturasCols = [0, 0];
+      cols.forEach((col, colIdx) => {
+        for (const indiceOpcion of col) {
+          const opcion = pregunta.opciones[indiceOpcion];
+          const lineasOpcion = envolverTextoMixto({
+            texto: opcion?.texto ?? '',
+            maxWidth: maxTextWidth,
+            fuente,
+            fuenteMono,
+            sizeTexto: sizeOpcion,
+            sizeCodigoInline: Math.min(sizeCodigoInline, sizeOpcion),
+            sizeCodigoBloque,
+            lineHeightTexto: lineaOpcion,
+            lineHeightCodigo: lineaCodigoBloque
+          });
+          alturasCols[colIdx] += lineasOpcion.reduce((acc, l) => acc + l.lineHeight, 0) + 2;
+        }
+      });
+      const altoOpciones = Math.max(alturasCols[0], alturasCols[1]);
+      const altoOmrMin = (OMR_TOTAL_LETRAS - 1) * omrPasoY + (omrExtraTitulo + omrPadding);
+      alto += Math.max(altoOpciones, altoOmrMin);
+      alto += separacionPregunta;
+      // Reserva extra para evitar quedar demasiado pegado al limite.
+      alto += 4;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      void numero;
+      return alto;
+    };
+
+    while (indicePregunta < preguntasOrdenadas.length && cursorY > alturaDisponibleMin) {
       const pregunta = preguntasOrdenadas[indicePregunta];
       const numero = indicePregunta + 1;
 
-      page.drawText(`${numero}. ${pregunta.enunciado}`, { x: margen, y: cursorY, size: 11, font: fuente });
-      cursorY -= espacioLinea;
+      const alturaNecesaria = calcularAlturaPregunta(pregunta, numero);
+      if (cursorY - alturaNecesaria < alturaDisponibleMin) break;
+
+      if (!preguntasDel) preguntasDel = numero;
+      preguntasAl = numero;
+
+      // Numero + enunciado con wrap (el numero se dibuja aparte para alinear correctamente).
+      page.drawText(`${numero}.`, { x: xNumeroPregunta, y: cursorY, size: sizePregunta, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
+      const lineasEnunciado = envolverTextoMixto({
+        texto: pregunta.enunciado,
+        maxWidth: anchoTextoPregunta,
+        fuente,
+        fuenteMono,
+        sizeTexto: sizePregunta,
+        sizeCodigoInline,
+        sizeCodigoBloque,
+        lineHeightTexto: lineaPregunta,
+        lineHeightCodigo: lineaCodigoBloque
+      });
+      cursorY = dibujarLineasMixtas({ page, lineas: lineasEnunciado, x: xTextoPregunta, y: cursorY });
 
       if (pregunta.imagenUrl) {
-        page.drawText('(Imagen adjunta)', { x: margen, y: cursorY, size: 9, font: fuente, color: rgb(0.4, 0.4, 0.4) });
-        cursorY -= espacioLinea;
+        page.drawText('(Imagen adjunta)', {
+          x: xTextoPregunta,
+          y: cursorY,
+          size: sizeNota,
+          font: fuente,
+          color: rgb(0.4, 0.4, 0.4)
+        });
+        cursorY -= lineaNota;
       }
 
       const ordenOpciones = mapaVariante.ordenOpcionesPorPregunta[pregunta.id] ?? [0, 1, 2, 3, 4];
-      const opcionesOmr: Array<{ letra: string; x: number; y: number }> = [];
-      ordenOpciones.forEach((indiceOpcion, idx) => {
-        const opcion = pregunta.opciones[indiceOpcion];
-        const letra = String.fromCharCode(65 + idx);
-        const xBurbuja = margen + 6;
-        const yBurbuja = cursorY + 3;
-        page.drawCircle({ x: xBurbuja, y: yBurbuja, size: 4, borderWidth: 0.8, borderColor: rgb(0, 0, 0) });
-        page.drawText(`${letra}) ${opcion.texto}`, { x: margen + 16, y: cursorY, size: 10, font: fuente });
-        opcionesOmr.push({ letra, x: xBurbuja, y: yBurbuja });
-        cursorY -= espacioLinea;
-      });
+      const totalOpciones = ordenOpciones.length;
+      const mitad = Math.ceil(totalOpciones / 2);
 
-      cursorY -= espacioLinea / 2;
+      const anchoOpcionesTotal = Math.max(80, xDerechaTexto - xTextoPregunta);
+      const gutterCols = 10;
+      const colWidth = totalOpciones > 1 ? (anchoOpcionesTotal - gutterCols) / 2 : anchoOpcionesTotal;
+      const xCol1 = xTextoPregunta;
+      const xCol2 = xTextoPregunta + colWidth + gutterCols;
+      const prefixWidth = fuenteBold.widthOfTextAtSize('E) ', sizeOpcion);
+
+      const yInicioOpciones = cursorY;
+      let yCol1 = yInicioOpciones;
+      let yCol2 = yInicioOpciones;
+
+      const opcionesOmr: Array<{ letra: string; x: number; y: number }> = [];
+
+      const itemsCol1 = ordenOpciones.slice(0, mitad).map((indiceOpcion, idx) => ({ indiceOpcion, letra: String.fromCharCode(65 + idx) }));
+      const itemsCol2 = ordenOpciones.slice(mitad).map((indiceOpcion, idx) => ({ indiceOpcion, letra: String.fromCharCode(65 + (mitad + idx)) }));
+
+      const dibujarItem = (xCol: number, yLocal: number, item: { indiceOpcion: number; letra: string }) => {
+        page.drawText(`${item.letra})`, { x: xCol, y: yLocal, size: sizeOpcion, font: fuenteBold, color: rgb(0.12, 0.12, 0.12) });
+        const opcion = pregunta.opciones[item.indiceOpcion];
+        const lineasOpcion = envolverTextoMixto({
+          texto: opcion?.texto ?? '',
+          maxWidth: Math.max(30, colWidth - prefixWidth),
+          fuente,
+          fuenteMono,
+          sizeTexto: sizeOpcion,
+          sizeCodigoInline: Math.min(sizeCodigoInline, sizeOpcion),
+          sizeCodigoBloque,
+          lineHeightTexto: lineaOpcion,
+          lineHeightCodigo: lineaCodigoBloque
+        });
+        const yFinal = dibujarLineasMixtas({ page, lineas: lineasOpcion, x: xCol + prefixWidth, y: yLocal, colorTexto: rgb(0.1, 0.1, 0.1) });
+        return yFinal - 2;
+      };
+
+      for (const item of itemsCol1) yCol1 = dibujarItem(xCol1, yCol1, item);
+      for (const item of itemsCol2) yCol2 = dibujarItem(xCol2, yCol2, item);
+
+      // Caja de OMR (burbujas) en columna derecha.
+      // Importante: NO se alinea por columnas de opciones, porque si hay 2 columnas algunas letras comparten Y.
+      // En su lugar, se dibuja A–E con espaciado fijo. Esto evita superposiciones siempre.
+      const letras = Array.from({ length: OMR_TOTAL_LETRAS }, (_v, i) => String.fromCharCode(65 + i));
+      const yPrimeraBurbuja = yInicioOpciones + 3.5;
+      const top = yPrimeraBurbuja + omrRadio + omrExtraTitulo;
+      const yUltimaBurbuja = yPrimeraBurbuja - (OMR_TOTAL_LETRAS - 1) * omrPasoY;
+      const bottom = yUltimaBurbuja - omrRadio - 10;
+      const hCaja = Math.max(40, top - bottom);
+
+      page.drawRectangle({ x: xColRespuesta, y: bottom, width: anchoColRespuesta, height: hCaja, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+      page.drawText('RESPUESTA', { x: xColRespuesta + omrPadding, y: top - 14, size: 9, font: fuenteBold, color: colorPrimario });
+
+      const xBurbuja = xColRespuesta + omrPadding + 8;
+      for (let i = 0; i < letras.length; i += 1) {
+        const letra = letras[i];
+        const yBurbuja = yPrimeraBurbuja - i * omrPasoY;
+        page.drawCircle({ x: xBurbuja, y: yBurbuja, size: omrRadio, borderWidth: 1.1, borderColor: rgb(0, 0, 0) });
+        page.drawText(letra, { x: xBurbuja + 12, y: yBurbuja - 3.5, size: 9, font: fuente, color: rgb(0.12, 0.12, 0.12) });
+        opcionesOmr.push({ letra, x: xBurbuja, y: yBurbuja });
+      }
+
+      cursorY = Math.min(yCol1, yCol2, bottom - 6);
+
+      cursorY -= separacionPregunta;
       indicePregunta += 1;
       mapaPagina.push({ numeroPregunta: numero, idPregunta: pregunta.id, opciones: opcionesOmr });
     }
+
+    const alturaUtil = Math.max(1, cursorYInicio - alturaDisponibleMin);
+    const alturaRestante = Math.max(0, cursorY - alturaDisponibleMin);
+    const fraccionVacia = Math.max(0, Math.min(1, alturaRestante / alturaUtil));
+    metricasPaginas.push({ numero: numeroPagina, fraccionVacia, preguntas: mapaPagina.length });
+
+    paginasMeta.push({ numero: numeroPagina, qrTexto, preguntasDel, preguntasAl });
 
     paginasOmr.push({ numeroPagina, preguntas: mapaPagina });
     numeroPagina += 1;
   }
 
   const pdfBytes = await pdfDoc.save();
-  return { pdfBytes: Buffer.from(pdfBytes), paginas: paginasMeta, mapaOmr: { margenMm, paginas: paginasOmr } };
+  return { pdfBytes: Buffer.from(pdfBytes), paginas: paginasMeta, metricasPaginas, mapaOmr: { margenMm, paginas: paginasOmr } };
 }
