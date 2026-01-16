@@ -1081,6 +1081,7 @@ function SeccionCuenta({ docente }: { docente: Docente }) {
         <Icono nombre="info" /> Cuenta
       </h2>
       <p className="nota">Define o cambia tu contrasena. Por seguridad, se requiere reautenticacion.</p>
+      <p className="nota">Recomendacion: usa reauth con Google si aparece. La nueva contrasena debe tener minimo 8 caracteres y coincidir en ambos campos.</p>
 
       <div className="meta" aria-label="Estado de la cuenta">
         <span className={docente.tieneGoogle ? 'badge ok' : 'badge'}>
@@ -1232,6 +1233,7 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
       <h2>
         <Icono nombre="banco" /> Banco de preguntas
       </h2>
+      <p className="nota">Completa enunciado, tema y las 5 opciones. Marca exactamente una opcion como correcta.</p>
       <label className="campo">
         Enunciado
         <textarea value={enunciado} onChange={(event) => setEnunciado(event.target.value)} />
@@ -1337,6 +1339,7 @@ function SeccionPeriodos({
       <h2>
         <Icono nombre="periodos" /> Periodos
       </h2>
+      <p className="nota">Fecha fin debe ser igual o posterior a fecha inicio. Los grupos son opcionales y se escriben separados por coma (ej. 3A,3B,3C).</p>
       <label className="campo">
         Nombre
         <input value={nombre} onChange={(event) => setNombre(event.target.value)} />
@@ -1443,6 +1446,7 @@ function SeccionAlumnos({
       <h2>
         <Icono nombre="alumnos" /> Alumnos
       </h2>
+      <p className="nota">Matricula, nombres, apellidos y periodo son obligatorios. Correo y grupo son opcionales (si hay politica institucional, el correo debe cumplir el dominio permitido).</p>
       <label className="campo">
         Matricula
         <input value={matricula} onChange={(event) => setMatricula(event.target.value)} />
@@ -1563,6 +1567,7 @@ function SeccionPlantillas({
       <h2>
         <Icono nombre="plantillas" /> Plantillas
       </h2>
+      <p className="nota">Para seleccionar varias preguntas, usa Ctrl + clic (Windows). Crea la plantilla y luego genera el examen PDF desde la seccion inferior.</p>
       <label className="campo">
         Titulo
         <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
@@ -1624,6 +1629,7 @@ function SeccionPlantillas({
         ))}
       </ul>
       <h3>Generar examen</h3>
+      <p className="nota">Genera un examen a partir de una plantilla. Si seleccionas un alumno, el examen queda asociado. El folio del examen se usa despues en Recepcion y Escaneo OMR.</p>
       <label className="campo">
         Plantilla
         <select value={plantillaId} onChange={(event) => setPlantillaId(event.target.value)}>
@@ -1732,6 +1738,7 @@ function SeccionRecepcion({
       <h2>
         <Icono nombre="recepcion" /> Recepcion de examenes
       </h2>
+      <p className="nota">Captura el folio del examen (desde el PDF/QR) y vincúlalo con el alumno que entrego esa hoja.</p>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -1818,6 +1825,7 @@ function SeccionEscaneo({
       <h2>
         <Icono nombre="escaneo" /> Escaneo OMR
       </h2>
+      <p className="nota">Sube una foto/escaneo claro y completo de la hoja. Indica el numero de pagina (inicia en 1). Tras analizar, puedes corregir respuestas manualmente.</p>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -1952,6 +1960,7 @@ function SeccionCalificar({
       <h2>
         <Icono nombre="calificar" /> Calificar examen
       </h2>
+      <p className="nota">Primero ejecuta Escaneo OMR para que aparezcan Examen y Alumno. Ajusta los valores segun tu esquema (bono max 0.5).</p>
       <p>Examen: {examenId ?? 'Sin examen'}</p>
       <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
       <label className="campo">
@@ -2063,6 +2072,7 @@ function SeccionPublicar({
       <h2>
         <Icono nombre="publicar" /> Publicar en portal
       </h2>
+      <p className="nota">Selecciona un periodo. "Publicar" envia resultados al portal alumno. "Generar codigo" crea un codigo temporal que el alumno usa junto con su matricula.</p>
       <label className="campo">
         Periodo
         <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
