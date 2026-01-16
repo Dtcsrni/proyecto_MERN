@@ -3366,6 +3366,17 @@ function SeccionPlantillas({
   const [plantillaPreviewId, setPlantillaPreviewId] = useState<string | null>(null);
   const [previewPdfUrlPorPlantillaId, setPreviewPdfUrlPorPlantillaId] = useState<Record<string, string>>({});
   const [cargandoPreviewPdfPlantillaId, setCargandoPreviewPdfPlantillaId] = useState<string | null>(null);
+  const [pdfFullscreenUrl, setPdfFullscreenUrl] = useState<string | null>(null);
+
+  const abrirPdfFullscreen = useCallback((url: string) => {
+    const u = String(url || '').trim();
+    if (!u) return;
+    setPdfFullscreenUrl(u);
+  }, []);
+
+  const cerrarPdfFullscreen = useCallback(() => {
+    setPdfFullscreenUrl(null);
+  }, []);
 
   const plantillaSeleccionada = useMemo(() => {
     return (Array.isArray(plantillas) ? plantillas : []).find((p) => p._id === plantillaId) ?? null;
@@ -4134,15 +4145,42 @@ function SeccionPlantillas({
                                   {cargandoPreviewPdfPlantillaId === plantilla._id ? 'Generando PDF…' : 'Ver PDF exacto'}
                                 </Boton>
                               ) : (
-                                <Boton type="button" variante="secundario" onClick={() => cerrarPreviewPdfPlantilla(plantilla._id)}>
-                                  Ocultar PDF
-                                </Boton>
+                                <>
+                                  <Boton type="button" variante="secundario" onClick={() => cerrarPreviewPdfPlantilla(plantilla._id)}>
+                                    Ocultar PDF
+                                  </Boton>
+                                  <Boton type="button" variante="secundario" onClick={() => abrirPdfFullscreen(pdfUrl)}>
+                                    Ver grande
+                                  </Boton>
+                                  <Boton
+                                    type="button"
+                                    variante="secundario"
+                                    onClick={() => {
+                                      const u = String(pdfUrl || '').trim();
+                                      if (!u) return;
+                                      window.open(u, '_blank', 'noopener,noreferrer');
+                                    }}
+                                  >
+                                    Abrir en pestaña
+                                  </Boton>
+                                </>
                               )}
                             </div>
 
                             {pdfUrl && (
                               <div className="plantillas-preview__pdfWrap">
                                 <iframe className="plantillas-preview__pdf" title="Previsualizacion PDF" src={pdfUrl} />
+                              </div>
+                            )}
+
+                            {pdfFullscreenUrl && (
+                              <div className="pdf-overlay" role="dialog" aria-modal="true">
+                                <div className="pdf-overlay__bar">
+                                  <Boton type="button" variante="secundario" onClick={cerrarPdfFullscreen}>
+                                    Cerrar
+                                  </Boton>
+                                </div>
+                                <iframe className="pdf-overlay__frame" title="PDF (pantalla completa)" src={pdfFullscreenUrl} />
                               </div>
                             )}
                           <ul className="lista lista-items plantillas-preview__lista">

@@ -567,7 +567,12 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
   });
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `inline; filename="preview_${String(plantillaId).slice(-8)}.pdf"`);
+  const tituloArchivo = normalizarParaNombreArchivo(String((plantilla as unknown as { titulo?: unknown })?.titulo ?? ''), {
+    maxLen: 48
+  });
+  const sufijo = String(plantillaId).slice(-8);
+  const nombre = ['preview', tituloArchivo || '', sufijo].filter(Boolean).join('_');
+  res.setHeader('Content-Disposition', `inline; filename="${nombre}.pdf"`);
   res.send(Buffer.from(pdfBytes));
 }
 
