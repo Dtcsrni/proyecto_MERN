@@ -20,7 +20,13 @@ import {
   esquemaGenerarExamenesLote,
   esquemaRegenerarExamenGenerado
 } from './validacionesExamenes';
-import { descargarPdf, listarExamenesGenerados, obtenerExamenPorFolio, regenerarPdfExamen } from './controladorListadoGenerados';
+import {
+  descargarPdf,
+  eliminarExamenGenerado,
+  listarExamenesGenerados,
+  obtenerExamenPorFolio,
+  regenerarPdfExamen
+} from './controladorListadoGenerados';
 
 const router = Router();
 
@@ -34,6 +40,7 @@ router.get('/generados', listarExamenesGenerados);
 router.get('/generados/folio/:folio', obtenerExamenPorFolio);
 router.get('/generados/:id/pdf', descargarPdf);
 router.post('/generados/:id/regenerar', validarCuerpo(esquemaRegenerarExamenGenerado, { strict: true }), regenerarPdfExamen);
+router.delete('/generados/:id', eliminarExamenGenerado);
 router.post('/generados', validarCuerpo(esquemaGenerarExamen, { strict: true }), generarExamen);
 router.post('/generados/lote', validarCuerpo(esquemaGenerarExamenesLote, { strict: true }), generarExamenesLote);
 

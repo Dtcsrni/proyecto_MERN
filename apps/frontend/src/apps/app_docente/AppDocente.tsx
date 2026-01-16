@@ -3327,6 +3327,7 @@ function SeccionPlantillas({
   const [cargandoExamenesGenerados, setCargandoExamenesGenerados] = useState(false);
   const [descargandoExamenId, setDescargandoExamenId] = useState<string | null>(null);
   const [regenerandoExamenId, setRegenerandoExamenId] = useState<string | null>(null);
+  const [eliminandoExamenId, setEliminandoExamenId] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [generandoLote, setGenerandoLote] = useState(false);
@@ -3515,6 +3516,49 @@ function SeccionPlantillas({
         });
       } finally {
         setRegenerandoExamenId(null);
+      }
+    },
+    [cargarExamenesGenerados]
+  );
+
+  const eliminarExamenGenerado = useCallback(
+    async (examen: ExamenGeneradoResumen) => {
+      try {
+        setMensajeGeneracion('');
+        setEliminandoExamenId(examen._id);
+
+        const estado = String(examen.estado || 'generado');
+        if (estado && estado !== 'generado') {
+          emitToast({
+            level: 'error',
+            title: 'No se puede eliminar',
+            message: 'El examen ya fue entregado o calificado.',
+            durationMs: 4200
+          });
+          return;
+        }
+
+        const ok = globalThis.confirm(
+          `¿Eliminar el examen generado (folio: ${String(examen.folio || '').trim() || 'sin folio'})?\n\nSe borrara el registro y su PDF asociado.`
+        );
+        if (!ok) return;
+
+        await clienteApi.eliminar(`/examenes/generados/${encodeURIComponent(examen._id)}`);
+
+        emitToast({ level: 'ok', title: 'Examen', message: 'Examen eliminado', durationMs: 2000 });
+        await cargarExamenesGenerados();
+      } catch (error) {
+        const msg = mensajeDeError(error, 'No se pudo eliminar el examen');
+        setMensajeGeneracion(msg);
+        emitToast({
+          level: 'error',
+          title: 'No se pudo eliminar',
+          message: msg,
+          durationMs: 5200,
+          action: accionToastSesionParaError(error, 'docente')
+        });
+      } finally {
+        setEliminandoExamenId(null);
       }
     },
     [cargarExamenesGenerados]
@@ -4381,7 +4425,7 @@ function SeccionPlantillas({
                             variante="secundario"
                             icono={<Icono nombre="recargar" />}
                             cargando={regenerandoExamenId === examen._id}
-                            disabled={descargandoExamenId === examen._id}
+                            disabled={descargandoExamenId === examen._id || eliminandoExamenId === examen._id}
                             onClick={() => void regenerarPdfExamen(examen)}
                           >
                             Regenerar
@@ -4392,11 +4436,24 @@ function SeccionPlantillas({
                           variante="secundario"
                           icono={<Icono nombre="pdf" />}
                           cargando={descargandoExamenId === examen._id}
-                          disabled={regenerandoExamenId === examen._id}
+                          disabled={regenerandoExamenId === examen._id || eliminandoExamenId === examen._id}
                           onClick={() => void descargarPdfExamen(examen)}
                         >
                           Descargar
                         </Boton>
+                        {regenerable && (
+                          <Boton
+                            type="button"
+                            variante="secundario"
+                            className="peligro"
+                            icono={<Icono nombre="alerta" />}
+                            cargando={eliminandoExamenId === examen._id}
+                            disabled={descargandoExamenId === examen._id || regenerandoExamenId === examen._id}
+                            onClick={() => void eliminarExamenGenerado(examen)}
+                          >
+                            Eliminar
+                          </Boton>
+                        )}
                       </div>
                     </div>
                   </div>
