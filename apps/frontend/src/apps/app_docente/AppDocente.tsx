@@ -1352,6 +1352,46 @@ function SeccionBanco({
 }) {
   type TemaBanco = { _id: string; nombre: string; periodoId: string; createdAt?: string };
 
+  function normalizarNombreTema(valor: unknown): string {
+    return String(valor ?? '').trim().replace(/\s+/g, ' ');
+  }
+
+  function estimarPaginasParaPreguntas(preguntasTema: Pregunta[]): number {
+    const ALTO_CARTA = 792;
+    const mmAPuntos = (mm: number) => mm * (72 / 25.4);
+    const margen = mmAPuntos(10);
+    const cursorInicial = ALTO_CARTA - margen - 70;
+    const limiteInferior = margen + 60;
+    const espacioLinea = 14;
+
+    const lista = Array.isArray(preguntasTema) ? preguntasTema : [];
+    if (lista.length === 0) return 0;
+
+    let paginas = 1;
+    let cursorY = cursorInicial;
+
+    for (const pregunta of lista) {
+      if (cursorY <= limiteInferior) {
+        paginas += 1;
+        cursorY = cursorInicial;
+      }
+
+      const version = obtenerVersionPregunta(pregunta);
+      const tieneImagen = Boolean(String(version?.imagenUrl ?? '').trim());
+
+      // Enunciado
+      cursorY -= espacioLinea;
+      // Marca de imagen (si existe)
+      if (tieneImagen) cursorY -= espacioLinea;
+      // 5 opciones A-E
+      cursorY -= espacioLinea * 5;
+      // Separacion entre preguntas
+      cursorY -= espacioLinea / 2;
+    }
+
+    return paginas;
+  }
+
   const [periodoId, setPeriodoId] = useState('');
   const [enunciado, setEnunciado] = useState('');
   const [tema, setTema] = useState('');
@@ -1447,9 +1487,30 @@ function SeccionBanco({
   const conteoPorTema = useMemo(() => {
     const mapa = new Map<string, number>();
     for (const pregunta of preguntasMateria) {
-      const nombre = String(pregunta.tema ?? '').trim().replace(/\s+/g, ' ');
+      const nombre = normalizarNombreTema(pregunta.tema);
       if (!nombre) continue;
       mapa.set(nombre, (mapa.get(nombre) ?? 0) + 1);
+    }
+    return mapa;
+  }, [preguntasMateria]);
+
+  const paginasPorTema = useMemo(() => {
+    const grupos = new Map<string, Pregunta[]>();
+    for (const pregunta of preguntasMateria) {
+      const nombre = normalizarNombreTema(pregunta.tema);
+      if (!nombre) continue;
+      const key = nombre.toLowerCase();
+      const arr = grupos.get(key);
+      if (arr) {
+        arr.push(pregunta);
+      } else {
+        grupos.set(key, [pregunta]);
+      }
+    }
+
+    const mapa = new Map<string, number>();
+    for (const [key, preguntasTema] of grupos.entries()) {
+      mapa.set(key, estimarPaginasParaPreguntas(preguntasTema));
     }
     return mapa;
   }, [preguntasMateria]);
@@ -1785,6 +1846,7 @@ function SeccionBanco({
                     <div className="item-title">{t.nombre}</div>
                     <div className="item-meta">
                       <span>Preguntas: {conteoPorTema.get(t.nombre) ?? 0}</span>
+                      <span>Paginas (estimadas): {paginasPorTema.get(normalizarNombreTema(t.nombre).toLowerCase()) ?? 0}</span>
                     </div>
                   </div>
                   <div className="item-actions">
