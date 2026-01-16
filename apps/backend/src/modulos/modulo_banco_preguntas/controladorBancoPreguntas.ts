@@ -15,11 +15,14 @@ import { BancoPregunta } from './modeloBancoPregunta';
  */
 export async function listarBancoPreguntas(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
-  const filtro: Record<string, string> = { docenteId };
+  const queryActivo = String(req.query.activo ?? '').trim().toLowerCase();
+  const activo = queryActivo === '' ? true : !(queryActivo === '0' || queryActivo === 'false');
+
+  const filtro: Record<string, unknown> = { docenteId, activo };
   if (req.query.periodoId) filtro.periodoId = String(req.query.periodoId);
 
   const limite = Number(req.query.limite ?? 0);
-  const consulta = BancoPregunta.find(filtro);
+  const consulta = BancoPregunta.find(filtro).sort({ createdAt: -1 });
   const preguntas = await (limite > 0 ? consulta.limit(limite) : consulta).lean();
   res.json({ preguntas });
 }

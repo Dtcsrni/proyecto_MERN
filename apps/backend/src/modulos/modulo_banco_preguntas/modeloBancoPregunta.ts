@@ -34,7 +34,7 @@ const VersionPreguntaSchema = new Schema(
 const BancoPreguntaSchema = new Schema(
   {
     docenteId: { type: Schema.Types.ObjectId, ref: 'Docente', required: true },
-    periodoId: { type: Schema.Types.ObjectId, ref: 'Periodo' },
+    periodoId: { type: Schema.Types.ObjectId, ref: 'Periodo', required: true },
     tema: { type: String },
     activo: { type: Boolean, default: true },
     versionActual: { type: Number, default: 1 },

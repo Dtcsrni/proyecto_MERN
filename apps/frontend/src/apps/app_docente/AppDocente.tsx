@@ -61,7 +61,7 @@ type Periodo = {
 
 type Plantilla = { _id: string; titulo: string; tipo: 'parcial' | 'global'; totalReactivos: number };
 
-type Pregunta = { _id: string; versiones: Array<{ enunciado: string }> };
+type Pregunta = { _id: string; versiones: Array<{ enunciado: string }>; periodoId?: string; createdAt?: string };
 
 type ResultadoOmr = {
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
@@ -389,7 +389,13 @@ export function AppDocente() {
       )}
 
       {vista === 'banco' && (
-        <SeccionBanco preguntas={preguntas} onRefrescar={() => clienteApi.obtener<{ preguntas: Pregunta[] }>('/banco-preguntas').then((p) => setPreguntas(p.preguntas))} />
+        <SeccionBanco
+          preguntas={preguntas}
+          periodos={periodos}
+          onRefrescar={() =>
+            clienteApi.obtener<{ preguntas: Pregunta[] }>('/banco-preguntas').then((p) => setPreguntas(p.preguntas))
+          }
+        />
       )}
 
       {vista === 'periodos' && (
@@ -1313,7 +1319,16 @@ function SeccionCuenta({ docente }: { docente: Docente }) {
   );
 }
 
-function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRefrescar: () => void }) {
+function SeccionBanco({
+  preguntas,
+  periodos,
+  onRefrescar
+}: {
+  preguntas: Pregunta[];
+  periodos: Periodo[];
+  onRefrescar: () => void;
+}) {
+  const [periodoId, setPeriodoId] = useState('');
   const [enunciado, setEnunciado] = useState('');
   const [tema, setTema] = useState('');
   const [opciones, setOpciones] = useState([
@@ -1326,8 +1341,21 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    if (periodoId) return;
+    if (!Array.isArray(periodos) || periodos.length === 0) return;
+    setPeriodoId(periodos[0]._id);
+  }, [periodoId, periodos]);
+
+  const preguntasMateria = useMemo(() => {
+    const lista = Array.isArray(preguntas) ? preguntas : [];
+    const filtradas = periodoId ? lista.filter((p) => p.periodoId === periodoId) : [];
+    return [...filtradas].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }, [preguntas, periodoId]);
+
   const puedeGuardar = Boolean(
-    enunciado.trim() &&
+    periodoId &&
+      enunciado.trim() &&
       tema.trim() &&
       opciones.every((opcion) => opcion.texto.trim()) &&
       opciones.some((opcion) => opcion.esCorrecta)
@@ -1339,6 +1367,7 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
       setGuardando(true);
       setMensaje('');
       await clienteApi.enviar('/banco-preguntas', {
+        periodoId,
         enunciado: enunciado.trim(),
         tema: tema.trim(),
         opciones: opciones.map((item) => ({ ...item, texto: item.texto.trim() }))
@@ -1347,6 +1376,7 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
       emitToast({ level: 'ok', title: 'Banco', message: 'Pregunta guardada', durationMs: 2200 });
       registrarAccionDocente('crear_pregunta', true, Date.now() - inicio);
       setEnunciado('');
+      setTema('');
       setOpciones([
         { texto: '', esCorrecta: true },
         { texto: '', esCorrecta: false },
@@ -1410,6 +1440,18 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
         </ul>
       </AyudaFormulario>
       <label className="campo">
+        Materia
+        <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
+          <option value="">Selecciona</option>
+          {periodos.map((periodo) => (
+            <option key={periodo._id} value={periodo._id}>
+              {periodo.nombre}
+            </option>
+          ))}
+        </select>
+        {periodos.length === 0 && <span className="ayuda">Primero crea una materia para poder agregar preguntas.</span>}
+      </label>
+      <label className="campo">
         Enunciado
         <textarea value={enunciado} onChange={(event) => setEnunciado(event.target.value)} />
       </label>
@@ -1449,9 +1491,12 @@ function SeccionBanco({ preguntas, onRefrescar }: { preguntas: Pregunta[]; onRef
       )}
       <h3>Preguntas recientes</h3>
       <ul className="lista">
-        {preguntas.slice(0, 5).map((pregunta) => (
-          <li key={pregunta._id}>{pregunta.versiones?.[0]?.enunciado ?? 'Pregunta'}</li>
-        ))}
+        {!periodoId && <li>Selecciona una materia para ver sus preguntas.</li>}
+        {periodoId && preguntasMateria.length === 0 && <li>No hay preguntas en esta materia.</li>}
+        {periodoId &&
+          preguntasMateria.map((pregunta) => (
+            <li key={pregunta._id}>{pregunta.versiones?.[0]?.enunciado ?? 'Pregunta'}</li>
+          ))}
       </ul>
     </div>
   );
@@ -2029,6 +2074,16 @@ function SeccionPlantillas({
   const [creando, setCreando] = useState(false);
   const [generando, setGenerando] = useState(false);
 
+  const preguntasDisponibles = useMemo(() => {
+    if (!periodoId) return [];
+    const lista = Array.isArray(preguntas) ? preguntas : [];
+    return lista.filter((p) => p.periodoId === periodoId);
+  }, [preguntas, periodoId]);
+
+  useEffect(() => {
+    setSeleccion([]);
+  }, [periodoId]);
+
   const puedeCrear = Boolean(titulo.trim() && periodoId && seleccion.length > 0 && totalReactivos > 0);
   const puedeGenerar = Boolean(plantillaId);
 
@@ -2133,12 +2188,15 @@ function SeccionPlantillas({
             setSeleccion(Array.from(event.target.selectedOptions).map((option) => option.value))
           }
         >
-          {preguntas.map((pregunta) => (
+          {preguntasDisponibles.map((pregunta) => (
             <option key={pregunta._id} value={pregunta._id}>
               {pregunta.versiones?.[0]?.enunciado?.slice(0, 40) ?? 'Pregunta'}
             </option>
           ))}
         </select>
+        {periodoId && preguntasDisponibles.length === 0 && (
+          <span className="ayuda">No hay preguntas para esta materia. Ve a "Banco" para agregarlas.</span>
+        )}
       </label>
       <Boton type="button" icono={<Icono nombre="nuevo" />} cargando={creando} disabled={!puedeCrear} onClick={crear}>
         {creando ? 'Creando…' : 'Crear plantilla'}

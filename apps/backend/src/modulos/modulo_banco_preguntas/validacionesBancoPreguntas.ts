@@ -13,7 +13,7 @@ const esquemaOpcion = z
 
 export const esquemaCrearPregunta = z
   .object({
-    periodoId: esquemaObjectId.optional(),
+    periodoId: esquemaObjectId,
     tema: z.string().optional(),
     enunciado: z.string().min(1),
     imagenUrl: z.string().url().optional(),
