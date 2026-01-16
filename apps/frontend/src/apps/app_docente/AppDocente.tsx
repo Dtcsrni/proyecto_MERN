@@ -3719,6 +3719,41 @@ function SeccionPlantillas({
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo eliminar la plantilla');
       setMensaje(msg);
+
+      // Caso especial: plantilla con exámenes generados (409). Ofrecemos atajo a la lista.
+      if (error instanceof ErrorRemoto) {
+        const codigo = String(error.detalle?.codigo || '').toUpperCase();
+        if (codigo.includes('PLANTILLA_CON_EXAMENES')) {
+          const detalles = error.detalle?.detalles as { totalGenerados?: unknown } | undefined;
+          const total = Number(detalles?.totalGenerados ?? NaN);
+          const totalOk = Number.isFinite(total) && total > 0;
+          const msgDetallado = totalOk
+            ? `No se puede eliminar: hay ${total} examenes generados con esta plantilla. Eliminalos primero.`
+            : msg;
+
+          emitToast({
+            level: 'warn',
+            title: 'Plantilla con examenes',
+            message: msgDetallado,
+            durationMs: 6500,
+            action: {
+              label: 'Ver generados',
+              onClick: () => {
+                setVista('plantillas');
+                setPlantillaId(plantilla._id);
+                // Esperar un tick para que renderice la sección.
+                window.setTimeout(() => {
+                  document.getElementById('examenes-generados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 200);
+              }
+            }
+          });
+
+          registrarAccionDocente('eliminar_plantilla', false);
+          return;
+        }
+      }
+
       emitToast({
         level: 'error',
         title: 'No se pudo eliminar',
@@ -4353,7 +4388,7 @@ function SeccionPlantillas({
       )}
 
       {plantillaSeleccionada && (
-        <div className="resultado">
+        <div className="resultado" id="examenes-generados">
           <h3>Examenes generados (plantilla seleccionada)</h3>
           <div className="ayuda">
             Mostrando hasta 50, del mas reciente al mas antiguo. Al descargar se marca como descargado.
