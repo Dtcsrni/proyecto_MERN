@@ -1,8 +1,14 @@
 {
   "name": "frontend",
+  "description": "UI React (Vite) para portal docente/alumno: autenticación, gestión de evaluaciones y flujos de aplicación/calificación.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dtcsrni/sistema-evaluacion-universitaria"
+  },
+  "keywords": ["react", "vite", "frontend", "docente", "alumno", "evaluacion"],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -1,7 +1,13 @@
 {
   "name": "portal-alumno-cloud",
+  "description": "API del portal alumno (solo lectura) para consulta de información y resultados; diseñada para despliegue cloud.",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dtcsrni/sistema-evaluacion-universitaria"
+  },
+  "keywords": ["api", "express", "typescript", "mongodb", "portal", "alumno"],
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
