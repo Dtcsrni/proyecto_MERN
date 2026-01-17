@@ -674,7 +674,9 @@
       grid-template-columns: clamp(20px, 3vw, 28px) minmax(0, 1fr) auto;
       align-items: center;
       gap: clamp(8px, 1.2vw, 12px);
-      min-height: clamp(60px, 8vw, 72px);
+      padding: 10px 12px;
+      border-radius: 14px;
+      min-height: clamp(54px, 7vw, 64px);
       background: #f4f9ff;
     }
 
@@ -700,34 +702,35 @@
     }
 
     .toggle-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       line-height: 1.2;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
     .toggle-sub {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--ink-soft);
       line-height: 1.2;
-    }
-
-    @media (min-width: 620px) {
-      .toggle-title,
-      .toggle-sub {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     .toggle-state {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--ink-soft);
-      padding: 6px 10px;
+      padding: 5px 9px;
       border-radius: 999px;
       background: #eef3f9;
       border: 1px solid var(--border);
       z-index: 1;
+      white-space: nowrap;
+      justify-self: end;
     }
 
     .toggle-btn.active .toggle-state {
@@ -743,8 +746,8 @@
     }
 
     .status-dot {
-      width: 12px;
-      height: 12px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
       background: #94a3b8;
       border: 1px solid rgba(15, 23, 42, 0.12);
