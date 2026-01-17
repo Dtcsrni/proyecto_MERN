@@ -678,7 +678,7 @@ p {
   display: grid;
   gap: 0.4rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--texto);
 }
 
 .campo .ayuda {
@@ -702,10 +702,23 @@ p {
 .campo select {
   padding: 0.6rem 0.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.55);
+  border: 1px solid var(--campoBorde);
   font-size: 1rem;
-  background: rgba(255, 255, 255, 0.92);
-  transition: box-shadow 140ms ease, border-color 140ms ease, transform 90ms ease;
+  background: var(--campoBg);
+  color: var(--texto);
+  transition: box-shadow 140ms ease, border-color 140ms ease, transform 90ms ease, background 140ms ease;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: var(--campoPlaceholder);
+  opacity: 0.95;
+}
+
+.campo input:hover,
+.campo textarea:hover,
+.campo select:hover {
+  border-color: var(--campoBordeHover);
 }
 
 .campo input:focus-visible,
@@ -731,7 +744,7 @@ p {
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--bordeSuave);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--superficie);
   box-shadow: 0 12px 22px rgba(15, 23, 42, 0.06);
   transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
 }
@@ -739,7 +752,7 @@ p {
 .colapsable > summary {
   cursor: pointer;
   font-size: 1rem;
-  color: #1f2937;
+  color: var(--texto);
   font-weight: 800;
   list-style: none;
 }
@@ -750,13 +763,13 @@ p {
 
 .colapsable:hover {
   border-color: rgba(165, 180, 252, 0.85);
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--superficie);
   box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
 }
 
 .colapsable[open] {
   border-color: rgba(129, 140, 248, 0.65);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--superficie);
 }
 
 .opciones-grid {
@@ -1104,7 +1117,7 @@ p {
   padding: 1rem;
   border-radius: 14px;
   border: 1px solid var(--borde);
-  background: rgba(248, 250, 252, 0.92);
+  background: var(--superficie);
   box-shadow: var(--sombraSuave);
 }
 
@@ -1121,7 +1134,7 @@ p {
   padding: 0.65rem 0.75rem;
   border-radius: 12px;
   border: 1px solid var(--borde);
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--superficie);
   box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);
 }
 
@@ -1154,7 +1167,7 @@ p {
   font-weight: 700;
   font-size: 0.85rem;
   border: 1px solid var(--borde);
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--superficie);
   color: var(--texto);
 }
 
@@ -1354,7 +1367,7 @@ p {
   padding: 1rem;
   border-radius: 16px;
   border: 1px solid var(--borde);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--superficie);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -1368,7 +1381,7 @@ p {
   padding: 0.75rem;
   border-radius: 14px;
   border: 1px solid var(--borde);
-  background: rgba(248, 250, 252, 0.8);
+  background: var(--superficie);
 }
 
 .auth-google--mb {

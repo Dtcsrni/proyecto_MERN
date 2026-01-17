@@ -1,6 +1,6 @@
 {
-  "name": "Portal Alumno - Sistema de Evaluacion",
-  "short_name": "Alumno",
+  "name": "Portal Alumno - EvaluaPro",
+  "short_name": "Alumno EP",
   "description": "Consulta de resultados y descarga de PDFs en la nube.",
   "lang": "es-MX",
   "start_url": "/",

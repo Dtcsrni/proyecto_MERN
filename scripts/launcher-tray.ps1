@@ -351,7 +351,7 @@ function Start-DashboardIfNeeded {
   $node = Get-NodePath
   if (-not $node) {
     Log('Node no encontrado en PATH.')
-    [System.Windows.Forms.MessageBox]::Show('Node no encontrado en PATH.', 'SEU - Bandeja', 'OK', 'Error') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('Node no encontrado en PATH.', 'EP - Bandeja', 'OK', 'Error') | Out-Null
     return @{ started = $false; pid = $null }
   }
 
@@ -443,13 +443,13 @@ $launch = Start-DashboardIfNeeded
 
 $notify = New-Object System.Windows.Forms.NotifyIcon
 $notify.Visible = $true
-$notify.Text = 'SEU: iniciando…'
+$notify.Text = 'EP: iniciando…'
 $notify.Icon = (Get-MoodIcon 'info')
 Log('NotifyIcon visible')
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 
-$miTitle = $menu.Items.Add('SEU - Stack local')
+$miTitle = $menu.Items.Add('EP - Stack local')
 $miTitle.Enabled = $false
 $menu.Items.Add('-') | Out-Null
 
@@ -523,7 +523,7 @@ $timer.add_Tick({
       default { 'INFO' }
     }
 
-    $text = "SEU $label | $mode | proc:$runningCount"
+    $text = "EP $label | $mode | proc:$runningCount"
     $notify.Text = ConvertTo-ShortText $text 60
 
     $dashPidText = '-'

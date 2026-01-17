@@ -1,4 +1,4 @@
-# Sistema de Evaluación Universitaria (MERN)
+# Sistema EvaluaPro (EP)
 
 Plataforma para diseñar, aplicar y calificar evaluaciones universitarias con foco en operación real: generación de exámenes en PDF, vinculación segura por QR, calificación semi-automatizada (OMR) y un stack local reproducible para desarrollo y pruebas.
 

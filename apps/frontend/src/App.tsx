@@ -26,7 +26,7 @@ function App() {
 
   useEffect(() => {
     const esAlumno = destino === 'alumno';
-    document.title = esAlumno ? 'Portal Alumno - Sistema de Evaluacion' : 'Plataforma Docente - Sistema de Evaluacion';
+    document.title = esAlumno ? 'Portal Alumno - EvaluaPro' : 'Plataforma Docente - EvaluaPro';
     establecerFavicon(esAlumno ? '/favicon-alumno.svg' : '/favicon-docente.svg');
   }, [destino]);
 
