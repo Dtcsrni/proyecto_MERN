@@ -383,7 +383,7 @@ export function AppDocente() {
   const contenido = docente ? (
     <div className="panel">
       <nav
-        className="tabs tabs--scroll"
+        className="tabs tabs--scroll tabs--sticky"
         aria-label="Secciones del portal docente"
       >
         {itemsVista.map((item, idx) => (
@@ -4965,63 +4965,70 @@ function SeccionCalificar({
   }
 
   return (
-    <div className="panel">
-      <h2>
-        <Icono nombre="calificar" /> Calificar examen
-      </h2>
-      <AyudaFormulario titulo="Para que sirve y como llenarlo">
-        <p>
-          <b>Proposito:</b> guardar la calificacion del examen ya identificado por folio/OMR.
-          Esta seccion usa el examen y alumno detectados en &quot;Escaneo OMR&quot;.
-        </p>
-        <ul className="lista">
-          <li>
-            <b>Bono:</b> ajuste extra (0 a 0.5).
-          </li>
-          <li>
-            <b>Evaluacion continua:</b> puntaje adicional para parciales.
-          </li>
-          <li>
-            <b>Proyecto:</b> puntaje adicional para global.
-          </li>
-        </ul>
-        <p>
-          Ejemplo: bono <code>0.2</code>, evaluacion continua <code>1</code>, proyecto <code>0</code>.
-        </p>
-      </AyudaFormulario>
-      <p>Examen: {examenId ?? 'Sin examen'}</p>
-      <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
-      <label className="campo">
-        Bono (max 0.5)
-        <input
-          type="number"
-          step="0.1"
-          min={0}
-          max={0.5}
-          value={bono}
-          onChange={(event) => setBono(Math.max(0, Math.min(0.5, Number(event.target.value))))}
-        />
-      </label>
-      <label className="campo">
-        Evaluacion continua (parcial)
-        <input
-          type="number"
-          value={evaluacionContinua}
-          onChange={(event) => setEvaluacionContinua(Math.max(0, Number(event.target.value)))}
-        />
-      </label>
-      <label className="campo">
-        Proyecto (global)
-        <input type="number" value={proyecto} onChange={(event) => setProyecto(Math.max(0, Number(event.target.value)))} />
-      </label>
-      <Boton type="button" icono={<Icono nombre="calificar" />} cargando={guardando} disabled={!puedeCalificar} onClick={calificar}>
-        {guardando ? 'Guardando…' : 'Calificar'}
-      </Boton>
-      {mensaje && (
-        <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
-          {mensaje}
-        </p>
-      )}
+    <div className="shell">
+      <div className="panel shell-main">
+        <h2>
+          <Icono nombre="calificar" /> Calificar examen
+        </h2>
+        <p>Examen: {examenId ?? 'Sin examen'}</p>
+        <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
+        <label className="campo">
+          Bono (max 0.5)
+          <input
+            type="number"
+            step="0.1"
+            min={0}
+            max={0.5}
+            value={bono}
+            onChange={(event) => setBono(Math.max(0, Math.min(0.5, Number(event.target.value))))}
+          />
+        </label>
+        <label className="campo">
+          Evaluacion continua (parcial)
+          <input
+            type="number"
+            value={evaluacionContinua}
+            onChange={(event) => setEvaluacionContinua(Math.max(0, Number(event.target.value)))}
+          />
+        </label>
+        <label className="campo">
+          Proyecto (global)
+          <input type="number" value={proyecto} onChange={(event) => setProyecto(Math.max(0, Number(event.target.value)))} />
+        </label>
+        <Boton type="button" icono={<Icono nombre="calificar" />} cargando={guardando} disabled={!puedeCalificar} onClick={calificar}>
+          {guardando ? 'Guardando…' : 'Calificar'}
+        </Boton>
+        {mensaje && (
+          <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
+            {mensaje}
+          </p>
+        )}
+      </div>
+
+      <aside className="shell-aside" aria-label="Ayuda y contexto">
+        <div className="shell-asideCard">
+          <AyudaFormulario titulo="Para que sirve y como llenarlo">
+            <p>
+              <b>Proposito:</b> guardar la calificacion del examen ya identificado por folio/OMR.
+              Esta seccion usa el examen y alumno detectados en &quot;Escaneo OMR&quot;.
+            </p>
+            <ul className="lista">
+              <li>
+                <b>Bono:</b> ajuste extra (0 a 0.5).
+              </li>
+              <li>
+                <b>Evaluacion continua:</b> puntaje adicional para parciales.
+              </li>
+              <li>
+                <b>Proyecto:</b> puntaje adicional para global.
+              </li>
+            </ul>
+            <p>
+              Ejemplo: bono <code>0.2</code>, evaluacion continua <code>1</code>, proyecto <code>0</code>.
+            </p>
+          </AyudaFormulario>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -5096,65 +5103,72 @@ function SeccionPublicar({
   }
 
   return (
-    <div className="panel">
-      <h2>
-        <Icono nombre="publicar" /> Publicar en portal
-      </h2>
-      <AyudaFormulario titulo="Para que sirve y como llenarlo">
-        <p>
-          <b>Proposito:</b> enviar los resultados de la materia al portal alumno y emitir un codigo de acceso para consulta.
-        </p>
-        <ul className="lista">
-          <li>
-            <b>Materia:</b> selecciona la materia a publicar.
-          </li>
-          <li>
-            <b>Publicar:</b> sincroniza resultados de la materia hacia el portal.
-          </li>
-          <li>
-            <b>Generar codigo:</b> crea un codigo temporal; compartelo con alumnos junto con su matricula.
-          </li>
-        </ul>
-        <p>
-          Ejemplo de mensaje a alumnos: &quot;Tu codigo es <code>ABC123</code>. Entra al portal y usa tu matricula <code>2024-001</code>.&quot;
-        </p>
-      </AyudaFormulario>
-      <label className="campo">
-        Materia
-        <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
-          <option value="">Selecciona</option>
-          {periodos.map((periodo) => (
-            <option key={periodo._id} value={periodo._id} title={periodo._id}>
-              {etiquetaMateria(periodo)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="acciones">
-        <Boton type="button" icono={<Icono nombre="publicar" />} cargando={publicando} disabled={!puedeAccionar} onClick={publicar}>
-          {publicando ? 'Publicando…' : 'Publicar'}
-        </Boton>
-        <Boton
-          type="button"
-          variante="secundario"
-          icono={<Icono nombre="info" />}
-          cargando={generando}
-          disabled={!puedeAccionar}
-          onClick={generarCodigo}
-        >
-          {generando ? 'Generando…' : 'Generar codigo'}
-        </Boton>
+    <div className="shell">
+      <div className="panel shell-main">
+        <h2>
+          <Icono nombre="publicar" /> Publicar en portal
+        </h2>
+        <label className="campo">
+          Materia
+          <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
+            <option value="">Selecciona</option>
+            {periodos.map((periodo) => (
+              <option key={periodo._id} value={periodo._id} title={periodo._id}>
+                {etiquetaMateria(periodo)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="acciones">
+          <Boton type="button" icono={<Icono nombre="publicar" />} cargando={publicando} disabled={!puedeAccionar} onClick={publicar}>
+            {publicando ? 'Publicando…' : 'Publicar'}
+          </Boton>
+          <Boton
+            type="button"
+            variante="secundario"
+            icono={<Icono nombre="info" />}
+            cargando={generando}
+            disabled={!puedeAccionar}
+            onClick={generarCodigo}
+          >
+            {generando ? 'Generando…' : 'Generar codigo'}
+          </Boton>
+        </div>
+        {codigo && (
+          <p>
+            Codigo generado: {codigo} {expiraEn ? `(expira ${new Date(expiraEn).toLocaleString()})` : ''}
+          </p>
+        )}
+        {mensaje && (
+          <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
+            {mensaje}
+          </p>
+        )}
       </div>
-      {codigo && (
-        <p>
-          Codigo generado: {codigo} {expiraEn ? `(expira ${new Date(expiraEn).toLocaleString()})` : ''}
-        </p>
-      )}
-      {mensaje && (
-        <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
-          {mensaje}
-        </p>
-      )}
+
+      <aside className="shell-aside" aria-label="Ayuda y referencia">
+        <div className="shell-asideCard">
+          <AyudaFormulario titulo="Para que sirve y como llenarlo">
+            <p>
+              <b>Proposito:</b> enviar los resultados de la materia al portal alumno y emitir un codigo de acceso para consulta.
+            </p>
+            <ul className="lista">
+              <li>
+                <b>Materia:</b> selecciona la materia a publicar.
+              </li>
+              <li>
+                <b>Publicar:</b> sincroniza resultados de la materia hacia el portal.
+              </li>
+              <li>
+                <b>Generar codigo:</b> crea un codigo temporal; compartelo con alumnos junto con su matricula.
+              </li>
+            </ul>
+            <p>
+              Ejemplo de mensaje a alumnos: &quot;Tu codigo es <code>ABC123</code>. Entra al portal y usa tu matricula <code>2024-001</code>.&quot;
+            </p>
+          </AyudaFormulario>
+        </div>
+      </aside>
     </div>
   );
 }
