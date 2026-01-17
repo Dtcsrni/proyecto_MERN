@@ -1,6 +1,6 @@
 {
-  "name": "Plataforma Docente - Sistema de Evaluacion",
-  "short_name": "Docente",
+  "name": "Plataforma Docente - EvaluaPro",
+  "short_name": "Docente EP",
   "description": "Panel docente local: banco, exámenes, recepción, escaneo y calificación.",
   "lang": "es-MX",
   "start_url": "/",

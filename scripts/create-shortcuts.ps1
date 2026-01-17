@@ -17,8 +17,10 @@ if (-not (Test-Path $outPath)) {
 
 if ($Force) {
   # Limpia accesos previos para evitar duplicados (incluye "Bandeja" y legacy).
-  Get-ChildItem -Path $outPath -Filter "Sistema Evaluacion - *.lnk" -ErrorAction SilentlyContinue | ForEach-Object {
-    try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue } catch {}
+  foreach ($pattern in @('Sistema Evaluacion - *.lnk', 'EvaluaPro - *.lnk', 'Sistema EvaluaPro - *.lnk')) {
+    Get-ChildItem -Path $outPath -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
+      try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue } catch {}
+    }
   }
 }
 
@@ -274,7 +276,7 @@ function New-Shortcut([string]$name, [string]$mode, [string]$iconPath) {
   $shortcut.Save()
 }
 
-New-Shortcut "Sistema Evaluacion - Dev" "dev" $iconDev
-New-Shortcut "Sistema Evaluacion - Prod" "prod" $iconProd
+New-Shortcut "EvaluaPro - Dev" "dev" $iconDev
+New-Shortcut "EvaluaPro - Prod" "prod" $iconProd
 
 Write-Host "Accesos directos creados en: $outPath"

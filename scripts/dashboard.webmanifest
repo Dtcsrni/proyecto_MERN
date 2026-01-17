@@ -1,6 +1,6 @@
 {
-  "name": "Dashboard - Sistema de Evaluacion Universitaria",
-  "short_name": "Dashboard SEU",
+  "name": "Dashboard - Sistema EvaluaPro",
+  "short_name": "Dashboard EP",
   "description": "Control local del stack, tareas, logs y salud de servicios.",
   "lang": "es",
   "dir": "ltr",
