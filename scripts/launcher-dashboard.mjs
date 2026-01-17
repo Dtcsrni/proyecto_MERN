@@ -69,15 +69,25 @@ const processes = new Map();
 let autoRestart = mode === 'dev';
 let restartTimer = null;
 
-// HTML template loaded once at startup.
+// HTML template and assets.
+// En DEV se leen desde disco por request para que cambios UI/UX se vean al refrescar.
+// En PROD se cachean en memoria (comportamiento estable/reproducible).
 const dashboardPath = path.join(__dirname, 'dashboard.html');
-const dashboardHtml = fs.readFileSync(dashboardPath, 'utf8');
-
-// PWA assets (manifest + icon) for "instalar como app" (Edge/Chrome).
 const manifestPath = path.join(__dirname, 'dashboard.webmanifest');
-const manifestJson = fs.readFileSync(manifestPath, 'utf8');
 const iconPath = path.join(__dirname, 'dashboard-icon.svg');
-const iconSvg = fs.readFileSync(iconPath, 'utf8');
+
+const cachedDashboardHtml = fs.readFileSync(dashboardPath, 'utf8');
+const cachedManifestJson = fs.readFileSync(manifestPath, 'utf8');
+const cachedIconSvg = fs.readFileSync(iconPath, 'utf8');
+
+function readTextDevOrCache(filePath, cached) {
+  if (mode !== 'dev') return cached;
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return cached;
+  }
+}
 
 function readRootPackageInfo() {
   try {
@@ -496,7 +506,7 @@ const commands = {
   dev: 'npm run dev',
   'dev-frontend': 'npm run dev:frontend',
   'dev-backend': 'npm run dev:backend',
-  prod: 'npm start',
+  prod: 'npm run start:prod',
   portal: 'npm run dev:portal',
   status: 'npm run status',
   'docker-ps': 'docker ps',
@@ -778,7 +788,7 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store'
     });
-    res.end(dashboardHtml);
+    res.end(readTextDevOrCache(dashboardPath, cachedDashboardHtml));
     return;
   }
 
@@ -787,7 +797,7 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': 'application/manifest+json; charset=utf-8',
       'Cache-Control': 'no-store'
     });
-    res.end(manifestJson);
+    res.end(readTextDevOrCache(manifestPath, cachedManifestJson));
     return;
   }
 
@@ -796,7 +806,7 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': 'image/svg+xml; charset=utf-8',
       'Cache-Control': 'no-store'
     });
-    res.end(iconSvg);
+    res.end(readTextDevOrCache(iconPath, cachedIconSvg));
     return;
   }
 
