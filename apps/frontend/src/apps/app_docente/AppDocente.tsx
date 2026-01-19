@@ -587,6 +587,7 @@ export function AppDocente() {
           plantillas={plantillas}
           preguntas={preguntas}
           ultimaActualizacionDatos={ultimaActualizacionDatos}
+          docenteCorreo={docente?.correo}
           onPublicar={(periodoId) => clienteApi.enviar('/sincronizaciones/publicar', { periodoId })}
           onCodigo={(periodoId) =>
             clienteApi.enviar<{ codigo?: string; expiraEn?: string }>('/sincronizaciones/codigo-acceso', { periodoId })
@@ -4827,9 +4828,11 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
   const [urlMovil, setUrlMovil] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [qrFallo, setQrFallo] = useState(false);
 
   useEffect(() => {
     let activo = true;
+    setQrFallo(false);
     const params = new URLSearchParams(window.location.search);
     params.set('vista', vista);
     const qs = params.toString();
@@ -4839,17 +4842,17 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
     const hostname = window.location.hostname;
 
     if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      const url = `${window.location.protocol}//${window.location.host}${ruta}${qs ? `?${qs}` : ''}`;
-      const timer = window.setTimeout(() => {
-        if (!activo) return;
-        setUrlMovil(url);
-        setCargando(false);
-      }, 0);
-      return () => {
-        activo = false;
-        window.clearTimeout(timer);
-      };
-    }
+    const url = `${window.location.protocol}//${window.location.host}${ruta}${qs ? `?${qs}` : ''}`;
+    const timer = window.setTimeout(() => {
+      if (!activo) return;
+      setUrlMovil(url);
+      setCargando(false);
+    }, 0);
+    return () => {
+      activo = false;
+      window.clearTimeout(timer);
+    };
+  }
 
     fetch(`${clienteApi.baseApi}/salud/ip-local`)
       .then((resp) => (resp.ok ? resp.json() : Promise.reject(new Error('Respuesta invalida'))))
@@ -4875,6 +4878,7 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
   }, [vista]);
 
   const urlQr = urlMovil ? `${clienteApi.baseApi}/salud/qr?texto=${encodeURIComponent(urlMovil)}` : '';
+  const mostrarFallback = Boolean(error || qrFallo);
 
   return (
     <div className="item-glass guia-card guia-card--qr">
@@ -4890,15 +4894,19 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
       )}
       {!cargando && urlQr && (
         <div className="guia-qr">
-          <img className="guia-qr__img" src={urlQr} alt="QR para abrir en movil" />
-          {error && (
+          <img className="guia-qr__img" src={urlQr} alt="QR para abrir en movil" onError={() => setQrFallo(true)} />
+          {mostrarFallback && (
             <div className="nota">
               Fallback manual: <span className="guia-qr__url">{urlMovil}</span>
             </div>
           )}
         </div>
       )}
-      {error && <InlineMensaje tipo="warning">{error}</InlineMensaje>}
+      {(error || qrFallo) && (
+        <InlineMensaje tipo="warning">
+          {error || 'No se pudo generar el QR. Usa el enlace manual para abrir en el movil.'}
+        </InlineMensaje>
+      )}
     </div>
   );
 }
@@ -5406,10 +5414,12 @@ function SeccionPublicar({
 
 function SeccionPaqueteSincronizacion({
   periodos,
+  docenteCorreo,
   onExportar,
   onImportar
 }: {
   periodos: Periodo[];
+  docenteCorreo?: string;
   onExportar: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<{
     paqueteBase64: string;
     checksumSha256: string;
@@ -5417,7 +5427,7 @@ function SeccionPaqueteSincronizacion({
     exportadoEn: string;
     conteos: Record<string, number>;
   }>;
-  onImportar: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean }) => Promise<
+  onImportar: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean; docenteCorreo?: string }) => Promise<
     | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
     | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
   >;
@@ -5464,7 +5474,8 @@ function SeccionPaqueteSincronizacion({
         exportadoEn: resp.exportadoEn,
         checksumSha256: resp.checksumSha256,
         conteos: resp.conteos,
-        paqueteBase64: resp.paqueteBase64
+        paqueteBase64: resp.paqueteBase64,
+        ...(docenteCorreo ? { docenteCorreo } : {})
       });
 
       setMensaje('Paquete exportado (descarga iniciada)');
@@ -5497,15 +5508,27 @@ function SeccionPaqueteSincronizacion({
       setMensaje('');
 
       const texto = await archivo.text();
-      const json = JSON.parse(texto) as { paqueteBase64?: string; checksumSha256?: string; conteos?: Record<string, number> };
+      const json = JSON.parse(texto) as {
+        paqueteBase64?: string;
+        checksumSha256?: string;
+        conteos?: Record<string, number>;
+        docenteCorreo?: string;
+      };
       const paqueteBase64 = String(json?.paqueteBase64 || '').trim();
       const checksumSha256 = String(json?.checksumSha256 || '').trim();
+      const correoArchivo = typeof json?.docenteCorreo === 'string' ? json.docenteCorreo.trim() : '';
+      const correoFinal = correoArchivo || docenteCorreo || '';
       if (!paqueteBase64) {
         throw new Error('Archivo invalido: no contiene paqueteBase64');
       }
 
       // 1) Validar en servidor (dry-run) para detectar corrupcion antes de escribir.
-      const validacion = await onImportar({ paqueteBase64, checksumSha256: checksumSha256 || undefined, dryRun: true });
+      const validacion = await onImportar({
+        paqueteBase64,
+        checksumSha256: checksumSha256 || undefined,
+        dryRun: true,
+        ...(correoFinal ? { docenteCorreo: correoFinal } : {})
+      });
       const conteos = (validacion as { conteos?: Record<string, number> })?.conteos;
       const resumen = conteos
         ? `\n\nContenido: ${Object.entries(conteos)
@@ -5523,7 +5546,11 @@ function SeccionPaqueteSincronizacion({
       }
 
       // 2) Importar realmente.
-      const resp = await onImportar({ paqueteBase64, checksumSha256: checksumSha256 || undefined });
+      const resp = await onImportar({
+        paqueteBase64,
+        checksumSha256: checksumSha256 || undefined,
+        ...(correoFinal ? { docenteCorreo: correoFinal } : {})
+      });
       setMensaje((resp as { mensaje?: string })?.mensaje || 'Paquete importado');
       emitToast({ level: 'ok', title: 'Sincronizacion', message: 'Paquete importado', durationMs: 2600 });
       registrarAccionDocente('sync_paquete_importar', true, Date.now() - inicio);
@@ -5759,6 +5786,7 @@ function SeccionSincronizacion({
   plantillas,
   preguntas,
   ultimaActualizacionDatos,
+  docenteCorreo,
   onPublicar,
   onCodigo,
   onExportarPaquete,
@@ -5772,6 +5800,7 @@ function SeccionSincronizacion({
   plantillas: Plantilla[];
   preguntas: Pregunta[];
   ultimaActualizacionDatos: number | null;
+  docenteCorreo?: string;
   onPublicar: (periodoId: string) => Promise<unknown>;
   onCodigo: (periodoId: string) => Promise<{ codigo?: string; expiraEn?: string }>;
   onExportarPaquete: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<{
@@ -5781,7 +5810,7 @@ function SeccionSincronizacion({
     exportadoEn: string;
     conteos: Record<string, number>;
   }>;
-  onImportarPaquete: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean }) => Promise<
+  onImportarPaquete: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean; docenteCorreo?: string }) => Promise<
     | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
     | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
   >;
@@ -5948,7 +5977,12 @@ function SeccionSincronizacion({
       </div>
       <div className="sincronizacion-grid">
         <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
-        <SeccionPaqueteSincronizacion periodos={periodos} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
+        <SeccionPaqueteSincronizacion
+          periodos={periodos}
+          docenteCorreo={docenteCorreo}
+          onExportar={onExportarPaquete}
+          onImportar={onImportarPaquete}
+        />
         <SeccionSincronizacionEquipos onPushServidor={onPushServidor} onPullServidor={onPullServidor} />
       </div>
     </div>

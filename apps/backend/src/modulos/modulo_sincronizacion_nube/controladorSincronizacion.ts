@@ -28,6 +28,7 @@ import { BanderaRevision } from '../modulo_analiticas/modeloBanderaRevision';
 import { CodigoAcceso } from './modeloCodigoAcceso';
 import { Sincronizacion } from './modeloSincronizacion';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
+import { Docente } from '../modulo_autenticacion/modeloDocente';
 import { enviarCorreo } from '../../infraestructura/correo/servicioCorreo';
 import { createHash, randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
@@ -52,10 +53,25 @@ function sha256HexBuffer(buf: Buffer) {
   return createHash('sha256').update(buf).digest('hex');
 }
 
+function normalizarCorreo(valor: unknown): string {
+  if (!valor) return '';
+  return String(valor).trim().toLowerCase();
+}
+
+async function obtenerCorreoDocente(docenteId: string): Promise<string> {
+  const docente = await Docente.findById(docenteId).select('correo').lean();
+  const correo = normalizarCorreo((docente as { correo?: unknown })?.correo);
+  if (!correo) {
+    throw new ErrorAplicacion('DOCENTE_NO_ENCONTRADO', 'Docente no encontrado', 404);
+  }
+  return correo;
+}
+
 type PaqueteSincronizacionV1 = {
   schemaVersion: 1;
   exportadoEn: string;
   docenteId: string;
+  docenteCorreo?: string;
   periodoId?: string;
   desde?: string;
   conteos: Record<string, number>;
@@ -154,15 +170,18 @@ function parsearFechaIso(valor?: string): Date | null {
 
 async function generarPaqueteSincronizacion({
   docenteId,
+  docenteCorreo,
   periodoId,
   desde,
   incluirPdfs
 }: {
   docenteId: string;
+  docenteCorreo?: string;
   periodoId?: string;
   desde?: Date | null;
   incluirPdfs: boolean;
 }) {
+  const correo = docenteCorreo || await obtenerCorreoDocente(docenteId);
   const filtroPeriodo = periodoId ? { _id: periodoId, docenteId } : { docenteId };
   const periodos = await Periodo.find(filtroPeriodo).lean();
   if (periodoId && periodos.length === 0) {
@@ -221,6 +240,7 @@ async function generarPaqueteSincronizacion({
     schemaVersion: 1,
     exportadoEn,
     docenteId: String(docenteId),
+    docenteCorreo: correo || undefined,
     ...(periodoId ? { periodoId } : {}),
     ...(desde ? { desde: desde.toISOString() } : {}),
     conteos: {
@@ -264,12 +284,14 @@ async function procesarPaqueteSincronizacion({
   docenteId,
   paqueteBase64,
   checksumEsperado,
+  docenteCorreo,
   dryRun,
   registroId
 }: {
   docenteId: string;
   paqueteBase64: string;
   checksumEsperado?: string;
+  docenteCorreo?: string;
   dryRun: boolean;
   registroId?: unknown;
 }) {
@@ -286,15 +308,26 @@ async function procesarPaqueteSincronizacion({
   if (!parsed || parsed.schemaVersion !== 1) {
     throw new ErrorAplicacion('SYNC_VERSION', 'Version de paquete no soportada', 400);
   }
-  if (String(parsed.docenteId || '') !== String(docenteId)) {
+  const docenteIdActual = String(docenteId);
+  const docenteIdPaquete = String(parsed.docenteId || '').trim();
+  if (!docenteIdPaquete) {
+    throw new ErrorAplicacion('SYNC_DOCENTE_MISMATCH', 'El paquete no corresponde a este docente', 403);
+  }
+
+  const correoActual = await obtenerCorreoDocente(docenteIdActual);
+  const correoPaquete = normalizarCorreo(parsed.docenteCorreo || docenteCorreo);
+  const idsCoinciden = docenteIdPaquete === docenteIdActual;
+  const correosCoinciden = Boolean(correoPaquete && correoPaquete === correoActual);
+
+  if (!idsCoinciden && !correosCoinciden) {
     throw new ErrorAplicacion('SYNC_DOCENTE_MISMATCH', 'El paquete no corresponde a este docente', 403);
   }
 
   // Validacion minima de que los docs del paquete pertenecen al docente.
-  const assertDocente = (docs: Array<Record<string, unknown>>, nombre: string) => {
+  const assertDocente = (docs: Array<Record<string, unknown>>, nombre: string, docenteEsperado: string) => {
     for (const doc of docs) {
       const d = String(obtenerCampo(doc, 'docenteId') ?? '');
-      if (d && d !== String(docenteId)) {
+      if (d && d !== docenteEsperado) {
         throw new ErrorAplicacion('SYNC_DOCENTE_MISMATCH', `El paquete contiene ${nombre} de otro docente`, 403);
       }
     }
@@ -313,14 +346,34 @@ async function procesarPaqueteSincronizacion({
   const calificacionesDocs = (Array.isArray(parsed.calificaciones) ? parsed.calificaciones : []) as Array<Record<string, unknown>>;
   const banderasDocs = (Array.isArray(parsed.banderas) ? parsed.banderas : []) as Array<Record<string, unknown>>;
 
-  assertDocente(periodosDocs, 'periodos');
-  assertDocente(alumnosDocs, 'alumnos');
-  assertDocente(bancoDocs, 'bancoPreguntas');
-  assertDocente(plantillasDocs, 'plantillas');
-  assertDocente(examenesDocs, 'examenes');
-  assertDocente(entregasDocs, 'entregas');
-  assertDocente(calificacionesDocs, 'calificaciones');
-  assertDocente(banderasDocs, 'banderas');
+  assertDocente(periodosDocs, 'periodos', docenteIdPaquete);
+  assertDocente(alumnosDocs, 'alumnos', docenteIdPaquete);
+  assertDocente(bancoDocs, 'bancoPreguntas', docenteIdPaquete);
+  assertDocente(plantillasDocs, 'plantillas', docenteIdPaquete);
+  assertDocente(examenesDocs, 'examenes', docenteIdPaquete);
+  assertDocente(entregasDocs, 'entregas', docenteIdPaquete);
+  assertDocente(calificacionesDocs, 'calificaciones', docenteIdPaquete);
+  assertDocente(banderasDocs, 'banderas', docenteIdPaquete);
+
+  const forzarDocenteId = (docs: Array<Record<string, unknown>>, nuevoDocenteId: string) => {
+    for (const doc of docs) {
+      if (!doc || typeof doc !== 'object') continue;
+      if (Object.prototype.hasOwnProperty.call(doc, 'docenteId')) {
+        (doc as Record<string, unknown>).docenteId = nuevoDocenteId;
+      }
+    }
+  };
+
+  if (!idsCoinciden && correosCoinciden) {
+    forzarDocenteId(periodosDocs, docenteIdActual);
+    forzarDocenteId(alumnosDocs, docenteIdActual);
+    forzarDocenteId(bancoDocs, docenteIdActual);
+    forzarDocenteId(plantillasDocs, docenteIdActual);
+    forzarDocenteId(examenesDocs, docenteIdActual);
+    forzarDocenteId(entregasDocs, docenteIdActual);
+    forzarDocenteId(calificacionesDocs, docenteIdActual);
+    forzarDocenteId(banderasDocs, docenteIdActual);
+  }
 
   if (dryRun) {
     if (registroId) {
@@ -578,6 +631,7 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
  */
 export async function exportarPaquete(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
+  const docenteCorreo = await obtenerCorreoDocente(String(docenteId));
   const periodoId = String((req.body as { periodoId?: unknown })?.periodoId ?? '').trim();
   const desdeRaw = String((req.body as { desde?: unknown })?.desde ?? '').trim();
   const incluirPdfs = (req.body as { incluirPdfs?: unknown })?.incluirPdfs !== false;
@@ -589,6 +643,7 @@ export async function exportarPaquete(req: SolicitudDocente, res: Response) {
 
   const { paquete, paqueteBase64, checksumSha256, checksumGzipSha256, exportadoEn } = await generarPaqueteSincronizacion({
     docenteId: String(docenteId),
+    docenteCorreo,
     periodoId: periodoId || undefined,
     desde: desde || undefined,
     incluirPdfs
@@ -615,6 +670,7 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
   const paqueteBase64 = String((req.body as { paqueteBase64?: unknown })?.paqueteBase64 ?? '').trim();
   const checksumEsperado = String((req.body as { checksumSha256?: unknown })?.checksumSha256 ?? '').trim();
+  const docenteCorreo = normalizarCorreo((req.body as { docenteCorreo?: unknown })?.docenteCorreo);
   const dryRun = Boolean((req.body as { dryRun?: unknown })?.dryRun);
   if (!paqueteBase64) {
     throw new ErrorAplicacion('SYNC_PAQUETE_VACIO', 'Paquete vacio', 400);
@@ -639,6 +695,7 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
       docenteId: String(docenteId),
       paqueteBase64,
       checksumEsperado: checksumEsperado || undefined,
+      docenteCorreo: docenteCorreo || undefined,
       dryRun,
       registroId
     });
