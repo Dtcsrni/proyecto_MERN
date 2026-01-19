@@ -329,6 +329,7 @@ export function AppDocente() {
   );
 
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
+  const montadoRef = useRef(true);
 
   // Nota UX: ocultamos el badge de estado API (no aporta al flujo docente).
 
@@ -367,57 +368,59 @@ export function AppDocente() {
   }, []);
 
   useEffect(() => {
-    if (!docente) return;
-    let activo = true;
-    Promise.resolve().then(() => {
-      if (!activo) return;
-      setCargandoDatos(true);
-    });
-    Promise.all([
-      clienteApi.obtener<{ alumnos: Alumno[] }>('/alumnos'),
-      clienteApi.obtener<{ periodos?: Periodo[]; materias?: Periodo[] }>('/periodos?activo=1'),
-      clienteApi.obtener<{ periodos?: Periodo[]; materias?: Periodo[] }>('/periodos?activo=0'),
-      clienteApi.obtener<{ plantillas: Plantilla[] }>('/examenes/plantillas'),
-      clienteApi.obtener<{ preguntas: Pregunta[] }>('/banco-preguntas')
-    ])
-      .then(([al, peActivas, peArchivadas, pl, pr]) => {
-        setAlumnos(al.alumnos);
-        const activas = (peActivas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).periodos ??
-          (peActivas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).materias ??
-          [];
-        const archivadas = (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).periodos ??
-          (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).materias ??
-          [];
-
-        const activasArray = Array.isArray(activas) ? activas : [];
-        const archivadasArray = Array.isArray(archivadas) ? archivadas : [];
-
-        const ids = (lista: Periodo[]) => lista.map((m) => m._id).filter(Boolean).sort().join('|');
-        const mismoContenido = activasArray.length > 0 && ids(activasArray) === ids(archivadasArray);
-
-        // Fallback: si el backend ignora ?activo y devuelve lo mismo, separa localmente.
-        if (mismoContenido) {
-          setPeriodos(activasArray.filter((m) => m.activo !== false));
-          setPeriodosArchivados(activasArray.filter((m) => m.activo === false));
-        } else {
-          setPeriodos(activasArray);
-          setPeriodosArchivados(archivadasArray);
-        }
-        setPlantillas(pl.plantillas);
-        setPreguntas(pr.preguntas);
-        setUltimaActualizacionDatos(Date.now());
-      })
-      .finally(() => {
-        Promise.resolve().then(() => {
-          if (!activo) return;
-          setCargandoDatos(false);
-        });
-      });
-
+    montadoRef.current = true;
     return () => {
-      activo = false;
+      montadoRef.current = false;
     };
+  }, []);
+
+  const refrescarDatos = useCallback(async () => {
+    if (!docente) return;
+    if (montadoRef.current) setCargandoDatos(true);
+    try {
+      const [al, peActivas, peArchivadas, pl, pr] = await Promise.all([
+        clienteApi.obtener<{ alumnos: Alumno[] }>('/alumnos'),
+        clienteApi.obtener<{ periodos?: Periodo[]; materias?: Periodo[] }>('/periodos?activo=1'),
+        clienteApi.obtener<{ periodos?: Periodo[]; materias?: Periodo[] }>('/periodos?activo=0'),
+        clienteApi.obtener<{ plantillas: Plantilla[] }>('/examenes/plantillas'),
+        clienteApi.obtener<{ preguntas: Pregunta[] }>('/banco-preguntas')
+      ]);
+
+      if (!montadoRef.current) return;
+
+      setAlumnos(al.alumnos);
+      const activas = (peActivas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).periodos ??
+        (peActivas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).materias ??
+        [];
+      const archivadas = (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).periodos ??
+        (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).materias ??
+        [];
+
+      const activasArray = Array.isArray(activas) ? activas : [];
+      const archivadasArray = Array.isArray(archivadas) ? archivadas : [];
+
+      const ids = (lista: Periodo[]) => lista.map((m) => m._id).filter(Boolean).sort().join('|');
+      const mismoContenido = activasArray.length > 0 && ids(activasArray) === ids(archivadasArray);
+
+      // Fallback: si el backend ignora ?activo y devuelve lo mismo, separa localmente.
+      if (mismoContenido) {
+        setPeriodos(activasArray.filter((m) => m.activo !== false));
+        setPeriodosArchivados(activasArray.filter((m) => m.activo === false));
+      } else {
+        setPeriodos(activasArray);
+        setPeriodosArchivados(archivadasArray);
+      }
+      setPlantillas(pl.plantillas);
+      setPreguntas(pr.preguntas);
+      setUltimaActualizacionDatos(Date.now());
+    } finally {
+      if (montadoRef.current) setCargandoDatos(false);
+    }
   }, [docente]);
+
+  useEffect(() => {
+    void refrescarDatos();
+  }, [refrescarDatos]);
 
   function refrescarMaterias() {
     return Promise.all([
@@ -602,10 +605,16 @@ export function AppDocente() {
             }>('/sincronizaciones/paquete/exportar', payload)
           }
           onImportarPaquete={(payload) =>
-            clienteApi.enviar<
-              | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
-              | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
-            >('/sincronizaciones/paquete/importar', payload)
+            (async () => {
+              const respuesta = await clienteApi.enviar<
+                | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
+                | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
+              >('/sincronizaciones/paquete/importar', payload);
+              if (!payload?.dryRun) {
+                await refrescarDatos();
+              }
+              return respuesta;
+            })()
           }
           onPushServidor={(payload) => clienteApi.enviar<RespuestaSyncPush>('/sincronizaciones/push', payload)}
           onPullServidor={(payload) => clienteApi.enviar<RespuestaSyncPull>('/sincronizaciones/pull', payload)}
