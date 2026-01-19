@@ -4010,8 +4010,8 @@
       }
 
       if (openBtn) {
-        openBtn.disabled = !reachable;
-        openBtn.title = reachable ? 'Abrir mongo-express en una pestaña' : 'mongo-express no esta disponible';
+        openBtn.disabled = !alcanzable;
+        openBtn.title = alcanzable ? 'Abrir mongo-express en una pestaña' : 'mongo-express no esta disponible';
       }
 
       if (wrap) {
@@ -4019,7 +4019,7 @@
       }
 
       if (iframe && state.dbEmpotrada) {
-        if (reachable) {
+        if (alcanzable) {
           const current = iframe.getAttribute('src') || '';
           if (current !== url) iframe.setAttribute('src', url);
         } else {

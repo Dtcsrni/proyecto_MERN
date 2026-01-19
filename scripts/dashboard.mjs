@@ -3,7 +3,9 @@
 
 const baseApi = process.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 const urlSalud = baseApi.endsWith('/salud') ? baseApi : `${baseApi.replace(/\/$/, '')}/salud`;
-const urlWeb = process.env.WEB_URL || 'http://localhost:4173';
+const webUrls = process.env.WEB_URL
+  ? [process.env.WEB_URL]
+  : ['http://localhost:4173', 'http://localhost:5173'];
 
 async function fetchSeguro(url, options = {}) {
   const controller = new AbortController();
@@ -30,9 +32,15 @@ async function verificarApi() {
 }
 
 async function verificarWeb() {
-  const res = await fetchSeguro(urlWeb);
-  if (!res) return { up: false };
-  return { up: res.ok };
+  const results = await Promise.all(
+    webUrls.map(async (url) => ({ url, res: await fetchSeguro(url) }))
+  );
+
+  const ok = results.find((item) => item.res && item.res.ok);
+  if (ok) return { up: true, url: ok.url };
+
+  const any = results.find((item) => item.res);
+  return { up: false, url: any ? any.url : webUrls[0] };
 }
 
 function linea(label, value) {
@@ -44,7 +52,8 @@ function linea(label, value) {
 
   console.log('Dashboard del proyecto');
   console.log(linea('API Base', baseApi));
-  console.log(linea('Web', urlWeb));
+  const webLine = web.url || webUrls[0];
+  console.log(linea('Web', webLine));
   console.log('');
 
   console.log(linea('Estado API', api.up ? 'UP' : 'DOWN'));
@@ -59,5 +68,5 @@ function linea(label, value) {
 
   console.log('\nTips:');
   console.log(linea('URL Salud', urlSalud));
-  console.log(linea('Abrir Frontend', urlWeb));
+  console.log(linea('Abrir Frontend', webLine));
 })();
