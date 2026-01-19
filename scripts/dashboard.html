@@ -3878,7 +3878,7 @@
       setText('running-status', renderRunning(runningList));
       setText('node', data.node);
       setText('npm', data.npm);
-      setText('docker', data.docker);
+      setText('docker', data.dockerDisplay || data.docker);
       setText('mode-chip', `Modo: ${formatModeLabel(displayMode)}`);
       setText('running-chip', `Procesos: ${runningCount}`);
       setText('port-chip', `Puerto: ${data.port || '-'}`);
