@@ -29,6 +29,24 @@ const fullLogs = args.includes('--full-logs');
 const dashboardStartedAt = Date.now();
 let listeningPort = 0;
 
+// Docker/stack bootstrap state (for shortcuts/tray).
+const composeFile = path.join(root, 'docker-compose.yml');
+const dockerAutostart = {
+  state: 'idle', // idle|checking|starting|ready|error
+  ready: false,
+  version: '',
+  attemptedDesktopStart: false,
+  stack: {
+    state: 'unknown', // unknown|checking|running|starting|skipped|error
+    running: false,
+    lastError: ''
+  },
+  lastError: '',
+  lastChangedAt: Date.now()
+};
+
+let dockerAutostartPromise = null;
+
 // Persist recent logs to disk to aid troubleshooting.
 const logDir = path.join(root, 'logs');
 const logFile = path.join(logDir, 'dashboard.log');
@@ -324,6 +342,173 @@ function safeExec(command, fallback) {
   }
 }
 
+function safeExecFast(command, fallback, timeoutMs = 1400) {
+  try {
+    const out = execSync(command, {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+      timeout: Math.max(200, Number(timeoutMs) || 1400)
+    }).trim();
+    return out.split(/\r?\n/)[0] || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function setDockerAutostart(patch) {
+  Object.assign(dockerAutostart, patch);
+  dockerAutostart.lastChangedAt = Date.now();
+}
+
+function dockerDisplayString() {
+  if (dockerAutostart.state === 'starting') return 'Iniciando Docker...';
+  if (dockerAutostart.state === 'checking') return 'Comprobando Docker...';
+  if (dockerAutostart.state === 'error') return 'No disponible';
+  if (dockerAutostart.ready && dockerAutostart.version) return dockerAutostart.version;
+  const v = safeExecFast('docker version --format "{{.Server.Version}}"', 'No disponible', 900);
+  return v;
+}
+
+function tryGetDockerVersion() {
+  const v = safeExecFast('docker version --format "{{.Server.Version}}"', '', 1200);
+  return v && v !== 'No disponible' ? v : '';
+}
+
+function tryStartDockerDesktopWindows() {
+  if (process.platform !== 'win32') return false;
+
+  const roots = [
+    process.env.ProgramW6432,
+    process.env.ProgramFiles,
+    process.env['ProgramFiles(x86)']
+  ].filter(Boolean);
+
+  const candidates = [];
+  for (const r of roots) {
+    candidates.push(path.join(r, 'Docker', 'Docker', 'Docker Desktop.exe'));
+  }
+
+  const exe = candidates.find((p) => {
+    try { return fs.existsSync(p); } catch { return false; }
+  });
+  if (!exe) return false;
+
+  try {
+    const child = spawn(exe, [], { detached: true, stdio: 'ignore', windowsHide: true });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function waitForDockerReady(timeoutMs = 120_000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const v = tryGetDockerVersion();
+    if (v) return v;
+    await sleep(1200);
+  }
+  return '';
+}
+
+function composeBaseArgsForMode(desiredMode) {
+  const args = ['docker', 'compose', '-f', composeFile];
+  if (desiredMode === 'prod') args.push('--profile', 'prod');
+  return args;
+}
+
+function isComposeServiceRunning(desiredMode, service) {
+  if (!composeFile || !fs.existsSync(composeFile)) return false;
+  const base = composeBaseArgsForMode(desiredMode);
+  const fileQuoted = `"${composeFile.replaceAll('"', '\\"')}"`;
+  const profile = desiredMode === 'prod' ? '--profile prod ' : '';
+  const cmd = `docker compose -f ${fileQuoted} ${profile}ps -q ${service}`;
+  try {
+    const out = execSync(cmd, {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+      timeout: 1600
+    }).trim();
+    return Boolean(out);
+  } catch {
+    return false;
+  }
+}
+
+function isStackRunning(desiredMode) {
+  if (desiredMode === 'prod') {
+    return (
+      isComposeServiceRunning('prod', 'mongo_local') &&
+      isComposeServiceRunning('prod', 'api_docente_prod') &&
+      isComposeServiceRunning('prod', 'web_docente_prod')
+    );
+  }
+  // dev
+  return (
+    isComposeServiceRunning('dev', 'mongo_local') &&
+    isComposeServiceRunning('dev', 'api_docente_local')
+  );
+}
+
+function requestDockerAutostart(reason = 'startup') {
+  if (mode !== 'dev' && mode !== 'prod') return;
+  if (dockerAutostartPromise) return;
+
+  dockerAutostartPromise = (async () => {
+    pushEvent('docker', 'dashboard', 'info', 'Autostart solicitado', { reason, mode });
+
+    setDockerAutostart({ state: 'checking', lastError: '' });
+    dockerAutostart.stack.state = 'checking';
+    dockerAutostart.stack.lastError = '';
+
+    let version = tryGetDockerVersion();
+    if (!version) {
+      setDockerAutostart({ state: 'starting', ready: false, version: '' });
+      if (!dockerAutostart.attemptedDesktopStart) {
+        dockerAutostart.attemptedDesktopStart = true;
+        const started = tryStartDockerDesktopWindows();
+        logSystem(started ? 'Docker Desktop iniciado (si estaba instalado).' : 'Docker no esta listo. Inicia Docker Desktop.', started ? 'warn' : 'warn');
+      }
+      version = await waitForDockerReady(Number(process.env.DASHBOARD_DOCKER_TIMEOUT_MS || 120_000));
+    }
+
+    if (!version) {
+      setDockerAutostart({ state: 'error', ready: false, version: '', lastError: 'Docker no responde (daemon no listo).' });
+      dockerAutostart.stack.state = 'error';
+      dockerAutostart.stack.lastError = 'Docker no responde.';
+      logSystem('Docker no responde. No se pudo iniciar el stack automaticamente.', 'error', { console: true });
+      return;
+    }
+
+    setDockerAutostart({ state: 'ready', ready: true, version, lastError: '' });
+
+    // Evita recrear el stack si ya esta levantado.
+    const alreadyRunning = isStackRunning(mode);
+    dockerAutostart.stack.running = alreadyRunning;
+    if (alreadyRunning) {
+      dockerAutostart.stack.state = 'skipped';
+      logSystem('Stack Docker ya esta activo. No se reinicia.', 'ok');
+      return;
+    }
+
+    dockerAutostart.stack.state = 'starting';
+    logSystem(`Iniciando stack Docker (${mode})...`, 'system');
+    if (!isRunning(mode)) startTask(mode, commands[mode]);
+  })()
+    .catch((err) => {
+      setDockerAutostart({ state: 'error', ready: false, version: '', lastError: err?.message || 'Error iniciando Docker' });
+      dockerAutostart.stack.state = 'error';
+      dockerAutostart.stack.lastError = err?.message || 'Error iniciando Docker';
+      logSystem(`Fallo autostart Docker: ${err?.message || 'error'}`, 'error', { console: true });
+    })
+    .finally(() => {
+      dockerAutostartPromise = null;
+    });
+}
+
 // Check a local endpoint with a small timeout for health reporting.
 async function checkHealth(url, timeoutMs = 1500) {
   const controller = new AbortController();
@@ -514,7 +699,8 @@ const commands = {
   dev: 'npm run dev',
   'dev-frontend': 'npm run dev:frontend',
   'dev-backend': 'npm run dev:backend',
-  prod: 'npm run start:prod',
+  // En dashboard, PROD debe levantar el stack rapidamente (sin correr verify/tests).
+  prod: 'docker compose --profile prod up --build --force-recreate mongo_local api_docente_prod web_docente_prod',
   portal: 'npm run dev:portal',
   status: 'npm run status',
   'docker-ps': 'docker ps',
@@ -845,6 +1031,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathName === '/api/status') {
+    // Autostart en background: el endpoint debe responder rapido.
+    if ((mode === 'dev' || mode === 'prod') && dockerAutostart.state === 'idle') {
+      requestDockerAutostart('api_status');
+    }
+
     const noise = noiseSnapshot();
     const noiseTotal = Object.values(noise).reduce((acc, val) => acc + val, 0);
     const running = runningTasks();
@@ -866,7 +1057,15 @@ const server = http.createServer(async (req, res) => {
       port: listeningPort,
       node: safeExec('node -v', 'No detectado'),
       npm: safeExec('npm -v', 'No detectado'),
-      docker: safeExec('docker version --format "{{.Server.Version}}"', 'No disponible'),
+      docker: dockerDisplayString(),
+      dockerState: {
+        state: dockerAutostart.state,
+        ready: dockerAutostart.ready,
+        version: dockerAutostart.version,
+        lastError: dockerAutostart.lastError,
+        stack: dockerAutostart.stack,
+        lastChangedAt: dockerAutostart.lastChangedAt
+      },
       running,
       logSize: logLines.length,
       rawSize: rawLines.length,
@@ -1096,8 +1295,8 @@ const server = http.createServer(async (req, res) => {
     writeLock(port);
     logSystem(`Dashboard listo: ${url}`, 'ok', { console: true });
     if (!noOpen) openBrowser(url);
-    if (mode === 'dev') startTask('dev', commands.dev);
-    if (mode === 'prod') startTask('prod', commands.prod);
+    // En accesos directos/tray: primero confirma Docker y luego inicia el stack.
+    if (mode === 'dev' || mode === 'prod') requestDockerAutostart('startup');
 
     setupDevWatchers();
   });
