@@ -99,6 +99,15 @@ type Pregunta = {
   createdAt?: string;
 };
 
+type RegistroSincronizacion = {
+  _id?: string;
+  estado?: 'pendiente' | 'exitoso' | 'fallido' | string;
+  tipo?: string;
+  detalles?: Record<string, unknown>;
+  ejecutadoEn?: string;
+  createdAt?: string;
+};
+
 function obtenerVersionPregunta(pregunta: Pregunta): Pregunta['versiones'][number] | null {
   const versiones = Array.isArray(pregunta.versiones) ? pregunta.versiones : [];
   if (versiones.length === 0) return null;
@@ -211,11 +220,27 @@ function etiquetaMateria(periodo?: { _id?: string; nombre?: string } | null): st
 
 function AyudaFormulario({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
-    <div className="panel">
-      <h3>
-        <Icono nombre="info" /> {titulo}
-      </h3>
-      <div className="nota">{children}</div>
+    <div className="panel ayuda-formulario">
+      <div className="ayuda-formulario__header">
+        <h3 className="ayuda-formulario__title">
+          <span className="ayuda-formulario__icon">
+            <Icono nombre="info" />
+          </span>
+          <span>{titulo}</span>
+        </h3>
+        <div className="ayuda-formulario__chips" aria-hidden="true">
+          <span className="ayuda-chip">
+            <Icono nombre="ok" /> Paso
+          </span>
+          <span className="ayuda-chip">
+            <Icono nombre="info" /> Tip
+          </span>
+          <span className="ayuda-chip">
+            <Icono nombre="alerta" /> Validación
+          </span>
+        </div>
+      </div>
+      <div className="nota ayuda-formulario__body">{children}</div>
     </div>
   );
 }
@@ -235,6 +260,7 @@ export function AppDocente() {
   const [examenIdOmr, setExamenIdOmr] = useState<string | null>(null);
   const [examenAlumnoId, setExamenAlumnoId] = useState<string | null>(null);
   const [cargandoDatos, setCargandoDatos] = useState(false);
+  const [ultimaActualizacionDatos, setUltimaActualizacionDatos] = useState<number | null>(null);
 
   function cerrarSesion() {
     // Best-effort: limpia refresh token server-side.
@@ -262,7 +288,7 @@ export function AppDocente() {
         { id: 'recepcion', label: 'Recepcion', icono: 'recepcion' as const },
         { id: 'escaneo', label: 'Escaneo', icono: 'escaneo' as const },
         { id: 'calificar', label: 'Calificar', icono: 'calificar' as const },
-        { id: 'publicar', label: 'Publicar', icono: 'publicar' as const },
+        { id: 'publicar', label: 'Sincronización', icono: 'publicar' as const },
         { id: 'cuenta', label: 'Cuenta', icono: 'info' as const }
       ],
     []
@@ -345,6 +371,7 @@ export function AppDocente() {
         }
         setPlantillas(pl.plantillas);
         setPreguntas(pr.preguntas);
+        setUltimaActualizacionDatos(Date.now());
       })
       .finally(() => {
         Promise.resolve().then(() => {
@@ -379,6 +406,7 @@ export function AppDocente() {
         setPeriodos(activasArray);
         setPeriodosArchivados(archivadasArray);
       }
+      setUltimaActualizacionDatos(Date.now());
     });
   }
 
@@ -520,6 +548,11 @@ export function AppDocente() {
       {vista === 'publicar' && (
         <SeccionSincronizacion
           periodos={periodos}
+          periodosArchivados={periodosArchivados}
+          alumnos={alumnos}
+          plantillas={plantillas}
+          preguntas={preguntas}
+          ultimaActualizacionDatos={ultimaActualizacionDatos}
           onPublicar={(periodoId) => clienteApi.enviar('/sincronizaciones/publicar', { periodoId })}
           onCodigo={(periodoId) =>
             clienteApi.enviar<{ codigo?: string; expiraEn?: string }>('/sincronizaciones/codigo-acceso', { periodoId })
@@ -4651,6 +4684,81 @@ function SeccionRecepcion({
           Ejemplo: folio <code>FOLIO-000123</code> y alumno <code>2024-001 - Ana Maria</code>.
         </p>
       </AyudaFormulario>
+      <div className="subpanel guia-visual">
+        <h3>
+          <Icono nombre="recepcion" /> Guia rapida (movil o manual)
+        </h3>
+        <div className="guia-flujo" aria-hidden="true">
+          <Icono nombre="pdf" />
+          <Icono nombre="chevron" className="icono icono--muted" />
+          <Icono nombre="escaneo" />
+          <Icono nombre="chevron" className="icono icono--muted" />
+          <Icono nombre="alumno" />
+          <span>Examen a folio a alumno</span>
+        </div>
+        <div className="guia-grid">
+          <div className="item-glass guia-card">
+            <div className="guia-card__header">
+              <span className="chip chip-static" aria-hidden="true">
+                <Icono nombre="escaneo" /> Con movil
+              </span>
+            </div>
+            <ul className="guia-pasos">
+              <li className="guia-paso">
+                <span className="paso-num">1</span>
+                <div>
+                  <div className="paso-titulo">Escanea el QR</div>
+                  <p className="nota">Usa la camara del celular y enfoca el QR completo.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">2</span>
+                <div>
+                  <div className="paso-titulo">Copia el folio</div>
+                  <p className="nota">El folio aparece debajo del QR o en la hoja.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">3</span>
+                <div>
+                  <div className="paso-titulo">Selecciona al alumno</div>
+                  <p className="nota">Vincula y confirma para evitar errores de calificacion.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div className="item-glass guia-card">
+            <div className="guia-card__header">
+              <span className="chip chip-static" aria-hidden="true">
+                <Icono nombre="recepcion" /> Manual
+              </span>
+            </div>
+            <ul className="guia-pasos">
+              <li className="guia-paso">
+                <span className="paso-num">1</span>
+                <div>
+                  <div className="paso-titulo">Ubica el folio impreso</div>
+                  <p className="nota">Copialo tal cual aparece en la hoja.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">2</span>
+                <div>
+                  <div className="paso-titulo">Captura folio y alumno</div>
+                  <p className="nota">Elige el alumno correcto antes de vincular.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">3</span>
+                <div>
+                  <div className="paso-titulo">Vincula y guarda</div>
+                  <p className="nota">Confirma el mensaje de Entrega vinculada.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -4749,7 +4857,7 @@ function SeccionEscaneo({
             <b>Pagina:</b> inicia en 1 (P1). Usa 2, 3, etc. si analizas mas paginas.
           </li>
           <li>
-            <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz.
+            <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz. En movil, usa la camara directa.
           </li>
         </ul>
         <p>
@@ -4759,6 +4867,81 @@ function SeccionEscaneo({
           Tips: evita sombras; mantén la hoja recta; incluye el QR completo.
         </p>
       </AyudaFormulario>
+      <div className="subpanel guia-visual">
+        <h3>
+          <Icono nombre="escaneo" /> Guia rapida de escaneo
+        </h3>
+        <div className="guia-flujo" aria-hidden="true">
+          <Icono nombre="pdf" />
+          <Icono nombre="chevron" className="icono icono--muted" />
+          <Icono nombre="escaneo" />
+          <Icono nombre="chevron" className="icono icono--muted" />
+          <Icono nombre="calificar" />
+          <span>Hoja a imagen a analisis a ajuste</span>
+        </div>
+        <div className="guia-grid">
+          <div className="item-glass guia-card">
+            <div className="guia-card__header">
+              <span className="chip chip-static" aria-hidden="true">
+                <Icono nombre="escaneo" /> Con movil
+              </span>
+            </div>
+            <ul className="guia-pasos">
+              <li className="guia-paso">
+                <span className="paso-num">1</span>
+                <div>
+                  <div className="paso-titulo">Conecta el movil</div>
+                  <p className="nota">Misma red WiFi: abre http://IP-DE-TU-PC:PUERTO (reemplaza localhost).</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">2</span>
+                <div>
+                  <div className="paso-titulo">Abre la camara</div>
+                  <p className="nota">En "Imagen" elige Tomar foto y captura la hoja.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">3</span>
+                <div>
+                  <div className="paso-titulo">Analiza y ajusta</div>
+                  <p className="nota">Revisa las respuestas y corrige si es necesario.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div className="item-glass guia-card">
+            <div className="guia-card__header">
+              <span className="chip chip-static" aria-hidden="true">
+                <Icono nombre="pdf" /> Manual
+              </span>
+            </div>
+            <ul className="guia-pasos">
+              <li className="guia-paso">
+                <span className="paso-num">1</span>
+                <div>
+                  <div className="paso-titulo">Escanea en PC</div>
+                  <p className="nota">Usa un escaner o camara web con buena nitidez.</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">2</span>
+                <div>
+                  <div className="paso-titulo">Sube la imagen</div>
+                  <p className="nota">Selecciona la pagina correcta (P1, P2...).</p>
+                </div>
+              </li>
+              <li className="guia-paso">
+                <span className="paso-num">3</span>
+                <div>
+                  <div className="paso-titulo">Valida QR y respuestas</div>
+                  <p className="nota">Confirma folio y ajusta respuestas con baja confianza.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <label className="campo">
         Folio
         <input value={folio} onChange={(event) => setFolio(event.target.value)} />
@@ -4773,7 +4956,7 @@ function SeccionEscaneo({
       </label>
       <label className="campo">
         Imagen
-        <input type="file" accept="image/*" onChange={cargarArchivo} />
+        <input type="file" accept="image/*" capture="environment" onChange={cargarArchivo} />
       </label>
       <Boton type="button" icono={<Icono nombre="escaneo" />} cargando={analizando} disabled={!puedeAnalizar} onClick={analizar}>
         {analizando ? 'Analizando…' : 'Analizar'}
@@ -5330,12 +5513,22 @@ function SeccionPaqueteSincronizacion({
 
 function SeccionSincronizacion({
   periodos,
+  periodosArchivados,
+  alumnos,
+  plantillas,
+  preguntas,
+  ultimaActualizacionDatos,
   onPublicar,
   onCodigo,
   onExportarPaquete,
   onImportarPaquete
 }: {
   periodos: Periodo[];
+  periodosArchivados: Periodo[];
+  alumnos: Alumno[];
+  plantillas: Plantilla[];
+  preguntas: Pregunta[];
+  ultimaActualizacionDatos: number | null;
   onPublicar: (periodoId: string) => Promise<unknown>;
   onCodigo: (periodoId: string) => Promise<{ codigo?: string; expiraEn?: string }>;
   onExportarPaquete: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<{
@@ -5350,10 +5543,168 @@ function SeccionSincronizacion({
     | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
   >;
 }) {
+  const [sincronizaciones, setSincronizaciones] = useState<RegistroSincronizacion[]>([]);
+  const [cargandoEstado, setCargandoEstado] = useState(false);
+  const [errorEstado, setErrorEstado] = useState('');
+  const montadoRef = useRef(true);
+
+  const resumenDatos = useMemo(
+    () => ({
+      materiasActivas: periodos.length,
+      materiasArchivadas: periodosArchivados.length,
+      alumnos: alumnos.length,
+      plantillas: plantillas.length,
+      banco: preguntas.length
+    }),
+    [periodos.length, periodosArchivados.length, alumnos.length, plantillas.length, preguntas.length]
+  );
+
+  function formatearFecha(valor?: string) {
+    if (!valor) return '-';
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return '-';
+    return d.toLocaleString();
+  }
+
+  function normalizarEstado(estado?: string) {
+    const lower = String(estado || '').toLowerCase();
+    if (lower.includes('exitos')) return { clase: 'ok', texto: 'Exitosa' };
+    if (lower.includes('fall')) return { clase: 'error', texto: 'Fallida' };
+    if (lower.includes('pend')) return { clase: 'warn', texto: 'Pendiente' };
+    return { clase: 'info', texto: 'Sin dato' };
+  }
+
+  const ordenarSincronizaciones = useCallback((lista: RegistroSincronizacion[]) => {
+    return [...lista].sort((a, b) => {
+      const fechaA = new Date(a.ejecutadoEn || a.createdAt || 0).getTime();
+      const fechaB = new Date(b.ejecutadoEn || b.createdAt || 0).getTime();
+      return fechaB - fechaA;
+    });
+  }, []);
+
+  const sincronizacionReciente = sincronizaciones[0];
+  const fechaActualizacion = ultimaActualizacionDatos ? new Date(ultimaActualizacionDatos).toLocaleString() : '-';
+
+  const refrescarEstado = useCallback(() => {
+    setCargandoEstado(true);
+    setErrorEstado('');
+    clienteApi
+      .obtener<{ sincronizaciones?: RegistroSincronizacion[] }>('/sincronizaciones?limite=6')
+      .then((payload) => {
+        if (!montadoRef.current) return;
+        const lista = Array.isArray(payload.sincronizaciones) ? payload.sincronizaciones : [];
+        setSincronizaciones(ordenarSincronizaciones(lista));
+      })
+      .catch((error) => {
+        if (!montadoRef.current) return;
+        setSincronizaciones([]);
+        setErrorEstado(mensajeDeError(error, 'No se pudo obtener el estado de sincronización'));
+      })
+      .finally(() => {
+        if (!montadoRef.current) return;
+        setCargandoEstado(false);
+      });
+  }, [ordenarSincronizaciones]);
+
+  useEffect(() => {
+    montadoRef.current = true;
+    const timer = window.setTimeout(() => {
+      if (!montadoRef.current) return;
+      refrescarEstado();
+    }, 0);
+    return () => {
+      montadoRef.current = false;
+      window.clearTimeout(timer);
+    };
+  }, [refrescarEstado]);
+
   return (
-    <div className="sincronizacion-grid">
-      <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
-      <SeccionPaqueteSincronizacion periodos={periodos} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
+    <div className="panel">
+      <div className="panel">
+        <h2>
+          <Icono nombre="publicar" /> Sincronización y estado de datos
+        </h2>
+        <p className="nota">
+          Esta pantalla concentra la sincronización con el portal y el intercambio de paquetes entre equipos.
+        </p>
+        <div className="estado-datos-grid">
+          <div className="item-glass estado-datos-card">
+            <div className="estado-datos-header">
+              <div>
+                <div className="estado-datos-titulo">Estado de datos locales</div>
+                <div className="nota">Actualizado: {fechaActualizacion}</div>
+              </div>
+              <span className="estado-chip info">Local</span>
+            </div>
+            <div className="estado-datos-cifras">
+              <div>
+                <div className="estado-datos-numero">{resumenDatos.materiasActivas}</div>
+                <div className="nota">Materias activas</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{resumenDatos.materiasArchivadas}</div>
+                <div className="nota">Materias archivadas</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{resumenDatos.alumnos}</div>
+                <div className="nota">Alumnos</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{resumenDatos.plantillas}</div>
+                <div className="nota">Plantillas</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{resumenDatos.banco}</div>
+                <div className="nota">Banco de preguntas</div>
+              </div>
+            </div>
+          </div>
+          <div className="item-glass estado-datos-card">
+            <div className="estado-datos-header">
+              <div>
+                <div className="estado-datos-titulo">Ultima sincronización</div>
+                <div className="nota">
+                  {sincronizacionReciente ? formatearFecha(sincronizacionReciente.ejecutadoEn || sincronizacionReciente.createdAt) : 'Sin registros'}
+                </div>
+              </div>
+              <span className={`estado-chip ${normalizarEstado(sincronizacionReciente?.estado).clase}`}>
+                {normalizarEstado(sincronizacionReciente?.estado).texto}
+              </span>
+            </div>
+            <div className="estado-datos-lista">
+              {(sincronizaciones.length ? sincronizaciones : [{} as RegistroSincronizacion]).slice(0, 4).map((item, idx) => {
+                if (!item || !item.estado) {
+                  return (
+                    <div key={`vacio-${idx}`} className="estado-datos-item">
+                      <div className="nota">No hay historial disponible.</div>
+                    </div>
+                  );
+                }
+                const estado = normalizarEstado(item.estado);
+                return (
+                  <div key={item._id || `sync-${idx}`} className="estado-datos-item">
+                    <span className={`estado-chip ${estado.clase}`}>{estado.texto}</span>
+                    <div>
+                      <div className="estado-datos-item__titulo">{String(item.tipo || 'publicacion').toUpperCase()}</div>
+                      <div className="nota">{formatearFecha(item.ejecutadoEn || item.createdAt)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {errorEstado && <InlineMensaje tipo="warning">{errorEstado}</InlineMensaje>}
+            <div className="acciones">
+              <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoEstado} onClick={() => refrescarEstado()}>
+                {cargandoEstado ? 'Actualizando.' : 'Actualizar estado'}
+              </Boton>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="sincronizacion-grid">
+        <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
+        <SeccionPaqueteSincronizacion periodos={periodos} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
+      </div>
     </div>
   );
 }
