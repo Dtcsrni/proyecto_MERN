@@ -27,7 +27,8 @@ export const esquemaExportarPaquete = z.object({
 export const esquemaImportarPaquete = z.object({
   paqueteBase64: z.string().min(40),
   checksumSha256: z.string().regex(/^[a-f0-9]{64}$/i).optional(),
-  dryRun: z.boolean().optional()
+  dryRun: z.boolean().optional(),
+  docenteCorreo: z.string().email().optional()
 });
 
 // Sincronizacion asincrona push/pull con servidor intermedio.

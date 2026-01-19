@@ -8,6 +8,7 @@ import { Periodo } from '../src/modulos/modulo_alumnos/modeloPeriodo';
 import { Alumno } from '../src/modulos/modulo_alumnos/modeloAlumno';
 import { BancoPregunta } from '../src/modulos/modulo_banco_preguntas/modeloBancoPregunta';
 import { ExamenPlantilla } from '../src/modulos/modulo_generacion_pdf/modeloExamenPlantilla';
+import { Docente } from '../src/modulos/modulo_autenticacion/modeloDocente';
 
 vi.mock('../src/configuracion', () => ({
   configuracion: {
@@ -27,6 +28,16 @@ function crearRespuesta() {
     status: vi.fn().mockReturnThis(),
     json: vi.fn()
   } as unknown as Response;
+}
+
+async function asegurarDocente(docenteId: string, correo: string) {
+  await Docente.create({
+    _id: docenteId,
+    correo,
+    nombreCompleto: 'Docente Test',
+    roles: ['docente'],
+    activo: true
+  });
 }
 
 describe('sincronizacion nube', () => {
@@ -79,6 +90,7 @@ describe('sincronizacion nube', () => {
   it('exporta e importa un paquete (idempotente)', async () => {
     const docenteId = '507f1f77bcf86cd799439012';
     const periodoId = '507f1f77bcf86cd799439011';
+    await asegurarDocente(docenteId, 'docente@test.com');
 
     await Periodo.create({
       _id: periodoId,
@@ -173,9 +185,46 @@ describe('sincronizacion nube', () => {
     expect(alumnoImportado?.nombreCompleto).toBe('Ana Lopez');
   });
 
+  it('permite importar por correo cuando cambia el docenteId', async () => {
+    const docenteIdOrigen = '507f1f77bcf86cd799439112';
+    const docenteIdDestino = '507f1f77bcf86cd799439113';
+    const correo = 'docente-mismo@test.com';
+    const periodoId = '507f1f77bcf86cd799439111';
+
+    await asegurarDocente(docenteIdOrigen, correo);
+    await Periodo.create({
+      _id: periodoId,
+      docenteId: docenteIdOrigen,
+      nombre: 'Historia',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z'),
+      grupos: ['A']
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId: docenteIdOrigen } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await limpiarMongoTest();
+    await asegurarDocente(docenteIdDestino, correo);
+
+    const resImport = crearRespuesta();
+    await importarPaquete(
+      { body: { paqueteBase64: payload.paqueteBase64, checksumSha256: payload.checksumSha256 }, docenteId: docenteIdDestino } as SolicitudDocente,
+      resImport
+    );
+
+    expect(await Periodo.countDocuments({ docenteId: docenteIdDestino })).toBe(1);
+    expect(await Periodo.countDocuments({ docenteId: docenteIdOrigen })).toBe(0);
+  });
+
   it('bloquea importacion si el checksum no coincide (anti-corrupcion)', async () => {
     const docenteId = '507f1f77bcf86cd799439032';
     const periodoId = '507f1f77bcf86cd799439031';
+    await asegurarDocente(docenteId, 'docente-check@test.com');
 
     await Periodo.create({
       _id: periodoId,
@@ -219,6 +268,7 @@ describe('sincronizacion nube', () => {
   it('permite dryRun para validar sin aplicar cambios', async () => {
     const docenteId = '507f1f77bcf86cd799439042';
     const periodoId = '507f1f77bcf86cd799439041';
+    await asegurarDocente(docenteId, 'docente-dry@test.com');
 
     await Periodo.create({
       _id: periodoId,
@@ -262,6 +312,7 @@ describe('sincronizacion nube', () => {
   it('no sobreescribe registros mas nuevos (LWW por updatedAt)', async () => {
     const docenteId = '507f1f77bcf86cd799439022';
     const periodoId = '507f1f77bcf86cd799439021';
+    await asegurarDocente(docenteId, 'docente-lww@test.com');
 
     await Periodo.create({
       _id: periodoId,

@@ -43,6 +43,7 @@ Durante la importación:
 
 Notas:
 - El paquete solo se puede importar en la misma cuenta/docente (mismo `docenteId`).
+- El paquete incluye `docenteCorreo` y la importacion valida contra el correo de la sesion activa.
 - Si incluyes PDFs, el backend limita el tamaño para evitar paquetes gigantes.
 
 ## Endpoints (API)
