@@ -4838,17 +4838,48 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [qrFallo, setQrFallo] = useState(false);
+  const [hostManual, setHostManual] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('qrHostDocente') ?? '';
+  });
+
+  function normalizarHostManual(valor: string) {
+    return valor.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  }
 
   useEffect(() => {
     let activo = true;
     setQrFallo(false);
+    setError('');
+    setCargando(true);
     const params = new URLSearchParams(window.location.search);
     params.set('vista', vista);
     const qs = params.toString();
     const ruta = window.location.pathname || '/';
     const puerto = window.location.port ? `:${window.location.port}` : '';
     const construirUrl = (host: string) => `${window.location.protocol}//${host}${puerto}${ruta}${qs ? `?${qs}` : ''}`;
+    const construirUrlDesdeHost = (host: string) => {
+      const limpio = normalizarHostManual(host);
+      if (!limpio) return '';
+      const tienePuerto = limpio.includes(':');
+      const hostFinal = tienePuerto ? limpio : `${limpio}${puerto}`;
+      return `${window.location.protocol}//${hostFinal}${ruta}${qs ? `?${qs}` : ''}`;
+    };
+    const hostManualLimpio = normalizarHostManual(hostManual);
     const hostname = window.location.hostname;
+
+    if (hostManualLimpio) {
+      const url = construirUrlDesdeHost(hostManualLimpio);
+      const timer = window.setTimeout(() => {
+        if (!activo) return;
+        setUrlMovil(url);
+        setCargando(false);
+      }, 0);
+      return () => {
+        activo = false;
+        window.clearTimeout(timer);
+      };
+    }
 
     if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
     const url = `${window.location.protocol}//${window.location.host}${ruta}${qs ? `?${qs}` : ''}`;
@@ -4867,8 +4898,14 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
       .then((resp) => (resp.ok ? resp.json() : Promise.reject(new Error('Respuesta invalida'))))
       .then((data) => {
         if (!activo) return;
-        const ip = String(data?.preferida || (Array.isArray(data?.ips) ? data.ips[0] : '')).trim();
+        const ips = Array.isArray(data?.ips) ? data.ips.map((ip: unknown) => String(ip || '').trim()).filter(Boolean) : [];
+        const esPreferida = (ip: string) => ip.startsWith('192.168.') || ip.startsWith('10.');
+        const esDocker = (ip: string) => /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip);
+        const ip = String(ips.find(esPreferida) || ips.find((val) => !esDocker(val)) || data?.preferida || ips[0] || '').trim();
         if (!ip) throw new Error('Sin IP local');
+        if (esDocker(ip) && !ips.some(esPreferida)) {
+          setError('Detecte una IP de Docker. Escribe la IP de tu PC para generar el QR.');
+        }
         setUrlMovil(construirUrl(ip));
       })
       .catch(() => {
@@ -4912,9 +4949,28 @@ function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
         </div>
       )}
       {(error || qrFallo) && (
-        <InlineMensaje tipo="warning">
-          {error || 'No se pudo generar el QR. Usa el enlace manual para abrir en el movil.'}
-        </InlineMensaje>
+        <>
+          <InlineMensaje tipo="warning">
+            {error || 'No se pudo generar el QR. Usa el enlace manual para abrir en el movil.'}
+          </InlineMensaje>
+          <label className="campo">
+            IP o host del PC para QR
+            <input
+              type="text"
+              value={hostManual}
+              onChange={(event) => {
+                const valor = event.target.value;
+                setHostManual(valor);
+                if (typeof window !== 'undefined') {
+                  const limpio = normalizarHostManual(valor);
+                  if (limpio) localStorage.setItem('qrHostDocente', limpio);
+                  else localStorage.removeItem('qrHostDocente');
+                }
+              }}
+              placeholder="192.168.1.50 o mi-pc.local"
+            />
+          </label>
+        </>
       )}
     </div>
   );
