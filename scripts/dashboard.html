@@ -3019,7 +3019,8 @@
       const instantanea = obtenerSnapshotServicios();
       const totalEsperado = instantanea.items.filter((elemento) => elemento.expected).length;
       if (!totalEsperado) return 'info';
-      if (instantanea.downCount > 0) return 'error';
+      if (instantanea.downCount === totalEsperado) return 'error';
+      if (instantanea.downCount > 0) return 'warn';
       if (instantanea.okCount === totalEsperado) return 'ok';
       return 'warn';
     }
@@ -3030,8 +3031,8 @@
 
       const mapa = {
         ok: { etiqueta: 'Sistema: OK', pista: 'Todos los servicios esperados están activos.' },
-        warn: { etiqueta: 'Sistema: Atención', pista: 'Servicios sin comprobar o estado parcial.' },
-        error: { etiqueta: 'Sistema: Error', pista: 'Hay servicios esperados caídos o sin conexión.' },
+        warn: { etiqueta: 'Sistema: Atención', pista: 'Servicios en estado parcial o en arranque.' },
+        error: { etiqueta: 'Sistema: Error', pista: 'Todos los servicios esperados están caídos o sin conexión.' },
         info: { etiqueta: 'Sistema: Info', pista: 'No hay servicios esperados activos (stack detenido).' }
       };
       const claveAnimo = mapa[animo] ? animo : 'info';
