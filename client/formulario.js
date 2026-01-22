@@ -1,22 +1,23 @@
-/* CRUD mínimo con delegación
+/* eslint-env browser */
+/* CRUD mínimo con delegación 🧺🫧
    Estado (fuente de verdad) 🧱
    - listaReactivos: arreglo de objetos {pregunta, respuesta}
    - indiceEnEdicion: null si agregamos, o número si editamos
 
-   POE 🔔
-   - input: validar y habilitar botón de envío
+   POE (Programación Orientada a Eventos) 🔔
+   - input: validar y habilitar botón
    - submit: agregar o actualizar según indiceEnEdicion
    - click en lista: delegación para editar o eliminar
 
    Seguridad 🛡️
-   - textContent imprime texto del usuario sin riesgo típico de inyección (XSS)
+   - textContent para imprimir texto del usuario (evita riesgos típicos de XSS)
    - Evitar innerHTML como hábito
 */
 
 const listaReactivos = [];
 let indiceEnEdicion = null;
 
-const formularioReactivo = document.getElementById("formulario-reactivo");
+const formularioReactivo = document.getElementById("formularioReactivo"); // ✅ coincide con el HTML
 const textoPregunta = document.getElementById("textoPregunta");
 const textoRespuesta = document.getElementById("textoRespuesta");
 const textoError = document.getElementById("textoError");
@@ -38,10 +39,20 @@ if (
   throw new Error("Faltan elementos del DOM. Revisa IDs en el HTML.");
 }
 
+const MIN_CARACTERES_PREGUNTA = 10;
+
 function normalizarTexto(texto) {
-  // Nota: NO fuerzo a lower-case para no alterar respuestas propias (p. ej. SQL, siglas, nombres).
-  // Si lo quieres así, lo reactivamos, pero es una decisión de UX/dominio.
+  // No forzamos minúsculas para no deformar términos técnicos (SQL, HTTP, nombres) ✅
   return texto.trim().replace(/\s+/g, " ");
+}
+
+function ponerModoAgregar() {
+  indiceEnEdicion = null;
+  btnGuardar.textContent = "Guardar";
+}
+
+function ponerModoEdicion() {
+  btnGuardar.textContent = "Actualizar";
 }
 
 function validar() {
@@ -49,8 +60,11 @@ function validar() {
   const respuesta = normalizarTexto(textoRespuesta.value);
 
   let errorMsg = "";
-  if (pregunta.length < 10) errorMsg = "La pregunta debe tener al menos 10 caracteres.";
-  else if (respuesta.length === 0) errorMsg = "La respuesta no puede estar vacía.";
+  if (pregunta.length < MIN_CARACTERES_PREGUNTA) {
+    errorMsg = `La pregunta debe tener al menos ${MIN_CARACTERES_PREGUNTA} caracteres.`;
+  } else if (respuesta.length === 0) {
+    errorMsg = "La respuesta no puede estar vacía.";
+  }
 
   textoError.textContent = errorMsg;
   btnGuardar.disabled = Boolean(errorMsg);
@@ -59,19 +73,16 @@ function validar() {
 }
 
 function limpiarFormulario() {
-  // reset() ya limpia inputs/textarea del form; no hace falta limpiar dos veces.
   formularioReactivo.reset();
   textoError.textContent = "";
   btnGuardar.disabled = true;
+  ponerModoAgregar();
 
-  indiceEnEdicion = null;
   mensaje.textContent = "Listo.";
-
   textoPregunta.focus();
 }
 
 function pintar() {
-  // CORRECCIÓN: aquí usabas listaEnPantalla, pero tu variable real es listaReactivosElemento
   listaReactivosElemento.textContent = "";
   textoVacio.style.display = listaReactivos.length ? "none" : "block";
 
@@ -104,12 +115,11 @@ function pintar() {
 
     li.appendChild(texto);
     li.appendChild(acciones);
-
     listaReactivosElemento.appendChild(li);
   }
 }
 
-/* Delegación 🫧: un listener para todos los botones en la lista */
+/* Delegación 🫧 */
 listaReactivosElemento.addEventListener("click", (e) => {
   const boton = e.target.closest("button");
   if (!boton) return;
@@ -119,16 +129,15 @@ listaReactivosElemento.addEventListener("click", (e) => {
   if (!accion || Number.isNaN(indice)) return;
 
   if (accion === "eliminar") {
-    if (!confirm("¿Eliminar este reactivo? 🗑️")) return;
+    if (!window.confirm("¿Eliminar este reactivo? 🗑️")) return;
 
     listaReactivos.splice(indice, 1);
 
-    // Si eliminaste el que estabas editando, salimos de edición ✅
     if (indiceEnEdicion === indice) {
       limpiarFormulario();
       mensaje.textContent = "Se eliminó el reactivo que estabas editando 🧯";
     } else {
-      // Si borras uno “antes” del editado, el índice se recorre: ajustamos para evitar apuntar al equivocado.
+      // Si borras uno antes del editado, el índice se recorre 🧠
       if (indiceEnEdicion !== null && indice < indiceEnEdicion) {
         indiceEnEdicion -= 1;
       }
@@ -144,7 +153,9 @@ listaReactivosElemento.addEventListener("click", (e) => {
     textoPregunta.value = listaReactivos[indice].pregunta;
     textoRespuesta.value = listaReactivos[indice].respuesta;
 
+    ponerModoEdicion();
     validar();
+
     mensaje.textContent = `Editando reactivo #${indice + 1} ✏️`;
     textoPregunta.focus();
   }
@@ -154,7 +165,7 @@ listaReactivosElemento.addEventListener("click", (e) => {
 textoPregunta.addEventListener("input", validar);
 textoRespuesta.addEventListener("input", validar);
 
-/* Guardar: agrega o actualiza según indiceEnEdicion 🧱 */
+/* Submit: agrega o actualiza 🧱 */
 formularioReactivo.addEventListener("submit", (e) => {
   e.preventDefault();
   if (!validar()) return;
@@ -177,5 +188,6 @@ formularioReactivo.addEventListener("submit", (e) => {
 });
 
 /* Inicio 🚀 */
+mensaje.textContent = "Listo. Agrega un reactivo.";
 validar();
 pintar();
