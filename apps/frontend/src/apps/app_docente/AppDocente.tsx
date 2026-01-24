@@ -180,8 +180,25 @@ function preguntaTieneCodigo(pregunta: Pregunta): boolean {
 type ResultadoOmr = {
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   advertencias: string[];
+  qrTexto?: string;
 };
 
+type PreviewCalificacion = {
+  aciertos: number;
+  totalReactivos: number;
+  calificacionExamenFinalTexto?: string;
+  calificacionExamenTexto?: string;
+  calificacionParcialTexto?: string;
+  calificacionGlobalTexto?: string;
+};
+
+type ResultadoAnalisisOmr = {
+  resultado: ResultadoOmr;
+  examenId: string;
+  folio: string;
+  numeroPagina: number;
+  alumnoId?: string | null;
+};
 
 function obtenerSesionDocenteId(): string {
   return obtenerSessionId('sesionDocenteId');
@@ -563,8 +580,9 @@ export function AppDocente() {
 
       {vista === 'calificaciones' && (
         <SeccionCalificaciones
+          alumnos={alumnos}
           onAnalizar={async (folio, numeroPagina, imagenBase64) => {
-            const respuesta = await clienteApi.enviar<{ resultado: ResultadoOmr; examenId: string }>('/omr/analizar', {
+            const respuesta = await clienteApi.enviar<ResultadoAnalisisOmr>('/omr/analizar', {
               folio,
               numeroPagina,
               imagenBase64
@@ -572,9 +590,12 @@ export function AppDocente() {
             setResultadoOmr(respuesta.resultado);
             setRespuestasEditadas(respuesta.resultado.respuestasDetectadas);
             setExamenIdOmr(respuesta.examenId);
-            const detalle = await clienteApi.obtener<{ examen?: { alumnoId?: string | null } }>(`/examenes/generados/folio/${folio}`);
-            setExamenAlumnoId(detalle.examen?.alumnoId ?? null);
+            setExamenAlumnoId(respuesta.alumnoId ?? null);
+            return respuesta;
           }}
+          onPrevisualizar={async (payload) =>
+            clienteApi.enviar<{ preview: PreviewCalificacion }>('/calificaciones/calificar', { ...payload, soloPreview: true })
+          }
           resultado={resultadoOmr}
           respuestas={respuestasEditadas}
           onActualizar={(nuevas) => setRespuestasEditadas(nuevas)}
@@ -5501,12 +5522,20 @@ function QrAccesoMovil({ vista }: { vista: 'entrega' | 'calificaciones' }) {
 }
 
 function SeccionEscaneo({
+  alumnos,
   onAnalizar,
+  onPrevisualizar,
   resultado,
   respuestas,
   onActualizar
 }: {
-  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<void>;
+  alumnos: Alumno[];
+  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<ResultadoAnalisisOmr>;
+  onPrevisualizar: (payload: {
+    examenGeneradoId: string;
+    alumnoId?: string | null;
+    respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+  }) => Promise<{ preview: PreviewCalificacion }>;
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
@@ -5516,17 +5545,56 @@ function SeccionEscaneo({
   const [imagenBase64, setImagenBase64] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [analizando, setAnalizando] = useState(false);
+  const [procesandoLote, setProcesandoLote] = useState(false);
+  const [lote, setLote] = useState<
+    Array<{
+      id: string;
+      nombre: string;
+      imagenBase64: string;
+      estado: 'pendiente' | 'analizando' | 'precalificando' | 'listo' | 'error';
+      mensaje?: string;
+      folio?: string;
+      numeroPagina?: number;
+      alumnoId?: string | null;
+      preview?: PreviewCalificacion | null;
+    }>
+  >([]);
 
-  const puedeAnalizar = Boolean(folio.trim() && imagenBase64);
+  const puedeAnalizar = Boolean(imagenBase64);
+  const paginaManual = Number.isFinite(numeroPagina) ? Math.max(0, Math.floor(numeroPagina)) : 0;
+  const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [item._id, item.nombreCompleto])), [alumnos]);
+
+  async function leerArchivoBase64(archivo: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => resolve(String(lector.result || ''));
+      lector.onerror = () => reject(new Error('No se pudo leer el archivo'));
+      lector.readAsDataURL(archivo);
+    });
+  }
 
   async function cargarArchivo(event: ChangeEvent<HTMLInputElement>) {
     const archivo = event.target.files?.[0];
     if (!archivo) return;
-    const lector = new FileReader();
-    lector.onload = () => {
-      setImagenBase64(String(lector.result || ''));
-    };
-    lector.readAsDataURL(archivo);
+    setImagenBase64(await leerArchivoBase64(archivo));
+  }
+
+  async function cargarLote(event: ChangeEvent<HTMLInputElement>) {
+    const archivos = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (archivos.length === 0) return;
+    const nuevos: typeof lote = [];
+    for (const archivo of archivos) {
+      const base64 = await leerArchivoBase64(archivo);
+      nuevos.push({
+        id: `${archivo.name}-${archivo.size}-${archivo.lastModified}-${Math.random().toString(16).slice(2)}`,
+        nombre: archivo.name,
+        imagenBase64: base64,
+        estado: 'pendiente',
+        preview: null
+      });
+    }
+    setLote((prev) => [...nuevos, ...prev]);
   }
 
   async function analizar() {
@@ -5534,7 +5602,7 @@ function SeccionEscaneo({
       const inicio = Date.now();
       setAnalizando(true);
       setMensaje('');
-      await onAnalizar(folio.trim(), Math.max(1, Math.floor(numeroPagina)), imagenBase64);
+      await onAnalizar(folio.trim(), paginaManual > 0 ? paginaManual : 0, imagenBase64);
       setMensaje('Analisis completado');
       emitToast({ level: 'ok', title: 'Escaneo', message: 'Analisis completado', durationMs: 2200 });
       registrarAccionDocente('analizar_omr', true, Date.now() - inicio);
@@ -5554,6 +5622,42 @@ function SeccionEscaneo({
     }
   }
 
+  async function analizarLote() {
+    if (procesandoLote || lote.length === 0) return;
+    setProcesandoLote(true);
+    for (const item of lote) {
+      if (item.estado === 'listo') continue;
+      setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'analizando', mensaje: '' } : i)));
+      try {
+        const respuesta = await onAnalizar(folio.trim(), paginaManual, item.imagenBase64);
+        setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'precalificando' } : i)));
+        const preview = await onPrevisualizar({
+          examenGeneradoId: respuesta.examenId,
+          alumnoId: respuesta.alumnoId ?? undefined,
+          respuestasDetectadas: respuesta.resultado.respuestasDetectadas
+        });
+        setLote((prev) =>
+          prev.map((i) =>
+            i.id === item.id
+              ? {
+                  ...i,
+                  estado: 'listo',
+                  folio: respuesta.folio,
+                  numeroPagina: respuesta.numeroPagina,
+                  alumnoId: respuesta.alumnoId ?? null,
+                  preview: preview.preview
+                }
+              : i
+          )
+        );
+      } catch (error) {
+        const msg = mensajeDeError(error, 'No se pudo analizar');
+        setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'error', mensaje: msg } : i)));
+      }
+    }
+    setProcesandoLote(false);
+  }
+
   return (
     <div className="panel">
       <h2>
@@ -5565,17 +5669,17 @@ function SeccionEscaneo({
         </p>
         <ul className="lista">
           <li>
-            <b>Folio:</b> debe coincidir con el examen generado.
+            <b>Folio:</b> opcional si el QR esta legible (se detecta automaticamente).
           </li>
           <li>
-            <b>Pagina:</b> inicia en 1 (P1). Usa 2, 3, etc. si analizas mas paginas.
+            <b>Pagina:</b> opcional si el QR incluye el numero de pagina.
           </li>
           <li>
             <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz. En movil, usa la camara directa.
           </li>
         </ul>
         <p>
-          Ejemplo: folio <code>FOLIO-000123</code>, pagina <code>1</code>, imagen <code>hoja1.jpg</code>.
+          Ejemplo: folio <code>FOLIO-000123</code>, pagina <code>1</code>, imagen <code>hoja1.jpg</code> (o deja folio/pagina vacios si el QR es legible).
         </p>
         <p>
           Tips: evita sombras; mantén la hoja recta; incluye el QR completo.
@@ -5659,14 +5763,16 @@ function SeccionEscaneo({
       </div>
       <label className="campo">
         Folio
-        <input value={folio} onChange={(event) => setFolio(event.target.value)} />
+        <input value={folio} onChange={(event) => setFolio(event.target.value)} placeholder="Si se deja vacio, se lee del QR" />
       </label>
       <label className="campo">
         Pagina
         <input
           type="number"
+          min={0}
           value={numeroPagina}
           onChange={(event) => setNumeroPagina(Number(event.target.value))}
+          placeholder="0 = detectar por QR"
         />
       </label>
       <label className="campo">
@@ -5676,6 +5782,60 @@ function SeccionEscaneo({
       <Boton type="button" icono={<Icono nombre="escaneo" />} cargando={analizando} disabled={!puedeAnalizar} onClick={analizar}>
         {analizando ? 'Analizando…' : 'Analizar'}
       </Boton>
+      <div className="separador" />
+      <label className="campo">
+        Lote de imagenes (bulk)
+        <input type="file" accept="image/*" multiple onChange={cargarLote} />
+      </label>
+      <Boton type="button" icono={<Icono nombre="escaneo" />} cargando={procesandoLote} disabled={lote.length === 0} onClick={analizarLote}>
+        {procesandoLote ? 'Analizando lote…' : `Analizar lote (${lote.length})`}
+      </Boton>
+      {lote.length > 0 && (
+        <div className="resultado">
+          <h3>Procesamiento en lote</h3>
+          <progress
+            value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error').length}
+            max={lote.length}
+          />
+          <ul className="lista lista-items">
+            {lote.map((item) => (
+              <li key={item.id}>
+                <div className="item-glass">
+                  <div className="item-row">
+                    <div>
+                      <div className="item-title">{item.nombre}</div>
+                      <div className="item-sub">
+                        {item.estado === 'pendiente' && 'En cola'}
+                        {item.estado === 'analizando' && 'Analizando…'}
+                        {item.estado === 'precalificando' && 'Precalificando…'}
+                        {item.estado === 'listo' && 'Listo'}
+                        {item.estado === 'error' && `Error: ${item.mensaje ?? ''}`}
+                      </div>
+                      {item.folio && (
+                        <div className="item-sub">
+                          Folio {item.folio} · P{item.numeroPagina ?? '-'} · {item.alumnoId ? (mapaAlumnos.get(item.alumnoId) ?? item.alumnoId) : 'Alumno sin vincular'}
+                        </div>
+                      )}
+                      {item.preview && (
+                        <div className="item-sub">
+                          Aciertos {item.preview.aciertos}/{item.preview.totalReactivos} · {item.preview.calificacionExamenFinalTexto ?? '-'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="item-actions">
+                      <img
+                        src={item.imagenBase64}
+                        alt={`preview ${item.nombre}`}
+                        style={{ width: 120, height: 'auto', borderRadius: 8, border: '1px solid #dde3ea' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
@@ -5738,7 +5898,9 @@ function SeccionEscaneo({
 }
 
 function SeccionCalificaciones({
+  alumnos,
   onAnalizar,
+  onPrevisualizar,
   resultado,
   respuestas,
   onActualizar,
@@ -5746,7 +5908,13 @@ function SeccionCalificaciones({
   alumnoId,
   onCalificar
 }: {
-  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<void>;
+  alumnos: Alumno[];
+  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<ResultadoAnalisisOmr>;
+  onPrevisualizar: (payload: {
+    examenGeneradoId: string;
+    alumnoId?: string | null;
+    respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+  }) => Promise<{ preview: PreviewCalificacion }>;
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
@@ -5774,7 +5942,14 @@ function SeccionCalificaciones({
           Escanea el examen para detectar respuestas automaticamente y despues guarda la calificacion.
         </p>
       </div>
-      <SeccionEscaneo onAnalizar={onAnalizar} resultado={resultado} respuestas={respuestas} onActualizar={onActualizar} />
+      <SeccionEscaneo
+        alumnos={alumnos}
+        onAnalizar={onAnalizar}
+        onPrevisualizar={onPrevisualizar}
+        resultado={resultado}
+        respuestas={respuestas}
+        onActualizar={onActualizar}
+      />
       <SeccionCalificar
         examenId={examenId}
         alumnoId={alumnoId}

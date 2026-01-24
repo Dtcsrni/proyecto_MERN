@@ -66,7 +66,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   }
 
   const alumnoFinal = alumnoId ?? examen.alumnoId;
-  if (!alumnoFinal) {
+  if (!alumnoFinal && !soloPreview) {
     throw new ErrorAplicacion('ALUMNO_NO_ENCONTRADO', 'Alumno no vinculado al examen', 400);
   }
 
