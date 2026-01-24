@@ -1,5 +1,5 @@
 /**
- * App docente: panel basico para banco, examenes, recepcion, escaneo y calificacion.
+ * App docente: panel basico para banco, examenes, entrega y calificacion.
  */
 import type { ChangeEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -27,9 +27,8 @@ const VISTAS_VALIDAS = new Set([
   'alumnos',
   'banco',
   'plantillas',
-  'recepcion',
-  'escaneo',
-  'calificar',
+  'entrega',
+  'calificaciones',
   'publicar',
   'cuenta'
 ]);
@@ -38,7 +37,13 @@ function obtenerVistaInicial(): string {
   if (typeof window === 'undefined') return 'periodos';
   const params = new URLSearchParams(window.location.search);
   const vista = String(params.get('vista') || '').trim();
-  return VISTAS_VALIDAS.has(vista) ? vista : 'periodos';
+  const alias: Record<string, string> = {
+    recepcion: 'entrega',
+    escaneo: 'calificaciones',
+    calificar: 'calificaciones'
+  };
+  const normalizada = alias[vista] ?? vista;
+  return VISTAS_VALIDAS.has(normalizada) ? normalizada : 'periodos';
 }
 const patronNombreMateria = /^[\p{L}\p{N}][\p{L}\p{N}\s\-_.()#&/]*$/u;
 
@@ -319,9 +324,8 @@ export function AppDocente() {
         { id: 'alumnos', label: 'Alumnos', icono: 'alumnos' as const },
         { id: 'banco', label: 'Banco', icono: 'banco' as const },
         { id: 'plantillas', label: 'Plantillas', icono: 'plantillas' as const },
-        { id: 'recepcion', label: 'Recepcion', icono: 'recepcion' as const },
-        { id: 'escaneo', label: 'Escaneo', icono: 'escaneo' as const },
-        { id: 'calificar', label: 'Calificar', icono: 'calificar' as const },
+        { id: 'entrega', label: 'Entrega', icono: 'recepcion' as const },
+        { id: 'calificaciones', label: 'Calificaciones', icono: 'calificar' as const },
         { id: 'publicar', label: 'Sincronización', icono: 'publicar' as const },
         { id: 'cuenta', label: 'Cuenta', icono: 'info' as const }
       ],
@@ -549,12 +553,16 @@ export function AppDocente() {
         />
       )}
 
-      {vista === 'recepcion' && (
-        <SeccionRecepcion alumnos={alumnos} onVincular={(folio, alumnoId) => clienteApi.enviar('/entregas/vincular-folio', { folio, alumnoId })} />
+      {vista === 'entrega' && (
+        <SeccionEntrega
+          alumnos={alumnos}
+          periodos={periodos}
+          onVincular={(folio, alumnoId) => clienteApi.enviar('/entregas/vincular-folio', { folio, alumnoId })}
+        />
       )}
 
-      {vista === 'escaneo' && (
-        <SeccionEscaneo
+      {vista === 'calificaciones' && (
+        <SeccionCalificaciones
           onAnalizar={async (folio, numeroPagina, imagenBase64) => {
             const respuesta = await clienteApi.enviar<{ resultado: ResultadoOmr; examenId: string }>('/omr/analizar', {
               folio,
@@ -570,14 +578,8 @@ export function AppDocente() {
           resultado={resultadoOmr}
           respuestas={respuestasEditadas}
           onActualizar={(nuevas) => setRespuestasEditadas(nuevas)}
-        />
-      )}
-
-      {vista === 'calificar' && (
-        <SeccionCalificar
           examenId={examenIdOmr}
           alumnoId={examenAlumnoId}
-          respuestasDetectadas={respuestasEditadas}
           onCalificar={(payload) => clienteApi.enviar('/calificaciones/calificar', payload)}
         />
       )}
@@ -4363,7 +4365,7 @@ function SeccionPlantillas({
       <h3>Generar examen</h3>
       <AyudaFormulario titulo="Generar examen (PDF)">
         <p>
-          <b>Proposito:</b> crear un examen en PDF con <b>folio</b> y <b>QR por pagina</b>. Ese folio se usa para recepcion, escaneo OMR y calificacion.
+          <b>Proposito:</b> crear un examen en PDF con <b>folio</b> y <b>QR por pagina</b>. Ese folio se usa para entrega y calificacion.
         </p>
         <ul className="lista">
           <li>
@@ -4670,7 +4672,7 @@ function SeccionPlantillas({
   );
 }
 
-function SeccionRecepcion({
+function SeccionRegistroEntrega({
   alumnos,
   onVincular
 }: {
@@ -4891,7 +4893,7 @@ function SeccionRecepcion({
       setMensaje('');
       await onVincular(folio.trim(), alumnoId);
       setMensaje('Entrega vinculada');
-      emitToast({ level: 'ok', title: 'Recepcion', message: 'Entrega vinculada', durationMs: 2200 });
+      emitToast({ level: 'ok', title: 'Entrega', message: 'Entrega vinculada', durationMs: 2200 });
       registrarAccionDocente('vincular_entrega', true, Date.now() - inicio);
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo vincular');
@@ -4912,7 +4914,7 @@ function SeccionRecepcion({
   return (
     <div className="panel">
       <h2>
-        <Icono nombre="recepcion" /> Recepcion de examenes
+        <Icono nombre="recepcion" /> Registro de entrega
       </h2>
       <AyudaFormulario titulo="Para que sirve y como llenarlo">
         <p>
@@ -4943,7 +4945,7 @@ function SeccionRecepcion({
           <span>Examen a folio a alumno</span>
         </div>
         <div className="guia-grid">
-          <QrAccesoMovil vista="recepcion" />
+          <QrAccesoMovil vista="entrega" />
           <div className="item-glass guia-card">
             <div className="guia-card__header">
               <span className="chip chip-static" aria-hidden="true">
@@ -5080,6 +5082,240 @@ function SeccionRecepcion({
   );
 }
 
+function SeccionEntrega({
+  alumnos,
+  periodos,
+  onVincular
+}: {
+  alumnos: Alumno[];
+  periodos: Periodo[];
+  onVincular: (folio: string, alumnoId: string) => Promise<unknown>;
+}) {
+  type ExamenGeneradoEntrega = {
+    _id: string;
+    folio: string;
+    alumnoId?: string | null;
+    estado?: string;
+    periodoId?: string;
+    generadoEn?: string;
+    entregadoEn?: string;
+  };
+
+  const [periodoId, setPeriodoId] = useState('');
+  const [filtro, setFiltro] = useState('');
+  const [examenes, setExamenes] = useState<ExamenGeneradoEntrega[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [mensaje, setMensaje] = useState('');
+
+  useEffect(() => {
+    if (periodoId || periodos.length === 0) return;
+    const primero = periodos[0]?._id ?? '';
+    if (primero) setPeriodoId(primero);
+  }, [periodoId, periodos]);
+
+  const alumnosPorId = useMemo(() => {
+    const mapa = new Map<string, Alumno>();
+    for (const a of Array.isArray(alumnos) ? alumnos : []) {
+      mapa.set(a._id, a);
+    }
+    return mapa;
+  }, [alumnos]);
+
+  const formatearFechaHora = useCallback((valor?: string) => {
+    const v = String(valor || '').trim();
+    if (!v) return '-';
+    const d = new Date(v);
+    if (!Number.isFinite(d.getTime())) return v;
+    return d.toLocaleString();
+  }, []);
+
+  const cargarExamenes = useCallback(async () => {
+    if (!periodoId) {
+      setExamenes([]);
+      return;
+    }
+    try {
+      setCargando(true);
+      setMensaje('');
+      const payload = await clienteApi.obtener<{ examenes: ExamenGeneradoEntrega[] }>(
+        `/examenes/generados?periodoId=${encodeURIComponent(periodoId)}`
+      );
+      setExamenes(Array.isArray(payload.examenes) ? payload.examenes : []);
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo cargar el listado de examenes');
+      setMensaje(msg);
+    } finally {
+      setCargando(false);
+    }
+  }, [periodoId]);
+
+  useEffect(() => {
+    void cargarExamenes();
+  }, [cargarExamenes]);
+
+  const vincularYRefrescar = useCallback(
+    async (folio: string, alumnoId: string) => {
+      await onVincular(folio, alumnoId);
+      await cargarExamenes();
+    },
+    [onVincular, cargarExamenes]
+  );
+
+  const filtroNormalizado = filtro.trim().toLowerCase();
+  const examenesFiltrados = useMemo(() => {
+    if (!filtroNormalizado) return examenes;
+    return examenes.filter((examen) => {
+      const alumno = examen.alumnoId ? alumnosPorId.get(examen.alumnoId) : null;
+      const texto = [
+        examen.folio,
+        alumno?.matricula ?? '',
+        alumno?.nombreCompleto ?? ''
+      ]
+        .join(' ')
+        .toLowerCase();
+      return texto.includes(filtroNormalizado);
+    });
+  }, [examenes, filtroNormalizado, alumnosPorId]);
+
+  const entregados = useMemo(() => {
+    return examenesFiltrados.filter((examen) => {
+      const estado = String(examen.estado ?? '').toLowerCase();
+      return estado === 'entregado' || estado === 'calificado';
+    });
+  }, [examenesFiltrados]);
+
+  const pendientes = useMemo(() => {
+    return examenesFiltrados.filter((examen) => {
+      const estado = String(examen.estado ?? '').toLowerCase();
+      return estado !== 'entregado' && estado !== 'calificado';
+    });
+  }, [examenesFiltrados]);
+
+  return (
+    <>
+      <div className="panel">
+        <h2>
+          <Icono nombre="recepcion" /> Entrega de examenes
+        </h2>
+        <AyudaFormulario titulo="Resumen de entrega">
+          <p>
+            <b>Proposito:</b> registrar entregas y ver el estado de cada examen generado.
+            Los entregados muestran fecha de entrega; los pendientes indican folios sin registro.
+          </p>
+          <ul className="lista">
+            <li>
+              <b>Entregados:</b> estado entregado o calificado.
+            </li>
+            <li>
+              <b>Pendientes:</b> estado generado (aun sin entrega).
+            </li>
+          </ul>
+        </AyudaFormulario>
+      </div>
+
+      <SeccionRegistroEntrega alumnos={alumnos} onVincular={vincularYRefrescar} />
+
+      <div className="panel">
+        <div className="item-row">
+          <div>
+            <h3>Estado de entregas</h3>
+            <div className="nota">
+              Total: {examenesFiltrados.length} · Entregados: {entregados.length} · Pendientes: {pendientes.length}
+            </div>
+          </div>
+          <div className="item-actions">
+            <Boton type="button" variante="secundario" onClick={() => void cargarExamenes()}>
+              Refrescar
+            </Boton>
+          </div>
+        </div>
+
+        <label className="campo">
+          Materia
+          <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
+            <option value="">Selecciona</option>
+            {periodos.map((periodo) => (
+              <option key={periodo._id} value={periodo._id}>
+                {periodo.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="campo">
+          Buscar (folio o alumno)
+          <input
+            value={filtro}
+            onChange={(event) => setFiltro(event.target.value)}
+            placeholder="FOLIO-000123 o 2024-001"
+          />
+        </label>
+
+        {mensaje && <InlineMensaje tipo="error">{mensaje}</InlineMensaje>}
+        {cargando && (
+          <p className="mensaje" role="status">
+            <Spinner /> Cargando entregas…
+          </p>
+        )}
+
+        <div className="resultado">
+          <h3>Entregados</h3>
+          {entregados.length === 0 && !cargando && <p className="nota">Aun no hay entregas registradas.</p>}
+          <ul className="lista lista-items">
+            {entregados.map((examen) => {
+              const alumno = examen.alumnoId ? alumnosPorId.get(examen.alumnoId) : null;
+              const alumnoTexto = alumno ? `${alumno.matricula} - ${alumno.nombreCompleto}` : 'Sin alumno';
+              return (
+                <li key={examen._id}>
+                  <div className="item-glass">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">Folio {examen.folio}</div>
+                        <div className="item-meta">
+                          <span>Alumno: {alumnoTexto}</span>
+                          <span>Entrega: {formatearFechaHora(examen.entregadoEn)}</span>
+                          <span>Estado: {String(examen.estado ?? 'entregado')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="resultado">
+          <h3>Pendientes</h3>
+          {pendientes.length === 0 && !cargando && <p className="nota">No hay pendientes.</p>}
+          <ul className="lista lista-items">
+            {pendientes.map((examen) => {
+              const alumno = examen.alumnoId ? alumnosPorId.get(examen.alumnoId) : null;
+              const alumnoTexto = alumno ? `${alumno.matricula} - ${alumno.nombreCompleto}` : 'Sin alumno';
+              return (
+                <li key={examen._id}>
+                  <div className="item-glass">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">Folio {examen.folio}</div>
+                        <div className="item-meta">
+                          <span>Alumno: {alumnoTexto}</span>
+                          <span>Generado: {formatearFechaHora(examen.generadoEn)}</span>
+                          <span>Estado: {String(examen.estado ?? 'generado')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function detectarModoMovil() {
   if (typeof window === 'undefined') return false;
   const ua = String(navigator?.userAgent ?? '');
@@ -5089,7 +5325,7 @@ function detectarModoMovil() {
   return esUa || (coarse && narrow);
 }
 
-function QrAccesoMovil({ vista }: { vista: 'recepcion' | 'escaneo' }) {
+function QrAccesoMovil({ vista }: { vista: 'entrega' | 'calificaciones' }) {
   const [urlMovil, setUrlMovil] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -5358,7 +5594,7 @@ function SeccionEscaneo({
           <span>Hoja a imagen a analisis a ajuste</span>
         </div>
         <div className="guia-grid">
-          <QrAccesoMovil vista="escaneo" />
+          <QrAccesoMovil vista="calificaciones" />
           <div className="item-glass guia-card">
             <div className="guia-card__header">
               <span className="chip chip-static" aria-hidden="true">
@@ -5498,6 +5734,54 @@ function SeccionEscaneo({
         </div>
       )}
     </div>
+  );
+}
+
+function SeccionCalificaciones({
+  onAnalizar,
+  resultado,
+  respuestas,
+  onActualizar,
+  examenId,
+  alumnoId,
+  onCalificar
+}: {
+  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<void>;
+  resultado: ResultadoOmr | null;
+  respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
+  examenId: string | null;
+  alumnoId: string | null;
+  onCalificar: (payload: {
+    examenGeneradoId: string;
+    alumnoId?: string | null;
+    aciertos?: number;
+    totalReactivos?: number;
+    bonoSolicitado?: number;
+    evaluacionContinua?: number;
+    proyecto?: number;
+    retroalimentacion?: string;
+    respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+  }) => Promise<unknown>;
+}) {
+  return (
+    <>
+      <div className="panel">
+        <h2>
+          <Icono nombre="calificar" /> Calificaciones
+        </h2>
+        <p className="nota">
+          Escanea el examen para detectar respuestas automaticamente y despues guarda la calificacion.
+        </p>
+      </div>
+      <SeccionEscaneo onAnalizar={onAnalizar} resultado={resultado} respuestas={respuestas} onActualizar={onActualizar} />
+      <SeccionCalificar
+        examenId={examenId}
+        alumnoId={alumnoId}
+        respuestasDetectadas={respuestas}
+        onCalificar={onCalificar}
+      />
+    </>
   );
 }
 

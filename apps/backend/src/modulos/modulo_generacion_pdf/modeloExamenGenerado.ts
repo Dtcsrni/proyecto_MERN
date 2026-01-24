@@ -13,6 +13,7 @@ const ExamenGeneradoSchema = new Schema(
     loteId: { type: String },
     folio: { type: String, required: true, unique: true },
     estado: { type: String, enum: ['generado', 'entregado', 'calificado'], default: 'generado' },
+    entregadoEn: { type: Date },
     // Snapshot del set de preguntas (no necesariamente el orden); ayuda para regenerar PDFs sin re-muestrear.
     preguntasIds: [{ type: Schema.Types.ObjectId, ref: 'BancoPregunta' }],
     mapaVariante: { type: Schema.Types.Mixed, required: true },
