@@ -34,6 +34,7 @@ export async function vincularEntrega(req: SolicitudDocente, res: Response) {
 
   examen.alumnoId = alumnoId;
   examen.estado = 'entregado';
+  examen.entregadoEn = new Date();
   await examen.save();
 
   const entrega = await Entrega.create({
@@ -65,6 +66,7 @@ export async function vincularEntregaPorFolio(req: SolicitudDocente, res: Respon
 
   examen.alumnoId = alumnoId;
   examen.estado = 'entregado';
+  examen.entregadoEn = new Date();
   await examen.save();
 
   const entrega = await Entrega.create({
