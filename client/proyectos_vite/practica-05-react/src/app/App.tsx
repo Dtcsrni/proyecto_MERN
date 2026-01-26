@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import './App.css';
+import '../App.css';
 import { getSession, login, logout } from './auth';
 
 // Componente principal de la aplicación
@@ -85,5 +85,4 @@ export default function App() {
 }
 
 
- }
 
