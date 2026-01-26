@@ -20,8 +20,8 @@ Este documento describe el sistema de roles/permisos para el backend docente y s
 
 ## Permisos disponibles
 
-- `alumnos:leer`, `alumnos:gestionar`
-- `periodos:leer`, `periodos:gestionar`, `periodos:archivar`
+- `alumnos:leer`, `alumnos:gestionar`, `alumnos:eliminar_dev`
+- `periodos:leer`, `periodos:gestionar`, `periodos:archivar`, `periodos:eliminar_dev`
 - `banco:leer`, `banco:gestionar`, `banco:archivar`
 - `plantillas:leer`, `plantillas:gestionar`, `plantillas:archivar`, `plantillas:previsualizar`, `plantillas:eliminar_dev`
 - `examenes:leer`, `examenes:generar`, `examenes:archivar`, `examenes:regenerar`, `examenes:descargar`
@@ -36,7 +36,7 @@ Este documento describe el sistema de roles/permisos para el backend docente y s
 ## Mapeo de permisos por rol (resumen)
 
 - `admin`: todos los permisos.
-- `docente`: todos excepto `docentes:administrar` y `plantillas:eliminar_dev` (dev).
+- `docente`: todos excepto `docentes:administrar` y permisos `*_eliminar_dev` (dev).
 - `coordinador`: sin `omr:analizar`, `calificaciones:calificar` ni `calificaciones:publicar`.
 - `auxiliar`: lectura + `entregas:gestionar`, `omr:analizar`, `calificaciones:calificar`.
 - `lector`: solo lectura (sin escritura, sin OMR/calificación).
@@ -54,7 +54,7 @@ Requieren `docentes:administrar`:
 
 - El backend es la fuente de verdad y bloquea todo acceso sin permisos.
 - El frontend muestra/oculta secciones y deshabilita acciones segun `permisos` (formularios, botones y acciones criticas).
-- `plantillas:eliminar_dev` solo se permite en `NODE_ENV=development`.
+- `plantillas:eliminar_dev`, `periodos:eliminar_dev` y `alumnos:eliminar_dev` solo se permiten en `NODE_ENV=development`.
 
 ## Contraste UI (WCAG)
 

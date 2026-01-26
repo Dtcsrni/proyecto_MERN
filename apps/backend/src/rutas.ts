@@ -21,6 +21,7 @@ import rutasCalificaciones from './modulos/modulo_calificacion/rutasCalificacion
 import rutasAnaliticas from './modulos/modulo_analiticas/rutasAnaliticas';
 import rutasSincronizacionNube from './modulos/modulo_sincronizacion_nube/rutasSincronizacionNube';
 import rutasAdminDocentes from './modulos/modulo_admin_docentes/rutasAdminDocentes';
+import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
 
 export function crearRouterApi() {
   const router = Router();
@@ -40,6 +41,7 @@ export function crearRouterApi() {
   router.use('/calificaciones', rutasCalificaciones);
   router.use('/analiticas', rutasAnaliticas);
   router.use('/sincronizaciones', rutasSincronizacionNube);
+  router.use('/papelera', rutasPapelera);
   router.use('/admin', rutasAdminDocentes);
 
   return router;

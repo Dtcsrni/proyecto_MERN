@@ -32,6 +32,7 @@ import { ExamenGenerado } from './modeloExamenGenerado';
 import { ExamenPlantilla } from './modeloExamenPlantilla';
 import { generarPdfExamen } from './servicioGeneracionPdf';
 import { generarVariante } from './servicioVariantes';
+import { guardarEnPapelera } from '../modulo_papelera/servicioPapelera';
 
 type MapaVariante = {
   ordenPreguntas: string[];
@@ -396,6 +397,27 @@ export async function eliminarPlantillaDev(req: SolicitudDocente, res: Response)
 
   const examenes = await ExamenGenerado.find({ docenteId, plantillaId }).select('_id').lean();
   const examenesIds = examenes.map((examen) => String(examen._id));
+
+  const [entregasDocs, calificacionesDocs, banderasDocs] = examenesIds.length
+    ? await Promise.all([
+        Entrega.find({ docenteId, examenGeneradoId: { $in: examenesIds } }).lean(),
+        Calificacion.find({ docenteId, examenGeneradoId: { $in: examenesIds } }).lean(),
+        BanderaRevision.find({ docenteId, examenGeneradoId: { $in: examenesIds } }).lean()
+      ])
+    : [[], [], []];
+
+  await guardarEnPapelera({
+    docenteId,
+    tipo: 'plantilla',
+    entidadId: plantillaId,
+    payload: {
+      plantilla,
+      examenes,
+      entregas: entregasDocs,
+      calificaciones: calificacionesDocs,
+      banderas: banderasDocs
+    }
+  });
 
   const [entregasResp, calificacionesResp, banderasResp] = examenesIds.length
     ? await Promise.all([

@@ -6,6 +6,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AppAlumno } from './apps/app_alumno/AppAlumno';
 import { AppDocente } from './apps/app_docente/AppDocente';
 import { TemaProvider } from './tema/TemaProvider';
+import { TooltipLayer } from './ui/ux/tooltip/TooltipLayer';
 
 function establecerFavicon(href: string) {
   if (typeof document === 'undefined') return;
@@ -37,6 +38,7 @@ function App() {
       <main className="page">
         {googleClientId && destino !== 'alumno' ? <GoogleOAuthProvider clientId={googleClientId}>{contenido}</GoogleOAuthProvider> : contenido}
       </main>
+      <TooltipLayer />
     </TemaProvider>
   );
 }

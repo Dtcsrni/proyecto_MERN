@@ -778,6 +778,16 @@ function classifyLine(text) {
   const normalized = normalizeLine(trimmed);
   const lower = normalized.toLowerCase();
   const isJson = normalized.startsWith('{') && normalized.includes('"msg"');
+  let mongoSeverity = null;
+  if (isJson) {
+    const match = normalized.match(/"s"\s*:\s*"([A-Z])"/);
+    if (match) {
+      const sev = match[1];
+      if (sev === 'I') mongoSeverity = 'info';
+      else if (sev === 'W') mongoSeverity = 'warn';
+      else if (sev === 'E' || sev === 'F') mongoSeverity = 'error';
+    }
+  }
 
   const isMongoNoise = isJson && (
     normalized.includes('"c":"NETWORK"') ||
@@ -803,13 +813,15 @@ function classifyLine(text) {
     lower.includes('checkpoint')
   );
 
-  let level = 'info';
-  if (lower.includes('error') || lower.includes('err!') || lower.includes('failed')) {
-    level = 'error';
-  } else if (lower.includes('warn')) {
-    level = 'warn';
-  } else if (lower.includes('ready') || lower.includes('listening') || lower.includes('compiled') || lower.includes('healthy')) {
-    level = 'ok';
+  let level = mongoSeverity || 'info';
+  if (!mongoSeverity) {
+    if (lower.includes('error') || lower.includes('err!') || lower.includes('failed')) {
+      level = 'error';
+    } else if (lower.includes('warn')) {
+      level = 'warn';
+    } else if (lower.includes('ready') || lower.includes('listening') || lower.includes('compiled') || lower.includes('healthy')) {
+      level = 'ok';
+    }
   }
 
   const noisy = (isMongoNoise || isMongoVerbose) && level !== 'error';
@@ -1030,6 +1042,8 @@ function restartAll(runningNames) {
 
 function requestAutoRestart(reason) {
   if (mode !== 'dev' || !autoRestart) return;
+  const lowerReason = String(reason || '').toLowerCase();
+  if (lowerReason.startsWith('frontend:')) return;
   if (restartTimer) clearTimeout(restartTimer);
   restartTimer = setTimeout(() => {
     restartTimer = null;

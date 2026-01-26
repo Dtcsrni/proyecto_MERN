@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import { validarCuerpo } from '../../compartido/validaciones/validar';
-import { archivarPeriodo, crearPeriodo, listarPeriodos } from './controladorPeriodos';
+import { archivarPeriodo, crearPeriodo, eliminarPeriodoDev, listarPeriodos } from './controladorPeriodos';
 import { esquemaBodyVacioOpcional, esquemaCrearPeriodo } from './validacionesPeriodos';
 import { requerirPermiso } from '../modulo_autenticacion/middlewarePermisos';
 
@@ -16,6 +16,12 @@ router.post(
   requerirPermiso('periodos:archivar'),
   validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
   archivarPeriodo
+);
+router.post(
+  '/:periodoId/eliminar',
+  requerirPermiso('periodos:eliminar_dev'),
+  validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
+  eliminarPeriodoDev
 );
 
 export default router;

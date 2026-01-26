@@ -7,9 +7,11 @@
 export const PERMISOS = [
   'alumnos:leer',
   'alumnos:gestionar',
+  'alumnos:eliminar_dev',
   'periodos:leer',
   'periodos:gestionar',
   'periodos:archivar',
+  'periodos:eliminar_dev',
   'banco:leer',
   'banco:gestionar',
   'banco:archivar',
@@ -161,4 +163,3 @@ export function permisosComoLista(roles: unknown): Permiso[] {
 export function tienePermiso(roles: unknown, permiso: Permiso): boolean {
   return permisosParaRoles(roles).has(permiso);
 }
-
