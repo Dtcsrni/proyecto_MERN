@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import { validarCuerpo } from '../../compartido/validaciones/validar';
-import { actualizarAlumno, crearAlumno, listarAlumnos } from './controladorAlumnos';
+import { actualizarAlumno, crearAlumno, eliminarAlumnoDev, listarAlumnos } from './controladorAlumnos';
 import { esquemaActualizarAlumno, esquemaCrearAlumno } from './validacionesAlumnos';
 import { requerirPermiso } from '../modulo_autenticacion/middlewarePermisos';
 
@@ -16,6 +16,11 @@ router.post(
   requerirPermiso('alumnos:gestionar'),
   validarCuerpo(esquemaActualizarAlumno, { strict: true }),
   actualizarAlumno
+);
+router.post(
+  '/:alumnoId/eliminar',
+  requerirPermiso('alumnos:eliminar_dev'),
+  eliminarAlumnoDev
 );
 
 export default router;

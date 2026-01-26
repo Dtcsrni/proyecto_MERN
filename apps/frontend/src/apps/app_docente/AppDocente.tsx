@@ -16,7 +16,6 @@ import { Icono, Spinner } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 import { obtenerSessionId } from '../../ui/ux/sesion';
-import { TooltipLayer } from '../../ui/ux/tooltip/TooltipLayer';
 import { TemaBoton } from '../../tema/TemaBoton';
 import { tipoMensajeInline } from './mensajeInline';
 
@@ -377,6 +376,8 @@ export function AppDocente() {
     [puede]
   );
   const puedeEliminarPlantillaDev = esDev && esAdmin && puede('plantillas:eliminar_dev');
+  const puedeEliminarMateriaDev = esDev && esAdmin && puede('periodos:eliminar_dev');
+  const puedeEliminarAlumnoDev = esDev && esAdmin && puede('alumnos:eliminar_dev');
   const avisarSinPermiso = useCallback((mensaje: string) => {
     emitToast({ level: 'warn', title: 'Sin permisos', message: mensaje, durationMs: 4200 });
   }, []);
@@ -720,6 +721,7 @@ export function AppDocente() {
           onRefrescar={refrescarMaterias}
           onVerArchivadas={() => setVista('periodos_archivados')}
           permisos={permisosUI}
+          puedeEliminarMateriaDev={puedeEliminarMateriaDev}
           enviarConPermiso={enviarConPermiso}
           avisarSinPermiso={avisarSinPermiso}
         />
@@ -738,6 +740,7 @@ export function AppDocente() {
           periodosActivos={periodos}
           periodosTodos={[...periodos, ...periodosArchivados]}
           permisos={permisosUI}
+          puedeEliminarAlumnoDev={puedeEliminarAlumnoDev}
           enviarConPermiso={enviarConPermiso}
           avisarSinPermiso={avisarSinPermiso}
           onRefrescar={() => {
@@ -899,7 +902,14 @@ export function AppDocente() {
         />
       )}
 
-      {vista === 'cuenta' && <SeccionCuenta docente={docente} onDocenteActualizado={setDocente} />}
+      {vista === 'cuenta' && (
+        <SeccionCuenta
+          docente={docente}
+          onDocenteActualizado={setDocente}
+          esAdmin={esAdmin}
+          esDev={esDev}
+        />
+      )}
     </div>
   ) : (
     <SeccionAutenticacion
@@ -941,7 +951,6 @@ export function AppDocente() {
         </InlineMensaje>
       )}
       {contenido}
-      <TooltipLayer />
     </section>
   );
 }
@@ -1613,7 +1622,17 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   );
 }
 
-function SeccionCuenta({ docente, onDocenteActualizado }: { docente: Docente; onDocenteActualizado: (d: Docente) => void }) {
+function SeccionCuenta({
+  docente,
+  onDocenteActualizado,
+  esAdmin,
+  esDev
+}: {
+  docente: Docente;
+  onDocenteActualizado: (d: Docente) => void;
+  esAdmin: boolean;
+  esDev: boolean;
+}) {
   const [contrasenaNueva, setContrasenaNueva] = useState('');
   const [contrasenaNueva2, setContrasenaNueva2] = useState('');
   const [contrasenaActual, setContrasenaActual] = useState('');
@@ -1625,6 +1644,9 @@ function SeccionCuenta({ docente, onDocenteActualizado }: { docente: Docente; on
   const [lemaPdf, setLemaPdf] = useState(docente.preferenciasPdf?.lema ?? '');
   const [logoIzqPdf, setLogoIzqPdf] = useState(docente.preferenciasPdf?.logos?.izquierdaPath ?? '');
   const [logoDerPdf, setLogoDerPdf] = useState(docente.preferenciasPdf?.logos?.derechaPath ?? '');
+  const [papelera, setPapelera] = useState<Array<Record<string, unknown>>>([]);
+  const [cargandoPapelera, setCargandoPapelera] = useState(false);
+  const [restaurandoId, setRestaurandoId] = useState<string | null>(null);
 
   const coincide = contrasenaNueva && contrasenaNueva === contrasenaNueva2;
   const requierePwdActual = Boolean(docente.tieneContrasena);
@@ -1712,6 +1734,55 @@ function SeccionCuenta({ docente, onDocenteActualizado }: { docente: Docente; on
     }
   }
 
+  async function cargarPapelera() {
+    if (!esAdmin || !esDev) return;
+    setCargandoPapelera(true);
+    try {
+      const resp = await clienteApi.obtener<{ items: Array<Record<string, unknown>> }>('/papelera?limite=60');
+      setPapelera(resp.items ?? []);
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo cargar la papelera');
+      setMensaje(msg);
+    } finally {
+      setCargandoPapelera(false);
+    }
+  }
+
+  async function restaurarPapelera(id: string) {
+    setRestaurandoId(id);
+    try {
+      await clienteApi.enviar(`/papelera/${encodeURIComponent(id)}/restaurar`, {});
+      emitToast({ level: 'ok', title: 'Papelera', message: 'Elemento restaurado', durationMs: 2200 });
+      await cargarPapelera();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo restaurar');
+      setMensaje(msg);
+      emitToast({ level: 'error', title: 'Papelera', message: msg, durationMs: 4200 });
+    } finally {
+      setRestaurandoId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!esAdmin || !esDev) return;
+    void cargarPapelera();
+  }, [esAdmin, esDev]);
+
+  function formatearFechaPapelera(valor?: unknown) {
+    if (!valor) return '-';
+    const d = new Date(String(valor));
+    return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString();
+  }
+
+  function tituloPapelera(item: Record<string, unknown>) {
+    const payload = (item.payload as Record<string, unknown>) ?? {};
+    const tipo = String(item.tipo ?? '');
+    if (tipo === 'plantilla') return String((payload.plantilla as Record<string, unknown>)?.titulo ?? '').trim();
+    if (tipo === 'periodo') return String((payload.periodo as Record<string, unknown>)?.nombre ?? '').trim();
+    if (tipo === 'alumno') return String((payload.alumno as Record<string, unknown>)?.nombreCompleto ?? '').trim();
+    return '';
+  }
+
   return (
     <div className="panel">
       <h2>
@@ -1796,8 +1867,55 @@ function SeccionCuenta({ docente, onDocenteActualizado }: { docente: Docente; on
           </Boton>
         </div>
 
-        {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
+      {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
       </div>
+
+      {esAdmin && esDev && (
+        <div className="subpanel">
+          <h3>
+            <Icono nombre="info" /> Papelera (dev)
+          </h3>
+          <p className="nota">Elementos eliminados se conservan 45 dias y luego se eliminan automaticamente.</p>
+          <div className="acciones acciones--mt">
+            <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoPapelera} onClick={cargarPapelera}>
+              {cargandoPapelera ? 'Cargando...' : 'Actualizar papelera'}
+            </Boton>
+          </div>
+          {!cargandoPapelera && papelera.length === 0 && <InlineMensaje tipo="info">No hay elementos en papelera.</InlineMensaje>}
+          {papelera.length > 0 && (
+            <div className="lista lista--compacta">
+              {papelera.map((item) => {
+                const id = String(item._id ?? '');
+                const tipo = String(item.tipo ?? 'desconocido');
+                const entidadId = String(item.entidadId ?? '');
+                const titulo = tituloPapelera(item) || `${tipo} ${idCortoMateria(entidadId || id)}`;
+                const eliminadoEn = formatearFechaPapelera(item.eliminadoEn);
+                const expiraEn = formatearFechaPapelera(item.expiraEn);
+                return (
+                  <div key={id} className="item-glass">
+                    <div>
+                      <div className="texto-base">{titulo}</div>
+                      <div className="nota">Tipo: {tipo} · Eliminado: {eliminadoEn} · Expira: {expiraEn}</div>
+                    </div>
+                    <div className="acciones">
+                      <Boton
+                        type="button"
+                        variante="secundario"
+                        icono={<Icono nombre="ok" />}
+                        disabled={!id || restaurandoId === id}
+                        cargando={restaurandoId === id}
+                        onClick={() => restaurarPapelera(id)}
+                      >
+                        {restaurandoId === id ? 'Restaurando...' : 'Restaurar'}
+                      </Boton>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {Boolean(docente.tieneGoogle && hayGoogleConfigurado()) && (
         <div className="auth-google auth-google--mb">
@@ -3176,6 +3294,7 @@ function SeccionPeriodos({
   onRefrescar,
   onVerArchivadas,
   permisos,
+  puedeEliminarMateriaDev,
   enviarConPermiso,
   avisarSinPermiso
 }: {
@@ -3183,6 +3302,7 @@ function SeccionPeriodos({
   onRefrescar: () => void;
   onVerArchivadas: () => void;
   permisos: PermisosUI;
+  puedeEliminarMateriaDev: boolean;
   enviarConPermiso: EnviarConPermiso;
   avisarSinPermiso: (mensaje: string) => void;
 }) {
@@ -3193,6 +3313,7 @@ function SeccionPeriodos({
   const [mensaje, setMensaje] = useState('');
   const [creando, setCreando] = useState(false);
   const [archivandoId, setArchivandoId] = useState<string | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null);
   const puedeGestionar = permisos.periodos.gestionar;
   const puedeArchivar = permisos.periodos.archivar;
   const bloqueoEdicion = !puedeGestionar;
@@ -3345,6 +3466,46 @@ function SeccionPeriodos({
     }
   }
 
+  async function eliminarMateriaDev(periodo: Periodo) {
+    if (!puedeEliminarMateriaDev) {
+      avisarSinPermiso('No tienes permiso para eliminar materias en desarrollo.');
+      return;
+    }
+    const confirmado = globalThis.confirm(
+      `¿Eliminar la materia "${etiquetaMateria(periodo)}"?\n\nEsta accion solo existe en desarrollo y borrara alumnos, banco, plantillas y examenes asociados.`
+    );
+    if (!confirmado) return;
+
+    try {
+      const inicio = Date.now();
+      setEliminandoId(periodo._id);
+      setMensaje('');
+      await enviarConPermiso(
+        'periodos:eliminar_dev',
+        `/periodos/${periodo._id}/eliminar`,
+        {},
+        'No tienes permiso para eliminar materias en desarrollo.'
+      );
+      setMensaje('Materia eliminada');
+      emitToast({ level: 'ok', title: 'Materias', message: 'Materia eliminada', durationMs: 2200 });
+      registrarAccionDocente('eliminar_periodo', true, Date.now() - inicio);
+      onRefrescar();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo eliminar la materia');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'No se pudo eliminar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('eliminar_periodo', false);
+    } finally {
+      setEliminandoId(null);
+    }
+  }
+
   return (
     <div className="panel">
       <h2>
@@ -3450,6 +3611,17 @@ function SeccionPeriodos({
                   >
                     Archivar
                   </Boton>
+                  {puedeEliminarMateriaDev && (
+                    <Boton
+                      variante="secundario"
+                      type="button"
+                      cargando={eliminandoId === periodo._id}
+                      onClick={() => void eliminarMateriaDev(periodo)}
+                      disabled={!puedeEliminarMateriaDev}
+                    >
+                      Eliminar (DEV)
+                    </Boton>
+                  )}
                 </div>
               </div>
             </div>
@@ -3535,6 +3707,7 @@ function SeccionAlumnos({
   periodosTodos,
   onRefrescar,
   permisos,
+  puedeEliminarAlumnoDev,
   enviarConPermiso,
   avisarSinPermiso
 }: {
@@ -3543,6 +3716,7 @@ function SeccionAlumnos({
   periodosTodos: Periodo[];
   onRefrescar: () => void;
   permisos: PermisosUI;
+  puedeEliminarAlumnoDev: boolean;
   enviarConPermiso: EnviarConPermiso;
   avisarSinPermiso: (mensaje: string) => void;
 }) {
@@ -3558,6 +3732,7 @@ function SeccionAlumnos({
   const [creando, setCreando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [eliminandoAlumnoId, setEliminandoAlumnoId] = useState<string | null>(null);
   const puedeGestionar = permisos.alumnos.gestionar;
   const bloqueoEdicion = !puedeGestionar;
 
@@ -3756,6 +3931,46 @@ function SeccionAlumnos({
     }
   }
 
+  async function eliminarAlumnoDev(alumno: Alumno) {
+    if (!puedeEliminarAlumnoDev) {
+      avisarSinPermiso('No tienes permiso para eliminar alumnos en desarrollo.');
+      return;
+    }
+    const confirmado = globalThis.confirm(
+      `¿Eliminar el alumno "${alumno.nombreCompleto}"?\n\nEsta accion solo existe en desarrollo y borrara examenes asociados.`
+    );
+    if (!confirmado) return;
+
+    try {
+      const inicio = Date.now();
+      setEliminandoAlumnoId(alumno._id);
+      setMensaje('');
+      await enviarConPermiso(
+        'alumnos:eliminar_dev',
+        `/alumnos/${alumno._id}/eliminar`,
+        {},
+        'No tienes permiso para eliminar alumnos en desarrollo.'
+      );
+      setMensaje('Alumno eliminado');
+      emitToast({ level: 'ok', title: 'Alumnos', message: 'Alumno eliminado', durationMs: 2200 });
+      registrarAccionDocente('eliminar_alumno', true, Date.now() - inicio);
+      onRefrescar();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo eliminar el alumno');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'No se pudo eliminar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('eliminar_alumno', false);
+    } finally {
+      setEliminandoAlumnoId(null);
+    }
+  }
+
   return (
     <div className="panel">
       <h2>
@@ -3923,6 +4138,17 @@ function SeccionAlumnos({
                     <Boton variante="secundario" type="button" onClick={() => iniciarEdicion(alumno)} disabled={bloqueoEdicion}>
                       Editar
                     </Boton>
+                    {puedeEliminarAlumnoDev && (
+                      <Boton
+                        variante="secundario"
+                        type="button"
+                        cargando={eliminandoAlumnoId === alumno._id}
+                        onClick={() => void eliminarAlumnoDev(alumno)}
+                        disabled={!puedeEliminarAlumnoDev}
+                      >
+                        Eliminar (DEV)
+                      </Boton>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4679,6 +4905,7 @@ function SeccionPlantillas({
             icono={<Icono nombre="recargar" />}
             cargando={refrescandoPlantillas}
             onClick={() => void refrescarPlantillas()}
+            data-tooltip="Recarga la lista de plantillas desde el servidor."
           >
             {refrescandoPlantillas ? 'Actualizando…' : 'Actualizar'}
           </Boton>
@@ -4687,6 +4914,7 @@ function SeccionPlantillas({
             variante="secundario"
             disabled={!filtroPlantillas.trim()}
             onClick={limpiarFiltroPlantillas}
+            data-tooltip="Quita el filtro de busqueda y muestra todas las plantillas."
           >
             Limpiar filtro
           </Boton>
@@ -4731,18 +4959,33 @@ function SeccionPlantillas({
       <div className="plantillas-form">
         <label className="campo">
           Titulo
-          <input value={titulo} onChange={(event) => setTitulo(event.target.value)} disabled={bloqueoEdicion} />
+          <input
+            value={titulo}
+            onChange={(event) => setTitulo(event.target.value)}
+            disabled={bloqueoEdicion}
+            data-tooltip="Nombre visible de la plantilla."
+          />
         </label>
         <label className="campo">
           Tipo
-          <select value={tipo} onChange={(event) => setTipo(event.target.value as 'parcial' | 'global')} disabled={bloqueoEdicion}>
+          <select
+            value={tipo}
+            onChange={(event) => setTipo(event.target.value as 'parcial' | 'global')}
+            disabled={bloqueoEdicion}
+            data-tooltip="Define si es parcial o global."
+          >
             <option value="parcial">Parcial</option>
             <option value="global">Global</option>
           </select>
         </label>
         <label className="campo">
           Materia
-          <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)} disabled={bloqueoEdicion}>
+          <select
+            value={periodoId}
+            onChange={(event) => setPeriodoId(event.target.value)}
+            disabled={bloqueoEdicion}
+            data-tooltip="Materia a la que pertenece la plantilla."
+          >
             <option value="">Selecciona</option>
             {periodos.map((periodo) => (
               <option key={periodo._id} value={periodo._id} title={periodo._id}>
@@ -4760,15 +5003,22 @@ function SeccionPlantillas({
             value={numeroPaginas}
             onChange={(event) => setNumeroPaginas(Number(event.target.value))}
             disabled={bloqueoEdicion}
+            data-tooltip="Cantidad total de paginas del examen."
           />
         </label>
 
         <label className="campo plantillas-form__full">
           Instrucciones (opcional)
-          <textarea value={instrucciones} onChange={(event) => setInstrucciones(event.target.value)} rows={3} disabled={bloqueoEdicion} />
+          <textarea
+            value={instrucciones}
+            onChange={(event) => setInstrucciones(event.target.value)}
+            rows={3}
+            disabled={bloqueoEdicion}
+            data-tooltip="Texto opcional que aparece en el examen."
+          />
         </label>
 
-        <label className="campo plantillas-form__full">
+        <label className="campo plantillas-form__full" data-tooltip="Selecciona los temas que alimentan la plantilla.">
           Temas
           {periodoId && temasDisponibles.length === 0 && (
             <span className="ayuda">No hay temas para esta materia. Ve a &quot;Banco&quot; y crea preguntas con tema.</span>
@@ -4798,6 +5048,7 @@ function SeccionPlantillas({
                                 );
                               }}
                               disabled={bloqueoEdicion}
+                              data-tooltip="Incluye este tema en la plantilla."
                             />
                             Usar
                           </label>
@@ -4825,6 +5076,7 @@ function SeccionPlantillas({
             cargando={creando}
             disabled={!puedeCrear || bloqueoEdicion}
             onClick={crear}
+            data-tooltip="Crea una nueva plantilla con los datos actuales."
           >
             {creando ? 'Creando…' : 'Crear plantilla'}
           </Boton>
@@ -4836,10 +5088,11 @@ function SeccionPlantillas({
               cargando={guardandoPlantilla}
               disabled={!titulo.trim() || guardandoPlantilla || bloqueoEdicion}
               onClick={() => void guardarEdicion()}
+              data-tooltip="Guarda los cambios en la plantilla."
             >
               {guardandoPlantilla ? 'Guardando…' : 'Guardar cambios'}
             </Boton>
-            <Boton type="button" variante="secundario" onClick={cancelarEdicion}>
+            <Boton type="button" variante="secundario" onClick={cancelarEdicion} data-tooltip="Cancela la edicion actual.">
               Cancelar
             </Boton>
           </>
@@ -4860,7 +5113,12 @@ function SeccionPlantillas({
       <div className="plantillas-filtro">
         <label className="campo plantillas-filtro__campo">
           Buscar
-          <input value={filtroPlantillas} onChange={(e) => setFiltroPlantillas(e.target.value)} placeholder="Titulo, tema o ID…" />
+          <input
+            value={filtroPlantillas}
+            onChange={(e) => setFiltroPlantillas(e.target.value)}
+            placeholder="Titulo, tema o ID…"
+            data-tooltip="Filtra por titulo, tema o ID."
+          />
         </label>
         <div className="plantillas-filtro__resultado">
           {filtroPlantillas.trim() ? `Filtro: "${filtroPlantillas.trim()}"` : 'Sin filtros aplicados'}
@@ -4887,6 +5145,7 @@ function SeccionPlantillas({
                         <span>ID: {idCortoMateria(plantilla._id)}</span>
                         <span>Tipo: {plantilla.tipo}</span>
                         <span>Paginas: {Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas ?? 0) || '-'}</span>
+                        <span>Creada: {formatearFechaHora(plantilla.createdAt)}</span>
                         <span>Materia: {materia ? etiquetaMateria(materia) : '-'}</span>
                       </div>
                       <div className="item-sub">{modo}</div>
@@ -4905,6 +5164,7 @@ function SeccionPlantillas({
                                 cargando={cargandoPreviewPlantillaId === plantilla._id}
                                 onClick={() => void cargarPreviewPlantilla(plantilla._id)}
                                 disabled={!puedePrevisualizarPlantillas}
+                                data-tooltip="Genera el boceto de preguntas por pagina."
                               >
                                 {cargandoPreviewPlantillaId === plantilla._id ? 'Generando…' : 'Generar previsualizacion'}
                               </Boton>
@@ -4949,15 +5209,26 @@ function SeccionPlantillas({
                                     cargando={cargandoPreviewPdfPlantillaId === plantilla._id}
                                     onClick={() => void cargarPreviewPdfPlantilla(plantilla._id)}
                                     disabled={!puedePrevisualizarPlantillas}
+                                    data-tooltip="Genera el PDF final para revisarlo."
                                   >
                                     {cargandoPreviewPdfPlantillaId === plantilla._id ? 'Generando PDF…' : 'Ver PDF exacto'}
                                   </Boton>
                                 ) : (
                                   <>
-                                    <Boton type="button" variante="secundario" onClick={() => cerrarPreviewPdfPlantilla(plantilla._id)}>
+                                    <Boton
+                                      type="button"
+                                      variante="secundario"
+                                      onClick={() => cerrarPreviewPdfPlantilla(plantilla._id)}
+                                      data-tooltip="Oculta el PDF incrustado."
+                                    >
                                       Ocultar PDF
                                     </Boton>
-                                    <Boton type="button" variante="secundario" onClick={() => abrirPdfFullscreen(pdfUrl)}>
+                                    <Boton
+                                      type="button"
+                                      variante="secundario"
+                                      onClick={() => abrirPdfFullscreen(pdfUrl)}
+                                      data-tooltip="Abre el PDF en pantalla completa."
+                                    >
                                       Ver grande
                                     </Boton>
                                     <Boton
@@ -4968,6 +5239,7 @@ function SeccionPlantillas({
                                         if (!u) return;
                                         window.open(u, '_blank', 'noopener,noreferrer');
                                       }}
+                                      data-tooltip="Abre el PDF en una pestaña nueva."
                                     >
                                       Abrir en pestaña
                                     </Boton>
@@ -4984,7 +5256,12 @@ function SeccionPlantillas({
                               {pdfFullscreenUrl && (
                                 <div className="pdf-overlay" role="dialog" aria-modal="true">
                                   <div className="pdf-overlay__bar">
-                                    <Boton type="button" variante="secundario" onClick={cerrarPdfFullscreen}>
+                                    <Boton
+                                      type="button"
+                                      variante="secundario"
+                                      onClick={cerrarPdfFullscreen}
+                                      data-tooltip="Cierra la vista de PDF a pantalla completa."
+                                    >
                                       Cerrar
                                     </Boton>
                                   </div>
@@ -5041,10 +5318,17 @@ function SeccionPlantillas({
                         cargando={cargandoPreviewPlantillaId === plantilla._id}
                         onClick={() => void togglePreviewPlantilla(plantilla._id)}
                         disabled={!puedePrevisualizarPlantillas}
+                        data-tooltip="Muestra u oculta la previsualizacion."
                       >
                         {previewAbierta ? 'Ocultar previsualizacion' : 'Previsualizar'}
                       </Boton>
-                      <Boton type="button" variante="secundario" onClick={() => iniciarEdicion(plantilla)} disabled={!puedeGestionarPlantillas}>
+                      <Boton
+                        type="button"
+                        variante="secundario"
+                        onClick={() => iniciarEdicion(plantilla)}
+                        disabled={!puedeGestionarPlantillas}
+                        data-tooltip="Edita esta plantilla."
+                      >
                         Editar
                       </Boton>
                       {puedeEliminarPlantillaDev && (
@@ -5054,6 +5338,7 @@ function SeccionPlantillas({
                           cargando={eliminandoPlantillaId === plantilla._id}
                           onClick={() => void eliminarPlantillaDev(plantilla)}
                           disabled={!puedeEliminarPlantillaDev}
+                          data-tooltip="Elimina la plantilla (solo modo dev)."
                         >
                           Eliminar (DEV)
                         </Boton>
@@ -5064,6 +5349,7 @@ function SeccionPlantillas({
                         cargando={archivandoPlantillaId === plantilla._id}
                         onClick={() => void archivarPlantilla(plantilla)}
                         disabled={!puedeArchivarPlantillas}
+                        data-tooltip="Archiva la plantilla para ocultarla."
                       >
                         Archivar
                       </Boton>
@@ -5100,7 +5386,7 @@ function SeccionPlantillas({
       <div className="plantillas-form">
         <label className="campo">
           Plantilla
-          <select value={plantillaId} onChange={(event) => setPlantillaId(event.target.value)}>
+          <select value={plantillaId} onChange={(event) => setPlantillaId(event.target.value)} data-tooltip="Selecciona la plantilla a generar.">
             <option value="">Selecciona</option>
             {plantillas.map((plantilla) => (
               <option key={plantilla._id} value={plantilla._id}>
@@ -5111,7 +5397,7 @@ function SeccionPlantillas({
         </label>
         <label className="campo">
           Alumno (opcional)
-          <select value={alumnoId} onChange={(event) => setAlumnoId(event.target.value)}>
+          <select value={alumnoId} onChange={(event) => setAlumnoId(event.target.value)} data-tooltip="Asocia el examen a un alumno (opcional).">
             <option value="">Sin alumno</option>
             {alumnos.map((alumno) => (
               <option key={alumno._id} value={alumno._id}>
@@ -5128,6 +5414,7 @@ function SeccionPlantillas({
           icono={<Icono nombre="pdf" />}
           cargando={generando}
           disabled={!puedeGenerar}
+          data-tooltip="Genera el examen PDF usando la plantilla seleccionada."
           onClick={async () => {
             try {
               const inicio = Date.now();
@@ -5183,6 +5470,7 @@ function SeccionPlantillas({
           icono={<Icono nombre="pdf" />}
           cargando={generandoLote}
           disabled={!plantillaId || !plantillaSeleccionada?.periodoId || !puedeGenerarExamenes}
+          data-tooltip="Genera examenes para todos los alumnos activos de la materia."
           onClick={async () => {
             const ok = globalThis.confirm(
               '¿Generar examenes para TODOS los alumnos activos de la materia de esta plantilla? Esto puede tardar.'

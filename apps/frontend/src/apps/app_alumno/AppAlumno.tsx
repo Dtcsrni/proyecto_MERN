@@ -14,7 +14,6 @@ import { Boton } from '../../ui/ux/componentes/Boton';
 import { CampoTexto } from '../../ui/ux/componentes/CampoTexto';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 import { obtenerSessionId } from '../../ui/ux/sesion';
-import { TooltipLayer } from '../../ui/ux/tooltip/TooltipLayer';
 import { TemaBoton } from '../../tema/TemaBoton';
 import {
   accionCerrarSesion,
@@ -376,7 +375,6 @@ export function AppAlumno() {
           </ul>
         </div>
       )}
-      <TooltipLayer />
     </section>
   );
 }
