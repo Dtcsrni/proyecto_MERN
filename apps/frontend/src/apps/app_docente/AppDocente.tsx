@@ -697,6 +697,8 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
   const [mensaje, setMensaje] = useState('');
   const [modo, setModo] = useState<'ingresar' | 'registrar'>('ingresar');
   const [enviando, setEnviando] = useState(false);
+  const [cooldownHasta, setCooldownHasta] = useState<number | null>(null);
+  const cooldownTimer = useRef<number | null>(null);
   const [credentialRegistroGoogle, setCredentialRegistroGoogle] = useState<string | null>(null);
   const [crearContrasenaAhora, setCrearContrasenaAhora] = useState(true);
   const [mostrarRecuperar, setMostrarRecuperar] = useState(false);
@@ -717,6 +719,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
 
   const dominiosPermitidos = obtenerDominiosCorreoPermitidosFrontend();
   const politicaDominiosTexto = dominiosPermitidos.length > 0 ? textoDominiosPermitidos(dominiosPermitidos) : '';
+  const ahora = Date.now();
+  const cooldownMs = cooldownHasta ? Math.max(0, cooldownHasta - ahora) : 0;
+  const cooldownActivo = cooldownMs > 0;
+
+  useEffect(() => () => {
+    if (cooldownTimer.current) window.clearTimeout(cooldownTimer.current);
+  }, []);
 
   function correoPermitido(correoAValidar: string) {
     return esCorreoDeDominioPermitidoFrontend(correoAValidar, dominiosPermitidos);
@@ -748,8 +757,32 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     setMensaje('No existe una cuenta para ese correo. Completa tus datos para registrarte.');
   }
 
+  function iniciarCooldown(ms: number) {
+    const duracion = Math.max(1000, ms);
+    const restante = Math.ceil(duracion / 1000);
+    setCooldownHasta(Date.now() + duracion);
+    setMensaje(`Demasiadas solicitudes. Espera ${restante}s e intenta de nuevo.`);
+    if (cooldownTimer.current) {
+      window.clearTimeout(cooldownTimer.current);
+    }
+    cooldownTimer.current = window.setTimeout(() => {
+      setCooldownHasta(null);
+    }, duracion);
+  }
+
+  function bloquearSiEnCurso() {
+    if (enviando) return true;
+    if (cooldownActivo) {
+      const restante = Math.ceil(cooldownMs / 1000);
+      setMensaje(`Espera ${restante}s antes de intentar de nuevo.`);
+      return true;
+    }
+    return false;
+  }
+
   async function ingresar() {
     try {
+      if (bloquearSiEnCurso()) return;
       const inicio = Date.now();
       if (dominiosPermitidos.length > 0 && !correoPermitido(correo)) {
         const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
@@ -767,6 +800,10 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo ingresar');
       setMensaje(msg);
+
+      if (error instanceof ErrorRemoto && error.detalle?.status === 429) {
+        iniciarCooldown(8_000);
+      }
 
       const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
       const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
@@ -788,6 +825,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
 
   async function ingresarConGoogle(credential: string) {
     try {
+      if (bloquearSiEnCurso()) return;
       const inicio = Date.now();
       const payload = decodificarPayloadJwt(credential);
       const email = typeof payload?.email === 'string' ? payload.email : undefined;
@@ -807,6 +845,10 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo ingresar con Google');
       setMensaje(msg);
+
+      if (error instanceof ErrorRemoto && error.detalle?.status === 429) {
+        iniciarCooldown(8_000);
+      }
 
       const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
       const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
@@ -828,6 +870,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
 
   async function recuperarConGoogle() {
     try {
+      if (bloquearSiEnCurso()) return;
       const inicio = Date.now();
       setEnviando(true);
       setMensaje('');
@@ -863,6 +906,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
         durationMs: 5200,
         action: accionToastSesionParaError(error, 'docente')
       });
+      if (error instanceof ErrorRemoto && error.detalle?.status === 429) {
+        iniciarCooldown(8_000);
+      }
       registrarAccionDocente('recuperar_contrasena_google', false);
     } finally {
       setEnviando(false);
@@ -871,6 +917,7 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
 
   async function registrar() {
     try {
+      if (bloquearSiEnCurso()) return;
       const inicio = Date.now();
       if (dominiosPermitidos.length > 0 && !correoPermitido(correo)) {
         const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
@@ -921,6 +968,9 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
         durationMs: 5200,
         action: accionToastSesionParaError(error, 'docente')
       });
+      if (error instanceof ErrorRemoto && error.detalle?.status === 429) {
+        iniciarCooldown(8_000);
+      }
       registrarAccionDocente('registrar', false);
     } finally {
       setEnviando(false);
@@ -1288,13 +1338,13 @@ function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: string) => v
 
         {mostrarFormulario && (
           <div className="acciones">
-            <Boton
-              type="button"
-              icono={<Icono nombre={modo === 'ingresar' ? 'entrar' : 'nuevo'} />}
-              cargando={enviando}
-              disabled={modo === 'ingresar' ? !puedeIngresar : !puedeRegistrar}
-              onClick={modo === 'ingresar' ? ingresar : registrar}
-            >
+              <Boton
+                type="button"
+                icono={<Icono nombre={modo === 'ingresar' ? 'entrar' : 'nuevo'} />}
+                cargando={enviando}
+                disabled={cooldownActivo || (modo === 'ingresar' ? !puedeIngresar : !puedeRegistrar)}
+                onClick={modo === 'ingresar' ? ingresar : registrar}
+              >
               {modo === 'ingresar' ? (enviando ? 'Ingresando…' : 'Ingresar') : enviando ? 'Creando…' : 'Crear cuenta'}
             </Boton>
           </div>

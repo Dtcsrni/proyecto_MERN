@@ -32,36 +32,45 @@ import {
 const router = Router();
 
 const esTest = process.env.NODE_ENV === 'test';
+const esProduccion = configuracion.entorno === 'production';
 
-const limiterCredenciales = rateLimit({
-	windowMs: configuracion.rateLimitWindowMs,
-	limit: esTest ? 10_000 : 40,
-	standardHeaders: true,
-	legacyHeaders: false,
-	handler: (_req, res) => {
-		res.status(429).json({
-			error: {
-				codigo: 'RATE_LIMIT',
-				mensaje: 'Demasiados intentos, intenta mas tarde'
-			}
-		});
-	}
-});
+const sinRateLimit = (_req: Parameters<typeof router.post>[0], _res: Parameters<typeof router.post>[1], next: Parameters<typeof router.post>[2]) => {
+	next();
+};
 
-const limiterRefresco = rateLimit({
-	windowMs: configuracion.rateLimitWindowMs,
-	limit: esTest ? 10_000 : 240,
-	standardHeaders: true,
-	legacyHeaders: false,
-	handler: (_req, res) => {
-		res.status(429).json({
-			error: {
-				codigo: 'RATE_LIMIT',
-				mensaje: 'Demasiados intentos, intenta mas tarde'
-			}
-		});
-	}
-});
+const limiterCredenciales = esProduccion
+	? rateLimit({
+		windowMs: configuracion.rateLimitWindowMs,
+		limit: esTest ? 10_000 : configuracion.rateLimitCredencialesLimit,
+		standardHeaders: true,
+		legacyHeaders: false,
+		handler: (_req, res) => {
+			res.status(429).json({
+				error: {
+					codigo: 'RATE_LIMIT',
+					mensaje: 'Demasiados intentos, intenta mas tarde'
+				}
+			});
+		}
+	})
+	: sinRateLimit;
+
+const limiterRefresco = esProduccion
+	? rateLimit({
+		windowMs: configuracion.rateLimitWindowMs,
+		limit: esTest ? 10_000 : configuracion.rateLimitRefrescoLimit,
+		standardHeaders: true,
+		legacyHeaders: false,
+		handler: (_req, res) => {
+			res.status(429).json({
+				error: {
+					codigo: 'RATE_LIMIT',
+					mensaje: 'Demasiados intentos, intenta mas tarde'
+				}
+			});
+		}
+	})
+	: sinRateLimit;
 
 router.post('/registrar', limiterCredenciales, validarCuerpo(esquemaRegistrarDocente, { strict: true }), registrarDocente);
 router.post('/registrar-google', limiterCredenciales, validarCuerpo(esquemaRegistrarDocenteGoogle, { strict: true }), registrarDocenteGoogle);
