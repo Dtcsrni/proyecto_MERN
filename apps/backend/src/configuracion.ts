@@ -53,6 +53,16 @@ const rateLimitWindowMs = parsearNumeroSeguro(process.env.RATE_LIMIT_WINDOW_MS, 
   max: 24 * 60 * 60 * 1000
 });
 const rateLimitLimit = parsearNumeroSeguro(process.env.RATE_LIMIT_LIMIT, 300, { min: 1, max: 10_000 });
+const rateLimitCredencialesLimit = parsearNumeroSeguro(
+  process.env.RATE_LIMIT_CREDENCIALES_LIMIT,
+  entorno === 'production' ? 40 : 120,
+  { min: 1, max: 10_000 }
+);
+const rateLimitRefrescoLimit = parsearNumeroSeguro(
+  process.env.RATE_LIMIT_REFRESCO_LIMIT,
+  entorno === 'production' ? 240 : 600,
+  { min: 1, max: 10_000 }
+);
 
 // OMR: limite del tamaño de la imagen en base64 (en caracteres) para evitar payloads abusivos.
 // Nota: base64 suele inflar ~33%, por eso se controla por longitud de string.
@@ -77,5 +87,7 @@ export const configuracion = {
   portalApiKey,
   rateLimitWindowMs,
   rateLimitLimit,
+  rateLimitCredencialesLimit,
+  rateLimitRefrescoLimit,
   omrImagenBase64MaxChars
 };

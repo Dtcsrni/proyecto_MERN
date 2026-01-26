@@ -38,7 +38,8 @@ export function crearApp() {
       windowMs: configuracion.rateLimitWindowMs,
       limit: configuracion.rateLimitLimit,
       standardHeaders: true,
-      legacyHeaders: false
+      legacyHeaders: false,
+      skip: (req) => req.path.startsWith('/api/salud')
     })
   );
 
