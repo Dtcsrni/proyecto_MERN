@@ -2884,7 +2884,7 @@ function SeccionBanco({
       </div>
       <label className="campo">
         Materia
-        <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)} disabled={bloqueoEdicion}>
+        <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)} disabled={bloqueoEdicion} data-tooltip="Materia sobre la que se gestionan preguntas y temas.">
           <option value="">Selecciona</option>
           {periodos.map((periodo) => (
             <option key={periodo._id} value={periodo._id} title={periodo._id}>
@@ -2906,7 +2906,7 @@ function SeccionBanco({
       </label>
       <label className="campo">
         Tema
-        <select value={tema} onChange={(event) => setTema(event.target.value)} disabled={bloqueoEdicion}>
+        <select value={tema} onChange={(event) => setTema(event.target.value)} disabled={bloqueoEdicion} data-tooltip="Tema al que se asignara la pregunta.">
           <option value="">Selecciona</option>
           {temasBanco.map((t) => (
             <option key={t._id} value={t.nombre}>
@@ -2941,6 +2941,7 @@ function SeccionBanco({
             placeholder="Nuevo tema (ej. Funciones)"
             aria-label="Nuevo tema"
             disabled={bloqueoEdicion}
+            data-tooltip="Escribe el nombre del tema y luego presiona Agregar."
           />
           <Boton
             type="button"
@@ -2948,6 +2949,7 @@ function SeccionBanco({
             cargando={creandoTema}
             disabled={!periodoId || !temaNuevo.trim() || bloqueoEdicion}
             onClick={crearTemaBanco}
+            data-tooltip="Crea el tema en la materia seleccionada."
           >
             Agregar
           </Boton>
@@ -2987,10 +2989,22 @@ function SeccionBanco({
                       </>
                     ) : (
                       <>
-                        <Boton type="button" variante="secundario" onClick={() => abrirAjusteTema(t)} disabled={!puedeGestionar}>
+                        <Boton
+                          type="button"
+                          variante="secundario"
+                          onClick={() => abrirAjusteTema(t)}
+                          disabled={!puedeGestionar}
+                          data-tooltip="Ajusta el numero de paginas objetivo para este tema."
+                        >
                           Ajustar paginas
                         </Boton>
-                        <Boton type="button" variante="secundario" onClick={() => iniciarEdicionTema(t)} disabled={!puedeGestionar}>
+                        <Boton
+                          type="button"
+                          variante="secundario"
+                          onClick={() => iniciarEdicionTema(t)}
+                          disabled={!puedeGestionar}
+                          data-tooltip="Cambia el nombre del tema."
+                        >
                           Renombrar
                         </Boton>
                         <Boton
@@ -2998,6 +3012,7 @@ function SeccionBanco({
                           cargando={archivandoTemaId === t._id}
                           onClick={() => archivarTemaBanco(t)}
                           disabled={!puedeArchivar}
+                          data-tooltip="Archiva el tema y deja sus preguntas sin tema."
                         >
                           Archivar
                         </Boton>
@@ -3019,6 +3034,7 @@ function SeccionBanco({
                           min={1}
                           value={String(ajustePaginasObjetivo)}
                           onChange={(event) => setAjustePaginasObjetivo(Math.max(1, Number(event.target.value || 1)))}
+                          data-tooltip="Define cuantas paginas quieres que ocupe este tema."
                         />
                       </label>
                       <label className="campo ajuste-campo ajuste-campo--tema">
@@ -3030,6 +3046,7 @@ function SeccionBanco({
                             setAjusteAccion(next);
                             if (next === 'quitar') setAjusteTemaDestinoId('');
                           }}
+                          data-tooltip="Elige mover preguntas a otro tema o dejarlas sin tema."
                         >
                           <option value="mover">Mover a otro tema</option>
                           <option value="quitar">Dejar sin tema</option>
@@ -3037,7 +3054,11 @@ function SeccionBanco({
                       </label>
                       <label className="campo ajuste-campo ajuste-campo--tema">
                         Tema destino
-                        <select value={ajusteTemaDestinoId} onChange={(event) => setAjusteTemaDestinoId(event.target.value)}>
+                        <select
+                          value={ajusteTemaDestinoId}
+                          onChange={(event) => setAjusteTemaDestinoId(event.target.value)}
+                          data-tooltip="Tema al que se moveran las preguntas seleccionadas."
+                        >
                           <option value="">Selecciona</option>
                           {temasBanco
                             .filter((x) => x._id !== t._id)
@@ -3059,13 +3080,14 @@ function SeccionBanco({
                           const sugeridas = sugerirPreguntasARecortar(preguntasTema, ajustePaginasObjetivo);
                           setAjusteSeleccion(new Set(sugeridas));
                         }}
+                        data-tooltip="Marca automaticamente preguntas antiguas para cumplir el objetivo."
                       >
                         Sugerir
                       </Boton>
-                      <Boton type="button" variante="secundario" onClick={() => setAjusteSeleccion(new Set())}>
+                      <Boton type="button" variante="secundario" onClick={() => setAjusteSeleccion(new Set())} data-tooltip="Quita todas las selecciones.">
                         Limpiar
                       </Boton>
-                      <Boton type="button" variante="secundario" onClick={cerrarAjusteTema}>
+                      <Boton type="button" variante="secundario" onClick={cerrarAjusteTema} data-tooltip="Cerrar sin aplicar cambios.">
                         Cerrar
                       </Boton>
                     </div>
@@ -3169,7 +3191,11 @@ function SeccionBanco({
                 <div className="ajuste-controles">
                   <label className="campo ajuste-campo ajuste-campo--tema">
                     Asignar a tema
-                    <select value={sinTemaDestinoId} onChange={(event) => setSinTemaDestinoId(event.target.value)}>
+                    <select
+                      value={sinTemaDestinoId}
+                      onChange={(event) => setSinTemaDestinoId(event.target.value)}
+                      data-tooltip="Tema al que se asignaran las preguntas sin tema."
+                    >
                       <option value="">Selecciona</option>
                       {temasBanco.map((x) => (
                         <option key={x._id} value={x._id}>
@@ -3183,10 +3209,11 @@ function SeccionBanco({
                     variante="secundario"
                     onClick={() => setSinTemaSeleccion(new Set(preguntasSinTema.map((p) => p._id)))}
                     disabled={preguntasSinTema.length === 0}
+                    data-tooltip="Marca todas las preguntas sin tema."
                   >
                     Seleccionar todo
                   </Boton>
-                  <Boton type="button" variante="secundario" onClick={() => setSinTemaSeleccion(new Set())}>
+                  <Boton type="button" variante="secundario" onClick={() => setSinTemaSeleccion(new Set())} data-tooltip="Limpia la seleccion actual.">
                     Limpiar
                   </Boton>
                   <Boton
@@ -3195,6 +3222,7 @@ function SeccionBanco({
                     cargando={moviendoSinTema}
                     disabled={!sinTemaDestinoId || sinTemaSeleccion.size === 0}
                     onClick={asignarSinTemaATema}
+                    data-tooltip="Asigna las preguntas seleccionadas al tema elegido."
                   >
                     {moviendoSinTema ? 'Asignando…' : `Asignar (${sinTemaSeleccion.size})`}
                   </Boton>
@@ -3275,6 +3303,7 @@ function SeccionBanco({
         cargando={guardando}
         disabled={!puedeGuardar || bloqueoEdicion}
         onClick={guardar}
+        data-tooltip="Guarda la pregunta en el banco."
       >
         {guardando ? 'Guardando…' : 'Guardar'}
       </Boton>
@@ -3345,10 +3374,11 @@ function SeccionBanco({
               cargando={editando}
               disabled={!puedeGuardarEdicion || bloqueoEdicion}
               onClick={guardarEdicion}
+              data-tooltip="Guarda los cambios de esta pregunta."
             >
               {editando ? 'Guardando…' : 'Guardar cambios'}
             </Boton>
-            <Boton type="button" variante="secundario" onClick={cancelarEdicion}>
+            <Boton type="button" variante="secundario" onClick={cancelarEdicion} data-tooltip="Descarta los cambios.">
               Cancelar
             </Boton>
           </div>
@@ -3381,7 +3411,13 @@ function SeccionBanco({
                         </div>
                       </div>
                       <div className="item-actions">
-                        <Boton variante="secundario" type="button" onClick={() => iniciarEdicion(pregunta)} disabled={bloqueoEdicion}>
+                        <Boton
+                          variante="secundario"
+                          type="button"
+                          onClick={() => iniciarEdicion(pregunta)}
+                          disabled={bloqueoEdicion}
+                          data-tooltip="Editar esta pregunta."
+                        >
                           Editar
                         </Boton>
                         <Boton
@@ -3389,6 +3425,7 @@ function SeccionBanco({
                           cargando={archivandoPreguntaId === pregunta._id}
                           onClick={() => archivarPregunta(pregunta._id)}
                           disabled={!puedeArchivar}
+                          data-tooltip="Archivar la pregunta (no se borra)."
                         >
                           Archivar
                         </Boton>
