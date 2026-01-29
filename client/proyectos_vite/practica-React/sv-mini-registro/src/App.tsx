@@ -192,7 +192,7 @@ export default function App() {
       </ul>
     </section>
   );
-
+        setProgreso(0); // Reinicia el progreso a 0
   const SeccionRegistro = (
     // Frame + Formulario:
     // - Frame: contenedor visual con borde y padding
@@ -312,7 +312,7 @@ export default function App() {
           Proceso (simulado): {progreso}%
         </div>
 
-        {/* Barra de progreso visual */}
+        {/* Barra de progreso visual con color dinámico según el avance */}
         <div
           style={{
             height: 14,
@@ -325,6 +325,13 @@ export default function App() {
             style={{
               width: `${progreso}%`,
               height: '100%',
+              transition: 'width 0.3s',
+              background:
+                progreso < 40
+                  ? '#f39c12' // naranja para <40%
+                  : progreso < 80
+                  ? '#3498db' // azul para 40-79%
+                  : '#2ecc71', // verde para 80-100%
             }}
           />
         </div>
