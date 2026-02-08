@@ -27,6 +27,7 @@ type MapaOmrPagina = {
 const ANCHO_CARTA = 612;
 const ALTO_CARTA = 792;
 const MM_A_PUNTOS = 72 / 25.4;
+const QR_SIZE_PTS = 68;
 
 const OMR_SCORE_MIN = Number.parseFloat(process.env.OMR_SCORE_MIN || '0.08');
 const OMR_DELTA_MIN = Number.parseFloat(process.env.OMR_DELTA_MIN || '0.02');
@@ -40,6 +41,9 @@ const OMR_VERT_STEP = Number.parseFloat(process.env.OMR_VERT_STEP || '2');
 const OMR_OFFSET_X = Number.parseFloat(process.env.OMR_OFFSET_X || '0');
 const OMR_OFFSET_Y = Number.parseFloat(process.env.OMR_OFFSET_Y || '0');
 const OMR_FID_RIGHT_OFFSET_PTS = Number.parseFloat(process.env.OMR_FID_RIGHT_OFFSET_PTS || '30');
+const OMR_BUBBLE_RADIUS_PTS = Number.parseFloat(process.env.OMR_BUBBLE_RADIUS_PTS || '3.4');
+const OMR_BOX_WIDTH_PTS = Number.parseFloat(process.env.OMR_BOX_WIDTH_PTS || '42');
+const OMR_CENTER_TO_LEFT_PTS = Number.parseFloat(process.env.OMR_CENTER_TO_LEFT_PTS || '9.2');
 const OMR_DEBUG = String(process.env.OMR_DEBUG || '').toLowerCase() === 'true' || process.env.OMR_DEBUG === '1';
 const OMR_DEBUG_DIR = process.env.OMR_DEBUG_DIR || path.resolve(process.cwd(), 'storage', 'omr_debug');
 
@@ -78,6 +82,23 @@ type DebugOmr = {
   preguntas: DebugPregunta[];
 };
 
+type ParametrosBurbuja = {
+  radio: number;
+  ringInner: number;
+  ringOuter: number;
+  outerOuter: number;
+  paso: number;
+};
+
+function crearParametrosBurbuja(escalaX: number): ParametrosBurbuja {
+  const radio = Math.max(6, OMR_BUBBLE_RADIUS_PTS * escalaX);
+  const ringInner = Math.max(radio + 2, radio * 1.4);
+  const ringOuter = Math.max(ringInner + 4, radio * 2.2);
+  const outerOuter = ringOuter + Math.max(3, radio * 0.5);
+  const paso = Math.max(1, Math.round(radio / 4));
+  return { radio, ringInner, ringOuter, outerOuter, paso };
+}
+
 async function decodificarImagen(base64: string) {
   const buffer = Buffer.from(limpiarBase64(base64), 'base64');
   const imagen = sharp(buffer).rotate().normalize();
@@ -102,13 +123,238 @@ async function decodificarImagen(base64: string) {
     gray,
     integral,
     width: w,
-    height: h
+    height: h,
+    buffer
   };
 }
 
-function detectarQr(data: Uint8ClampedArray, width: number, height: number) {
-  const resultado = jsQR(data, width, height, { inversionAttempts: 'attemptBoth' });
-  return resultado?.data;
+type QrDetalle = {
+  data: string;
+  location: {
+    topLeftCorner: Punto;
+    topRightCorner: Punto;
+    bottomRightCorner: Punto;
+    bottomLeftCorner: Punto;
+  };
+};
+
+function detectarQrDetalle(data: Uint8ClampedArray, width: number, height: number): QrDetalle | null {
+  type QrLocationRaw = {
+    topLeftCorner: Punto;
+    topRightCorner: Punto;
+    bottomRightCorner: Punto;
+    bottomLeftCorner: Punto;
+  };
+  type QrRaw = { data?: string; location?: QrLocationRaw };
+  const resultado = jsQR(data, width, height, { inversionAttempts: 'attemptBoth' }) as QrRaw | null;
+  if (!resultado?.data || !resultado.location) return null;
+  return {
+    data: resultado.data,
+    location: {
+      topLeftCorner: { x: resultado.location.topLeftCorner.x, y: resultado.location.topLeftCorner.y },
+      topRightCorner: { x: resultado.location.topRightCorner.x, y: resultado.location.topRightCorner.y },
+      bottomRightCorner: { x: resultado.location.bottomRightCorner.x, y: resultado.location.bottomRightCorner.y },
+      bottomLeftCorner: { x: resultado.location.bottomLeftCorner.x, y: resultado.location.bottomLeftCorner.y }
+    }
+  };
+}
+
+function extraerSubimagenRgba(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  crop: { left: number; top: number; width: number; height: number }
+) {
+  const w = Math.max(1, Math.min(width - crop.left, crop.width));
+  const h = Math.max(1, Math.min(height - crop.top, crop.height));
+  const out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y += 1) {
+    const srcY = crop.top + y;
+    for (let x = 0; x < w; x += 1) {
+      const srcX = crop.left + x;
+      const srcIdx = (srcY * width + srcX) * 4;
+      const dstIdx = (y * w + x) * 4;
+      out[dstIdx] = data[srcIdx];
+      out[dstIdx + 1] = data[srcIdx + 1];
+      out[dstIdx + 2] = data[srcIdx + 2];
+      out[dstIdx + 3] = data[srcIdx + 3];
+    }
+  }
+  return { data: out, width: w, height: h };
+}
+
+function extraerSubimagenGray(
+  gray: Uint8ClampedArray,
+  width: number,
+  height: number,
+  crop: { left: number; top: number; width: number; height: number }
+) {
+  const w = Math.max(1, Math.min(width - crop.left, crop.width));
+  const h = Math.max(1, Math.min(height - crop.top, crop.height));
+  const out = new Uint8ClampedArray(w * h);
+  for (let y = 0; y < h; y += 1) {
+    const srcY = crop.top + y;
+    for (let x = 0; x < w; x += 1) {
+      const srcX = crop.left + x;
+      out[y * w + x] = gray[srcY * width + srcX];
+    }
+  }
+  return { gray: out, width: w, height: h };
+}
+
+function rgbaDesdeGray(
+  gray: Uint8ClampedArray,
+  width: number,
+  height: number,
+  umbral?: number,
+  invertir = false
+) {
+  const out = new Uint8ClampedArray(width * height * 4);
+  for (let i = 0, p = 0; i < gray.length; i += 1, p += 4) {
+    let v = gray[i];
+    if (typeof umbral === 'number') {
+      v = v < umbral ? 0 : 255;
+    }
+    if (invertir) v = 255 - v;
+    out[p] = v;
+    out[p + 1] = v;
+    out[p + 2] = v;
+    out[p + 3] = 255;
+  }
+  return out;
+}
+
+function calcularIntegralBinaria(gray: Uint8ClampedArray, width: number, height: number, umbral: number) {
+  const w1 = width + 1;
+  const integral = new Uint32Array(w1 * (height + 1));
+  for (let y = 1; y <= height; y += 1) {
+    let fila = 0;
+    for (let x = 1; x <= width; x += 1) {
+      const val = gray[(y - 1) * width + (x - 1)] < umbral ? 1 : 0;
+      fila += val;
+      integral[y * w1 + x] = integral[(y - 1) * w1 + x] + fila;
+    }
+  }
+  return integral;
+}
+
+function sumaVentana(integral: Uint32Array, width: number, x: number, y: number, w: number, h: number) {
+  const w1 = width + 1;
+  const x2 = x + w;
+  const y2 = y + h;
+  return integral[y2 * w1 + x2] - integral[y * w1 + x2] - integral[y2 * w1 + x] + integral[y * w1 + x];
+}
+
+function localizarQrRegion(
+  gray: Uint8ClampedArray,
+  width: number,
+  height: number,
+  region: { left: number; top: number; width: number; height: number },
+  expectedSize: number
+) {
+  const sub = extraerSubimagenGray(gray, width, height, region);
+  const integral = calcularIntegralBinaria(sub.gray, sub.width, sub.height, 140);
+  const tamaños = [
+    Math.round(expectedSize * 0.8),
+    Math.round(expectedSize * 0.95),
+    Math.round(expectedSize * 1.1),
+    Math.round(expectedSize * 1.25)
+  ].filter((s) => s > 10);
+  let best = { score: 0, x: 0, y: 0, size: tamaños[1] ?? expectedSize };
+  for (const size of tamaños) {
+    const step = Math.max(4, Math.floor(size / 8));
+    for (let y = 0; y + size < sub.height; y += step) {
+      for (let x = 0; x + size < sub.width; x += step) {
+        const negros = sumaVentana(integral, sub.width, x, y, size, size);
+        const ratio = negros / (size * size);
+        if (ratio > best.score) {
+          best = { score: ratio, x, y, size };
+        }
+      }
+    }
+  }
+  if (best.score < 0.12) return null;
+  return {
+    left: region.left + best.x,
+    top: region.top + best.y,
+    width: best.size,
+    height: best.size
+  };
+}
+
+function detectarQrMejorado(
+  data: Uint8ClampedArray,
+  gray: Uint8ClampedArray,
+  width: number,
+  height: number
+): QrDetalle | null {
+  const intentos: Array<{ data: Uint8ClampedArray; width: number; height: number; offsetX: number; offsetY: number }> = [];
+
+  intentos.push({ data, width, height, offsetX: 0, offsetY: 0 });
+  intentos.push({ data: rgbaDesdeGray(gray, width, height), width, height, offsetX: 0, offsetY: 0 });
+  intentos.push({ data: rgbaDesdeGray(gray, width, height, 160), width, height, offsetX: 0, offsetY: 0 });
+  intentos.push({ data: rgbaDesdeGray(gray, width, height, 160, true), width, height, offsetX: 0, offsetY: 0 });
+
+  const cropBase = {
+    left: Math.floor(width * 0.6),
+    top: 0,
+    width: Math.floor(width * 0.4),
+    height: Math.floor(height * 0.35)
+  };
+  const cropRaw = extraerSubimagenRgba(data, width, height, cropBase);
+  intentos.push({ data: cropRaw.data, width: cropRaw.width, height: cropRaw.height, offsetX: cropBase.left, offsetY: cropBase.top });
+  const cropGray = extraerSubimagenGray(gray, width, height, cropBase);
+  intentos.push({
+    data: rgbaDesdeGray(cropGray.gray, cropGray.width, cropGray.height, 160),
+    width: cropGray.width,
+    height: cropGray.height,
+    offsetX: cropBase.left,
+    offsetY: cropBase.top
+  });
+  intentos.push({
+    data: rgbaDesdeGray(cropGray.gray, cropGray.width, cropGray.height, 160, true),
+    width: cropGray.width,
+    height: cropGray.height,
+    offsetX: cropBase.left,
+    offsetY: cropBase.top
+  });
+
+  const expectedQr = Math.max(80, Math.round((QR_SIZE_PTS / ANCHO_CARTA) * width));
+  const region = localizarQrRegion(gray, width, height, cropBase, expectedQr);
+  if (region) {
+    const regionRaw = extraerSubimagenRgba(data, width, height, region);
+    intentos.push({
+      data: regionRaw.data,
+      width: regionRaw.width,
+      height: regionRaw.height,
+      offsetX: region.left,
+      offsetY: region.top
+    });
+    const regionGray = extraerSubimagenGray(gray, width, height, region);
+    intentos.push({
+      data: rgbaDesdeGray(regionGray.gray, regionGray.width, regionGray.height, 160),
+      width: regionGray.width,
+      height: regionGray.height,
+      offsetX: region.left,
+      offsetY: region.top
+    });
+  }
+
+  for (const intento of intentos) {
+    const res = detectarQrDetalle(intento.data, intento.width, intento.height);
+    if (!res) continue;
+    const map = (p: Punto) => ({ x: p.x + intento.offsetX, y: p.y + intento.offsetY });
+    return {
+      data: res.data,
+      location: {
+        topLeftCorner: map(res.location.topLeftCorner),
+        topRightCorner: map(res.location.topRightCorner),
+        bottomRightCorner: map(res.location.bottomRightCorner),
+        bottomLeftCorner: map(res.location.bottomLeftCorner)
+      }
+    };
+  }
+  return null;
 }
 
 function obtenerIntensidad(gray: Uint8ClampedArray, width: number, height: number, x: number, y: number) {
@@ -282,13 +528,39 @@ function obtenerTransformacion(
   width: number,
   height: number,
   advertencias: string[],
-  margenMm: number
+  margenMm: number,
+  qr?: QrDetalle | null
 ) {
   const crearEscala = () => {
     const escalaX = width / ANCHO_CARTA;
     const escalaY = height / ALTO_CARTA;
     return (punto: Punto) => ({ x: punto.x * escalaX, y: height - punto.y * escalaY });
   };
+
+  if (qr?.location) {
+    const margen = margenMm * MM_A_PUNTOS;
+    const x = ANCHO_CARTA - margen - QR_SIZE_PTS;
+    const y = margen;
+    const origen = [
+      { x, y },
+      { x: x + QR_SIZE_PTS, y },
+      { x, y: y + QR_SIZE_PTS },
+      { x: x + QR_SIZE_PTS, y: y + QR_SIZE_PTS }
+    ];
+    const destino = [
+      qr.location.topLeftCorner,
+      qr.location.topRightCorner,
+      qr.location.bottomLeftCorner,
+      qr.location.bottomRightCorner
+    ];
+    const h = calcularHomografia(origen, destino);
+    if (h) {
+      return {
+        transformar: (punto: Punto) => aplicarHomografia(h, { x: punto.x, y: ALTO_CARTA - punto.y }),
+        tipo: 'qr' as const
+      };
+    }
+  }
   const region = 0.15;
   const regiones = {
     tl: { x0: 0, y0: 0, x1: width * region, y1: height * region },
@@ -345,12 +617,10 @@ function detectarOpcion(
   integral: Uint32Array,
   width: number,
   height: number,
-  centro: Punto
+  centro: Punto,
+  params: ParametrosBurbuja
 ) {
-  const radio = 7;
-  const ringInner = 10;
-  const ringOuter = 16;
-  const outerOuter = ringOuter + 4;
+  const { radio, ringInner, ringOuter, outerOuter, paso } = params;
   const promLocal = mediaEnVentana(
     integral,
     width,
@@ -374,7 +644,6 @@ function detectarOpcion(
   let sumaRingSq = 0;
 
   // Cuenta pixeles oscuros dentro de un radio fijo para estimar marca.
-  const paso = 2;
   for (let y = -outerOuter; y <= outerOuter; y += paso) {
     for (let x = -outerOuter; x <= outerOuter; x += paso) {
       const dist = x * x + y * y;
@@ -455,14 +724,15 @@ function evaluarConOffset(
   height: number,
   centros: Array<{ letra: string; punto: Punto }>,
   dx: number,
-  dy: number
+  dy: number,
+  params: ParametrosBurbuja
 ) {
   let mejorOpcion: string | null = null;
   let mejorScore = 0;
   let segundoScore = 0;
   const scores: Array<{ letra: string; score: number; x: number; y: number }> = [];
-  const rangoLocal = 12;
-  const pasoLocal = 2;
+  const rangoLocal = Math.max(8, Math.round(params.ringOuter * 0.9));
+  const pasoLocal = Math.max(1, Math.round(params.radio / 4));
   for (const opcion of centros) {
     const base = { x: opcion.punto.x + dx, y: opcion.punto.y + dy };
     let mejorLocal = -Infinity;
@@ -471,7 +741,7 @@ function evaluarConOffset(
     for (let oy = -rangoLocal; oy <= rangoLocal; oy += pasoLocal) {
       for (let ox = -rangoLocal; ox <= rangoLocal; ox += pasoLocal) {
         const punto = { x: base.x + ox, y: base.y + oy };
-        const { score } = detectarOpcion(gray, integral, width, height, punto);
+        const { score } = detectarOpcion(gray, integral, width, height, punto, params);
         if (score > mejorLocal) {
           mejorLocal = score;
           mejorX = punto.x;
@@ -499,13 +769,14 @@ function calcularMetricaAlineacion(
   height: number,
   centros: Array<{ letra: string; punto: Punto }>,
   dx: number,
-  dy: number
+  dy: number,
+  params: ParametrosBurbuja
 ) {
   let mejorScore = 0;
   let segundoScore = 0;
   for (const opcion of centros) {
     const punto = { x: opcion.punto.x + dx, y: opcion.punto.y + dy };
-    const { score } = detectarOpcion(gray, integral, width, height, punto);
+    const { score } = detectarOpcion(gray, integral, width, height, punto, params);
     if (score > mejorScore) {
       segundoScore = mejorScore;
       mejorScore = score;
@@ -525,9 +796,10 @@ function evaluarAlineacionOffset(
   height: number,
   centros: Array<{ letra: string; punto: Punto }>,
   dx: number,
-  dy: number
+  dy: number,
+  params: ParametrosBurbuja
 ) {
-  return calcularMetricaAlineacion(gray, integral, width, height, centros, dx, dy);
+  return calcularMetricaAlineacion(gray, integral, width, height, centros, dx, dy, params);
 }
 
 function localizarMarcaLocal(
@@ -677,7 +949,8 @@ function ajustarCentrosVertical(
   integral: Uint32Array,
   width: number,
   height: number,
-  centros: Array<{ letra: string; punto: Punto }>
+  centros: Array<{ letra: string; punto: Punto }>,
+  params: ParametrosBurbuja
 ) {
   if (centros.length < 2) return centros;
   const baseY = centros[0].punto.y;
@@ -690,7 +963,7 @@ function ajustarCentrosVertical(
         letra: opcion.letra,
         punto: { x: opcion.punto.x, y: baseY + (opcion.punto.y - baseY) * scale + offset }
       }));
-      const score = calcularMetricaAlineacion(gray, integral, width, height, centrosAjustados, 0, 0);
+      const score = calcularMetricaAlineacion(gray, integral, width, height, centrosAjustados, 0, 0, params);
       if (score > mejorScore) {
         mejorScore = score;
         mejorScale = scale;
@@ -707,9 +980,54 @@ function ajustarCentrosVertical(
   }));
 }
 
+function ajustarCentrosPorCaja(
+  integral: Uint32Array,
+  width: number,
+  height: number,
+  centros: Array<{ letra: string; punto: Punto }>,
+  params: ParametrosBurbuja,
+  escalaX: number
+) {
+  if (centros.length === 0) return null;
+  const xs = centros.map((c) => c.punto.x);
+  const ys = centros.map((c) => c.punto.y);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const margenY = Math.max(8, params.ringOuter * 1.4);
+  const yTop = Math.max(0, Math.min(height - 1, maxY + margenY));
+  const yBottom = Math.max(0, Math.min(height - 1, minY - margenY));
+
+  const offsetLeftPx = OMR_CENTER_TO_LEFT_PTS * escalaX;
+  const boxWidthPx = OMR_BOX_WIDTH_PTS * escalaX;
+  const expectedLeft = Math.min(...xs) - offsetLeftPx;
+  const expectedRight = expectedLeft + boxWidthPx;
+
+  const rango = Math.max(12, params.ringOuter * 1.1);
+  const bordeIzq = localizarBordeVertical(integral, width, height, expectedLeft, yTop, yBottom, rango);
+  const bordeDer = localizarBordeVertical(integral, width, height, expectedRight, yTop, yBottom, rango);
+  if (bordeIzq === null || bordeDer === null) return null;
+
+  const dxEsperado = expectedRight - expectedLeft;
+  const dxReal = bordeDer - bordeIzq;
+  if (Math.abs(dxEsperado) < 1) return null;
+
+  const scaleX = dxReal / dxEsperado;
+  const offsetX = bordeIzq - expectedLeft * scaleX;
+  if (!Number.isFinite(scaleX) || scaleX < 0.88 || scaleX > 1.12) return null;
+
+  return centros.map((opcion) => ({
+    letra: opcion.letra,
+    punto: {
+      x: opcion.punto.x * scaleX + offsetX,
+      y: opcion.punto.y
+    }
+  }));
+}
+
 export async function leerQrDesdeImagen(imagenBase64: string): Promise<string | undefined> {
-  const { data, width, height } = await decodificarImagen(imagenBase64);
-  return detectarQr(data, width, height);
+  const { data, gray, width, height } = await decodificarImagen(imagenBase64);
+  const qr = detectarQrMejorado(data, gray, width, height);
+  return qr?.data;
 }
 
 export async function analizarOmr(
@@ -721,7 +1039,10 @@ export async function analizarOmr(
 ): Promise<ResultadoOmr> {
   const advertencias: string[] = [];
   const { data, gray, integral, width, height } = await decodificarImagen(imagenBase64);
-  const qrTexto = detectarQr(data, width, height);
+  const qrDetalle = detectarQrMejorado(data, gray, width, height);
+  const qrTexto = qrDetalle?.data;
+  const escalaX = width / ANCHO_CARTA;
+  const paramsBurbuja = crearParametrosBurbuja(escalaX);
 
   if (!qrTexto) {
     advertencias.push('No se detecto QR en la imagen');
@@ -738,7 +1059,7 @@ export async function analizarOmr(
     }
   }
 
-  const transformacionBase = obtenerTransformacion(gray, width, height, advertencias, margenMm);
+  const transformacionBase = obtenerTransformacion(gray, width, height, advertencias, margenMm, qrDetalle);
   const transformarEscala = (punto: Punto) => {
     const escalaX = width / ANCHO_CARTA;
     const escalaY = height / ALTO_CARTA;
@@ -757,11 +1078,11 @@ export async function analizarOmr(
       }));
       let mejorScore = 0;
       let segundoScore = 0;
-      const rango = 8;
-      const paso = 2;
+      const rango = Math.max(8, Math.round(paramsBurbuja.ringOuter * 0.6));
+      const paso = Math.max(1, Math.round(paramsBurbuja.radio / 4));
       for (let dy = -rango; dy <= rango; dy += paso) {
         for (let dx = -rango; dx <= rango; dx += paso) {
-          const resultado = evaluarConOffset(gray, integral, width, height, centros, dx, dy);
+          const resultado = evaluarConOffset(gray, integral, width, height, centros, dx, dy, paramsBurbuja);
           if (resultado.mejorScore > mejorScore) {
             segundoScore = resultado.segundoScore;
             mejorScore = resultado.mejorScore;
@@ -777,7 +1098,7 @@ export async function analizarOmr(
     return { score: totalScore / denom, delta: totalDelta / denom };
   };
 
-  if (transformacionBase.tipo === 'homografia') {
+  if (transformacionBase.tipo === 'homografia' || transformacionBase.tipo === 'qr') {
     const calidadHom = evaluarTransformacion(transformacionBase.transformar);
     const calidadEscala = evaluarTransformacion(transformarEscala);
     const puntajeHom = calidadHom.score + calidadHom.delta * 0.6;
@@ -811,22 +1132,21 @@ export async function analizarOmr(
         return { x: base.x + OMR_OFFSET_X, y: base.y + OMR_OFFSET_Y };
       })()
     }));
-    const fiduciales = pregunta.fiduciales
-      ? {
-          top: transformar({ x: pregunta.fiduciales.top.x, y: pregunta.fiduciales.top.y }),
-          bottom: transformar({ x: pregunta.fiduciales.bottom.x, y: pregunta.fiduciales.bottom.y }),
-          topRight: transformar({ x: pregunta.fiduciales.top.x + OMR_FID_RIGHT_OFFSET_PTS, y: pregunta.fiduciales.top.y }),
+      const fiduciales = pregunta.fiduciales
+        ? {
+            top: transformar({ x: pregunta.fiduciales.top.x, y: pregunta.fiduciales.top.y }),
+            bottom: transformar({ x: pregunta.fiduciales.bottom.x, y: pregunta.fiduciales.bottom.y }),
+            topRight: transformar({ x: pregunta.fiduciales.top.x + OMR_FID_RIGHT_OFFSET_PTS, y: pregunta.fiduciales.top.y }),
           bottomRight: transformar({
             x: pregunta.fiduciales.bottom.x + OMR_FID_RIGHT_OFFSET_PTS,
             y: pregunta.fiduciales.bottom.y
           })
         }
       : null;
-    const escalaX = width / ANCHO_CARTA;
     const fidSizePx = Math.max(6, 5 * escalaX);
-    const centrosFid = fiduciales
-      ? ajustarCentrosPorFiduciales(
-          gray,
+      const centrosFid = fiduciales
+        ? ajustarCentrosPorFiduciales(
+            gray,
           integral,
           width,
           height,
@@ -835,18 +1155,19 @@ export async function analizarOmr(
           fiduciales.bottom,
           fidSizePx,
           fiduciales.topRight,
-          fiduciales.bottomRight
-        )
-      : null;
-    const centros = ajustarCentrosVertical(gray, integral, width, height, centrosFid ?? centrosBase);
-    const rango = OMR_ALIGN_RANGE;
-    const paso = OMR_ALIGN_STEP;
+            fiduciales.bottomRight
+          )
+        : null;
+      const centrosCaja = !centrosFid ? ajustarCentrosPorCaja(integral, width, height, centrosBase, paramsBurbuja, escalaX) : null;
+      const centros = ajustarCentrosVertical(gray, integral, width, height, centrosCaja ?? centrosFid ?? centrosBase, paramsBurbuja);
+      const rango = Math.max(OMR_ALIGN_RANGE, Math.round(paramsBurbuja.ringOuter * 1.2));
+      const paso = Math.max(1, Math.round(paramsBurbuja.radio / 4));
     let mejorDx = 0;
     let mejorDy = 0;
     let mejorAlineacion = -Infinity;
     for (let dy = -rango; dy <= rango; dy += paso) {
       for (let dx = -rango; dx <= rango; dx += paso) {
-        const alineacion = evaluarAlineacionOffset(gray, integral, width, height, centros, dx, dy);
+        const alineacion = evaluarAlineacionOffset(gray, integral, width, height, centros, dx, dy, paramsBurbuja);
         if (alineacion > mejorAlineacion) {
           mejorAlineacion = alineacion;
           mejorDx = dx;
@@ -854,7 +1175,7 @@ export async function analizarOmr(
         }
       }
     }
-    const resultado = evaluarConOffset(gray, integral, width, height, centros, mejorDx, mejorDy);
+    const resultado = evaluarConOffset(gray, integral, width, height, centros, mejorDx, mejorDy, paramsBurbuja);
     mejorOpcion = resultado.mejorOpcion;
     mejorScore = resultado.mejorScore;
     segundoScore = resultado.segundoScore;
