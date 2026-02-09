@@ -3,7 +3,7 @@
 //timestamps: true agrega automáticamente campos de createdAt y updatedAt
 const { time } = require('console');
 const mongoose = require('mongoose');
-
+///
 const esquemaNota = new mongoose.Schema({
     texto: {
         type: String,
