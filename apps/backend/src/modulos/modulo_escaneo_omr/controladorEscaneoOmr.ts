@@ -26,10 +26,18 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   const { folio, numeroPagina, imagenBase64 } = req.body;
   const docenteId = obtenerDocenteId(req);
 
-  const textoQr = !folio || !numeroPagina ? await leerQrDesdeImagen(imagenBase64 ?? '') : undefined;
-  const match = textoQr ? /EXAMEN:([A-Z0-9]+):P(\d+)/i.exec(textoQr) : null;
+  let textoQr: string | undefined;
+  if (!folio || !numeroPagina) {
+    try {
+      textoQr = await leerQrDesdeImagen(imagenBase64 ?? '');
+    } catch {
+      throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'Imagen OMR invalida o corrupta', 400);
+    }
+  }
+  const match = textoQr ? /EXAMEN:([A-Z0-9-]+):P(\d+)(?::TV(\d+))?/i.exec(textoQr) : null;
   const folioDetectado = match?.[1]?.toUpperCase() ?? '';
   const paginaDetectada = match?.[2] ? Number(match[2]) : undefined;
+  const templateQr = match?.[3] ? Number(match[3]) : undefined;
 
   const folioNormalizado = String(folio || folioDetectado || '').toUpperCase();
   const pagina = Number(numeroPagina || paginaDetectada || 1);
@@ -44,12 +52,21 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
     throw new ErrorAplicacion('PAGINA_NO_VALIDA', 'No hay mapa OMR para la pagina', 400);
   }
 
-  const qrEsperado = [`EXAMEN:${String(examen.folio ?? '')}:P${pagina}`];
+  const templateMapa = Number(examen.mapaOmr?.templateVersion);
+  const templateVersionDetectada = templateQr === 2 || templateQr === 1 ? (templateQr as 1 | 2) : templateMapa === 2 ? 2 : 1;
+  const qrLegacy = `EXAMEN:${String(examen.folio ?? '')}:P${pagina}`;
+  const qrEsperado = [qrLegacy, `${qrLegacy}:TV${templateVersionDetectada}`];
   const margenMm = examen.mapaOmr?.margenMm ?? 10;
-  const resultado = await analizarOmr(imagenBase64 ?? '', mapaOmr, qrEsperado, margenMm, {
-    folio: folioNormalizado,
-    numeroPagina: pagina
-  });
+  let resultado;
+  try {
+    resultado = await analizarOmr(imagenBase64 ?? '', mapaOmr, qrEsperado, margenMm, {
+      folio: folioNormalizado,
+      numeroPagina: pagina,
+      templateVersionDetectada
+    });
+  } catch {
+    throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'No se pudo procesar la imagen OMR', 400);
+  }
   await guardarImagenReferencia({
     base64: imagenBase64 ?? '',
     folio: folioNormalizado,
@@ -60,7 +77,8 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
     examenId: examen._id,
     folio: folioNormalizado,
     numeroPagina: pagina,
-    alumnoId: examen.alumnoId ?? null
+    alumnoId: examen.alumnoId ?? null,
+    templateVersionDetectada
   });
 }
 

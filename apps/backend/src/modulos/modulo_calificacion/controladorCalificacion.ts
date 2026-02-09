@@ -20,6 +20,16 @@ type RespuestaDetectada = {
   opcion: string | null;
 };
 
+type AnalisisOmrCalificacion = {
+  estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+  calidadPagina: number;
+  confianzaPromedioPagina?: number;
+  ratioAmbiguas?: number;
+  templateVersionDetectada?: 1 | 2;
+  motivosRevision?: string[];
+  revisionConfirmada?: boolean;
+};
+
 function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: number[]) {
   const indiceCorrecto = opciones.findIndex((opcion) => opcion.esCorrecta);
   if (indiceCorrecto < 0) return null;
@@ -48,6 +58,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     proyecto,
     retroalimentacion,
     respuestasDetectadas,
+    omrAnalisis,
     soloPreview
   } = req.body;
   const docenteId = obtenerDocenteId(req);
@@ -79,7 +90,31 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     respuestas.map((item) => [item.numeroPregunta, item.opcion ? item.opcion.toUpperCase() : null])
   );
 
+  const analisisOmr = omrAnalisis as AnalisisOmrCalificacion | undefined;
+  const revisionConfirmada = Boolean(analisisOmr?.revisionConfirmada);
+  const calidadPagina = Number(analisisOmr?.calidadPagina ?? 1);
+  const confianzaPromedioPagina = Number(analisisOmr?.confianzaPromedioPagina ?? 1);
+  const ratioAmbiguas = Number(analisisOmr?.ratioAmbiguas ?? 0);
+  const autoCalificableOmr =
+    calidadPagina >= 0.8 && confianzaPromedioPagina >= 0.75 && ratioAmbiguas <= 0.1 && analisisOmr?.estadoAnalisis === 'ok';
+
+  if (!soloPreview && analisisOmr && !revisionConfirmada && !autoCalificableOmr) {
+    throw new ErrorAplicacion(
+      'OMR_REQUIERE_REVISION',
+      'El analisis OMR requiere revision manual antes de guardar calificacion',
+      409,
+      {
+        estadoAnalisis: analisisOmr.estadoAnalisis,
+        calidadPagina,
+        confianzaPromedioPagina,
+        ratioAmbiguas
+      }
+    );
+  }
+
   let aciertosCalculados = 0;
+  let contestadasTotal = 0;
+  let contestadasCorrectas = 0;
   const total = ordenPreguntas.length || totalReactivos || 0;
 
   ordenPreguntas.forEach((idPregunta, idx) => {
@@ -92,9 +127,12 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     const ordenOpciones = examen.mapaVariante?.ordenOpcionesPorPregunta?.[idPregunta] ?? [0, 1, 2, 3, 4];
     const letraCorrecta = obtenerLetraCorrecta(version.opciones, ordenOpciones);
     const respuesta = respuestasPorNumero.get(idx + 1);
+    const estaContestada = Boolean(respuesta);
+    if (estaContestada) contestadasTotal += 1;
 
     if (letraCorrecta && respuesta && letraCorrecta === respuesta.toUpperCase()) {
       aciertosCalculados += 1;
+      contestadasCorrectas += 1;
     }
   });
 
@@ -152,7 +190,21 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     calificacionParcialTexto: resultado.calificacionParcialTexto,
     calificacionGlobalTexto: resultado.calificacionGlobalTexto,
     retroalimentacion,
-    respuestasDetectadas
+    respuestasDetectadas,
+    omrAuditoria: analisisOmr
+      ? {
+          estadoAnalisis: analisisOmr.estadoAnalisis,
+          calidadPagina,
+          confianzaPromedioPagina,
+          ratioAmbiguas,
+          templateVersionDetectada: analisisOmr.templateVersionDetectada ?? null,
+          revisionConfirmada,
+          autoCalificableOmr,
+          contestadasTotal,
+          contestadasCorrectas,
+          precisionSobreContestadas: contestadasTotal > 0 ? contestadasCorrectas / contestadasTotal : null
+        }
+      : undefined
   });
 
   await ExamenGenerado.updateOne({ _id: examenGeneradoId }, { estado: 'calificado' });

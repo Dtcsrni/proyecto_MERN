@@ -12,6 +12,18 @@ const esquemaRespuestaDetectada = z
   })
   .strict();
 
+const esquemaAnalisisOmr = z
+  .object({
+    estadoAnalisis: z.enum(['ok', 'rechazado_calidad', 'requiere_revision']),
+    calidadPagina: z.number().min(0).max(1),
+    confianzaPromedioPagina: z.number().min(0).max(1).optional(),
+    ratioAmbiguas: z.number().min(0).max(1).optional(),
+    templateVersionDetectada: z.union([z.literal(1), z.literal(2)]).optional(),
+    motivosRevision: z.array(z.string().min(1).max(200)).max(50).optional(),
+    revisionConfirmada: z.boolean().optional()
+  })
+  .strict();
+
 export const esquemaCalificarExamen = z.object({
   examenGeneradoId: esquemaObjectId,
   alumnoId: esquemaObjectId.optional(),
@@ -22,5 +34,6 @@ export const esquemaCalificarExamen = z.object({
   proyecto: z.number().min(0).optional(),
   retroalimentacion: z.string().optional(),
   respuestasDetectadas: z.array(esquemaRespuestaDetectada).max(500).optional(),
+  omrAnalisis: esquemaAnalisisOmr.optional(),
   soloPreview: z.boolean().optional()
 });

@@ -115,9 +115,10 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(paginas[0].numero).toBe(1);
 
     const qrEsperado = `EXAMEN:${folio}:P1`;
-    expect(paginas[0].qrTexto).toBe(qrEsperado);
+    expect(String(paginas[0].qrTexto || '')).toMatch(new RegExp(`^EXAMEN:${folio}:P1(?::TV[12])?$`));
 
-    const imagenBase64 = await QRCode.toDataURL(qrEsperado, { margin: 1, width: 800 });
+    const qrParaImagen = String(paginas[0].qrTexto || qrEsperado);
+    const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: 800 });
 
     const resp = await request(app)
       .post('/api/omr/analizar')
@@ -130,7 +131,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
       .expect(200);
 
     const resultado = resp.body.resultado as { qrTexto?: string; advertencias: string[] };
-    expect(resultado.qrTexto).toBe(qrEsperado);
+    expect(resultado.qrTexto).toBe(qrParaImagen);
     expect(resultado.advertencias).not.toContain('No se detecto QR en la imagen');
     expect(resultado.advertencias).not.toContain('El QR no coincide con el examen esperado');
   });

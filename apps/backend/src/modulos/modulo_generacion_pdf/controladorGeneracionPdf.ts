@@ -129,6 +129,34 @@ function formatearDocente(nombreCompleto: unknown): string {
   return `I.S.C. ${n}`;
 }
 
+function leerNumeroSeguro(valor: unknown, porDefecto: number, min = 0, max = 100) {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return porDefecto;
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
+
+function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 1 | 2 {
+  const forced = Number.parseInt(String(process.env.OMR_TEMPLATE_VERSION_FORCE ?? ''), 10);
+  if (forced === 1 || forced === 2) return forced;
+
+  const habilitado = String(process.env.OMR_V2_ENABLED ?? '')
+    .trim()
+    .toLowerCase();
+  if (!['1', 'true', 'si', 'yes', 'on'].includes(habilitado)) return 1;
+
+  const canaryPct = leerNumeroSeguro(process.env.OMR_V2_CANARY_PERCENT, 10, 0, 100);
+  if (canaryPct <= 0) return 1;
+  if (canaryPct >= 100) return 2;
+
+  const key = [
+    String(params.docenteId ?? '').trim(),
+    String(params.periodoId ?? '').trim(),
+    String(params.plantillaId ?? '').trim()
+  ].join(':');
+  const bucket = hash32(key || 'omr-v2') % 100;
+  return bucket < canaryPct ? 2 : 1;
+}
+
 const PREVIEW_TTL_MS = 30 * 60 * 1000;
 const PREVIEW_CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
 const PREVIEW_MAX_FILES = 40;
@@ -578,6 +606,11 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
     plantilla.periodoId ? Periodo.findById(plantilla.periodoId).lean() : Promise.resolve(null),
     Docente.findById(docenteId).lean()
   ]);
+  const templateVersionOmr = resolverTemplateVersionOmr({
+    docenteId,
+    periodoId: plantilla.periodoId,
+    plantillaId: plantilla._id
+  });
 
   const generarPreview = (paginasObjetivo: number) =>
     generarPdfExamen({
@@ -588,6 +621,7 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
       tipoExamen: plantilla.tipo as 'parcial' | 'global',
       totalPaginas: paginasObjetivo,
       margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
+      templateVersion: templateVersionOmr,
       encabezado: {
         materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
         docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
@@ -803,6 +837,11 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
     plantilla.periodoId ? Periodo.findById(plantilla.periodoId).lean() : Promise.resolve(null),
     Docente.findById(docenteId).lean()
   ]);
+  const templateVersionOmr = resolverTemplateVersionOmr({
+    docenteId,
+    periodoId: plantilla.periodoId,
+    plantillaId: plantilla._id
+  });
 
   const generarPreviewPdf = (paginasObjetivo: number) =>
     generarPdfExamen({
@@ -813,6 +852,7 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
       tipoExamen: plantilla.tipo as 'parcial' | 'global',
       totalPaginas: paginasObjetivo,
       margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
+      templateVersion: templateVersionOmr,
       encabezado: {
         materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
         docente: String((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto ?? ''),
@@ -949,6 +989,11 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   const mapaVariante = generarVariante(preguntasCandidatas);
   const loteId = randomUUID().split('-')[0].toUpperCase();
   const folio = randomUUID().split('-')[0].toUpperCase();
+  const templateVersionOmr = resolverTemplateVersionOmr({
+    docenteId,
+    periodoId: plantilla.periodoId,
+    plantillaId: plantilla._id
+  });
 
   const { pdfBytes, paginas, metricasPaginas, mapaOmr, preguntasRestantes } = await generarPdfExamen({
     titulo: plantilla.titulo,
@@ -958,16 +1003,17 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
     totalPaginas: numeroPaginas,
     margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
-      encabezado: {
-        materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
-        docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
-        instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
-        alumno: {
+    templateVersion: templateVersionOmr,
+    encabezado: {
+      materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
+      docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
+      instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
+      alumno: {
         nombre: formatearNombreAlumno(alumno),
         grupo: String((alumno as unknown as { grupo?: unknown })?.grupo ?? '')
-        }
       }
-    });
+    }
+  });
 
   const usadosSet = new Set<string>();
   for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
@@ -1151,6 +1197,11 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   });
 
   // Pre-chequeo: si ni usando TODO el banco alcanza para llenar las paginas, bloquea el lote.
+  const templateVersionOmr = resolverTemplateVersionOmr({
+    docenteId,
+    periodoId: plantilla.periodoId,
+    plantillaId: plantilla._id
+  });
   {
     const preguntasCandidatas = barajarDeterminista(preguntasBase, hash32(String(plantilla._id)));
     const mapaVariante = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}:lote-precheck`);
@@ -1162,6 +1213,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
       tipoExamen: plantilla.tipo as 'parcial' | 'global',
       totalPaginas: numeroPaginas,
       margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
+      templateVersion: templateVersionOmr,
       encabezado: {
         materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
         docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
@@ -1205,16 +1257,17 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           tipoExamen: plantilla.tipo as 'parcial' | 'global',
           totalPaginas: numeroPaginas,
           margenMm: plantilla.configuracionPdf?.margenMm ?? 10,
-            encabezado: {
-              materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
-              docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
-              instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
-              alumno: {
+          templateVersion: templateVersionOmr,
+          encabezado: {
+            materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
+            docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
+            instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
+            alumno: {
               nombre: formatearNombreAlumno(alumnosPorId.get(alumnoId)),
               grupo: String((alumnosPorId.get(alumnoId) as unknown as { grupo?: unknown })?.grupo ?? '')
-              }
             }
-          });
+          }
+        });
 
         const usadosSet = new Set<string>();
         for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
