@@ -1,0 +1,87 @@
+{
+  "generadoEn": "2026-02-09T10:28:23.982Z",
+  "procesadas": 16,
+  "totalPatches": 600,
+  "resumen": [
+    {
+      "folio": "24255CF0",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "24255CF0",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "364207B6",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "364207B6",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "41E11592",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "41E11592",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "44FB6D76",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "44FB6D76",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "4ABDD6B5",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "4ABDD6B5",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "D9037A8E",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "D9037A8E",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "EDCD030C",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "EDCD030C",
+      "pagina": "P2",
+      "patches": 40
+    },
+    {
+      "folio": "F531C7E6",
+      "pagina": "P1",
+      "patches": 35
+    },
+    {
+      "folio": "F531C7E6",
+      "pagina": "P2",
+      "patches": 40
+    }
+  ]
+}

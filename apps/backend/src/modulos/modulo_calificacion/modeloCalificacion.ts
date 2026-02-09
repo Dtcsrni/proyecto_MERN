@@ -24,7 +24,8 @@ const CalificacionSchema = new Schema(
     calificacionParcialTexto: { type: String },
     calificacionGlobalTexto: { type: String },
     retroalimentacion: { type: String },
-    respuestasDetectadas: { type: Schema.Types.Mixed }
+    respuestasDetectadas: { type: Schema.Types.Mixed },
+    omrAuditoria: { type: Schema.Types.Mixed }
   },
   { timestamps: true, collection: 'calificaciones' }
 );
