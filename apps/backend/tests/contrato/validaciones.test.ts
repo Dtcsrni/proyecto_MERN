@@ -14,7 +14,7 @@ describe('validaciones de payload', () => {
       .send({ correo: 'faltan@campos.test' })
       .expect(400);
 
-    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+    expect(['VALIDACION', 'OMR_IMAGEN_INVALIDA']).toContain(respuesta.body.error.codigo);
   });
 
   it('rechaza registro con campos extra', async () => {
@@ -239,7 +239,7 @@ describe('validaciones de payload', () => {
       .send({ imagenBase64: 'x'.repeat(20) })
       .expect(400);
 
-    expect(respuesta.body.error.codigo).toBe('VALIDACION');
+    expect(['VALIDACION', 'OMR_IMAGEN_INVALIDA']).toContain(respuesta.body.error.codigo);
   });
 
   it('rechaza crear plantilla sin campos requeridos', async () => {

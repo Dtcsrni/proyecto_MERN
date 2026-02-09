@@ -1,0 +1,301 @@
+export type Punto = { x: number; y: number };
+
+export type ParametrosBurbujaCore = {
+  radio: number;
+  ringInner: number;
+  ringOuter: number;
+  outerOuter: number;
+  paso: number;
+};
+
+export type CentroOpcion = { letra: string; punto: Punto };
+
+export type OpcionScore = { letra: string; score: number; x: number; y: number };
+
+export type EvaluarConOffsetResultado = {
+  mejorOpcion: string | null;
+  mejorScore: number;
+  segundoScore: number;
+  scores: OpcionScore[];
+};
+
+export type EstadoImagenOmr = {
+  gray: Uint8ClampedArray;
+  integral: Uint32Array;
+  width: number;
+  height: number;
+  escalaX: number;
+  paramsBurbuja: ParametrosBurbujaCore;
+};
+
+export type MetricasPregunta = {
+  mejorOpcion: string | null;
+  mejorScore: number;
+  segundoScore: number;
+  delta: number;
+  dobleMarcada: boolean;
+  suficiente: boolean;
+  confianza: number;
+  scoreMean: number;
+  scoreStd: number;
+  scoreThreshold: number;
+};
+
+export type UmbralesDecisionOmr = {
+  scoreMin: number;
+  scoreStd: number;
+  strongScore: number;
+  secondRatio: number;
+  deltaMin: number;
+  ambiguityRatio?: number;
+  minTopScoreForAmbiguity?: number;
+  minFillDelta?: number;
+  minCenterGap?: number;
+  minHybridConfidence?: number;
+};
+
+type RasgosBurbuja = {
+  score: number;
+  ratio: number;
+  ratioRing: number;
+  contraste: number;
+  ringContrast: number;
+  fillDelta: number;
+  centerMean: number;
+  ringMean: number;
+  outerMean: number;
+};
+
+function calcularRangoLocalBusqueda(
+  centros: CentroOpcion[],
+  params: ParametrosBurbujaCore,
+  localSearchRatio: number
+) {
+  if (centros.length < 2) return Math.max(8, Math.round(params.radio * 0.55));
+  const distanciaMin = calcularDistanciaMinimaCentros(centros);
+  const porRadio = Math.max(8, Math.round(params.radio * 0.55));
+  const porDistancia = Number.isFinite(distanciaMin)
+    ? Math.max(8, Math.round(distanciaMin * localSearchRatio))
+    : Math.max(8, Math.round(params.ringOuter * 0.8));
+  return Math.min(Math.max(porRadio, porDistancia), Math.max(8, Math.round(params.ringOuter * 0.8)));
+}
+
+export function calcularDistanciaMinimaCentros(centros: CentroOpcion[]) {
+  if (centros.length < 2) return Number.POSITIVE_INFINITY;
+  let distanciaMin = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < centros.length; i += 1) {
+    for (let j = i + 1; j < centros.length; j += 1) {
+      const dx = centros[i].punto.x - centros[j].punto.x;
+      const dy = centros[i].punto.y - centros[j].punto.y;
+      const distancia = Math.hypot(dx, dy);
+      if (distancia > 0.5 && distancia < distanciaMin) distanciaMin = distancia;
+    }
+  }
+  return distanciaMin;
+}
+
+export function evaluarConOffset(args: {
+  gray: Uint8ClampedArray;
+  integral: Uint32Array;
+  width: number;
+  height: number;
+  centros: CentroOpcion[];
+  dx: number;
+  dy: number;
+  params: ParametrosBurbujaCore;
+  localSearchRatio: number;
+  localDriftPenalty: number;
+  detectarOpcion: (
+    gray: Uint8ClampedArray,
+    integral: Uint32Array,
+    width: number,
+    height: number,
+    centro: Punto,
+    params: ParametrosBurbujaCore
+  ) => { score: number };
+}): EvaluarConOffsetResultado {
+  const { gray, integral, width, height, centros, dx, dy, params, localSearchRatio, localDriftPenalty, detectarOpcion } = args;
+  let mejorOpcion: string | null = null;
+  let mejorScore = 0;
+  let segundoScore = 0;
+  const scores: OpcionScore[] = [];
+  const rangoLocal = calcularRangoLocalBusqueda(centros, params, localSearchRatio);
+  const pasoLocal = Math.max(1, Math.round(rangoLocal / 4));
+
+  for (const opcion of centros) {
+    const base = { x: opcion.punto.x + dx, y: opcion.punto.y + dy };
+    let mejorLocal = -Infinity;
+    let mejorLocalAjustado = -Infinity;
+    let mejorX = base.x;
+    let mejorY = base.y;
+    for (let oy = -rangoLocal; oy <= rangoLocal; oy += pasoLocal) {
+      for (let ox = -rangoLocal; ox <= rangoLocal; ox += pasoLocal) {
+        if (ox * ox + oy * oy > rangoLocal * rangoLocal) continue;
+        const punto = { x: base.x + ox, y: base.y + oy };
+        const { score } = detectarOpcion(gray, integral, width, height, punto, params);
+        const desplazamientoNormalizado = Math.hypot(ox, oy) / Math.max(1, rangoLocal);
+        const scoreAjustado = score - desplazamientoNormalizado * localDriftPenalty;
+        if (scoreAjustado > mejorLocalAjustado) {
+          mejorLocalAjustado = scoreAjustado;
+          mejorLocal = score;
+          mejorX = punto.x;
+          mejorY = punto.y;
+        }
+      }
+    }
+    const score = Math.max(0, mejorLocal);
+    scores.push({ letra: opcion.letra, score, x: mejorX, y: mejorY });
+    if (score > mejorScore) {
+      segundoScore = mejorScore;
+      mejorScore = score;
+      mejorOpcion = opcion.letra;
+    } else if (score > segundoScore) {
+      segundoScore = score;
+    }
+  }
+
+  return { mejorOpcion, mejorScore, segundoScore, scores };
+}
+
+export function buscarMejorOffsetPregunta(args: {
+  estado: EstadoImagenOmr;
+  centros: CentroOpcion[];
+  alignRange: number;
+  maxCenterDriftRatio?: number;
+  minSafeRange?: number;
+  evaluarAlineacionOffset: (
+    gray: Uint8ClampedArray,
+    integral: Uint32Array,
+    width: number,
+    height: number,
+    centros: CentroOpcion[],
+    dx: number,
+    dy: number,
+    params: ParametrosBurbujaCore
+  ) => number;
+}) {
+  const { estado, centros, alignRange, maxCenterDriftRatio = 0.3, minSafeRange = 4, evaluarAlineacionOffset } = args;
+  const { gray, integral, width, height, paramsBurbuja } = estado;
+  const distanciaMinCentros = calcularDistanciaMinimaCentros(centros);
+  const rangoBase = Math.max(alignRange, Math.round(paramsBurbuja.ringOuter * 1.2));
+  const rangoSeguro = Number.isFinite(distanciaMinCentros)
+    ? Math.max(minSafeRange, Math.round(distanciaMinCentros * maxCenterDriftRatio))
+    : rangoBase;
+  const rango = Math.min(rangoBase, rangoSeguro);
+  const paso = Math.max(1, Math.round(paramsBurbuja.radio / 4));
+
+  let mejorDx = 0;
+  let mejorDy = 0;
+  let mejorAlineacion = -Infinity;
+  for (let dy = -rango; dy <= rango; dy += paso) {
+    for (let dx = -rango; dx <= rango; dx += paso) {
+      const alineacion = evaluarAlineacionOffset(gray, integral, width, height, centros, dx, dy, paramsBurbuja);
+      if (alineacion > mejorAlineacion) {
+        mejorAlineacion = alineacion;
+        mejorDx = dx;
+        mejorDy = dy;
+      }
+    }
+  }
+  return { mejorDx, mejorDy };
+}
+
+export function calcularMetricasPregunta(args: {
+  estado: EstadoImagenOmr;
+  centros: CentroOpcion[];
+  resultado: EvaluarConOffsetResultado;
+  mejorDx: number;
+  mejorDy: number;
+  umbrales: UmbralesDecisionOmr;
+  detectarOpcion: (
+    gray: Uint8ClampedArray,
+    integral: Uint32Array,
+    width: number,
+    height: number,
+    centro: Punto,
+    params: ParametrosBurbujaCore
+  ) => RasgosBurbuja;
+}): MetricasPregunta {
+  const { estado, centros, resultado, mejorDx, mejorDy, umbrales, detectarOpcion } = args;
+  const { gray, integral, width, height, paramsBurbuja } = estado;
+  const mejorScore = resultado.mejorScore;
+  const segundoScore = resultado.segundoScore;
+  const delta = mejorScore - segundoScore;
+  const ratio = segundoScore / Math.max(0.0001, mejorScore);
+  const scores = resultado.scores.map((item) => item.score);
+  const promedioScore = scores.reduce((acc, val) => acc + val, 0) / Math.max(1, scores.length);
+  const varianzaScore =
+    scores.reduce((acc, val) => acc + (val - promedioScore) * (val - promedioScore), 0) / Math.max(1, scores.length);
+  const desviacionScore = Math.sqrt(Math.max(0, varianzaScore));
+  const umbralScore = Math.max(umbrales.scoreMin, promedioScore + umbrales.scoreStd * desviacionScore);
+  const topScores = resultado.scores.map((item) => item.score).sort((a, b) => b - a);
+  const top1 = topScores[0] ?? 0;
+  const top2 = topScores[1] ?? 0;
+  const topRatio = top2 / Math.max(0.0001, top1);
+  const ambiguityRatio = umbrales.ambiguityRatio ?? 0.87;
+  const minTopScoreForAmbiguity = umbrales.minTopScoreForAmbiguity ?? Math.max(umbrales.strongScore * 0.9, umbralScore * 0.85);
+  const opcionesCompetitivas = topScores.filter(
+    (score) => score >= Math.max(umbrales.strongScore * 0.75, umbralScore * 0.9, mejorScore * 0.7)
+  ).length;
+  const scoresDirectos = centros.map((item) =>
+    detectarOpcion(gray, integral, width, height, { x: item.punto.x + mejorDx, y: item.punto.y + mejorDy }, paramsBurbuja).score
+  );
+  const fuertesDirectos = scoresDirectos.filter(
+    (score) => score >= Math.max(umbrales.strongScore * 0.8, umbralScore * 0.95)
+  ).length;
+
+  const ordenar = [...resultado.scores].sort((a, b) => b.score - a.score);
+  const top = ordenar[0];
+  const second = ordenar[1];
+  const rasgosTop = top
+    ? detectarOpcion(gray, integral, width, height, { x: top.x, y: top.y }, paramsBurbuja)
+    : null;
+  const rasgosSecond = second
+    ? detectarOpcion(gray, integral, width, height, { x: second.x, y: second.y }, paramsBurbuja)
+    : null;
+
+  const minFillDelta = umbrales.minFillDelta ?? 0.08;
+  const minCenterGap = umbrales.minCenterGap ?? 10;
+  const minHybridConfidence = umbrales.minHybridConfidence ?? 0.35;
+
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const confianzaHibrida = (rasgos: RasgosBurbuja | null) => {
+    if (!rasgos) return 0;
+    const gapCentro = rasgos.ringMean - rasgos.centerMean;
+    const fFill = clamp01((rasgos.fillDelta - minFillDelta) / 0.14);
+    const fGap = clamp01((gapCentro - minCenterGap) / 28);
+    const fContraste = clamp01((rasgos.contraste - 0.06) / 0.22);
+    const pRing = clamp01((rasgos.ratioRing - 0.35) / 0.5);
+    return clamp01(fFill * 0.45 + fGap * 0.35 + fContraste * 0.2 - pRing * 0.2);
+  };
+
+  const hTop = confianzaHibrida(rasgosTop);
+  const hSecond = confianzaHibrida(rasgosSecond);
+  const gapCentroTop = rasgosTop ? rasgosTop.ringMean - rasgosTop.centerMean : 0;
+
+  const dobleMarcada =
+    (segundoScore >= umbrales.strongScore && ratio >= umbrales.secondRatio) ||
+    opcionesCompetitivas >= 2 ||
+    fuertesDirectos >= 2 ||
+    (top1 >= minTopScoreForAmbiguity && topRatio >= ambiguityRatio) ||
+    (hTop >= minHybridConfidence * 0.9 && hSecond >= minHybridConfidence * 0.9 && topRatio >= 0.78);
+  const suficienteBase = mejorScore >= umbralScore && delta >= umbrales.deltaMin;
+  const suficienteHibrida = hTop >= minHybridConfidence && (rasgosTop ? rasgosTop.fillDelta >= minFillDelta : false) && gapCentroTop >= minCenterGap;
+  const suficiente = suficienteBase && suficienteHibrida;
+  const confianzaBase = Math.min(1, Math.max(0, mejorScore * 1.8));
+  const penalizacion = dobleMarcada ? 0.5 : 1;
+  const confianza = suficiente ? Math.min(1, (confianzaBase * 0.6 + hTop * 0.4 + Math.min(0.5, delta * 3)) * penalizacion) : 0;
+
+  return {
+    mejorOpcion: resultado.mejorOpcion,
+    mejorScore,
+    segundoScore,
+    delta,
+    dobleMarcada,
+    suficiente,
+    confianza,
+    scoreMean: promedioScore,
+    scoreStd: desviacionScore,
+    scoreThreshold: umbralScore
+  };
+}

@@ -200,6 +200,12 @@ type ResultadoOmr = {
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   advertencias: string[];
   qrTexto?: string;
+  calidadPagina: number;
+  estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+  motivosRevision: string[];
+  templateVersionDetectada: 1 | 2;
+  confianzaPromedioPagina: number;
+  ratioAmbiguas: number;
 };
 
 type PermisosUI = {
@@ -239,6 +245,7 @@ type ResultadoAnalisisOmr = {
   folio: string;
   numeroPagina: number;
   alumnoId?: string | null;
+  templateVersionDetectada?: 1 | 2;
 };
 
 function obtenerSesionDocenteId(): string {
@@ -426,7 +433,8 @@ export function AppDocente() {
   const [cargandoPreviewPdfPlantillaId, setCargandoPreviewPdfPlantillaId] = useState<string | null>(null);
   const paginasEstimadasBackendPorTema = useMemo(() => {
     const mapa = new Map<string, number>();
-    for (const plantilla of plantillas) {
+    const listaPlantillas = Array.isArray(plantillas) ? plantillas : [];
+    for (const plantilla of listaPlantillas) {
       const temas = Array.isArray((plantilla as unknown as { temas?: unknown[] }).temas)
         ? (((plantilla as unknown as { temas?: unknown[] }).temas ?? []) as unknown[])
             .map((t) => String(t ?? '').trim())
@@ -447,6 +455,7 @@ export function AppDocente() {
   const [respuestasEditadas, setRespuestasEditadas] = useState<
     Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>
   >([]);
+  const [revisionOmrConfirmada, setRevisionOmrConfirmada] = useState(false);
   const [examenIdOmr, setExamenIdOmr] = useState<string | null>(null);
   const [examenAlumnoId, setExamenAlumnoId] = useState<string | null>(null);
   const [cargandoDatos, setCargandoDatos] = useState(false);
@@ -860,6 +869,7 @@ export function AppDocente() {
             });
             setResultadoOmr(respuesta.resultado);
             setRespuestasEditadas(respuesta.resultado.respuestasDetectadas);
+            setRevisionOmrConfirmada(false);
             setExamenIdOmr(respuesta.examenId);
             setExamenAlumnoId(respuesta.alumnoId ?? null);
             return respuesta;
@@ -874,6 +884,8 @@ export function AppDocente() {
           resultado={resultadoOmr}
           respuestas={respuestasEditadas}
           onActualizar={(nuevas) => setRespuestasEditadas(nuevas)}
+          revisionOmrConfirmada={revisionOmrConfirmada}
+          onConfirmarRevisionOmr={setRevisionOmrConfirmada}
           examenId={examenIdOmr}
           alumnoId={examenAlumnoId}
           onCalificar={(payload) => {
@@ -7186,6 +7198,100 @@ function QrAccesoMovil({ vista }: { vista: 'entrega' | 'calificaciones' }) {
   );
 }
 
+type CalidadCaptura = {
+  blurVar: number;
+  brilloMedio: number;
+  areaHojaRatio: number;
+  aprobada: boolean;
+  motivos: string[];
+};
+
+const UMBRAL_BLUR = 120;
+const UMBRAL_BRILLO_MIN = 70;
+const UMBRAL_BRILLO_MAX = 210;
+const UMBRAL_AREA_HOJA = 0.65;
+
+async function evaluarCalidadCaptura(dataUrl: string): Promise<CalidadCaptura> {
+  const imagen = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+    img.src = dataUrl;
+  });
+  const maxDimension = 1200;
+  const escala = Math.min(1, maxDimension / Math.max(imagen.width, imagen.height));
+  const width = Math.max(1, Math.round(imagen.width * escala));
+  const height = Math.max(1, Math.round(imagen.height * escala));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return { blurVar: 0, brilloMedio: 0, areaHojaRatio: 0, aprobada: false, motivos: ['No se pudo evaluar la imagen'] };
+  }
+  ctx.drawImage(imagen, 0, 0, width, height);
+  const raw = ctx.getImageData(0, 0, width, height).data;
+  const gray = new Uint8ClampedArray(width * height);
+  let suma = 0;
+  for (let i = 0, p = 0; i < gray.length; i += 1, p += 4) {
+    const v = (raw[p] * 77 + raw[p + 1] * 150 + raw[p + 2] * 29) >> 8;
+    gray[i] = v;
+    suma += v;
+  }
+  const brilloMedio = suma / Math.max(1, gray.length);
+
+  let lapSum = 0;
+  let lapSumSq = 0;
+  let gradMinX = width;
+  let gradMinY = height;
+  let gradMaxX = 0;
+  let gradMaxY = 0;
+  let gradCount = 0;
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const c = gray[y * width + x];
+      const lap =
+        gray[y * width + (x - 1)] +
+        gray[y * width + (x + 1)] +
+        gray[(y - 1) * width + x] +
+        gray[(y + 1) * width + x] -
+        4 * c;
+      lapSum += lap;
+      lapSumSq += lap * lap;
+
+      const gx = gray[y * width + (x + 1)] - gray[y * width + (x - 1)];
+      const gy = gray[(y + 1) * width + x] - gray[(y - 1) * width + x];
+      const g = Math.abs(gx) + Math.abs(gy);
+      if (g > 42) {
+        gradCount += 1;
+        if (x < gradMinX) gradMinX = x;
+        if (x > gradMaxX) gradMaxX = x;
+        if (y < gradMinY) gradMinY = y;
+        if (y > gradMaxY) gradMaxY = y;
+      }
+    }
+  }
+  const lapMean = lapSum / Math.max(1, (width - 2) * (height - 2));
+  const blurVar = Math.max(0, lapSumSq / Math.max(1, (width - 2) * (height - 2)) - lapMean * lapMean);
+  const bboxArea =
+    gradCount > 50 && gradMaxX > gradMinX && gradMaxY > gradMinY ? (gradMaxX - gradMinX + 1) * (gradMaxY - gradMinY + 1) : 0;
+  const areaHojaRatio = bboxArea / Math.max(1, width * height);
+
+  const motivos: string[] = [];
+  if (blurVar < UMBRAL_BLUR) motivos.push('Enfoca mejor la camara (imagen borrosa).');
+  if (brilloMedio < UMBRAL_BRILLO_MIN) motivos.push('Mejora la iluminacion (imagen oscura).');
+  if (brilloMedio > UMBRAL_BRILLO_MAX) motivos.push('Reduce el brillo o evita reflejos.');
+  if (areaHojaRatio < UMBRAL_AREA_HOJA) motivos.push('Ajusta el encuadre para incluir toda la hoja.');
+
+  return {
+    blurVar,
+    brilloMedio,
+    areaHojaRatio,
+    aprobada: motivos.length === 0,
+    motivos
+  };
+}
+
 function SeccionEscaneo({
   alumnos,
   onAnalizar,
@@ -7193,6 +7299,8 @@ function SeccionEscaneo({
   resultado,
   respuestas,
   onActualizar,
+  revisionOmrConfirmada,
+  onConfirmarRevisionOmr,
   puedeAnalizar,
   puedeCalificar,
   avisarSinPermiso
@@ -7207,6 +7315,8 @@ function SeccionEscaneo({
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
+  revisionOmrConfirmada: boolean;
+  onConfirmarRevisionOmr: (confirmada: boolean) => void;
   puedeAnalizar: boolean;
   puedeCalificar: boolean;
   avisarSinPermiso: (mensaje: string) => void;
@@ -7214,6 +7324,7 @@ function SeccionEscaneo({
   const [folio, setFolio] = useState('');
   const [numeroPagina, setNumeroPagina] = useState(1);
   const [imagenBase64, setImagenBase64] = useState('');
+  const [calidadCaptura, setCalidadCaptura] = useState<CalidadCaptura | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [analizando, setAnalizando] = useState(false);
   const [bloqueoManual, setBloqueoManual] = useState(false);
@@ -7223,19 +7334,25 @@ function SeccionEscaneo({
       id: string;
       nombre: string;
       imagenBase64: string;
-      estado: 'pendiente' | 'analizando' | 'precalificando' | 'listo' | 'error';
+      estado: 'pendiente' | 'analizando' | 'precalificando' | 'listo' | 'error' | 'rechazado_calidad';
       mensaje?: string;
       folio?: string;
       numeroPagina?: number;
       alumnoId?: string | null;
       preview?: PreviewCalificacion | null;
+      calidad?: CalidadCaptura;
     }>
   >([]);
 
-  const puedeAnalizarImagen = Boolean(imagenBase64);
+  const puedeAnalizarImagen = Boolean(imagenBase64) && Boolean(calidadCaptura?.aprobada);
   const bloqueoAnalisis = !puedeAnalizar;
   const paginaManual = Number.isFinite(numeroPagina) ? Math.max(0, Math.floor(numeroPagina)) : 0;
   const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [item._id, item.nombreCompleto])), [alumnos]);
+  const requiereRevisionOmr = Boolean(resultado && resultado.estadoAnalisis !== 'ok');
+  const preguntasDudosas = useMemo(
+    () => respuestas.filter((item) => !item.opcion || item.confianza < 0.75),
+    [respuestas]
+  );
 
   async function leerArchivoBase64(archivo: File): Promise<string> {
     const leer = () =>
@@ -7280,7 +7397,19 @@ function SeccionEscaneo({
   async function cargarArchivo(event: ChangeEvent<HTMLInputElement>) {
     const archivo = event.target.files?.[0];
     if (!archivo) return;
-    setImagenBase64(await leerArchivoBase64(archivo));
+    onConfirmarRevisionOmr(false);
+    const base64 = await leerArchivoBase64(archivo);
+    setImagenBase64(base64);
+    try {
+      const calidad = await evaluarCalidadCaptura(base64);
+      setCalidadCaptura(calidad);
+      if (!calidad.aprobada) {
+        setMensaje('La imagen no cumple calidad minima. Corrige y vuelve a capturar.');
+      }
+    } catch {
+      setCalidadCaptura(null);
+      setMensaje('No se pudo evaluar la calidad de la imagen.');
+    }
   }
 
   async function cargarLote(event: ChangeEvent<HTMLInputElement>) {
@@ -7290,12 +7419,21 @@ function SeccionEscaneo({
     const nuevos: typeof lote = [];
     for (const archivo of archivos) {
       const base64 = await leerArchivoBase64(archivo);
+      let calidad: CalidadCaptura | undefined;
+      try {
+        calidad = await evaluarCalidadCaptura(base64);
+      } catch {
+        calidad = undefined;
+      }
+      const aprobada = Boolean(calidad?.aprobada);
       nuevos.push({
         id: `${archivo.name}-${archivo.size}-${archivo.lastModified}-${Math.random().toString(16).slice(2)}`,
         nombre: archivo.name,
         imagenBase64: base64,
-        estado: 'pendiente',
-        preview: null
+        estado: aprobada ? 'pendiente' : 'rechazado_calidad',
+        mensaje: aprobada ? '' : (calidad?.motivos.join(' ') || 'No cumple el gate de calidad.'),
+        preview: null,
+        calidad
       });
     }
     setLote((prev) => [...nuevos, ...prev]);
@@ -7308,9 +7446,14 @@ function SeccionEscaneo({
         avisarSinPermiso('No tienes permiso para analizar OMR.');
         return;
       }
+      if (!calidadCaptura?.aprobada) {
+        setMensaje('La captura no pasa el control de calidad. Ajusta enfoque/iluminacion y reintenta.');
+        return;
+      }
       setAnalizando(true);
       setMensaje('');
       const respuesta = await onAnalizar(folio.trim(), paginaManual > 0 ? paginaManual : 0, imagenBase64);
+      onConfirmarRevisionOmr(false);
       if (respuesta.resultado.qrTexto) {
         setBloqueoManual(true);
         setFolio(respuesta.folio);
@@ -7348,11 +7491,24 @@ function SeccionEscaneo({
     setProcesandoLote(true);
     for (const item of lote) {
       if (item.estado === 'listo') continue;
+      if (!item.calidad?.aprobada) {
+        setLote((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, estado: 'rechazado_calidad', mensaje: i.mensaje || 'Imagen descartada por calidad' } : i))
+        );
+        continue;
+      }
       setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'analizando', mensaje: '' } : i)));
       try {
         const folioEnvio = folio.trim();
         const paginaEnvio = paginaManual > 0 ? paginaManual : 0;
         const respuesta = await onAnalizar(folioEnvio, paginaEnvio, item.imagenBase64);
+        if (respuesta.resultado.estadoAnalisis !== 'ok') {
+          const motivo = respuesta.resultado.motivosRevision?.[0] || `Estado ${respuesta.resultado.estadoAnalisis}`;
+          setLote((prev) =>
+            prev.map((i) => (i.id === item.id ? { ...i, estado: 'error', mensaje: `Requiere revisión manual: ${motivo}` } : i))
+          );
+          continue;
+        }
         setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'precalificando' } : i)));
         const preview = await onPrevisualizar({
           examenGeneradoId: respuesta.examenId,
@@ -7516,6 +7672,13 @@ function SeccionEscaneo({
         Imagen
         <input type="file" accept="image/*" capture="environment" onChange={cargarArchivo} disabled={bloqueoAnalisis} />
       </label>
+      {calidadCaptura && (
+        <InlineMensaje tipo={calidadCaptura.aprobada ? 'ok' : 'warning'}>
+          Calidad captura: blur {Math.round(calidadCaptura.blurVar)} · brillo {Math.round(calidadCaptura.brilloMedio)} · hoja{' '}
+          {(calidadCaptura.areaHojaRatio * 100).toFixed(0)}%.
+          {calidadCaptura.motivos.length > 0 ? ` ${calidadCaptura.motivos.join(' ')}` : ' Lista para analizar.'}
+        </InlineMensaje>
+      )}
       <Boton
         type="button"
         icono={<Icono nombre="escaneo" />}
@@ -7543,7 +7706,7 @@ function SeccionEscaneo({
         <div className="resultado">
           <h3>Procesamiento en lote</h3>
           <progress
-            value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error').length}
+            value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error' || i.estado === 'rechazado_calidad').length}
             max={lote.length}
           />
           <ul className="lista lista-items">
@@ -7558,6 +7721,7 @@ function SeccionEscaneo({
                         {item.estado === 'analizando' && 'Analizando…'}
                         {item.estado === 'precalificando' && 'Precalificando…'}
                         {item.estado === 'listo' && 'Listo'}
+                        {item.estado === 'rechazado_calidad' && `Descartada por calidad: ${item.mensaje ?? ''}`}
                         {item.estado === 'error' && `Error: ${item.mensaje ?? ''}`}
                       </div>
                       {item.folio && (
@@ -7601,6 +7765,33 @@ function SeccionEscaneo({
       {resultado && (
         <div className="resultado">
           <h3>Respuestas detectadas</h3>
+          <div className="item-sub">
+            Estado: <b>{resultado.estadoAnalisis}</b> · Calidad {Math.round(resultado.calidadPagina * 100)}% · Confianza media{' '}
+            {Math.round(resultado.confianzaPromedioPagina * 100)}% · Ambiguas {(resultado.ratioAmbiguas * 100).toFixed(1)}%
+          </div>
+          {resultado.motivosRevision.length > 0 && (
+            <div className="alerta">
+              {resultado.motivosRevision.map((m, idx) => (
+                <p key={idx}>{m}</p>
+              ))}
+            </div>
+          )}
+          {requiereRevisionOmr && (
+            <div className="item-row" style={{ margin: '0.6rem 0' }}>
+              <div className="item-sub">
+                Revisión OMR requerida. Preguntas dudosas: <b>{preguntasDudosas.length}</b>
+              </div>
+              <div className="item-actions">
+                <Boton
+                  type="button"
+                  variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
+                  onClick={() => onConfirmarRevisionOmr(!revisionOmrConfirmada)}
+                >
+                  {revisionOmrConfirmada ? 'Revisión confirmada' : 'Confirmar revisión manual'}
+                </Boton>
+              </div>
+            </div>
+          )}
           <ul className="lista lista-items">
             {respuestas.map((item, idx) => (
               <li key={item.numeroPregunta}>
@@ -7618,6 +7809,7 @@ function SeccionEscaneo({
                           const nuevas = [...respuestas];
                           nuevas[idx] = { ...nuevas[idx], opcion: event.target.value || null };
                           onActualizar(nuevas);
+                          onConfirmarRevisionOmr(false);
                         }}
                       >
                         <option value="">-</option>
@@ -7653,6 +7845,8 @@ function SeccionCalificaciones({
   resultado,
   respuestas,
   onActualizar,
+  revisionOmrConfirmada,
+  onConfirmarRevisionOmr,
   examenId,
   alumnoId,
   onCalificar,
@@ -7669,6 +7863,8 @@ function SeccionCalificaciones({
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
+  revisionOmrConfirmada: boolean;
+  onConfirmarRevisionOmr: (confirmada: boolean) => void;
   examenId: string | null;
   alumnoId: string | null;
   onCalificar: (payload: {
@@ -7681,6 +7877,15 @@ function SeccionCalificaciones({
     proyecto?: number;
     retroalimentacion?: string;
     respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+    omrAnalisis?: {
+      estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+      calidadPagina: number;
+      confianzaPromedioPagina: number;
+      ratioAmbiguas: number;
+      templateVersionDetectada: 1 | 2;
+      motivosRevision: string[];
+      revisionConfirmada: boolean;
+    };
   }) => Promise<unknown>;
   permisos: PermisosUI;
   avisarSinPermiso: (mensaje: string) => void;
@@ -7704,6 +7909,8 @@ function SeccionCalificaciones({
         resultado={resultado}
         respuestas={respuestas}
         onActualizar={onActualizar}
+        revisionOmrConfirmada={revisionOmrConfirmada}
+        onConfirmarRevisionOmr={onConfirmarRevisionOmr}
         puedeAnalizar={puedeAnalizar}
         puedeCalificar={puedeCalificar}
         avisarSinPermiso={avisarSinPermiso}
@@ -7711,6 +7918,8 @@ function SeccionCalificaciones({
       <SeccionCalificar
         examenId={examenId}
         alumnoId={alumnoId}
+        resultadoOmr={resultado}
+        revisionOmrConfirmada={revisionOmrConfirmada}
         respuestasDetectadas={respuestas}
         onCalificar={onCalificar}
         puedeCalificar={puedeCalificar}
@@ -7723,6 +7932,8 @@ function SeccionCalificaciones({
 function SeccionCalificar({
   examenId,
   alumnoId,
+  resultadoOmr,
+  revisionOmrConfirmada,
   respuestasDetectadas,
   onCalificar,
   puedeCalificar,
@@ -7730,6 +7941,8 @@ function SeccionCalificar({
 }: {
   examenId: string | null;
   alumnoId: string | null;
+  resultadoOmr: ResultadoOmr | null;
+  revisionOmrConfirmada: boolean;
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null }>;
   onCalificar: (payload: {
     examenGeneradoId: string;
@@ -7741,6 +7954,15 @@ function SeccionCalificar({
     proyecto?: number;
     retroalimentacion?: string;
     respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+    omrAnalisis?: {
+      estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+      calidadPagina: number;
+      confianzaPromedioPagina: number;
+      ratioAmbiguas: number;
+      templateVersionDetectada: 1 | 2;
+      motivosRevision: string[];
+      revisionConfirmada: boolean;
+    };
   }) => Promise<unknown>;
   puedeCalificar: boolean;
   avisarSinPermiso: (mensaje: string) => void;
@@ -7751,7 +7973,10 @@ function SeccionCalificar({
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
 
-  const puedeCalificarLocal = Boolean(examenId && alumnoId);
+  const requiereRevisionConfirmacion = Boolean(
+    resultadoOmr && resultadoOmr.estadoAnalisis !== 'ok' && !revisionOmrConfirmada
+  );
+  const puedeCalificarLocal = Boolean(examenId && alumnoId) && !requiereRevisionConfirmacion;
   const bloqueoCalificar = !puedeCalificar;
 
   async function calificar() {
@@ -7773,7 +7998,18 @@ function SeccionCalificar({
         bonoSolicitado: bono,
         evaluacionContinua,
         proyecto,
-        respuestasDetectadas
+        respuestasDetectadas,
+        omrAnalisis: resultadoOmr
+          ? {
+              estadoAnalisis: resultadoOmr.estadoAnalisis,
+              calidadPagina: resultadoOmr.calidadPagina,
+              confianzaPromedioPagina: resultadoOmr.confianzaPromedioPagina,
+              ratioAmbiguas: resultadoOmr.ratioAmbiguas,
+              templateVersionDetectada: resultadoOmr.templateVersionDetectada,
+              motivosRevision: resultadoOmr.motivosRevision,
+              revisionConfirmada: revisionOmrConfirmada
+            }
+          : undefined
       });
       setMensaje('Calificacion guardada');
       emitToast({ level: 'ok', title: 'Calificacion', message: 'Calificacion guardada', durationMs: 2200 });
@@ -7802,6 +8038,9 @@ function SeccionCalificar({
         </h2>
         <p>Examen: {examenId ?? 'Sin examen'}</p>
         <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
+        {requiereRevisionConfirmacion && (
+          <InlineMensaje tipo="warning">Debes confirmar la revisión OMR en la sección de escaneo antes de calificar.</InlineMensaje>
+        )}
         <label className="campo">
           Bono (max 0.5)
           <input

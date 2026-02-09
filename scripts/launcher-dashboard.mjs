@@ -735,7 +735,7 @@ function requestDockerAutostart(reason = 'startup') {
 }
 
 // Check a local endpoint with a small timeout for health reporting.
-async function checkHealth(url, timeoutMs = 1500) {
+async function checkHealth(url, timeoutMs = 3000) {
   return new Promise((resolve) => {
     const started = Date.now();
     try {
@@ -747,6 +747,7 @@ async function checkHealth(url, timeoutMs = 1500) {
         port: u.port ? Number(u.port) : (isHttps ? 443 : 80),
         path: u.pathname + (u.search || ''),
         method: 'GET',
+        family: 4,
         timeout: timeoutMs,
         rejectUnauthorized: false
       }, (res) => {
@@ -770,11 +771,13 @@ async function checkHealth(url, timeoutMs = 1500) {
 async function collectHealth() {
   const httpsState = resolveHttpsState();
   const devScheme = httpsState.mode === 'https' ? 'https' : 'http';
+  const apiPort = Number(process.env.PUERTO_API || process.env.PORT || 4000) || 4000;
+  const portalPort = Number(process.env.PUERTO_PORTAL || 8080) || 8080;
   const targets = {
-    apiDocente: 'http://localhost:4000/api/salud',
-    apiPortal: 'http://localhost:8080/api/portal/salud',
-    webDocenteDev: `${devScheme}://localhost:5173`,
-    webDocenteProd: 'http://localhost:4173'
+    apiDocente: `http://127.0.0.1:${apiPort}/api/salud`,
+    apiPortal: `http://127.0.0.1:${portalPort}/api/portal/salud`,
+    webDocenteDev: `${devScheme}://127.0.0.1:5173`,
+    webDocenteProd: 'http://127.0.0.1:4173'
   };
 
   const entries = await Promise.all(

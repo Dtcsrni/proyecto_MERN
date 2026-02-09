@@ -15,40 +15,118 @@ function mmAPuntos(mm: number) {
   return mm * MM_A_PUNTOS;
 }
 
-function agregarMarcasRegistro(page: PDFPage, margen: number) {
-  const largo = 12;
-  const color = rgb(0, 0, 0);
+type TemplateVersion = 1 | 2;
 
-  page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen + largo, y: ALTO_CARTA - margen }, color });
-  page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen, y: ALTO_CARTA - margen - largo }, color });
+type PerfilPlantillaOmr = {
+  version: TemplateVersion;
+  qrSize: number;
+  qrPadding: number;
+  qrMarginModulos: number;
+  qrRasterWidth: number;
+  marcasEsquina: 'lineas' | 'cuadrados';
+  marcaCuadradoSize: number;
+  marcaCuadradoQuietZone: number;
+  burbujaRadio: number;
+  burbujaPasoY: number;
+  cajaOmrAncho: number;
+  fiducialSize: number;
+};
 
-  page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen - largo, y: ALTO_CARTA - margen }, color });
-  page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen - largo }, color });
+const PERFIL_OMR_V1: PerfilPlantillaOmr = {
+  version: 1,
+  qrSize: 68,
+  qrPadding: 2,
+  qrMarginModulos: 4,
+  qrRasterWidth: 520,
+  marcasEsquina: 'lineas',
+  marcaCuadradoSize: 12,
+  marcaCuadradoQuietZone: 4,
+  burbujaRadio: 3.4,
+  burbujaPasoY: 8.4,
+  cajaOmrAncho: 42,
+  fiducialSize: 5
+};
 
-  page.drawLine({ start: { x: margen, y: margen }, end: { x: margen + largo, y: margen }, color });
-  page.drawLine({ start: { x: margen, y: margen }, end: { x: margen, y: margen + largo }, color });
+const PERFIL_OMR_V2: PerfilPlantillaOmr = {
+  version: 2,
+  qrSize: 88,
+  qrPadding: 4,
+  qrMarginModulos: 6,
+  qrRasterWidth: 620,
+  marcasEsquina: 'cuadrados',
+  marcaCuadradoSize: 12,
+  marcaCuadradoQuietZone: 4,
+  burbujaRadio: 5,
+  burbujaPasoY: 14,
+  cajaOmrAncho: 60,
+  fiducialSize: 7
+};
 
-  page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen - largo, y: margen }, color });
-  page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen, y: margen + largo }, color });
+function obtenerPerfilPlantilla(templateVersion: number | undefined): PerfilPlantillaOmr {
+  return templateVersion === 2 ? PERFIL_OMR_V2 : PERFIL_OMR_V1;
 }
 
-const QR_SIZE = 68;
-const QR_PADDING = 2;
+function agregarMarcasRegistro(page: PDFPage, margen: number, perfil: PerfilPlantillaOmr) {
+  if (perfil.marcasEsquina === 'lineas') {
+    const largo = 12;
+    const color = rgb(0, 0, 0);
 
-async function agregarQr(pdfDoc: PDFDocument, page: PDFPage, qrTexto: string, margen: number) {
+    page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen + largo, y: ALTO_CARTA - margen }, color });
+    page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen, y: ALTO_CARTA - margen - largo }, color });
+
+    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen - largo, y: ALTO_CARTA - margen }, color });
+    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen - largo }, color });
+
+    page.drawLine({ start: { x: margen, y: margen }, end: { x: margen + largo, y: margen }, color });
+    page.drawLine({ start: { x: margen, y: margen }, end: { x: margen, y: margen + largo }, color });
+
+    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen - largo, y: margen }, color });
+    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen, y: margen + largo }, color });
+    return;
+  }
+
+  const quiet = perfil.marcaCuadradoQuietZone;
+  const tam = perfil.marcaCuadradoSize;
+  const mitad = tam / 2;
+  const esquinas = [
+    { x: margen, y: ALTO_CARTA - margen },
+    { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen },
+    { x: margen, y: margen },
+    { x: ANCHO_CARTA - margen, y: margen }
+  ];
+
+  for (const esquina of esquinas) {
+    page.drawRectangle({
+      x: esquina.x - mitad - quiet,
+      y: esquina.y - mitad - quiet,
+      width: tam + quiet * 2,
+      height: tam + quiet * 2,
+      color: rgb(1, 1, 1)
+    });
+    page.drawRectangle({
+      x: esquina.x - mitad,
+      y: esquina.y - mitad,
+      width: tam,
+      height: tam,
+      color: rgb(0, 0, 0)
+    });
+  }
+}
+
+async function agregarQr(pdfDoc: PDFDocument, page: PDFPage, qrTexto: string, margen: number, perfil: PerfilPlantillaOmr) {
   // QR de alta calidad: genera a mayor resolucion y con ECC alto para mejorar deteccion,
   // pero se incrusta al mismo tamaño final (evita pixeles borrosos por submuestreo pobre).
   const qrDataUrl = await QRCode.toDataURL(qrTexto, {
-    margin: 4,
-    width: 520,
+    margin: perfil.qrMarginModulos,
+    width: perfil.qrRasterWidth,
     errorCorrectionLevel: 'H',
     color: { dark: '#000000', light: '#FFFFFF' }
   });
   const base64 = qrDataUrl.replace(/^data:image\/png;base64,/, '');
   const qrBytes = Uint8Array.from(Buffer.from(base64, 'base64'));
   const qrImage = await pdfDoc.embedPng(qrBytes);
-  const qrSize = QR_SIZE;
-  const padding = QR_PADDING;
+  const qrSize = perfil.qrSize;
+  const padding = perfil.qrPadding;
   const boxW = qrSize + padding * 2;
   const boxH = qrSize + padding * 2;
 
@@ -454,7 +532,8 @@ export async function generarPdfExamen({
   tipoExamen,
   totalPaginas,
   margenMm = 10,
-  encabezado
+  encabezado,
+  templateVersion = 1
 }: {
   titulo: string;
   folio: string;
@@ -463,6 +542,7 @@ export async function generarPdfExamen({
   tipoExamen: 'parcial' | 'global';
   totalPaginas: number;
   margenMm?: number;
+  templateVersion?: TemplateVersion;
   encabezado?: {
     institucion?: string;
     lema?: string;
@@ -482,6 +562,7 @@ export async function generarPdfExamen({
   const fuenteMono = await pdfDoc.embedFont(StandardFonts.Courier);
   const margen = mmAPuntos(margenMm);
   const paginasObjetivo = Number.isFinite(totalPaginas) ? Math.max(1, Math.floor(totalPaginas)) : 1;
+  const perfilOmr = obtenerPerfilPlantilla(templateVersion);
 
   const colorPrimario = rgb(0.07, 0.22, 0.42);
   const colorGris = rgb(0.38, 0.38, 0.38);
@@ -505,12 +586,12 @@ export async function generarPdfExamen({
 
   // OMR: burbujas A–E con espaciado fijo para evitar superposiciones.
   const OMR_TOTAL_LETRAS = 5;
-  const omrRadio = 3.4;
-  const omrPasoY = 8.4;
+  const omrRadio = perfilOmr.burbujaRadio;
+  const omrPasoY = perfilOmr.burbujaPasoY;
   const omrPadding = 2.2;
   const omrExtraTitulo = 9.5;
 
-  const anchoColRespuesta = 42;
+  const anchoColRespuesta = perfilOmr.cajaOmrAncho;
   const gutterRespuesta = 10;
   const xColRespuesta = ANCHO_CARTA - margen - anchoColRespuesta;
   const xDerechaTexto = xColRespuesta - gutterRespuesta;
@@ -561,7 +642,12 @@ export async function generarPdfExamen({
       numeroPregunta: number;
       idPregunta: string;
       opciones: Array<{ letra: string; x: number; y: number }>;
-      fiduciales?: { top: { x: number; y: number }; bottom: { x: number; y: number } };
+      fiduciales?: {
+        leftTop: { x: number; y: number };
+        leftBottom: { x: number; y: number };
+        rightTop: { x: number; y: number };
+        rightBottom: { x: number; y: number };
+      };
     }>;
   }> = [];
 
@@ -585,14 +671,19 @@ export async function generarPdfExamen({
   while (numeroPagina <= paginasObjetivo && (numeroPagina === 1 || indicePregunta < totalPreguntas)) {
     const page = pdfDoc.addPage([ANCHO_CARTA, ALTO_CARTA]);
     const qrTexto = String(folio ?? '').trim().toUpperCase();
-    const qrTextoPagina = `EXAMEN:${qrTexto}:P${numeroPagina}`;
+    const qrTextoPagina = `EXAMEN:${qrTexto}:P${numeroPagina}:TV${perfilOmr.version}`;
     let preguntasDel = 0;
     let preguntasAl = 0;
     const mapaPagina: Array<{
       numeroPregunta: number;
       idPregunta: string;
       opciones: Array<{ letra: string; x: number; y: number }>;
-      fiduciales?: { top: { x: number; y: number }; bottom: { x: number; y: number } };
+      fiduciales?: {
+        leftTop: { x: number; y: number };
+        leftBottom: { x: number; y: number };
+        rightTop: { x: number; y: number };
+        rightBottom: { x: number; y: number };
+      };
     }> = [];
 
     const yTop = ALTO_CARTA - margen;
@@ -611,8 +702,8 @@ export async function generarPdfExamen({
     }
 
     // Marcas y QR (OMR/escaneo)
-    agregarMarcasRegistro(page, margen);
-    const { x: xQr, y: yQr, padding: qrPadding } = await agregarQr(pdfDoc, page, qrTextoPagina, margen);
+    agregarMarcasRegistro(page, margen, perfilOmr);
+    const { x: xQr, y: yQr, padding: qrPadding } = await agregarQr(pdfDoc, page, qrTextoPagina, margen, perfilOmr);
 
     // Folio impreso debajo del QR (sin invadir el quiet-zone) y dentro del encabezado.
     // Si no hay espacio suficiente (p. ej. pagina 1), se reubica al pie para evitar traslapes.
@@ -992,7 +1083,7 @@ export async function generarPdfExamen({
         page.drawText(letra, { x: xBurbuja + 8.5, y: yBurbuja - 3, size: 7.4, font: fuente, color: rgb(0.12, 0.12, 0.12) });
         opcionesOmr.push({ letra, x: xBurbuja, y: yBurbuja });
       }
-      const fidSize = 5;
+      const fidSize = perfilOmr.fiducialSize;
       const fidMargin = 6;
       const xFid = xColRespuesta + fidMargin;
       const xFidRight = xColRespuesta + anchoColRespuesta - fidMargin;
@@ -1012,7 +1103,12 @@ export async function generarPdfExamen({
         numeroPregunta: numero,
         idPregunta: pregunta.id,
         opciones: opcionesOmr,
-        fiduciales: { top: { x: xFid, y: yFidTop }, bottom: { x: xFid, y: yFidBottom } }
+        fiduciales: {
+          leftTop: { x: xFid, y: yFidTop },
+          leftBottom: { x: xFid, y: yFidBottom },
+          rightTop: { x: xFidRight, y: yFidTop },
+          rightBottom: { x: xFidRight, y: yFidBottom }
+        }
       });
     }
 
@@ -1033,7 +1129,7 @@ export async function generarPdfExamen({
     pdfBytes: Buffer.from(pdfBytes),
     paginas: paginasMeta,
     metricasPaginas,
-    mapaOmr: { margenMm, paginas: paginasOmr },
+    mapaOmr: { margenMm, templateVersion: perfilOmr.version, paginas: paginasOmr },
     preguntasRestantes
   };
 }
