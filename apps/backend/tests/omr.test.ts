@@ -48,6 +48,10 @@ describe('analizarOmr', () => {
     expect(resultado.respuestasDetectadas).toHaveLength(1);
     expect(resultado.respuestasDetectadas[0].opcion).toBeNull();
     expect(resultado.respuestasDetectadas[0].confianza).toBe(0);
+    expect(resultado.templateVersionDetectada).toBe(1);
+    expect(['rechazado_calidad', 'requiere_revision']).toContain(resultado.estadoAnalisis);
+    expect(resultado.calidadPagina).toBeGreaterThanOrEqual(0);
+    expect(resultado.calidadPagina).toBeLessThanOrEqual(1);
   });
 
   it('detecta una opcion marcada con referencias de registro', async () => {
@@ -120,6 +124,8 @@ describe('analizarOmr', () => {
     expect(resultado.respuestasDetectadas).toHaveLength(1);
     expect(resultado.respuestasDetectadas[0].opcion).toBe('C');
     expect(resultado.respuestasDetectadas[0].confianza).toBeGreaterThan(0.2);
+    expect(resultado.templateVersionDetectada).toBe(1);
+    expect(resultado.calidadPagina).toBeGreaterThan(0);
   });
 
   it('marca como ambiguo si hay doble respuesta', async () => {
@@ -195,5 +201,7 @@ describe('analizarOmr', () => {
     expect(resultado.respuestasDetectadas).toHaveLength(1);
     expect(resultado.respuestasDetectadas[0].opcion).toBeNull();
     expect(resultado.respuestasDetectadas[0].confianza).toBe(0);
+    expect(resultado.templateVersionDetectada).toBe(1);
+    expect(['ok', 'requiere_revision', 'rechazado_calidad']).toContain(resultado.estadoAnalisis);
   });
 });

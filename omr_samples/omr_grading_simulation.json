@@ -1,0 +1,200 @@
+{
+  "generadoEn": "2026-02-09T11:36:24.856Z",
+  "global": {
+    "imagenes": 8,
+    "folios": 6,
+    "reactivos": 59,
+    "correctas": 12,
+    "incorrectas": 38,
+    "enBlanco": 9,
+    "notaPromedio": 20.34,
+    "precisionContestadasGlobal": 0.24,
+    "foliosConfiabilidadAlta": 0,
+    "foliosConfiabilidadMedia": 0,
+    "foliosConfiabilidadBaja": 6
+  },
+  "cobertura": {
+    "imagenesTotales": 16,
+    "imagenesConComparacion": 8
+  },
+  "folios": [
+    {
+      "folio": "24255CF0",
+      "reactivos": 7,
+      "correctas": 1,
+      "incorrectas": 6,
+      "enBlanco": 0,
+      "contestadas": 7,
+      "paginas": [
+        {
+          "archivo": "1770215756614.jpg",
+          "pagina": 1,
+          "total": 7,
+          "correctas": 1,
+          "incorrectas": 6,
+          "enBlanco": 0,
+          "precisionTotal": 0.1429,
+          "precisionContestadas": 0.1429,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 14.29,
+      "precisionContestadas": 0.1429,
+      "ratioBlancos": 0,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    },
+    {
+      "folio": "364207B6",
+      "reactivos": 15,
+      "correctas": 3,
+      "incorrectas": 8,
+      "enBlanco": 4,
+      "contestadas": 11,
+      "paginas": [
+        {
+          "archivo": "1770215756460.jpg",
+          "pagina": 2,
+          "total": 8,
+          "correctas": 2,
+          "incorrectas": 6,
+          "enBlanco": 0,
+          "precisionTotal": 0.25,
+          "precisionContestadas": 0.25,
+          "advertencias": []
+        },
+        {
+          "archivo": "1770215756699.jpg",
+          "pagina": 1,
+          "total": 7,
+          "correctas": 1,
+          "incorrectas": 2,
+          "enBlanco": 4,
+          "precisionTotal": 0.1429,
+          "precisionContestadas": 0.3333,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 20,
+      "precisionContestadas": 0.2727,
+      "ratioBlancos": 0.2667,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    },
+    {
+      "folio": "41E11592",
+      "reactivos": 7,
+      "correctas": 2,
+      "incorrectas": 5,
+      "enBlanco": 0,
+      "contestadas": 7,
+      "paginas": [
+        {
+          "archivo": "1770215756767.jpg",
+          "pagina": 1,
+          "total": 7,
+          "correctas": 2,
+          "incorrectas": 5,
+          "enBlanco": 0,
+          "precisionTotal": 0.2857,
+          "precisionContestadas": 0.2857,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 28.57,
+      "precisionContestadas": 0.2857,
+      "ratioBlancos": 0,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    },
+    {
+      "folio": "44FB6D76",
+      "reactivos": 8,
+      "correctas": 1,
+      "incorrectas": 7,
+      "enBlanco": 0,
+      "contestadas": 8,
+      "paginas": [
+        {
+          "archivo": "1770215757000.jpg",
+          "pagina": 2,
+          "total": 8,
+          "correctas": 1,
+          "incorrectas": 7,
+          "enBlanco": 0,
+          "precisionTotal": 0.125,
+          "precisionContestadas": 0.125,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 12.5,
+      "precisionContestadas": 0.125,
+      "ratioBlancos": 0,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    },
+    {
+      "folio": "4ABDD6B5",
+      "reactivos": 7,
+      "correctas": 0,
+      "incorrectas": 6,
+      "enBlanco": 1,
+      "contestadas": 6,
+      "paginas": [
+        {
+          "archivo": "1770215757334.jpg",
+          "pagina": 1,
+          "total": 7,
+          "correctas": 0,
+          "incorrectas": 6,
+          "enBlanco": 1,
+          "precisionTotal": 0,
+          "precisionContestadas": 0,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 0,
+      "precisionContestadas": 0,
+      "ratioBlancos": 0.1429,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    },
+    {
+      "folio": "EDCD030C",
+      "reactivos": 15,
+      "correctas": 5,
+      "incorrectas": 6,
+      "enBlanco": 4,
+      "contestadas": 11,
+      "paginas": [
+        {
+          "archivo": "1770215756348.jpg",
+          "pagina": 1,
+          "total": 7,
+          "correctas": 2,
+          "incorrectas": 3,
+          "enBlanco": 2,
+          "precisionTotal": 0.2857,
+          "precisionContestadas": 0.4,
+          "advertencias": []
+        },
+        {
+          "archivo": "1770215756923.jpg",
+          "pagina": 2,
+          "total": 8,
+          "correctas": 3,
+          "incorrectas": 3,
+          "enBlanco": 2,
+          "precisionTotal": 0.375,
+          "precisionContestadas": 0.5,
+          "advertencias": []
+        }
+      ],
+      "notaSobre100": 33.33,
+      "precisionContestadas": 0.4545,
+      "ratioBlancos": 0.2667,
+      "advertenciasTotales": 0,
+      "confiabilidad": "baja"
+    }
+  ]
+}

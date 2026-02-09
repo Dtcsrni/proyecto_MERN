@@ -252,6 +252,10 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     if (Number.isFinite(legacy) && legacy >= 1) return (plantilla as unknown as { tipo?: string })?.tipo === 'global' ? 4 : 2;
     return 1;
   })();
+  const templateVersion = (() => {
+    const tv = Number((examen as unknown as { mapaOmr?: { templateVersion?: unknown } })?.mapaOmr?.templateVersion);
+    return tv === 2 ? 2 : 1;
+  })();
 
   const { pdfBytes, paginas, mapaOmr, preguntasRestantes } = await generarPdfExamen({
     titulo: String(plantilla.titulo ?? ''),
@@ -262,6 +266,7 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     tipoExamen: plantilla.tipo as 'parcial' | 'global',
     totalPaginas: numeroPaginas,
     margenMm: (plantilla as unknown as { configuracionPdf?: { margenMm?: number } })?.configuracionPdf?.margenMm ?? 10,
+    templateVersion,
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
       docente: String((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto ?? ''),
