@@ -248,6 +248,164 @@ type ResultadoAnalisisOmr = {
   templateVersionDetectada?: 1 | 2;
 };
 
+type RevisionPaginaOmr = {
+  numeroPagina: number;
+  resultado: ResultadoOmr;
+  respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  imagenBase64?: string;
+  nombreArchivo?: string;
+  actualizadoEn: number;
+};
+
+type RevisionExamenOmr = {
+  examenId: string;
+  folio: string;
+  alumnoId?: string | null;
+  paginas: RevisionPaginaOmr[];
+  claveCorrectaPorNumero: Record<number, string>;
+  ordenPreguntas: number[];
+  revisionConfirmada: boolean;
+  actualizadoEn: number;
+  creadoEn: number;
+};
+
+type ExamenGeneradoClave = {
+  _id?: string;
+  periodoId?: string;
+  mapaVariante?: {
+    ordenPreguntas?: string[];
+    ordenOpcionesPorPregunta?: Record<string, number[]>;
+  };
+  preguntasIds?: string[];
+};
+
+function resolverLetraCorrectaEnOrden(opciones: Array<{ esCorrecta?: boolean }>, ordenOpciones: number[]): string | null {
+  const indiceCorrecto = opciones.findIndex((opcion) => opcion?.esCorrecta === true);
+  if (indiceCorrecto < 0) return null;
+  const posicion = ordenOpciones.findIndex((indice) => Number(indice) === indiceCorrecto);
+  if (posicion < 0) return null;
+  return String.fromCharCode(65 + posicion);
+}
+
+function construirClaveCorrectaExamen(
+  examen: ExamenGeneradoClave | null | undefined,
+  bancoPreguntas: Pregunta[]
+): { claveCorrectaPorNumero: Record<number, string>; ordenPreguntas: number[] } {
+  const ordenPreguntasIds = Array.isArray(examen?.mapaVariante?.ordenPreguntas)
+    ? examen!.mapaVariante!.ordenPreguntas!.map((id) => String(id))
+    : Array.isArray(examen?.preguntasIds)
+      ? examen!.preguntasIds!.map((id) => String(id))
+      : [];
+  if (ordenPreguntasIds.length === 0) {
+    return { claveCorrectaPorNumero: {}, ordenPreguntas: [] };
+  }
+  const mapaPreguntas = new Map(bancoPreguntas.map((pregunta) => [String(pregunta._id), pregunta]));
+  const claveCorrectaPorNumero: Record<number, string> = {};
+  const ordenPreguntas: number[] = [];
+
+  ordenPreguntasIds.forEach((idPregunta, idx) => {
+    const pregunta = mapaPreguntas.get(idPregunta);
+    if (!pregunta) return;
+    const versiones = Array.isArray(pregunta.versiones) ? pregunta.versiones : [];
+    const version =
+      versiones.find((item) => Number(item?.numeroVersion) === Number(pregunta.versionActual)) ??
+      versiones[versiones.length - 1];
+    const opciones = Array.isArray(version?.opciones) ? version!.opciones! : [];
+    const ordenOpciones = Array.isArray(examen?.mapaVariante?.ordenOpcionesPorPregunta?.[idPregunta])
+      ? (examen!.mapaVariante!.ordenOpcionesPorPregunta![idPregunta] ?? [])
+      : [0, 1, 2, 3, 4];
+    const letra = resolverLetraCorrectaEnOrden(opciones, ordenOpciones);
+    if (!letra) return;
+    const numero = idx + 1;
+    claveCorrectaPorNumero[numero] = letra;
+    ordenPreguntas.push(numero);
+  });
+
+  return { claveCorrectaPorNumero, ordenPreguntas };
+}
+
+function combinarRespuestasOmrPaginas(
+  paginas: RevisionPaginaOmr[]
+): Array<{ numeroPregunta: number; opcion: string | null; confianza: number }> {
+  const porPregunta = new Map<number, { numeroPregunta: number; opcion: string | null; confianza: number }>();
+  const paginasOrdenadas = [...paginas].sort((a, b) => a.numeroPagina - b.numeroPagina);
+  for (const pagina of paginasOrdenadas) {
+    const respuestasPagina = Array.isArray(pagina.respuestas) ? pagina.respuestas : [];
+    for (const respuesta of respuestasPagina) {
+      if (!Number.isFinite(Number(respuesta?.numeroPregunta))) continue;
+      porPregunta.set(Number(respuesta.numeroPregunta), {
+        numeroPregunta: Number(respuesta.numeroPregunta),
+        opcion: typeof respuesta?.opcion === 'string' && respuesta.opcion ? respuesta.opcion : null,
+        confianza: Number.isFinite(Number(respuesta?.confianza)) ? Number(respuesta.confianza) : 0
+      });
+    }
+  }
+  return Array.from(porPregunta.values()).sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+}
+
+function consolidarResultadoOmrExamen(paginas: RevisionPaginaOmr[]): ResultadoOmr | null {
+  if (!Array.isArray(paginas) || paginas.length === 0) return null;
+  const respuestasDetectadas = combinarRespuestasOmrPaginas(paginas);
+  const advertencias = Array.from(
+    new Set(
+      paginas.flatMap((pagina) => (Array.isArray(pagina.resultado.advertencias) ? pagina.resultado.advertencias : []))
+    )
+  );
+  const motivosRevision = Array.from(
+    new Set(
+      paginas.flatMap((pagina) => (Array.isArray(pagina.resultado.motivosRevision) ? pagina.resultado.motivosRevision : []))
+    )
+  );
+  const estados = paginas.map((pagina) => pagina.resultado.estadoAnalisis);
+  const estadoAnalisis: ResultadoOmr['estadoAnalisis'] = estados.includes('rechazado_calidad')
+    ? 'rechazado_calidad'
+    : estados.includes('requiere_revision')
+      ? 'requiere_revision'
+      : 'ok';
+  const promedio = (vals: number[]) => (vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0);
+  const calidadPagina = promedio(paginas.map((pagina) => Number(pagina.resultado.calidadPagina || 0)));
+  const confianzaPromedioPagina = promedio(paginas.map((pagina) => Number(pagina.resultado.confianzaPromedioPagina || 0)));
+  const ratioAmbiguas = promedio(paginas.map((pagina) => Number(pagina.resultado.ratioAmbiguas || 0)));
+  const templateVersionDetectada: 1 | 2 = paginas.some((pagina) => pagina.resultado.templateVersionDetectada === 2) ? 2 : 1;
+  const qrTextos = paginas.map((pagina) => pagina.resultado.qrTexto).filter((valor): valor is string => typeof valor === 'string' && valor.length > 0);
+
+  return {
+    respuestasDetectadas,
+    advertencias,
+    qrTexto: qrTextos[0],
+    calidadPagina,
+    estadoAnalisis,
+    motivosRevision,
+    templateVersionDetectada,
+    confianzaPromedioPagina,
+    ratioAmbiguas
+  };
+}
+
+function normalizarResultadoOmr(entrada: Partial<ResultadoOmr> | null | undefined): ResultadoOmr {
+  const respuestasDetectadas = Array.isArray(entrada?.respuestasDetectadas)
+    ? entrada!.respuestasDetectadas.map((item) => ({
+        numeroPregunta: Number(item?.numeroPregunta ?? 0),
+        opcion: typeof item?.opcion === 'string' && item.opcion ? item.opcion : null,
+        confianza: Number.isFinite(Number(item?.confianza)) ? Number(item?.confianza) : 0
+      }))
+    : [];
+  return {
+    respuestasDetectadas,
+    advertencias: Array.isArray(entrada?.advertencias) ? entrada!.advertencias : [],
+    qrTexto: typeof entrada?.qrTexto === 'string' ? entrada.qrTexto : undefined,
+    calidadPagina: Number.isFinite(Number(entrada?.calidadPagina)) ? Number(entrada?.calidadPagina) : 0,
+    estadoAnalisis:
+      entrada?.estadoAnalisis === 'ok' || entrada?.estadoAnalisis === 'rechazado_calidad' || entrada?.estadoAnalisis === 'requiere_revision'
+        ? entrada.estadoAnalisis
+        : 'requiere_revision',
+    motivosRevision: Array.isArray(entrada?.motivosRevision) ? entrada!.motivosRevision : [],
+    templateVersionDetectada: entrada?.templateVersionDetectada === 2 ? 2 : 1,
+    confianzaPromedioPagina: Number.isFinite(Number(entrada?.confianzaPromedioPagina)) ? Number(entrada?.confianzaPromedioPagina) : 0,
+    ratioAmbiguas: Number.isFinite(Number(entrada?.ratioAmbiguas)) ? Number(entrada?.ratioAmbiguas) : 0
+  };
+}
+
 function obtenerSesionDocenteId(): string {
   return obtenerSessionId('sesionDocenteId');
 }
@@ -458,6 +616,8 @@ export function AppDocente() {
   const [revisionOmrConfirmada, setRevisionOmrConfirmada] = useState(false);
   const [examenIdOmr, setExamenIdOmr] = useState<string | null>(null);
   const [examenAlumnoId, setExamenAlumnoId] = useState<string | null>(null);
+  const [paginaOmrActiva, setPaginaOmrActiva] = useState<number | null>(null);
+  const [revisionesOmr, setRevisionesOmr] = useState<RevisionExamenOmr[]>([]);
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [ultimaActualizacionDatos, setUltimaActualizacionDatos] = useState<number | null>(null);
 
@@ -686,6 +846,154 @@ export function AppDocente() {
     });
   }
 
+  const examenOmrActivo = useMemo(
+    () => revisionesOmr.find((item) => item.examenId === examenIdOmr) ?? null,
+    [examenIdOmr, revisionesOmr]
+  );
+  const respuestasOmrConsolidadas = useMemo(() => {
+    if (!examenOmrActivo) return respuestasEditadas;
+    const combinadas = combinarRespuestasOmrPaginas(examenOmrActivo.paginas);
+    return combinadas.length > 0 ? combinadas : respuestasEditadas;
+  }, [examenOmrActivo, respuestasEditadas]);
+  const resultadoOmrConsolidado = useMemo(() => {
+    if (!examenOmrActivo) return resultadoOmr;
+    return consolidarResultadoOmrExamen(examenOmrActivo.paginas) ?? resultadoOmr;
+  }, [examenOmrActivo, resultadoOmr]);
+  const claveCorrectaOmrActiva = useMemo(
+    () => (examenOmrActivo?.claveCorrectaPorNumero ? examenOmrActivo.claveCorrectaPorNumero : {}),
+    [examenOmrActivo]
+  );
+  const ordenPreguntasClaveOmrActiva = useMemo(
+    () =>
+      Array.isArray(examenOmrActivo?.ordenPreguntas)
+        ? examenOmrActivo!.ordenPreguntas
+        : Object.keys(claveCorrectaOmrActiva)
+            .map((n) => Number(n))
+            .filter((n) => Number.isFinite(n))
+            .sort((a, b) => a - b),
+    [claveCorrectaOmrActiva, examenOmrActivo]
+  );
+
+  const seleccionarRevisionOmr = useCallback(
+    (examenId: string, numeroPagina: number) => {
+      const examen = revisionesOmr.find((item) => item.examenId === examenId);
+      if (!examen) return;
+      const pagina = examen.paginas.find((item) => item.numeroPagina === numeroPagina);
+      if (!pagina) return;
+      setExamenIdOmr(examen.examenId);
+      setExamenAlumnoId(examen.alumnoId ?? null);
+      setPaginaOmrActiva(pagina.numeroPagina);
+      setResultadoOmr(pagina.resultado);
+      setRespuestasEditadas(pagina.respuestas);
+      setRevisionOmrConfirmada(Boolean(examen.revisionConfirmada));
+    },
+    [revisionesOmr]
+  );
+
+  const actualizarRespuestasOmrActivas = useCallback(
+    (nuevas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => {
+      setRespuestasEditadas(nuevas);
+      if (!examenIdOmr || !Number.isFinite(Number(paginaOmrActiva))) return;
+      const paginaObjetivo = Number(paginaOmrActiva);
+      setRevisionOmrConfirmada(false);
+      setRevisionesOmr((prev) =>
+        prev.map((examen) => {
+          if (examen.examenId !== examenIdOmr) return examen;
+          const paginas = examen.paginas.map((pagina) =>
+            pagina.numeroPagina === paginaObjetivo
+              ? {
+                  ...pagina,
+                  respuestas: nuevas,
+                  resultado: {
+                    ...pagina.resultado,
+                    respuestasDetectadas: nuevas
+                  },
+                  actualizadoEn: Date.now()
+                }
+              : pagina
+          );
+          return {
+            ...examen,
+            paginas,
+            revisionConfirmada: false,
+            actualizadoEn: Date.now()
+          };
+        })
+      );
+    },
+    [examenIdOmr, paginaOmrActiva]
+  );
+
+  const actualizarRespuestaPreguntaOmrActiva = useCallback(
+    (numeroPregunta: number, opcion: string | null) => {
+      const numero = Number(numeroPregunta);
+      if (!Number.isFinite(numero) || numero <= 0) return;
+      if (!examenIdOmr) return;
+      setRevisionOmrConfirmada(false);
+      setRevisionesOmr((prev) =>
+        prev.map((examen) => {
+          if (examen.examenId !== examenIdOmr) return examen;
+          const paginaActivaNum = Number(paginaOmrActiva);
+          let indicePagina = examen.paginas.findIndex((pagina) => pagina.respuestas.some((item) => item.numeroPregunta === numero));
+          if (indicePagina < 0 && Number.isFinite(paginaActivaNum)) {
+            indicePagina = examen.paginas.findIndex((pagina) => pagina.numeroPagina === paginaActivaNum);
+          }
+          if (indicePagina < 0 && examen.paginas.length > 0) indicePagina = 0;
+          if (indicePagina < 0) return examen;
+          const paginas = examen.paginas.map((pagina, idx) => {
+            if (idx !== indicePagina) return pagina;
+            const respuestas = [...pagina.respuestas];
+            const indiceRespuesta = respuestas.findIndex((item) => item.numeroPregunta === numero);
+            if (indiceRespuesta >= 0) {
+              respuestas[indiceRespuesta] = { ...respuestas[indiceRespuesta], opcion };
+            } else {
+              respuestas.push({ numeroPregunta: numero, opcion, confianza: 0 });
+            }
+            respuestas.sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+            return {
+              ...pagina,
+              respuestas,
+              resultado: {
+                ...pagina.resultado,
+                respuestasDetectadas: respuestas
+              },
+              actualizadoEn: Date.now()
+            };
+          });
+          return {
+            ...examen,
+            paginas,
+            revisionConfirmada: false,
+            actualizadoEn: Date.now()
+          };
+        })
+      );
+      setRespuestasEditadas((prev) => {
+        const siguiente = [...prev];
+        const indice = siguiente.findIndex((item) => item.numeroPregunta === numero);
+        if (indice >= 0) {
+          siguiente[indice] = { ...siguiente[indice], opcion };
+        } else {
+          siguiente.push({ numeroPregunta: numero, opcion, confianza: 0 });
+        }
+        siguiente.sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+        return siguiente;
+      });
+    },
+    [examenIdOmr, paginaOmrActiva]
+  );
+
+  const confirmarRevisionOmrActiva = useCallback(
+    (confirmada: boolean) => {
+      setRevisionOmrConfirmada(confirmada);
+      if (!examenIdOmr) return;
+      setRevisionesOmr((prev) =>
+        prev.map((examen) => (examen.examenId === examenIdOmr ? { ...examen, revisionConfirmada: confirmada, actualizadoEn: Date.now() } : examen))
+      );
+    },
+    [examenIdOmr]
+  );
+
   const contenido = docente ? (
     <div className="panel">
       <nav
@@ -857,7 +1165,7 @@ export function AppDocente() {
           alumnos={alumnos}
           permisos={permisosUI}
           avisarSinPermiso={avisarSinPermiso}
-          onAnalizar={async (folio, numeroPagina, imagenBase64) => {
+          onAnalizar={async (folio, numeroPagina, imagenBase64, contexto) => {
             if (!permisosUI.omr.analizar) {
               avisarSinPermiso('No tienes permiso para analizar OMR.');
               throw new Error('SIN_PERMISO');
@@ -867,12 +1175,92 @@ export function AppDocente() {
               numeroPagina,
               imagenBase64
             });
-            setResultadoOmr(respuesta.resultado);
-            setRespuestasEditadas(respuesta.resultado.respuestasDetectadas);
-            setRevisionOmrConfirmada(false);
+            const resultadoNormalizado = normalizarResultadoOmr(respuesta?.resultado);
+            const respuestaNormalizada: ResultadoAnalisisOmr = {
+              ...respuesta,
+              resultado: resultadoNormalizado
+            };
+            let claveCorrectaPorNumero: Record<number, string> = {};
+            let ordenPreguntas: number[] = [];
+            try {
+              const examenPayload = await clienteApi.obtener<{ examen?: ExamenGeneradoClave }>(
+                `/examenes/generados/folio/${encodeURIComponent(respuesta.folio)}`
+              );
+              const examenDetalle = examenPayload?.examen;
+              let clave = construirClaveCorrectaExamen(examenDetalle, preguntas);
+              if (Object.keys(clave.claveCorrectaPorNumero).length === 0 && examenDetalle?.periodoId) {
+                const bancoPeriodo = await clienteApi.obtener<{ preguntas: Pregunta[] }>(
+                  `/banco-preguntas?periodoId=${encodeURIComponent(String(examenDetalle.periodoId))}`
+                );
+                clave = construirClaveCorrectaExamen(examenDetalle, Array.isArray(bancoPeriodo?.preguntas) ? bancoPeriodo.preguntas : []);
+              }
+              claveCorrectaPorNumero = clave.claveCorrectaPorNumero;
+              ordenPreguntas = clave.ordenPreguntas;
+            } catch {
+              claveCorrectaPorNumero = {};
+              ordenPreguntas = [];
+            }
+            const ahora = Date.now();
+            let revisionExamenConfirmada = resultadoNormalizado.estadoAnalisis === 'ok';
+            setRevisionesOmr((prev) => {
+              const siguiente = [...prev];
+              const indiceExamen = siguiente.findIndex((item) => item.examenId === respuesta.examenId);
+              const nuevaPagina: RevisionPaginaOmr = {
+                numeroPagina: respuesta.numeroPagina,
+                resultado: resultadoNormalizado,
+                respuestas: resultadoNormalizado.respuestasDetectadas,
+                imagenBase64,
+                nombreArchivo: contexto?.nombreArchivo,
+                actualizadoEn: ahora
+              };
+              if (indiceExamen >= 0) {
+                const examen = siguiente[indiceExamen];
+                const indicePagina = examen.paginas.findIndex((item) => item.numeroPagina === respuesta.numeroPagina);
+                const paginas = [...examen.paginas];
+                if (indicePagina >= 0) {
+                  paginas[indicePagina] = nuevaPagina;
+                } else {
+                  paginas.push(nuevaPagina);
+                }
+                paginas.sort((a, b) => a.numeroPagina - b.numeroPagina);
+                const requiereRevisionPagina = resultadoNormalizado.estadoAnalisis !== 'ok';
+                const revisionConfirmada = requiereRevisionPagina ? false : examen.revisionConfirmada;
+                revisionExamenConfirmada = revisionConfirmada;
+                siguiente[indiceExamen] = {
+                  ...examen,
+                  folio: respuesta.folio || examen.folio,
+                  alumnoId: respuesta.alumnoId ?? examen.alumnoId ?? null,
+                  paginas,
+                  claveCorrectaPorNumero:
+                    Object.keys(claveCorrectaPorNumero).length > 0 ? claveCorrectaPorNumero : examen.claveCorrectaPorNumero,
+                  ordenPreguntas: ordenPreguntas.length > 0 ? ordenPreguntas : examen.ordenPreguntas,
+                  revisionConfirmada,
+                  actualizadoEn: ahora
+                };
+              } else {
+                revisionExamenConfirmada = resultadoNormalizado.estadoAnalisis === 'ok';
+                siguiente.push({
+                  examenId: respuesta.examenId,
+                  folio: respuesta.folio,
+                  alumnoId: respuesta.alumnoId ?? null,
+                  paginas: [nuevaPagina],
+                  claveCorrectaPorNumero,
+                  ordenPreguntas,
+                  revisionConfirmada: revisionExamenConfirmada,
+                  creadoEn: ahora,
+                  actualizadoEn: ahora
+                });
+              }
+              siguiente.sort((a, b) => b.actualizadoEn - a.actualizadoEn);
+              return siguiente;
+            });
+            setResultadoOmr(resultadoNormalizado);
+            setRespuestasEditadas(resultadoNormalizado.respuestasDetectadas);
+            setRevisionOmrConfirmada(revisionExamenConfirmada);
             setExamenIdOmr(respuesta.examenId);
             setExamenAlumnoId(respuesta.alumnoId ?? null);
-            return respuesta;
+            setPaginaOmrActiva(respuesta.numeroPagina);
+            return respuestaNormalizada;
           }}
           onPrevisualizar={async (payload) => {
             if (!permisosUI.calificaciones.calificar) {
@@ -883,11 +1271,20 @@ export function AppDocente() {
           }}
           resultado={resultadoOmr}
           respuestas={respuestasEditadas}
-          onActualizar={(nuevas) => setRespuestasEditadas(nuevas)}
+          onActualizar={actualizarRespuestasOmrActivas}
+          onActualizarPregunta={actualizarRespuestaPreguntaOmrActiva}
+          claveCorrectaPorNumero={claveCorrectaOmrActiva}
+          ordenPreguntasClave={ordenPreguntasClaveOmrActiva}
           revisionOmrConfirmada={revisionOmrConfirmada}
-          onConfirmarRevisionOmr={setRevisionOmrConfirmada}
+          onConfirmarRevisionOmr={confirmarRevisionOmrActiva}
+          revisionesOmr={revisionesOmr}
+          examenIdActivo={examenIdOmr}
+          paginaActiva={paginaOmrActiva}
+          onSeleccionarRevision={seleccionarRevisionOmr}
           examenId={examenIdOmr}
           alumnoId={examenAlumnoId}
+          resultadoParaCalificar={resultadoOmrConsolidado}
+          respuestasParaCalificar={respuestasOmrConsolidadas}
           onCalificar={(payload) => {
             if (!permisosUI.calificaciones.calificar) {
               avisarSinPermiso('No tienes permiso para calificar.');
@@ -3600,7 +3997,7 @@ function SeccionBanco({
                           )}
                         </div>
                       </div>
-                      <div className="item-actions">
+                      <div className="item-actions revision-pills-wrap">
                         <Boton
                           variante="secundario"
                           type="button"
@@ -7299,14 +7696,27 @@ function SeccionEscaneo({
   resultado,
   respuestas,
   onActualizar,
+  onActualizarPregunta,
+  respuestasCombinadas,
+  claveCorrectaPorNumero,
+  ordenPreguntasClave,
   revisionOmrConfirmada,
   onConfirmarRevisionOmr,
+  revisionesOmr,
+  examenIdActivo,
+  paginaActiva,
+  onSeleccionarRevision,
   puedeAnalizar,
   puedeCalificar,
   avisarSinPermiso
 }: {
   alumnos: Alumno[];
-  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<ResultadoAnalisisOmr>;
+  onAnalizar: (
+    folio: string,
+    numeroPagina: number,
+    imagenBase64: string,
+    contexto?: { nombreArchivo?: string }
+  ) => Promise<ResultadoAnalisisOmr>;
   onPrevisualizar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -7315,8 +7725,16 @@ function SeccionEscaneo({
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
+  onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
+  respuestasCombinadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  claveCorrectaPorNumero: Record<number, string>;
+  ordenPreguntasClave: number[];
   revisionOmrConfirmada: boolean;
   onConfirmarRevisionOmr: (confirmada: boolean) => void;
+  revisionesOmr: RevisionExamenOmr[];
+  examenIdActivo: string | null;
+  paginaActiva: number | null;
+  onSeleccionarRevision: (examenId: string, numeroPagina: number) => void;
   puedeAnalizar: boolean;
   puedeCalificar: boolean;
   avisarSinPermiso: (mensaje: string) => void;
@@ -7329,6 +7747,7 @@ function SeccionEscaneo({
   const [analizando, setAnalizando] = useState(false);
   const [bloqueoManual, setBloqueoManual] = useState(false);
   const [procesandoLote, setProcesandoLote] = useState(false);
+  const [soloDudosas, setSoloDudosas] = useState(true);
   const [lote, setLote] = useState<
     Array<{
       id: string;
@@ -7344,14 +7763,108 @@ function SeccionEscaneo({
     }>
   >([]);
 
+  const respuestasSeguras = useMemo(() => (Array.isArray(respuestas) ? respuestas : []), [respuestas]);
+  const respuestasCombinadasSeguras = useMemo(
+    () => (Array.isArray(respuestasCombinadas) ? respuestasCombinadas : []),
+    [respuestasCombinadas]
+  );
+  const ordenPreguntasClaveSegura = useMemo(
+    () => (Array.isArray(ordenPreguntasClave) ? ordenPreguntasClave : []),
+    [ordenPreguntasClave]
+  );
+  const revisionesSeguras = useMemo(() => (Array.isArray(revisionesOmr) ? revisionesOmr : []), [revisionesOmr]);
+  const motivosCaptura = Array.isArray(calidadCaptura?.motivos) ? calidadCaptura!.motivos : [];
   const puedeAnalizarImagen = Boolean(imagenBase64) && Boolean(calidadCaptura?.aprobada);
   const bloqueoAnalisis = !puedeAnalizar;
   const paginaManual = Number.isFinite(numeroPagina) ? Math.max(0, Math.floor(numeroPagina)) : 0;
   const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [item._id, item.nombreCompleto])), [alumnos]);
-  const requiereRevisionOmr = Boolean(resultado && resultado.estadoAnalisis !== 'ok');
-  const preguntasDudosas = useMemo(
-    () => respuestas.filter((item) => !item.opcion || item.confianza < 0.75),
-    [respuestas]
+  const estadoAnalisisResultado = resultado?.estadoAnalisis ?? 'requiere_revision';
+  const calidadPaginaResultado = Number.isFinite(Number(resultado?.calidadPagina)) ? Number(resultado?.calidadPagina) : 0;
+  const confianzaPromedioResultado = Number.isFinite(Number(resultado?.confianzaPromedioPagina))
+    ? Number(resultado?.confianzaPromedioPagina)
+    : 0;
+  const ratioAmbiguasResultado = Number.isFinite(Number(resultado?.ratioAmbiguas)) ? Number(resultado?.ratioAmbiguas) : 0;
+  const motivosRevisionResultado = Array.isArray(resultado?.motivosRevision) ? resultado.motivosRevision : [];
+  const advertenciasResultado = Array.isArray(resultado?.advertencias) ? resultado.advertencias : [];
+  const requiereRevisionOmr = Boolean(resultado && estadoAnalisisResultado !== 'ok');
+  const estadoAnalisisClase =
+    estadoAnalisisResultado === 'ok' ? 'ok' : estadoAnalisisResultado === 'rechazado_calidad' ? 'error' : 'warning';
+  const revisionesOrdenadas = useMemo(
+    () => [...revisionesSeguras].sort((a, b) => b.actualizadoEn - a.actualizadoEn),
+    [revisionesSeguras]
+  );
+  const paginaRevisionActiva = useMemo(() => {
+    if (!examenIdActivo || !Number.isFinite(Number(paginaActiva))) return null;
+    const examen = revisionesSeguras.find((item) => item.examenId === examenIdActivo);
+    if (!examen) return null;
+    return examen.paginas.find((pagina) => pagina.numeroPagina === Number(paginaActiva)) ?? null;
+  }, [examenIdActivo, paginaActiva, revisionesSeguras]);
+  const respuestasCombinadasOrdenadas = useMemo(
+    () => [...respuestasCombinadasSeguras].sort((a, b) => a.numeroPregunta - b.numeroPregunta),
+    [respuestasCombinadasSeguras]
+  );
+  const respuestasCombinadasPorNumero = useMemo(
+    () => new Map(respuestasCombinadasOrdenadas.map((item) => [item.numeroPregunta, item])),
+    [respuestasCombinadasOrdenadas]
+  );
+  const ordenRevision = useMemo(() => {
+    if (ordenPreguntasClaveSegura.length > 0) return ordenPreguntasClaveSegura;
+    const numerosRespuestas = respuestasCombinadasOrdenadas.map((item) => item.numeroPregunta);
+    const numerosClave = Object.keys(claveCorrectaPorNumero)
+      .map((numero) => Number(numero))
+      .filter((numero) => Number.isFinite(numero));
+    return Array.from(new Set([...numerosClave, ...numerosRespuestas])).sort((a, b) => a - b);
+  }, [claveCorrectaPorNumero, ordenPreguntasClaveSegura, respuestasCombinadasOrdenadas]);
+  const filasRevision = useMemo(
+    () =>
+      ordenRevision.map((numeroPregunta) => {
+        const detectada = respuestasCombinadasPorNumero.get(numeroPregunta);
+        const confianza = Number.isFinite(Number(detectada?.confianza)) ? Number(detectada?.confianza) : 0;
+        const opcion = typeof detectada?.opcion === 'string' && detectada.opcion ? detectada.opcion : null;
+        const correcta = claveCorrectaPorNumero[numeroPregunta] ?? null;
+        const esDudosa = !opcion || confianza < 0.75;
+        const esCorrecta = Boolean(correcta && opcion && opcion === correcta);
+        return { numeroPregunta, opcion, confianza, correcta, esDudosa, esCorrecta };
+      }),
+    [claveCorrectaPorNumero, ordenRevision, respuestasCombinadasPorNumero]
+  );
+  const preguntasDudosas = useMemo(() => filasRevision.filter((item) => item.esDudosa), [filasRevision]);
+  const preguntasMostradas = useMemo(
+    () => (soloDudosas ? filasRevision.filter((item) => item.esDudosa) : filasRevision),
+    [filasRevision, soloDudosas]
+  );
+  const resumenCalificacionDinamica = useMemo(() => {
+    if (!filasRevision.length) {
+      return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
+    }
+    let aciertos = 0;
+    let contestadas = 0;
+    for (const fila of filasRevision) {
+      const correcta = fila.correcta;
+      const detectada = fila.opcion;
+      if (detectada) contestadas += 1;
+      if (correcta && detectada && detectada === correcta) aciertos += 1;
+    }
+    const total = filasRevision.length;
+    const notaSobre5 = Number(((aciertos / Math.max(1, total)) * 5).toFixed(2));
+    return { total, aciertos, contestadas, notaSobre5 };
+  }, [filasRevision]);
+  const paginasPendientes = useMemo(
+    () =>
+      revisionesOrdenadas.reduce(
+        (acumulado, examen) => acumulado + examen.paginas.filter((pagina) => pagina.resultado.estadoAnalisis !== 'ok').length,
+        0
+      ),
+    [revisionesOrdenadas]
+  );
+  const totalPaginasRevision = useMemo(
+    () => revisionesOrdenadas.reduce((acumulado, examen) => acumulado + examen.paginas.length, 0),
+    [revisionesOrdenadas]
+  );
+  const porcentajeAuto = totalPaginasRevision > 0 ? Math.round(((totalPaginasRevision - paginasPendientes) / totalPaginasRevision) * 100) : 0;
+  const examenesConPendiente = useMemo(
+    () => revisionesOrdenadas.filter((examen) => examen.paginas.some((pagina) => pagina.resultado.estadoAnalisis !== 'ok')).length,
+    [revisionesOrdenadas]
   );
 
   async function leerArchivoBase64(archivo: File): Promise<string> {
@@ -7501,7 +8014,7 @@ function SeccionEscaneo({
       try {
         const folioEnvio = folio.trim();
         const paginaEnvio = paginaManual > 0 ? paginaManual : 0;
-        const respuesta = await onAnalizar(folioEnvio, paginaEnvio, item.imagenBase64);
+        const respuesta = await onAnalizar(folioEnvio, paginaEnvio, item.imagenBase64, { nombreArchivo: item.nombre });
         if (respuesta.resultado.estadoAnalisis !== 'ok') {
           const motivo = respuesta.resultado.motivosRevision?.[0] || `Estado ${respuesta.resultado.estadoAnalisis}`;
           setLote((prev) =>
@@ -7538,214 +8051,267 @@ function SeccionEscaneo({
   }
 
   return (
-    <div className="panel">
-      <h2>
-        <Icono nombre="escaneo" /> Escaneo OMR
-      </h2>
-      <AyudaFormulario titulo="Para que sirve y como llenarlo">
-        <p>
-          <b>Proposito:</b> analizar una imagen de la hoja para detectar QR/folio y respuestas (OMR). Luego puedes ajustar respuestas manualmente.
-        </p>
-        <ul className="lista">
-          <li>
-            <b>Folio:</b> opcional si el QR esta legible (se detecta automaticamente).
-          </li>
-          <li>
-            <b>Pagina:</b> opcional si el QR incluye el numero de pagina.
-          </li>
-          <li>
-            <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz. En movil, usa la camara directa.
-          </li>
-        </ul>
-        <p>
-          Ejemplo: folio <code>FOLIO-000123</code>, pagina <code>1</code>, imagen <code>hoja1.jpg</code> (o deja folio/pagina vacios si el QR es legible).
-        </p>
-        <p>
-          Tips: evita sombras; mantén la hoja recta; incluye el QR completo.
-        </p>
-      </AyudaFormulario>
-      <div className="subpanel guia-visual">
-        <h3>
-          <Icono nombre="escaneo" /> Guia rapida de escaneo
-        </h3>
-        <div className="guia-flujo" aria-hidden="true">
-          <Icono nombre="pdf" />
-          <Icono nombre="chevron" className="icono icono--muted" />
-          <Icono nombre="escaneo" />
-          <Icono nombre="chevron" className="icono icono--muted" />
-          <Icono nombre="calificar" />
-          <span>Hoja a imagen a analisis a ajuste</span>
+    <div className="panel calif-omr-panel">
+      <div className="calif-header-row">
+        <div>
+          <h2>
+            <Icono nombre="escaneo" /> Escaneo y revisión OMR
+          </h2>
+          <p className="nota">Captura por página, revisa por examen y confirma manualmente sólo los casos dudosos.</p>
         </div>
-        <div className="guia-grid">
-          <QrAccesoMovil vista="calificaciones" />
-          <div className="item-glass guia-card">
-            <div className="guia-card__header">
-              <span className="chip chip-static" aria-hidden="true">
-                <Icono nombre="escaneo" /> Con movil
-              </span>
-            </div>
-            <ul className="guia-pasos">
-              <li className="guia-paso">
-                <span className="paso-num">1</span>
-                <div>
-                  <div className="paso-titulo">Conecta el movil</div>
-                  <p className="nota">Misma red WiFi: abre http://IP-DE-TU-PC:PUERTO (reemplaza localhost).</p>
-                </div>
-              </li>
-              <li className="guia-paso">
-                <span className="paso-num">2</span>
-                <div>
-                  <div className="paso-titulo">Abre la camara</div>
-                  <p className="nota">En Imagen elige Tomar foto y captura la hoja.</p>
-                </div>
-              </li>
-              <li className="guia-paso">
-                <span className="paso-num">3</span>
-                <div>
-                  <div className="paso-titulo">Analiza y ajusta</div>
-                  <p className="nota">Revisa las respuestas y corrige si es necesario.</p>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div className="item-glass guia-card">
-            <div className="guia-card__header">
-              <span className="chip chip-static" aria-hidden="true">
-                <Icono nombre="pdf" /> Manual
-              </span>
-            </div>
-            <ul className="guia-pasos">
-              <li className="guia-paso">
-                <span className="paso-num">1</span>
-                <div>
-                  <div className="paso-titulo">Escanea en PC</div>
-                  <p className="nota">Usa un escaner o camara web con buena nitidez.</p>
-                </div>
-              </li>
-              <li className="guia-paso">
-                <span className="paso-num">2</span>
-                <div>
-                  <div className="paso-titulo">Sube la imagen</div>
-                  <p className="nota">Selecciona la pagina correcta (P1, P2...).</p>
-                </div>
-              </li>
-              <li className="guia-paso">
-                <span className="paso-num">3</span>
-                <div>
-                  <div className="paso-titulo">Valida QR y respuestas</div>
-                  <p className="nota">Confirma folio y ajusta respuestas con baja confianza.</p>
-                </div>
-              </li>
-            </ul>
-          </div>
+        <div className="item-meta">
+          <span>{revisionesOrdenadas.length} examen(es) en cola</span>
+          <span>{totalPaginasRevision} página(s) procesadas</span>
+          <span>{paginasPendientes} pendiente(s)</span>
         </div>
       </div>
-      <label className="campo">
-        Folio
-        <input
-          value={folio}
-          onChange={(event) => setFolio(event.target.value)}
-          placeholder="Si se deja vacio, se lee del QR"
-          disabled={bloqueoManual || bloqueoAnalisis}
-        />
-      </label>
-      <label className="campo">
-        Pagina
-        <input
-          type="number"
-          min={0}
-          value={numeroPagina}
-          onChange={(event) => setNumeroPagina(Number(event.target.value))}
-          placeholder="0 = detectar por QR"
-          disabled={bloqueoManual || bloqueoAnalisis}
-        />
-      </label>
-      {bloqueoManual && (
-        <InlineMensaje tipo="info">
-          QR detectado: se bloqueo el folio/pagina para evitar errores manuales.
-          <button type="button" className="link" onClick={() => setBloqueoManual(false)}>
-            Editar manualmente
-          </button>
-        </InlineMensaje>
-      )}
-      <label className="campo">
-        Imagen
-        <input type="file" accept="image/*" capture="environment" onChange={cargarArchivo} disabled={bloqueoAnalisis} />
-      </label>
-      {calidadCaptura && (
-        <InlineMensaje tipo={calidadCaptura.aprobada ? 'ok' : 'warning'}>
-          Calidad captura: blur {Math.round(calidadCaptura.blurVar)} · brillo {Math.round(calidadCaptura.brilloMedio)} · hoja{' '}
-          {(calidadCaptura.areaHojaRatio * 100).toFixed(0)}%.
-          {calidadCaptura.motivos.length > 0 ? ` ${calidadCaptura.motivos.join(' ')}` : ' Lista para analizar.'}
-        </InlineMensaje>
-      )}
-      <Boton
-        type="button"
-        icono={<Icono nombre="escaneo" />}
-        cargando={analizando}
-        disabled={!puedeAnalizar || !puedeAnalizarImagen}
-        onClick={analizar}
-      >
-        {analizando ? 'Analizando…' : 'Analizar'}
-      </Boton>
-      <div className="separador" />
-      <label className="campo">
-        Lote de imagenes (bulk)
-        <input type="file" accept="image/*" multiple onChange={cargarLote} disabled={bloqueoAnalisis} />
-      </label>
-      <Boton
-        type="button"
-        icono={<Icono nombre="escaneo" />}
-        cargando={procesandoLote}
-        disabled={lote.length === 0 || bloqueoAnalisis || !puedeCalificar}
-        onClick={analizarLote}
-      >
-        {procesandoLote ? 'Analizando lote…' : `Analizar lote (${lote.length})`}
-      </Boton>
-      {lote.length > 0 && (
-        <div className="resultado">
-          <h3>Procesamiento en lote</h3>
-          <progress
-            value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error' || i.estado === 'rechazado_calidad').length}
-            max={lote.length}
-          />
-          <ul className="lista lista-items">
-            {lote.map((item) => (
-              <li key={item.id}>
-                <div className="item-glass">
-                  <div className="item-row">
-                    <div>
-                      <div className="item-title">{item.nombre}</div>
-                      <div className="item-sub">
-                        {item.estado === 'pendiente' && 'En cola'}
-                        {item.estado === 'analizando' && 'Analizando…'}
-                        {item.estado === 'precalificando' && 'Precalificando…'}
-                        {item.estado === 'listo' && 'Listo'}
-                        {item.estado === 'rechazado_calidad' && `Descartada por calidad: ${item.mensaje ?? ''}`}
-                        {item.estado === 'error' && `Error: ${item.mensaje ?? ''}`}
+      <div className="calif-kpi-grid">
+        <div className="item-glass calif-kpi-card">
+          <span className="item-sub">Autoanalizables</span>
+          <b>{porcentajeAuto}%</b>
+        </div>
+        <div className="item-glass calif-kpi-card">
+          <span className="item-sub">Exámenes con revisión</span>
+          <b>{examenesConPendiente}</b>
+        </div>
+        <div className="item-glass calif-kpi-card">
+          <span className="item-sub">Preguntas dudosas</span>
+          <b>{preguntasDudosas.length}</b>
+        </div>
+        <div className="item-glass calif-kpi-card">
+          <span className="item-sub">Nota dinámica</span>
+          <b>{resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</b>
+        </div>
+      </div>
+      <details className="colapsable">
+        <summary>Guía de captura y revisión</summary>
+        <AyudaFormulario titulo="Para que sirve y como llenarlo">
+          <p>
+            <b>Proposito:</b> detectar QR/folio y respuestas OMR con precisión alta, y corregir manualmente los casos ambiguos.
+          </p>
+          <ul className="lista">
+            <li>
+              <b>Folio:</b> opcional si el QR esta legible (se detecta automaticamente).
+            </li>
+            <li>
+              <b>Pagina:</b> opcional si el QR incluye el numero de pagina.
+            </li>
+            <li>
+              <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz.
+            </li>
+          </ul>
+        </AyudaFormulario>
+        <div className="subpanel guia-visual">
+          <div className="guia-flujo" aria-hidden="true">
+            <Icono nombre="pdf" />
+            <Icono nombre="chevron" className="icono icono--muted" />
+            <Icono nombre="escaneo" />
+            <Icono nombre="chevron" className="icono icono--muted" />
+            <Icono nombre="calificar" />
+            <span>Hoja a imagen a analisis a ajuste</span>
+          </div>
+          <div className="guia-grid">
+            <QrAccesoMovil vista="calificaciones" />
+            <div className="item-glass guia-card">
+              <div className="guia-card__header">
+                <span className="chip chip-static" aria-hidden="true">
+                  <Icono nombre="escaneo" /> Con movil
+                </span>
+              </div>
+              <ul className="guia-pasos">
+                <li className="guia-paso">
+                  <span className="paso-num">1</span>
+                  <div>
+                    <div className="paso-titulo">Conecta el movil</div>
+                    <p className="nota">Misma red WiFi: abre la URL local en el teléfono.</p>
+                  </div>
+                </li>
+                <li className="guia-paso">
+                  <span className="paso-num">2</span>
+                  <div>
+                    <div className="paso-titulo">Abre la camara</div>
+                    <p className="nota">Captura la hoja completa con buena luz.</p>
+                  </div>
+                </li>
+                <li className="guia-paso">
+                  <span className="paso-num">3</span>
+                  <div>
+                    <div className="paso-titulo">Analiza y ajusta</div>
+                    <p className="nota">Corrige preguntas dudosas y confirma revisión.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+      <div className="calif-captura-grid">
+        <div className="subpanel">
+          <h3>Captura individual</h3>
+          <div className="grid grid--2">
+            <label className="campo">
+              Folio
+              <input
+                value={folio}
+                onChange={(event) => setFolio(event.target.value)}
+                placeholder="Si se deja vacio, se lee del QR"
+                disabled={bloqueoManual || bloqueoAnalisis}
+              />
+            </label>
+            <label className="campo">
+              Pagina
+              <input
+                type="number"
+                min={0}
+                value={numeroPagina}
+                onChange={(event) => setNumeroPagina(Number(event.target.value))}
+                placeholder="0 = detectar por QR"
+                disabled={bloqueoManual || bloqueoAnalisis}
+              />
+            </label>
+          </div>
+          {bloqueoManual && (
+            <InlineMensaje tipo="info">
+              QR detectado: se bloqueo el folio/pagina para evitar errores manuales.
+              <button type="button" className="link" onClick={() => setBloqueoManual(false)}>
+                Editar manualmente
+              </button>
+            </InlineMensaje>
+          )}
+          <label className="campo">
+            Imagen
+            <input type="file" accept="image/*" capture="environment" onChange={cargarArchivo} disabled={bloqueoAnalisis} />
+          </label>
+          {calidadCaptura && (
+            <InlineMensaje tipo={calidadCaptura.aprobada ? 'ok' : 'warning'}>
+              Calidad captura: blur {Math.round(calidadCaptura.blurVar)} · brillo {Math.round(calidadCaptura.brilloMedio)} · hoja{' '}
+              {(calidadCaptura.areaHojaRatio * 100).toFixed(0)}%.
+              {motivosCaptura.length > 0 ? ` ${motivosCaptura.join(' ')}` : ' Lista para analizar.'}
+            </InlineMensaje>
+          )}
+          <div className="item-actions">
+            <Boton
+              type="button"
+              icono={<Icono nombre="escaneo" />}
+              cargando={analizando}
+              disabled={!puedeAnalizar || !puedeAnalizarImagen}
+              onClick={analizar}
+            >
+              {analizando ? 'Analizando…' : 'Analizar'}
+            </Boton>
+          </div>
+        </div>
+        <div className="subpanel">
+          <h3>Lote de imagenes</h3>
+          <label className="campo">
+            Lote de imagenes (bulk)
+            <input type="file" accept="image/*" multiple onChange={cargarLote} disabled={bloqueoAnalisis} />
+          </label>
+          <div className="item-actions">
+            <Boton
+              type="button"
+              icono={<Icono nombre="escaneo" />}
+              cargando={procesandoLote}
+              disabled={lote.length === 0 || bloqueoAnalisis || !puedeCalificar}
+              onClick={analizarLote}
+            >
+              {procesandoLote ? 'Analizando lote…' : `Analizar lote (${lote.length})`}
+            </Boton>
+          </div>
+          {lote.length > 0 && (
+            <div className="resultado">
+              <h3>Procesamiento en lote</h3>
+              <progress
+                value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error' || i.estado === 'rechazado_calidad').length}
+                max={lote.length}
+              />
+              <ul className="lista lista-items">
+                {lote.map((item) => (
+                  <li key={item.id}>
+                    <div className="item-glass">
+                      <div className="item-row">
+                        <div>
+                          <div className="item-title">{item.nombre}</div>
+                          <div className="item-sub">
+                            {item.estado === 'pendiente' && 'En cola'}
+                            {item.estado === 'analizando' && 'Analizando…'}
+                            {item.estado === 'precalificando' && 'Precalificando…'}
+                            {item.estado === 'listo' && 'Listo'}
+                            {item.estado === 'rechazado_calidad' && `Descartada por calidad: ${item.mensaje ?? ''}`}
+                            {item.estado === 'error' && `Error: ${item.mensaje ?? ''}`}
+                          </div>
+                          {item.folio && (
+                            <div className="item-sub">
+                              Folio {item.folio} · P{item.numeroPagina ?? '-'} ·{' '}
+                              {item.alumnoId ? mapaAlumnos.get(item.alumnoId) ?? item.alumnoId : 'Alumno sin vincular'}
+                            </div>
+                          )}
+                          {item.preview && (
+                            <div className="item-sub">
+                              Aciertos {item.preview.aciertos}/{item.preview.totalReactivos} · {item.preview.calificacionExamenFinalTexto ?? '-'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="item-actions">
+                          <img
+                            src={item.imagenBase64}
+                            alt={`preview ${item.nombre}`}
+                            style={{ width: 120, height: 'auto', borderRadius: 8, border: '1px solid #dde3ea' }}
+                          />
+                        </div>
                       </div>
-                      {item.folio && (
-                        <div className="item-sub">
-                          Folio {item.folio} · P{item.numeroPagina ?? '-'} · {item.alumnoId ? (mapaAlumnos.get(item.alumnoId) ?? item.alumnoId) : 'Alumno sin vincular'}
-                        </div>
-                      )}
-                      {item.preview && (
-                        <div className="item-sub">
-                          Aciertos {item.preview.aciertos}/{item.preview.totalReactivos} · {item.preview.calificacionExamenFinalTexto ?? '-'}
-                        </div>
-                      )}
                     </div>
-                    <div className="item-actions">
-                      <img
-                        src={item.imagenBase64}
-                        alt={`preview ${item.nombre}`}
-                        style={{ width: 120, height: 'auto', borderRadius: 8, border: '1px solid #dde3ea' }}
-                      />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+      {revisionesOrdenadas.length > 0 && (
+        <div className="resultado">
+          <h3>Cola de revisión por examen y página</h3>
+          <ul className="lista lista-items">
+            {revisionesOrdenadas.map((examen) => {
+              const paginasOrdenadas = [...examen.paginas].sort((a, b) => a.numeroPagina - b.numeroPagina);
+              const pendientes = paginasOrdenadas.filter((pagina) => pagina.resultado.estadoAnalisis !== 'ok').length;
+              const esActivo = examen.examenId === examenIdActivo;
+              return (
+                <li key={examen.examenId}>
+                  <div className="item-glass revision-omr-examen">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">Folio {examen.folio}</div>
+                        <div className="item-sub">
+                          {examen.alumnoId ? (mapaAlumnos.get(examen.alumnoId) ?? examen.alumnoId) : 'Alumno sin vincular'}
+                        </div>
+                        <div className="item-meta">
+                          <span>{paginasOrdenadas.length} página(s)</span>
+                          <span>{pendientes} pendiente(s) de revisión</span>
+                          <span>{examen.revisionConfirmada ? 'Revisión confirmada' : 'Revisión sin confirmar'}</span>
+                        </div>
+                      </div>
+                      <div className="item-actions revision-pills-wrap">
+                        {paginasOrdenadas.map((pagina) => {
+                          const activa = esActivo && paginaActiva === pagina.numeroPagina;
+                          const estado = pagina.resultado.estadoAnalisis === 'ok' ? 'ok' : 'revision';
+                          return (
+                            <button
+                              key={`${examen.examenId}-${pagina.numeroPagina}`}
+                              type="button"
+                              className={`revision-pill revision-pill--${estado}${activa ? ' activa' : ''}`}
+                              onClick={() => onSeleccionarRevision(examen.examenId, pagina.numeroPagina)}
+                            >
+                              P{pagina.numeroPagina}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -7755,23 +8321,26 @@ function SeccionEscaneo({
         </p>
       )}
 
-      {imagenBase64 && (
-        <div className="resultado">
-          <h3>Vista previa</h3>
-          <img className="preview" src={imagenBase64} alt="Imagen cargada para analisis OMR" />
-        </div>
-      )}
-
       {resultado && (
         <div className="resultado">
-          <h3>Respuestas detectadas</h3>
+          <h3>Mesa de revisión manual</h3>
           <div className="item-sub">
-            Estado: <b>{resultado.estadoAnalisis}</b> · Calidad {Math.round(resultado.calidadPagina * 100)}% · Confianza media{' '}
-            {Math.round(resultado.confianzaPromedioPagina * 100)}% · Ambiguas {(resultado.ratioAmbiguas * 100).toFixed(1)}%
+            Examen activo: <b>{examenIdActivo ?? '-'}</b> · Página activa: <b>{paginaActiva ?? '-'}</b>
+            {paginaRevisionActiva?.nombreArchivo ? ` · Archivo: ${paginaRevisionActiva.nombreArchivo}` : ''}
           </div>
-          {resultado.motivosRevision.length > 0 && (
+          <div className="item-sub">
+            Estado <span className={`badge ${estadoAnalisisClase}`}>{estadoAnalisisResultado}</span> · Calidad{' '}
+            {Math.round(calidadPaginaResultado * 100)}% · Confianza media {Math.round(confianzaPromedioResultado * 100)}% · Ambiguas{' '}
+            {(ratioAmbiguasResultado * 100).toFixed(1)}%
+          </div>
+          <div className="item-meta">
+            <span>Aciertos (dinámico): {resumenCalificacionDinamica.aciertos}/{resumenCalificacionDinamica.total}</span>
+            <span>Contestadas: {resumenCalificacionDinamica.contestadas}</span>
+            <span>Calificación dinámica: {resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</span>
+          </div>
+          {motivosRevisionResultado.length > 0 && (
             <div className="alerta">
-              {resultado.motivosRevision.map((m, idx) => (
+              {motivosRevisionResultado.map((m, idx) => (
                 <p key={idx}>{m}</p>
               ))}
             </div>
@@ -7782,6 +8351,22 @@ function SeccionEscaneo({
                 Revisión OMR requerida. Preguntas dudosas: <b>{preguntasDudosas.length}</b>
               </div>
               <div className="item-actions">
+                <label className="campo campo-inline">
+                  <input type="checkbox" checked={soloDudosas} onChange={(event) => setSoloDudosas(event.target.checked)} />
+                  Solo dudas
+                </label>
+                {paginaRevisionActiva && (
+                  <Boton
+                    type="button"
+                    variante="secundario"
+                    onClick={() => {
+                      onActualizar(paginaRevisionActiva.respuestas);
+                      onConfirmarRevisionOmr(false);
+                    }}
+                  >
+                    Restablecer pagina activa
+                  </Boton>
+                )}
                 <Boton
                   type="button"
                   variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
@@ -7792,42 +8377,87 @@ function SeccionEscaneo({
               </div>
             </div>
           )}
-          <ul className="lista lista-items">
-            {respuestas.map((item, idx) => (
-              <li key={item.numeroPregunta}>
-                <div className="item-glass">
-                  <div className="item-row">
-                    <div>
-                      <div className="item-title">Pregunta {item.numeroPregunta}</div>
-                      <div className="item-sub">Confianza: {Math.round(item.confianza * 100)}%</div>
-                    </div>
-                    <div className="item-actions">
-                      <select
-                        aria-label={`Respuesta pregunta ${item.numeroPregunta}`}
-                        value={item.opcion ?? ''}
-                        onChange={(event) => {
-                          const nuevas = [...respuestas];
-                          nuevas[idx] = { ...nuevas[idx], opcion: event.target.value || null };
-                          onActualizar(nuevas);
-                          onConfirmarRevisionOmr(false);
-                        }}
-                      >
-                        <option value="">-</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                        <option value="E">E</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {resultado.advertencias.length > 0 && (
+          <div className="omr-review-grid">
+            <div className="item-glass omr-review-card">
+              <h4>Imagen del examen</h4>
+              {paginaRevisionActiva?.imagenBase64 ? (
+                <img className="preview" src={paginaRevisionActiva.imagenBase64} alt={`Examen ${examenIdActivo ?? ''} página ${paginaActiva ?? ''}`} />
+              ) : imagenBase64 ? (
+                <img className="preview" src={imagenBase64} alt="Imagen cargada para analisis OMR" />
+              ) : (
+                <InlineMensaje tipo="info">Selecciona una página de la revisión para ver su imagen.</InlineMensaje>
+              )}
+            </div>
+            <div className="item-glass omr-review-card">
+              <h4>Respuesta del alumno (editable)</h4>
+              {preguntasMostradas.length === 0 ? (
+                <InlineMensaje tipo="info">
+                  {filasRevision.length === 0 ? 'Aún no hay respuestas para revisar.' : 'No hay preguntas dudosas con el filtro actual.'}
+                </InlineMensaje>
+              ) : (
+                <ul className="lista omr-respuesta-lista">
+                  {preguntasMostradas.map((fila) => {
+                    const confianzaPct = Math.round(fila.confianza * 100);
+                    const claseConfianza = fila.confianza >= 0.75 ? 'ok' : fila.confianza >= 0.5 ? 'warning' : 'error';
+                    return (
+                      <li key={`det-${fila.numeroPregunta}`} className={`omr-respuesta-item${fila.esDudosa ? ' es-dudosa' : ''}`}>
+                        <div className="omr-respuesta-item__meta">
+                          <span className="item-title">Pregunta {fila.numeroPregunta}</span>
+                          <span className={`badge ${claseConfianza}`}>Confianza {confianzaPct}%</span>
+                        </div>
+                        <div className="omr-respuesta-item__controls">
+                          <span className={`badge ${fila.esCorrecta ? 'ok' : fila.opcion ? 'error' : 'warning'}`}>
+                            Detectada: {fila.opcion ?? '-'}
+                          </span>
+                          <select
+                            aria-label={`Respuesta alumno pregunta ${fila.numeroPregunta}`}
+                            value={fila.opcion ?? ''}
+                            onChange={(event) => {
+                              onActualizarPregunta(fila.numeroPregunta, event.target.value || null);
+                              onConfirmarRevisionOmr(false);
+                            }}
+                          >
+                            <option value="">-</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                          </select>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <div className="item-glass omr-review-card">
+              <h4>Clave correcta (orden oficial)</h4>
+              {ordenRevision.length === 0 ? (
+                <InlineMensaje tipo="info">No hay clave disponible para este examen.</InlineMensaje>
+              ) : (
+                <ul className="lista">
+                  {ordenRevision.map((numeroPregunta) => {
+                    const correcta = claveCorrectaPorNumero[numeroPregunta] ?? '-';
+                    const detectada = respuestasCombinadasPorNumero.get(numeroPregunta)?.opcion ?? null;
+                    const coincide = Boolean(correcta && detectada && correcta === detectada);
+                    return (
+                      <li key={`key-${numeroPregunta}`}>
+                        <span className="item-title">P{numeroPregunta}</span>
+                        <span className="badge">{correcta}</span>
+                        <span className={`badge ${coincide ? 'ok' : detectada ? 'error' : 'warning'}`}>
+                          {detectada ? (coincide ? 'Coincide' : 'No coincide') : 'Sin respuesta'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+          {advertenciasResultado.length > 0 && (
             <div className="alerta">
-              {resultado.advertencias.map((mensajeItem, idx) => (
+              {advertenciasResultado.map((mensajeItem, idx) => (
                 <p key={idx}>{mensajeItem}</p>
               ))}
             </div>
@@ -7845,16 +8475,30 @@ function SeccionCalificaciones({
   resultado,
   respuestas,
   onActualizar,
+  onActualizarPregunta,
   revisionOmrConfirmada,
   onConfirmarRevisionOmr,
+  revisionesOmr,
+  examenIdActivo,
+  paginaActiva,
+  onSeleccionarRevision,
+  claveCorrectaPorNumero,
+  ordenPreguntasClave,
   examenId,
   alumnoId,
+  resultadoParaCalificar,
+  respuestasParaCalificar,
   onCalificar,
   permisos,
   avisarSinPermiso
 }: {
   alumnos: Alumno[];
-  onAnalizar: (folio: string, numeroPagina: number, imagenBase64: string) => Promise<ResultadoAnalisisOmr>;
+  onAnalizar: (
+    folio: string,
+    numeroPagina: number,
+    imagenBase64: string,
+    contexto?: { nombreArchivo?: string }
+  ) => Promise<ResultadoAnalisisOmr>;
   onPrevisualizar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -7863,10 +8507,19 @@ function SeccionCalificaciones({
   resultado: ResultadoOmr | null;
   respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
+  onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
   revisionOmrConfirmada: boolean;
   onConfirmarRevisionOmr: (confirmada: boolean) => void;
+  revisionesOmr: RevisionExamenOmr[];
+  examenIdActivo: string | null;
+  paginaActiva: number | null;
+  onSeleccionarRevision: (examenId: string, numeroPagina: number) => void;
+  claveCorrectaPorNumero: Record<number, string>;
+  ordenPreguntasClave: number[];
   examenId: string | null;
   alumnoId: string | null;
+  resultadoParaCalificar: ResultadoOmr | null;
+  respuestasParaCalificar: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onCalificar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -7892,6 +8545,13 @@ function SeccionCalificaciones({
 }) {
   const puedeAnalizar = permisos.omr.analizar;
   const puedeCalificar = permisos.calificaciones.calificar;
+  const revisionesSeguras = Array.isArray(revisionesOmr) ? revisionesOmr : [];
+  const totalPaginas = revisionesSeguras.reduce((acumulado, examen) => acumulado + examen.paginas.length, 0);
+  const paginasPendientes = revisionesSeguras.reduce(
+    (acumulado, examen) => acumulado + examen.paginas.filter((pagina) => pagina.resultado.estadoAnalisis !== 'ok').length,
+    0
+  );
+  const examenesListos = revisionesSeguras.filter((examen) => examen.revisionConfirmada).length;
   return (
     <>
       <div className="panel">
@@ -7899,32 +8559,54 @@ function SeccionCalificaciones({
           <Icono nombre="calificar" /> Calificaciones
         </h2>
         <p className="nota">
-          Escanea el examen para detectar respuestas automaticamente y despues guarda la calificacion.
+          Escanea por página, revisa por examen y guarda solo cuando la revisión esté confirmada.
         </p>
+        <div className="item-meta">
+          <span>{revisionesSeguras.length} examen(es) en flujo</span>
+          <span>{totalPaginas} página(s) procesadas</span>
+          <span>{paginasPendientes} página(s) pendientes</span>
+          <span>{examenesListos} examen(es) listos</span>
+        </div>
       </div>
-      <SeccionEscaneo
-        alumnos={alumnos}
-        onAnalizar={onAnalizar}
-        onPrevisualizar={onPrevisualizar}
-        resultado={resultado}
-        respuestas={respuestas}
-        onActualizar={onActualizar}
-        revisionOmrConfirmada={revisionOmrConfirmada}
-        onConfirmarRevisionOmr={onConfirmarRevisionOmr}
-        puedeAnalizar={puedeAnalizar}
-        puedeCalificar={puedeCalificar}
-        avisarSinPermiso={avisarSinPermiso}
-      />
-      <SeccionCalificar
-        examenId={examenId}
-        alumnoId={alumnoId}
-        resultadoOmr={resultado}
-        revisionOmrConfirmada={revisionOmrConfirmada}
-        respuestasDetectadas={respuestas}
-        onCalificar={onCalificar}
-        puedeCalificar={puedeCalificar}
-        avisarSinPermiso={avisarSinPermiso}
-      />
+      <div className="calificaciones-layout">
+        <div className="calificaciones-layout__main">
+          <SeccionEscaneo
+            alumnos={alumnos}
+            onAnalizar={onAnalizar}
+            onPrevisualizar={onPrevisualizar}
+            resultado={resultado}
+            respuestas={respuestas}
+            onActualizar={onActualizar}
+            onActualizarPregunta={onActualizarPregunta}
+            respuestasCombinadas={respuestasParaCalificar}
+            claveCorrectaPorNumero={claveCorrectaPorNumero}
+            ordenPreguntasClave={ordenPreguntasClave}
+            revisionOmrConfirmada={revisionOmrConfirmada}
+            onConfirmarRevisionOmr={onConfirmarRevisionOmr}
+            revisionesOmr={revisionesOmr}
+            examenIdActivo={examenIdActivo}
+            paginaActiva={paginaActiva}
+            onSeleccionarRevision={onSeleccionarRevision}
+            puedeAnalizar={puedeAnalizar}
+            puedeCalificar={puedeCalificar}
+            avisarSinPermiso={avisarSinPermiso}
+          />
+        </div>
+        <aside className="calificaciones-layout__aside" aria-label="Panel de calificación">
+          <SeccionCalificar
+            examenId={examenId}
+            alumnoId={alumnoId}
+            resultadoOmr={resultadoParaCalificar}
+            revisionOmrConfirmada={revisionOmrConfirmada}
+            respuestasDetectadas={respuestasParaCalificar}
+            claveCorrectaPorNumero={claveCorrectaPorNumero}
+            ordenPreguntasClave={ordenPreguntasClave}
+            onCalificar={onCalificar}
+            puedeCalificar={puedeCalificar}
+            avisarSinPermiso={avisarSinPermiso}
+          />
+        </aside>
+      </div>
     </>
   );
 }
@@ -7935,6 +8617,8 @@ function SeccionCalificar({
   resultadoOmr,
   revisionOmrConfirmada,
   respuestasDetectadas,
+  claveCorrectaPorNumero,
+  ordenPreguntasClave,
   onCalificar,
   puedeCalificar,
   avisarSinPermiso
@@ -7943,7 +8627,9 @@ function SeccionCalificar({
   alumnoId: string | null;
   resultadoOmr: ResultadoOmr | null;
   revisionOmrConfirmada: boolean;
-  respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null }>;
+  respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+  claveCorrectaPorNumero: Record<number, string>;
+  ordenPreguntasClave: number[];
   onCalificar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -7973,10 +8659,51 @@ function SeccionCalificar({
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
 
+  const respuestasSeguras = useMemo(
+    () => (Array.isArray(respuestasDetectadas) ? respuestasDetectadas : []),
+    [respuestasDetectadas]
+  );
+  const respuestasPorNumero = useMemo(
+    () =>
+      new Map(
+        respuestasSeguras
+          .filter((item) => Number.isFinite(Number(item?.numeroPregunta)))
+          .map((item) => [Number(item.numeroPregunta), item])
+      ),
+    [respuestasSeguras]
+  );
+  const ordenPreguntas = useMemo(() => {
+    if (Array.isArray(ordenPreguntasClave) && ordenPreguntasClave.length > 0) return ordenPreguntasClave;
+    const desdeRespuestas = respuestasSeguras
+      .map((item) => Number(item?.numeroPregunta))
+      .filter((numero) => Number.isFinite(numero));
+    const desdeClave = Object.keys(claveCorrectaPorNumero)
+      .map((numero) => Number(numero))
+      .filter((numero) => Number.isFinite(numero));
+    return Array.from(new Set([...desdeClave, ...desdeRespuestas])).sort((a, b) => a - b);
+  }, [claveCorrectaPorNumero, ordenPreguntasClave, respuestasSeguras]);
+  const resumenDinamico = useMemo(() => {
+    if (ordenPreguntas.length === 0) {
+      return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
+    }
+    let aciertos = 0;
+    let contestadas = 0;
+    for (const numero of ordenPreguntas) {
+      const correcta = claveCorrectaPorNumero[numero] ?? null;
+      const opcion = respuestasPorNumero.get(numero)?.opcion ?? null;
+      if (opcion) contestadas += 1;
+      if (correcta && opcion && correcta === opcion) aciertos += 1;
+    }
+    const total = ordenPreguntas.length;
+    const notaSobre5 = Number(((aciertos / Math.max(1, total)) * 5).toFixed(2));
+    return { total, aciertos, contestadas, notaSobre5 };
+  }, [claveCorrectaPorNumero, ordenPreguntas, respuestasPorNumero]);
+
   const requiereRevisionConfirmacion = Boolean(
     resultadoOmr && resultadoOmr.estadoAnalisis !== 'ok' && !revisionOmrConfirmada
   );
-  const puedeCalificarLocal = Boolean(examenId && alumnoId) && !requiereRevisionConfirmacion;
+  const bloqueoPorCalidad = resultadoOmr?.estadoAnalisis === 'rechazado_calidad';
+  const puedeCalificarLocal = Boolean(examenId && alumnoId) && !requiereRevisionConfirmacion && !bloqueoPorCalidad;
   const bloqueoCalificar = !puedeCalificar;
 
   async function calificar() {
@@ -8006,7 +8733,7 @@ function SeccionCalificar({
               confianzaPromedioPagina: resultadoOmr.confianzaPromedioPagina,
               ratioAmbiguas: resultadoOmr.ratioAmbiguas,
               templateVersionDetectada: resultadoOmr.templateVersionDetectada,
-              motivosRevision: resultadoOmr.motivosRevision,
+              motivosRevision: Array.isArray(resultadoOmr.motivosRevision) ? resultadoOmr.motivosRevision : [],
               revisionConfirmada: revisionOmrConfirmada
             }
           : undefined
@@ -8031,16 +8758,36 @@ function SeccionCalificar({
   }
 
   return (
-    <div className="shell">
-      <div className="panel shell-main">
-        <h2>
-          <Icono nombre="calificar" /> Calificar examen
-        </h2>
-        <p>Examen: {examenId ?? 'Sin examen'}</p>
-        <p>Alumno: {alumnoId ?? 'Sin alumno'}</p>
-        {requiereRevisionConfirmacion && (
-          <InlineMensaje tipo="warning">Debes confirmar la revisión OMR en la sección de escaneo antes de calificar.</InlineMensaje>
-        )}
+    <div className="panel calif-grade-card">
+      <h2>
+        <Icono nombre="calificar" /> Calificar examen
+      </h2>
+      <div className="item-sub">Examen: {examenId ?? 'Sin examen'}</div>
+      <div className="item-sub">Alumno: {alumnoId ?? 'Sin alumno'}</div>
+      <div className="item-meta">
+        <span>Respuestas listas: {respuestasSeguras.length}</span>
+        <span>
+          Aciertos dinámicos: {resumenDinamico.aciertos}/{resumenDinamico.total}
+        </span>
+        <span>Nota estimada: {resumenDinamico.notaSobre5.toFixed(2)} / 5.00</span>
+      </div>
+      {resultadoOmr && (
+        <div className="item-meta">
+          <span className={`badge ${resultadoOmr.estadoAnalisis === 'ok' ? 'ok' : resultadoOmr.estadoAnalisis === 'rechazado_calidad' ? 'error' : 'warning'}`}>
+            OMR: {resultadoOmr.estadoAnalisis}
+          </span>
+          <span>Calidad {Math.round(resultadoOmr.calidadPagina * 100)}%</span>
+          <span>Confianza {Math.round(resultadoOmr.confianzaPromedioPagina * 100)}%</span>
+          <span>Ambiguas {(resultadoOmr.ratioAmbiguas * 100).toFixed(1)}%</span>
+        </div>
+      )}
+      {requiereRevisionConfirmacion && (
+        <InlineMensaje tipo="warning">Debes confirmar la revisión OMR antes de guardar la calificación.</InlineMensaje>
+      )}
+      {bloqueoPorCalidad && (
+        <InlineMensaje tipo="error">Calificación bloqueada: el análisis OMR fue rechazado por calidad.</InlineMensaje>
+      )}
+      <div className="calif-grade-grid">
         <label className="campo">
           Bono (max 0.5)
           <input
@@ -8071,46 +8818,33 @@ function SeccionCalificar({
             disabled={bloqueoCalificar}
           />
         </label>
-        <Boton
-          type="button"
-          icono={<Icono nombre="calificar" />}
-          cargando={guardando}
-          disabled={!puedeCalificarLocal || bloqueoCalificar}
-          onClick={calificar}
-        >
-          {guardando ? 'Guardando…' : 'Calificar'}
-        </Boton>
-        {mensaje && (
-          <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
-            {mensaje}
-          </p>
-        )}
       </div>
-
-      <aside className="shell-aside" aria-label="Ayuda y contexto">
-        <div className="shell-asideCard">
-          <AyudaFormulario titulo="Para que sirve y como llenarlo">
-            <p>
-              <b>Proposito:</b> guardar la calificacion del examen ya identificado por folio/OMR.
-              Esta seccion usa el examen y alumno detectados en &quot;Escaneo OMR&quot;.
-            </p>
-            <ul className="lista">
-              <li>
-                <b>Bono:</b> ajuste extra (0 a 0.5).
-              </li>
-              <li>
-                <b>Evaluacion continua:</b> puntaje adicional para parciales.
-              </li>
-              <li>
-                <b>Proyecto:</b> puntaje adicional para global.
-              </li>
-            </ul>
-            <p>
-              Ejemplo: bono <code>0.2</code>, evaluacion continua <code>1</code>, proyecto <code>0</code>.
-            </p>
-          </AyudaFormulario>
-        </div>
-      </aside>
+      <Boton
+        type="button"
+        icono={<Icono nombre="calificar" />}
+        cargando={guardando}
+        disabled={!puedeCalificarLocal || bloqueoCalificar}
+        onClick={calificar}
+      >
+        {guardando ? 'Guardando…' : 'Guardar calificación'}
+      </Boton>
+      {mensaje && (
+        <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
+          {mensaje}
+        </p>
+      )}
+      <details className="colapsable">
+        <summary>Ayuda para calificar</summary>
+        <ul className="lista nota">
+          <li>La nota estimada se recalcula automáticamente sobre 5.00.</li>
+          <li>
+            Si el estado es <code>requiere_revision</code>, confirma la revisión manual antes de guardar.
+          </li>
+          <li>
+            Si el estado es <code>rechazado_calidad</code>, recaptura y vuelve a analizar.
+          </li>
+        </ul>
+      </details>
     </div>
   );
 }
