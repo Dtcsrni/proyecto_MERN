@@ -33,6 +33,7 @@ export type MetricasPregunta = {
   mejorScore: number;
   segundoScore: number;
   delta: number;
+  topZScore: number;
   dobleMarcada: boolean;
   suficiente: boolean;
   confianza: number;
@@ -47,6 +48,7 @@ export type UmbralesDecisionOmr = {
   strongScore: number;
   secondRatio: number;
   deltaMin: number;
+  minTopZScore?: number;
   ambiguityRatio?: number;
   minTopScoreForAmbiguity?: number;
   minFillDelta?: number;
@@ -57,7 +59,12 @@ export type UmbralesDecisionOmr = {
 type RasgosBurbuja = {
   score: number;
   ratio: number;
+  ratioCore: number;
+  ratioMid: number;
   ratioRing: number;
+  ringOnlyPenalty: number;
+  radialMassRatio: number;
+  anisotropy: number;
   contraste: number;
   ringContrast: number;
   fillDelta: number;
@@ -71,13 +78,16 @@ function calcularRangoLocalBusqueda(
   params: ParametrosBurbujaCore,
   localSearchRatio: number
 ) {
-  if (centros.length < 2) return Math.max(8, Math.round(params.radio * 0.55));
+  if (centros.length < 2) return Math.max(4, Math.round(params.radio * 0.5));
   const distanciaMin = calcularDistanciaMinimaCentros(centros);
-  const porRadio = Math.max(8, Math.round(params.radio * 0.55));
+  const porRadio = Math.max(4, Math.round(params.radio * 0.5));
   const porDistancia = Number.isFinite(distanciaMin)
-    ? Math.max(8, Math.round(distanciaMin * localSearchRatio))
-    : Math.max(8, Math.round(params.ringOuter * 0.8));
-  return Math.min(Math.max(porRadio, porDistancia), Math.max(8, Math.round(params.ringOuter * 0.8)));
+    ? Math.max(4, Math.round(distanciaMin * localSearchRatio))
+    : Math.max(4, Math.round(params.ringOuter * 0.7));
+  const limiteVecino = Number.isFinite(distanciaMin)
+    ? Math.max(4, Math.round(distanciaMin * 0.32))
+    : Math.max(4, Math.round(params.ringOuter * 0.7));
+  return Math.min(Math.max(porRadio, porDistancia), limiteVecino, Math.max(4, Math.round(params.ringOuter * 0.7)));
 }
 
 export function calcularDistanciaMinimaCentros(centros: CentroOpcion[]) {
@@ -232,17 +242,39 @@ export function calcularMetricasPregunta(args: {
   const top1 = topScores[0] ?? 0;
   const top2 = topScores[1] ?? 0;
   const topRatio = top2 / Math.max(0.0001, top1);
+  const ascScores = [...topScores].sort((a, b) => a - b);
+  const midIdx = Math.floor(ascScores.length / 2);
+  const mediana =
+    ascScores.length % 2 === 0
+      ? ((ascScores[midIdx - 1] ?? 0) + (ascScores[midIdx] ?? 0)) / 2
+      : (ascScores[midIdx] ?? 0);
+  const desvAbs = ascScores.map((score) => Math.abs(score - mediana)).sort((a, b) => a - b);
+  const madIdx = Math.floor(desvAbs.length / 2);
+  const mad =
+    desvAbs.length % 2 === 0
+      ? ((desvAbs[madIdx - 1] ?? 0) + (desvAbs[madIdx] ?? 0)) / 2
+      : (desvAbs[madIdx] ?? 0);
+  const topZScore = (top1 - mediana) / Math.max(0.015, mad * 1.4826);
+  const minTopZScore = umbrales.minTopZScore ?? 1.25;
   const ambiguityRatio = umbrales.ambiguityRatio ?? 0.87;
   const minTopScoreForAmbiguity = umbrales.minTopScoreForAmbiguity ?? Math.max(umbrales.strongScore * 0.9, umbralScore * 0.85);
   const opcionesCompetitivas = topScores.filter(
     (score) => score >= Math.max(umbrales.strongScore * 0.75, umbralScore * 0.9, mejorScore * 0.7)
   ).length;
-  const scoresDirectos = centros.map((item) =>
-    detectarOpcion(gray, integral, width, height, { x: item.punto.x + mejorDx, y: item.punto.y + mejorDy }, paramsBurbuja).score
-  );
+  const scoresDirectos = centros.map((item) => ({
+    letra: item.letra,
+    score: detectarOpcion(gray, integral, width, height, { x: item.punto.x + mejorDx, y: item.punto.y + mejorDy }, paramsBurbuja).score
+  }));
   const fuertesDirectos = scoresDirectos.filter(
-    (score) => score >= Math.max(umbrales.strongScore * 0.8, umbralScore * 0.95)
+    (item) => item.score >= Math.max(umbrales.strongScore * 0.8, umbralScore * 0.95)
   ).length;
+  const ordenDirectos = [...scoresDirectos].sort((a, b) => b.score - a.score);
+  const topDirecto = ordenDirectos[0];
+  const secondDirecto = ordenDirectos[1];
+  const ratioDirecto = (secondDirecto?.score ?? 0) / Math.max(0.0001, topDirecto?.score ?? 0.0001);
+  const consistenciaAnclada = Boolean(topDirecto && resultado.mejorOpcion && topDirecto.letra === resultado.mejorOpcion);
+  const scoreMinAnclado = Math.max(umbrales.scoreMin * 0.95, umbralScore * 0.85);
+  const anclaConfiable = (topDirecto?.score ?? 0) >= scoreMinAnclado && ratioDirecto <= 0.92;
 
   const ordenar = [...resultado.scores].sort((a, b) => b.score - a.score);
   const top = ordenar[0];
@@ -264,33 +296,62 @@ export function calcularMetricasPregunta(args: {
     const gapCentro = rasgos.ringMean - rasgos.centerMean;
     const fFill = clamp01((rasgos.fillDelta - minFillDelta) / 0.14);
     const fGap = clamp01((gapCentro - minCenterGap) / 28);
+    const fCore = clamp01((rasgos.ratioCore - 0.19) / 0.28);
+    const fMid = clamp01((rasgos.ratioMid - 0.16) / 0.24);
+    const fRadial = clamp01((rasgos.radialMassRatio - 0.33) / 0.3);
     const fContraste = clamp01((rasgos.contraste - 0.06) / 0.22);
+    const pAniso = clamp01((rasgos.anisotropy - 2.4) / 3.6);
     const pRing = clamp01((rasgos.ratioRing - 0.35) / 0.5);
-    return clamp01(fFill * 0.45 + fGap * 0.35 + fContraste * 0.2 - pRing * 0.2);
+    const pRingOnly = clamp01((rasgos.ringOnlyPenalty - 0.06) / 0.26);
+    return clamp01(
+      fFill * 0.28 +
+        fGap * 0.24 +
+        fCore * 0.2 +
+        fMid * 0.11 +
+        fRadial * 0.09 +
+        fContraste * 0.08 -
+        pAniso * 0.1 -
+        pRing * 0.12 -
+        pRingOnly * 0.2
+    );
   };
 
   const hTop = confianzaHibrida(rasgosTop);
   const hSecond = confianzaHibrida(rasgosSecond);
   const gapCentroTop = rasgosTop ? rasgosTop.ringMean - rasgosTop.centerMean : 0;
+  const ringOnlyTop = rasgosTop?.ringOnlyPenalty ?? 0;
 
   const dobleMarcada =
     (segundoScore >= umbrales.strongScore && ratio >= umbrales.secondRatio) ||
     opcionesCompetitivas >= 2 ||
     fuertesDirectos >= 2 ||
-    (top1 >= minTopScoreForAmbiguity && topRatio >= ambiguityRatio) ||
+    (top1 >= minTopScoreForAmbiguity && topRatio >= ambiguityRatio && topZScore >= minTopZScore * 0.75) ||
+    (!consistenciaAnclada && anclaConfiable && top1 >= scoreMinAnclado) ||
     (hTop >= minHybridConfidence * 0.9 && hSecond >= minHybridConfidence * 0.9 && topRatio >= 0.78);
-  const suficienteBase = mejorScore >= umbralScore && delta >= umbrales.deltaMin;
-  const suficienteHibrida = hTop >= minHybridConfidence && (rasgosTop ? rasgosTop.fillDelta >= minFillDelta : false) && gapCentroTop >= minCenterGap;
-  const suficiente = suficienteBase && suficienteHibrida;
+  const suficienteBase = mejorScore >= umbralScore && delta >= umbrales.deltaMin && topZScore >= minTopZScore;
+  const suficienteHibrida =
+    hTop >= minHybridConfidence &&
+    (rasgosTop ? rasgosTop.fillDelta >= minFillDelta : false) &&
+    gapCentroTop >= minCenterGap &&
+    ringOnlyTop < 0.32;
+  const suficiente = suficienteBase && suficienteHibrida && (consistenciaAnclada || anclaConfiable);
   const confianzaBase = Math.min(1, Math.max(0, mejorScore * 1.8));
   const penalizacion = dobleMarcada ? 0.5 : 1;
-  const confianza = suficiente ? Math.min(1, (confianzaBase * 0.6 + hTop * 0.4 + Math.min(0.5, delta * 3)) * penalizacion) : 0;
+  const penalizacionAnclada = consistenciaAnclada ? 1 : anclaConfiable ? 0.72 : 0.35;
+  const zBoost = clamp01((topZScore - 1) / 4);
+  const confianza = suficiente
+    ? Math.min(
+        1,
+        (confianzaBase * 0.45 + hTop * 0.4 + Math.min(0.5, delta * 3) * 0.55 + zBoost * 0.2) * penalizacion * penalizacionAnclada
+      )
+    : 0;
 
   return {
     mejorOpcion: resultado.mejorOpcion,
     mejorScore,
     segundoScore,
     delta,
+    topZScore,
     dobleMarcada,
     suficiente,
     confianza,

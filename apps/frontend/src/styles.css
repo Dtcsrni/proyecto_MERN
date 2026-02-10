@@ -1480,6 +1480,29 @@ p {
   box-shadow: 0 12px 30px rgba(2, 6, 23, 0.4);
 }
 
+:root[data-theme="dark"] .revision-pill {
+  border-color: rgba(148, 163, 184, 0.32);
+  background: rgba(15, 23, 42, 0.92);
+  color: var(--texto);
+}
+
+:root[data-theme="dark"] .revision-pill--ok {
+  border-color: rgba(34, 197, 94, 0.44);
+  background: rgba(34, 197, 94, 0.15);
+  color: #bbf7d0;
+}
+
+:root[data-theme="dark"] .revision-pill--revision {
+  border-color: rgba(251, 191, 36, 0.42);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fde68a;
+}
+
+:root[data-theme="dark"] .omr-respuesta-item {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
 :root[data-theme="dark"] .item-glass:nth-child(3n + 1) {
   border-color: rgba(56, 189, 248, 0.35);
   box-shadow: 0 12px 30px rgba(56, 189, 248, 0.12);
@@ -1656,6 +1679,191 @@ p {
   justify-content: flex-end;
 }
 
+.calificaciones-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.calificaciones-layout__main,
+.calificaciones-layout__aside {
+  min-width: 0;
+}
+
+.calificaciones-layout__aside {
+  position: sticky;
+  top: 5.2rem;
+}
+
+@media (max-width: 1100px) {
+  .calificaciones-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calificaciones-layout__aside {
+    position: static;
+  }
+}
+
+.calif-omr-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.calif-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.calif-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.65rem;
+}
+
+.calif-kpi-card {
+  gap: 0.2rem;
+}
+
+.calif-kpi-card b {
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.calif-captura-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+@media (max-width: 980px) {
+  .calif-captura-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.revision-omr-examen {
+  gap: 0.65rem;
+}
+
+.revision-pills-wrap {
+  justify-content: flex-start;
+}
+
+.revision-pill {
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f172a;
+  cursor: pointer;
+  transition: transform 90ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.revision-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+.revision-pill:focus-visible {
+  outline: 3px solid var(--anillo);
+  outline-offset: 2px;
+}
+
+.revision-pill--ok {
+  border-color: rgba(22, 163, 74, 0.45);
+  background: rgba(220, 252, 231, 0.9);
+  color: #166534;
+}
+
+.revision-pill--revision {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(254, 243, 199, 0.92);
+  color: #92400e;
+}
+
+.revision-pill.activa {
+  border-color: rgba(13, 148, 136, 0.8);
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.24), 0 10px 20px rgba(13, 148, 136, 0.2);
+}
+
+.omr-review-grid {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+.omr-review-card {
+  min-width: 0;
+}
+
+.omr-review-card h4 {
+  margin: 0 0 0.55rem 0;
+  font-size: 0.95rem;
+}
+
+.omr-respuesta-lista {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.omr-respuesta-item {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(255, 255, 255, 0.52);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.omr-respuesta-item.es-dudosa {
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.omr-respuesta-item__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.omr-respuesta-item__controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.calif-grade-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.calif-grade-grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (min-width: 1100px) {
+  .omr-review-grid {
+    grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.2fr) minmax(220px, 0.9fr);
+    align-items: start;
+  }
+
+  .calif-grade-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .item-options {
   list-style: none;
   padding: 0;
@@ -1758,6 +1966,12 @@ p {
   background: var(--peligroBg);
   color: var(--peligroTexto);
   border-color: rgba(239, 68, 68, 0.35);
+}
+
+.badge.warning {
+  background: var(--avisoBg);
+  color: var(--avisoTexto);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .plantillas-header {
