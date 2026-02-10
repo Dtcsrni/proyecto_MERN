@@ -96,7 +96,7 @@ rutasAutenticacion.post("/register", async (solicitud, respuesta, siguiente) => 
 
     const existente = await Usuario.findOne({ correo: correoNormalizado }).lean();
     if (existente) {
-      respuesta.status(409).json({ mensaje: "No se pudo crear el usuario." });
+      respuesta.status(409).json({ mensaje: "Ya existe una cuenta con ese correo" });
       return;
     }
 
@@ -155,7 +155,7 @@ rutasAutenticacion.post("/login", async (solicitud, respuesta, siguiente) => {
     respuesta.cookie("tokenAcceso", tokenAcceso, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "development",
       maxAge: 2 * 60 * 60 * 1000
     });
 
