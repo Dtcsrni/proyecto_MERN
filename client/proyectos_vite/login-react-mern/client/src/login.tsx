@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usarAutenticacion } from "./autenticacion";
+import "./login.css";
 
 /**
  * UI de login (2.5.1 Aplicaciones para usuarios):
@@ -29,7 +30,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto" }}>
+    <div className="login-container">
       <h2>Iniciar sesión</h2>
 
       <form onSubmit={alEnviar}>
@@ -42,7 +43,7 @@ export default function Login() {
         <button type="submit">Entrar</button>
       </form>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {error && <p className="error-message">{error}</p>}
     </div>
   );
 }
