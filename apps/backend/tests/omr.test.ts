@@ -204,4 +204,275 @@ describe('analizarOmr', () => {
     expect(resultado.templateVersionDetectada).toBe(1);
     expect(['ok', 'requiere_revision', 'rechazado_calidad']).toContain(resultado.estadoAnalisis);
   });
+
+  it('distingue burbuja hueca de burbuja realmente marcada', async () => {
+    const width = 612;
+    const height = 792;
+    const buffer = Buffer.alloc(width * height * 3, 255);
+
+    const setPixel = (x: number, y: number, v: number) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const idx = (y * width + x) * 3;
+      buffer[idx] = v;
+      buffer[idx + 1] = v;
+      buffer[idx + 2] = v;
+    };
+
+    const drawSquare = (cx: number, cy: number, size: number) => {
+      const half = Math.floor(size / 2);
+      for (let y = cy - half; y <= cy + half; y += 1) {
+        for (let x = cx - half; x <= cx + half; x += 1) {
+          setPixel(x, y, 0);
+        }
+      }
+    };
+
+    const drawRing = (cx: number, cy: number, radius: number, thickness = 1, value = 35) => {
+      const rOuter2 = radius * radius;
+      const rInner = Math.max(0, radius - thickness);
+      const rInner2 = rInner * rInner;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          const d2 = x * x + y * y;
+          if (d2 <= rOuter2 && d2 >= rInner2) setPixel(cx + x, cy + y, value);
+        }
+      }
+    };
+
+    const fillCore = (cx: number, cy: number, radius: number, value = 25) => {
+      const r2 = radius * radius;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          if (x * x + y * y <= r2) setPixel(cx + x, cy + y, value);
+        }
+      }
+    };
+
+    const margen = Math.round(10 * (72 / 25.4));
+    drawSquare(margen, margen, 18);
+    drawSquare(width - margen, margen, 18);
+    drawSquare(margen, height - margen, 18);
+    drawSquare(width - margen, height - margen, 18);
+
+    const opciones = [
+      { letra: 'A', x: 200, y: 200 },
+      { letra: 'B', x: 220, y: 200 },
+      { letra: 'C', x: 240, y: 200 },
+      { letra: 'D', x: 260, y: 200 },
+      { letra: 'E', x: 280, y: 200 }
+    ];
+
+    for (const opcion of opciones) {
+      const cx = opcion.x;
+      const cy = height - opcion.y;
+      drawRing(cx, cy, 8, 2, 60);
+    }
+    // Marca real en C: relleno central parcial sobre la burbuja hueca.
+    fillCore(opciones[2].x, height - opciones[2].y, 5, 10);
+
+    const imagenBase64 = await sharp(buffer, { raw: { width, height, channels: 3 } })
+      .png()
+      .toBuffer()
+      .then((buf) => `data:image/png;base64,${buf.toString('base64')}`);
+
+    const mapaPagina = {
+      numeroPagina: 1,
+      preguntas: [
+        {
+          numeroPregunta: 1,
+          idPregunta: 'p1',
+          opciones
+        }
+      ]
+    };
+
+    const resultado = await analizarOmr(imagenBase64, mapaPagina, undefined, 10);
+    expect(resultado.respuestasDetectadas).toHaveLength(1);
+    expect(resultado.respuestasDetectadas[0].opcion).toBe('C');
+    expect(resultado.respuestasDetectadas[0].confianza).toBeGreaterThan(0.1);
+  });
+
+  it('penaliza trazos lineales y prioriza relleno central real', async () => {
+    const width = 612;
+    const height = 792;
+    const buffer = Buffer.alloc(width * height * 3, 255);
+
+    const setPixel = (x: number, y: number, v: number) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const idx = (y * width + x) * 3;
+      buffer[idx] = v;
+      buffer[idx + 1] = v;
+      buffer[idx + 2] = v;
+    };
+
+    const drawSquare = (cx: number, cy: number, size: number) => {
+      const half = Math.floor(size / 2);
+      for (let y = cy - half; y <= cy + half; y += 1) {
+        for (let x = cx - half; x <= cx + half; x += 1) {
+          setPixel(x, y, 0);
+        }
+      }
+    };
+
+    const drawRing = (cx: number, cy: number, radius: number, thickness = 1, value = 70) => {
+      const rOuter2 = radius * radius;
+      const rInner = Math.max(0, radius - thickness);
+      const rInner2 = rInner * rInner;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          const d2 = x * x + y * y;
+          if (d2 <= rOuter2 && d2 >= rInner2) setPixel(cx + x, cy + y, value);
+        }
+      }
+    };
+
+    const drawLine = (x0: number, y0: number, x1: number, y1: number, value = 18) => {
+      const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+      for (let i = 0; i <= steps; i += 1) {
+        const t = i / steps;
+        setPixel(Math.round(x0 + (x1 - x0) * t), Math.round(y0 + (y1 - y0) * t), value);
+      }
+    };
+
+    const fillDisk = (cx: number, cy: number, radius: number, value = 22) => {
+      const r2 = radius * radius;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          if (x * x + y * y <= r2) setPixel(cx + x, cy + y, value);
+        }
+      }
+    };
+
+    const margen = Math.round(10 * (72 / 25.4));
+    drawSquare(margen, margen, 18);
+    drawSquare(width - margen, margen, 18);
+    drawSquare(margen, height - margen, 18);
+    drawSquare(width - margen, height - margen, 18);
+
+    const opciones = [
+      { letra: 'A', x: 200, y: 200 },
+      { letra: 'B', x: 220, y: 200 },
+      { letra: 'C', x: 240, y: 200 },
+      { letra: 'D', x: 260, y: 200 },
+      { letra: 'E', x: 280, y: 200 }
+    ];
+
+    for (const opcion of opciones) {
+      drawRing(opcion.x, height - opcion.y, 8, 2, 70);
+    }
+
+    // Artefacto lineal fuerte sobre A (debe penalizarse por anisotropia).
+    drawLine(opciones[0].x - 3, height - opciones[0].y - 8, opciones[0].x + 3, height - opciones[0].y + 8, 16);
+    // Marca real en D: relleno central compacto.
+    fillDisk(opciones[3].x, height - opciones[3].y, 5, 8);
+
+    const imagenBase64 = await sharp(buffer, { raw: { width, height, channels: 3 } })
+      .png()
+      .toBuffer()
+      .then((buf) => `data:image/png;base64,${buf.toString('base64')}`);
+
+    const mapaPagina = {
+      numeroPagina: 1,
+      preguntas: [
+        {
+          numeroPregunta: 1,
+          idPregunta: 'p1',
+          opciones
+        }
+      ]
+    };
+
+    const resultado = await analizarOmr(imagenBase64, mapaPagina, undefined, 10);
+    expect(resultado.respuestasDetectadas).toHaveLength(1);
+    expect(resultado.respuestasDetectadas[0].opcion).toBe('D');
+    expect(resultado.respuestasDetectadas[0].confianza).toBeGreaterThan(0.1);
+  });
+
+  it('detecta marca azul con dominante de iluminacion calida', async () => {
+    const width = 612;
+    const height = 792;
+    const buffer = Buffer.alloc(width * height * 3, 0);
+
+    const setPixelRgb = (x: number, y: number, r: number, g: number, b: number) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const idx = (y * width + x) * 3;
+      buffer[idx] = r;
+      buffer[idx + 1] = g;
+      buffer[idx + 2] = b;
+    };
+
+    // Fondo cálido (simula luz amarilla/naranja).
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        setPixelRgb(x, y, 245, 224, 192);
+      }
+    }
+
+    const drawSquare = (cx: number, cy: number, size: number) => {
+      const half = Math.floor(size / 2);
+      for (let y = cy - half; y <= cy + half; y += 1) {
+        for (let x = cx - half; x <= cx + half; x += 1) {
+          setPixelRgb(x, y, 15, 15, 15);
+        }
+      }
+    };
+
+    const drawRing = (cx: number, cy: number, radius: number, thickness = 1) => {
+      const rOuter2 = radius * radius;
+      const rInner = Math.max(0, radius - thickness);
+      const rInner2 = rInner * rInner;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          const d2 = x * x + y * y;
+          if (d2 <= rOuter2 && d2 >= rInner2) setPixelRgb(cx + x, cy + y, 70, 70, 70);
+        }
+      }
+    };
+
+    const fillBlue = (cx: number, cy: number, radius: number) => {
+      const r2 = radius * radius;
+      for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+          if (x * x + y * y <= r2) setPixelRgb(cx + x, cy + y, 20, 48, 170);
+        }
+      }
+    };
+
+    const margen = Math.round(10 * (72 / 25.4));
+    drawSquare(margen, margen, 18);
+    drawSquare(width - margen, margen, 18);
+    drawSquare(margen, height - margen, 18);
+    drawSquare(width - margen, height - margen, 18);
+
+    const opciones = [
+      { letra: 'A', x: 200, y: 200 },
+      { letra: 'B', x: 220, y: 200 },
+      { letra: 'C', x: 240, y: 200 },
+      { letra: 'D', x: 260, y: 200 },
+      { letra: 'E', x: 280, y: 200 }
+    ];
+    for (const opcion of opciones) drawRing(opcion.x, height - opcion.y, 8, 2);
+    fillBlue(opciones[1].x, height - opciones[1].y, 5);
+
+    const imagenBase64 = await sharp(buffer, { raw: { width, height, channels: 3 } })
+      .jpeg({ quality: 96 })
+      .toBuffer()
+      .then((buf) => `data:image/jpeg;base64,${buf.toString('base64')}`);
+
+    const mapaPagina = {
+      numeroPagina: 1,
+      preguntas: [
+        {
+          numeroPregunta: 1,
+          idPregunta: 'p1',
+          opciones
+        }
+      ]
+    };
+
+    const resultado = await analizarOmr(imagenBase64, mapaPagina, undefined, 10);
+    expect(resultado.respuestasDetectadas).toHaveLength(1);
+    expect(resultado.respuestasDetectadas[0].opcion).toBe('B');
+    expect(resultado.respuestasDetectadas[0].confianza).toBeGreaterThan(0.1);
+  });
 });

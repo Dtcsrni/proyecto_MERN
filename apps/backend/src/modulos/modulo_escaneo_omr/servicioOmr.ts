@@ -85,6 +85,12 @@ const OMR_PATCH_DIR = process.env.OMR_PATCH_DIR || path.resolve(process.cwd(), '
 const OMR_PATCH_SIZE = Math.max(24, Number.parseInt(process.env.OMR_PATCH_SIZE || '56', 10));
 const OMR_DEBUG = String(process.env.OMR_DEBUG || '').toLowerCase() === 'true' || process.env.OMR_DEBUG === '1';
 const OMR_DEBUG_DIR = process.env.OMR_DEBUG_DIR || path.resolve(process.cwd(), 'storage', 'omr_debug');
+const OMR_COLORIMETRY_ENABLED =
+  String(process.env.OMR_COLORIMETRY_ENABLED || '1').toLowerCase() !== 'false' && process.env.OMR_COLORIMETRY_ENABLED !== '0';
+const OMR_COLORIMETRY_WHITE_PERCENTILE = Math.max(
+  0.85,
+  Math.min(0.99, Number.parseFloat(process.env.OMR_COLORIMETRY_WHITE_PERCENTILE || '0.96'))
+);
 
 type PerfilDeteccionOmr = {
   version: TemplateVersion;
@@ -103,6 +109,7 @@ type PerfilDeteccionOmr = {
   strongScore: number;
   secondRatio: number;
   deltaMin: number;
+  minTopZScore: number;
   ambiguityRatio: number;
   minFillDelta: number;
   minCenterGap: number;
@@ -129,6 +136,7 @@ function resolverPerfilDeteccion(templateVersion: TemplateVersion): PerfilDetecc
       strongScore: Math.max(0.11, OMR_STRONG_SCORE),
       secondRatio: Math.max(0.73, OMR_SECOND_RATIO),
       deltaMin: Math.max(0.03, OMR_DELTA_MIN),
+      minTopZScore: 1.35,
       ambiguityRatio: Math.max(0.97, OMR_AMBIGUITY_RATIO),
       minFillDelta: Math.max(0.1, OMR_MIN_FILL_DELTA),
       minCenterGap: Math.max(12, OMR_MIN_CENTER_GAP),
@@ -148,15 +156,16 @@ function resolverPerfilDeteccion(templateVersion: TemplateVersion): PerfilDetecc
     localDriftPenalty: OMR_LOCAL_DRIFT_PENALTY,
     maxCenterDriftRatio: OMR_MAX_CENTER_DRIFT_RATIO,
     minSafeRange: OMR_MIN_SAFE_RANGE,
-    scoreMin: OMR_SCORE_MIN,
+    scoreMin: Math.max(0.11, OMR_SCORE_MIN),
     scoreStd: OMR_SCORE_STD,
     strongScore: OMR_STRONG_SCORE,
     secondRatio: OMR_SECOND_RATIO,
-    deltaMin: OMR_DELTA_MIN,
-    ambiguityRatio: OMR_AMBIGUITY_RATIO,
-    minFillDelta: OMR_MIN_FILL_DELTA,
+    deltaMin: Math.max(0.035, OMR_DELTA_MIN),
+    minTopZScore: 1.25,
+    ambiguityRatio: Math.min(0.95, OMR_AMBIGUITY_RATIO),
+    minFillDelta: Math.max(0.11, OMR_MIN_FILL_DELTA),
     minCenterGap: OMR_MIN_CENTER_GAP,
-    minHybridConf: OMR_MIN_HYBRID_CONF,
+    minHybridConf: Math.max(0.5, OMR_MIN_HYBRID_CONF),
     reprojectionMaxErrorPx: Number.POSITIVE_INFINITY
   };
 }
@@ -235,25 +244,132 @@ function calcularCalidadPagina(args: {
   reprojectionErrorPromedio: number;
   blurVar: number;
   brilloMedio: number;
+  colorCast: number;
+  saturationMean: number;
   confianzaMedia: number;
   ratioAmbiguas: number;
 }) {
-  const { tipoTransformacion, qrDetectado, reprojectionErrorPromedio, blurVar, brilloMedio, confianzaMedia, ratioAmbiguas } = args;
+  const {
+    tipoTransformacion,
+    qrDetectado,
+    reprojectionErrorPromedio,
+    blurVar,
+    brilloMedio,
+    colorCast,
+    saturationMean,
+    confianzaMedia,
+    ratioAmbiguas
+  } = args;
   const factorTransformacion = tipoTransformacion === 'escala' ? 0.62 : tipoTransformacion === 'homografia' ? 0.9 : 1;
   const factorQr = qrDetectado ? 1 : 0.78;
   const factorBlur = clamp01((blurVar - 70) / 320);
   const factorExposicion = clamp01(1 - Math.abs(brilloMedio - 145) / 120);
   const factorRepro = clamp01(1 - reprojectionErrorPromedio / 6);
+  const factorColorBalance = clamp01(1 - colorCast / 0.24);
+  const excesoSaturacion = Math.max(0, saturationMean - 0.28);
+  const factorSaturacion = clamp01(1 - excesoSaturacion / 0.45);
   const factorNoAmbiguas = clamp01(1 - ratioAmbiguas);
   const calidad =
-    factorTransformacion * 0.2 +
-    factorQr * 0.12 +
-    factorRepro * 0.24 +
-    factorBlur * 0.16 +
-    factorExposicion * 0.1 +
-    clamp01(confianzaMedia) * 0.1 +
-    factorNoAmbiguas * 0.08;
+    factorTransformacion * 0.22 +
+    factorQr * 0.14 +
+    factorRepro * 0.25 +
+    factorBlur * 0.17 +
+    factorExposicion * 0.12 +
+    factorColorBalance * 0.06 +
+    factorSaturacion * 0.02 +
+    clamp01(confianzaMedia) * 0.01 +
+    factorNoAmbiguas * 0.01;
   return clamp01(calidad);
+}
+
+type MetricasColorimetria = {
+  colorCast: number;
+  saturationMean: number;
+  whiteRefR: number;
+  whiteRefG: number;
+  whiteRefB: number;
+};
+
+function percentilDesdeHistograma(hist: Uint32Array, q: number) {
+  const total = hist.reduce((acc, v) => acc + v, 0);
+  if (total <= 0) return 255;
+  const objetivo = Math.max(1, Math.round(total * q));
+  let acumulado = 0;
+  for (let i = 0; i < hist.length; i += 1) {
+    acumulado += hist[i];
+    if (acumulado >= objetivo) return i;
+  }
+  return 255;
+}
+
+function construirGrayColorimetrico(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number
+): { gray: Uint8ClampedArray; metricasColor: MetricasColorimetria } {
+  const histR = new Uint32Array(256);
+  const histG = new Uint32Array(256);
+  const histB = new Uint32Array(256);
+  const totalPix = Math.max(1, width * height);
+  const targetMuestras = 220_000;
+  const pasoMuestra = Math.max(1, Math.round(Math.sqrt(totalPix / targetMuestras)));
+  let sumaR = 0;
+  let sumaG = 0;
+  let sumaB = 0;
+  let sumaSat = 0;
+  let conteo = 0;
+
+  for (let y = 0; y < height; y += pasoMuestra) {
+    for (let x = 0; x < width; x += pasoMuestra) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      histR[r] += 1;
+      histG[g] += 1;
+      histB[b] += 1;
+      sumaR += r;
+      sumaG += g;
+      sumaB += b;
+      const maxRgb = Math.max(r, g, b);
+      const minRgb = Math.min(r, g, b);
+      sumaSat += maxRgb > 0 ? (maxRgb - minRgb) / maxRgb : 0;
+      conteo += 1;
+    }
+  }
+
+  const refR = Math.max(170, percentilDesdeHistograma(histR, OMR_COLORIMETRY_WHITE_PERCENTILE));
+  const refG = Math.max(170, percentilDesdeHistograma(histG, OMR_COLORIMETRY_WHITE_PERCENTILE));
+  const refB = Math.max(170, percentilDesdeHistograma(histB, OMR_COLORIMETRY_WHITE_PERCENTILE));
+  const scaleR = 255 / Math.max(1, refR);
+  const scaleG = 255 / Math.max(1, refG);
+  const scaleB = 255 / Math.max(1, refB);
+  const meanR = (sumaR / Math.max(1, conteo)) * scaleR;
+  const meanG = (sumaG / Math.max(1, conteo)) * scaleG;
+  const meanB = (sumaB / Math.max(1, conteo)) * scaleB;
+  const colorCast = clamp01((Math.abs(meanR - meanG) + Math.abs(meanG - meanB) + Math.abs(meanR - meanB)) / (3 * 255));
+  const saturationMean = clamp01(sumaSat / Math.max(1, conteo));
+
+  const gray = new Uint8ClampedArray(width * height);
+  for (let i = 0, p = 0; i < gray.length; i += 1, p += 4) {
+    const r = Math.min(255, data[p] * scaleR);
+    const g = Math.min(255, data[p + 1] * scaleG);
+    const b = Math.min(255, data[p + 2] * scaleB);
+    const luma = r * 0.2126 + g * 0.7152 + b * 0.0722;
+    const tinta = Math.min(r, g, b);
+    gray[i] = Math.round(luma * 0.68 + tinta * 0.32);
+  }
+
+  return {
+    gray,
+    metricasColor: {
+      colorCast,
+      saturationMean,
+      whiteRefR: refR,
+      whiteRefG: refG,
+      whiteRefB: refB
+    }
+  };
 }
 
 async function exportarPatchesOmr(
@@ -310,19 +426,41 @@ async function decodificarImagen(base64: string) {
   const { data, info } = await imagenRedimensionada.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const w = info.width ?? width;
   const h = info.height ?? height;
-  const gray = new Uint8ClampedArray(w * h);
-  for (let i = 0, p = 0; i < gray.length; i += 1, p += 4) {
-    gray[i] = (data[p] * 77 + data[p + 1] * 150 + data[p + 2] * 29) >> 8;
+  const rgba = new Uint8ClampedArray(data);
+  const grayDefault = new Uint8ClampedArray(w * h);
+  for (let i = 0, p = 0; i < grayDefault.length; i += 1, p += 4) {
+    grayDefault[i] = (rgba[p] * 77 + rgba[p + 1] * 150 + rgba[p + 2] * 29) >> 8;
+  }
+  let gray = grayDefault;
+  let metricasColor: MetricasColorimetria = {
+    colorCast: 0,
+    saturationMean: 0,
+    whiteRefR: 255,
+    whiteRefG: 255,
+    whiteRefB: 255
+  };
+  if (OMR_COLORIMETRY_ENABLED) {
+    const colorimetrico = construirGrayColorimetrico(rgba, w, h);
+    metricasColor = colorimetrico.metricasColor;
+    const fuerzaColor =
+      clamp01((metricasColor.colorCast - 0.03) / 0.25) * 0.7 +
+      clamp01((metricasColor.saturationMean - 0.2) / 0.45) * 0.3;
+    const mezclaColor = 0.2 + fuerzaColor * 0.45;
+    gray = new Uint8ClampedArray(grayDefault.length);
+    for (let i = 0; i < gray.length; i += 1) {
+      gray[i] = Math.round(grayDefault[i] * (1 - mezclaColor) + colorimetrico.gray[i] * mezclaColor);
+    }
   }
 
   const integral = calcularIntegral(gray, w, h);
 
   return {
-    data: new Uint8ClampedArray(data),
+    data: rgba,
     gray,
     integral,
     width: w,
     height: h,
+    metricasColor,
     buffer
   };
 }
@@ -824,6 +962,8 @@ function detectarOpcion(
   params: ParametrosBurbuja
 ) {
   const { radio, ringInner, ringOuter, outerOuter, paso } = params;
+  const coreRadio = Math.max(2, radio * 0.58);
+  const coreSq = coreRadio * coreRadio;
   const promLocal = mediaEnVentana(
     integral,
     width,
@@ -836,6 +976,10 @@ function detectarOpcion(
   const umbralBase = Math.max(40, Math.min(220, promLocal - 12));
   let pixeles = 0;
   let oscuros = 0;
+  let pixelesCore = 0;
+  let oscurosCore = 0;
+  let pixelesMid = 0;
+  let oscurosMid = 0;
   let pixelesRing = 0;
   let oscurosRing = 0;
   let suma = 0;
@@ -845,6 +989,13 @@ function detectarOpcion(
   let sumaOuterSq = 0;
   let sumaSq = 0;
   let sumaRingSq = 0;
+  let masaTotal = 0;
+  let masaRadial = 0;
+  let masaX = 0;
+  let masaY = 0;
+  let masaXX = 0;
+  let masaYY = 0;
+  let masaXY = 0;
 
   // Cuenta pixeles oscuros dentro de un radio fijo para estimar marca.
   for (let y = -outerOuter; y <= outerOuter; y += paso) {
@@ -856,6 +1007,11 @@ function detectarOpcion(
         pixeles += 1;
         suma += intensidad;
         sumaSq += intensidad * intensidad;
+        if (dist <= coreSq) {
+          pixelesCore += 1;
+        } else {
+          pixelesMid += 1;
+        }
       } else if (dist >= ringInner * ringInner) {
         if (dist <= ringOuter * ringOuter) {
           pixelesRing += 1;
@@ -887,7 +1043,20 @@ function detectarOpcion(
       if (dist > outerOuter * outerOuter) continue;
       const intensidad = obtenerIntensidad(gray, width, height, centro.x + x, centro.y + y);
       if (dist <= radio * radio) {
-        if (intensidad < umbral) oscuros += 1;
+        if (intensidad < umbral) {
+          const oscuridad = Math.max(0, (umbral - intensidad) / Math.max(1, umbral));
+          oscuros += 1;
+          if (dist <= coreSq) oscurosCore += 1;
+          else oscurosMid += 1;
+          masaTotal += oscuridad;
+          const radial = 1 - Math.sqrt(dist) / Math.max(1, radio);
+          masaRadial += oscuridad * Math.max(0, radial);
+          masaX += oscuridad * x;
+          masaY += oscuridad * y;
+          masaXX += oscuridad * x * x;
+          masaYY += oscuridad * y * y;
+          masaXY += oscuridad * x * y;
+        }
       } else if (dist >= ringInner * ringInner && dist <= ringOuter * ringOuter) {
         if (intensidad < umbral) oscurosRing += 1;
       }
@@ -895,21 +1064,52 @@ function detectarOpcion(
   }
 
   const ratio = oscuros / Math.max(1, pixeles);
+  const ratioCore = oscurosCore / Math.max(1, pixelesCore);
+  const ratioMid = oscurosMid / Math.max(1, pixelesMid);
   const ratioRing = oscurosRing / Math.max(1, pixelesRing);
   const fillDelta = Math.max(0, (promedioRing - promedio) / 255);
   const ringDelta = Math.max(0, (promedioOuter - promedioRing) / 255);
   const contraste = Math.max(0, (promedioOuter - promedio) / 255);
+  const ringOnlyPenalty = Math.max(0, ratioRing - (ratioCore * 0.7 + ratioMid * 0.3));
+  const radialMassRatio = masaRadial / Math.max(0.0001, masaTotal);
+  let anisotropy = 1;
+  if (masaTotal > 0.0001) {
+    const mx = masaX / masaTotal;
+    const my = masaY / masaTotal;
+    const varX = Math.max(0, masaXX / masaTotal - mx * mx);
+    const varY = Math.max(0, masaYY / masaTotal - my * my);
+    const covXY = masaXY / masaTotal - mx * my;
+    const trace = varX + varY;
+    const det = Math.max(0, varX * varY - covXY * covXY);
+    const disc = Math.sqrt(Math.max(0, trace * trace - 4 * det));
+    const lambdaMax = Math.max(0.0001, (trace + disc) / 2);
+    const lambdaMin = Math.max(0.0001, (trace - disc) / 2);
+    anisotropy = lambdaMax / lambdaMin;
+  }
+  const radialPenalty = Math.max(0, 0.36 - radialMassRatio);
+  const anisoPenalty = Math.max(0, (anisotropy - 2.8) / 4);
 
-  // Puntaje fotometrico local: prioriza relleno central frente a borde/ruido.
+  // Puntaje fotométrico robusto: prioriza núcleo/medio rellenos y penaliza burbuja hueca.
   const score =
-    fillDelta * 0.9 +
-    contraste * 0.35 +
-    ratio * 0.3 +
-    ringDelta * 0.15 -
-    ratioRing * 0.25;
+    fillDelta * 0.48 +
+    contraste * 0.2 +
+    ratioCore * 0.34 +
+    ratioMid * 0.2 +
+    ratio * 0.08 +
+    ringDelta * 0.07 +
+    radialMassRatio * 0.12 -
+    ratioRing * 0.14 -
+    ringOnlyPenalty * 0.32 -
+    radialPenalty * 0.2 -
+    anisoPenalty * 0.18;
   return {
     ratio,
+    ratioCore,
+    ratioMid,
     ratioRing,
+    ringOnlyPenalty,
+    radialMassRatio,
+    anisotropy,
     contraste,
     score,
     ringContrast: ringDelta,
@@ -1385,7 +1585,7 @@ export async function analizarOmr(
 ): Promise<ResultadoOmr> {
   const advertencias: string[] = [];
   const motivosRevision: string[] = [];
-  const { data, gray, integral, width, height } = await decodificarImagen(imagenBase64);
+  const { data, gray, integral, width, height, metricasColor } = await decodificarImagen(imagenBase64);
   const templateInicial = debugInfo?.templateVersionDetectada ?? mapaPagina.templateVersion ?? 1;
   const perfilInicial = resolverPerfilDeteccion(templateInicial);
   let qrDetalle = detectarQrMejorado(data, gray, width, height, perfilInicial.qrSizePts);
@@ -1566,6 +1766,7 @@ export async function analizarOmr(
         strongScore: perfil.strongScore,
         secondRatio: perfil.secondRatio,
         deltaMin: perfil.deltaMin,
+        minTopZScore: perfil.minTopZScore,
         ambiguityRatio: perfil.ambiguityRatio,
         minFillDelta: perfil.minFillDelta,
         minCenterGap: perfil.minCenterGap,
@@ -1690,6 +1891,8 @@ export async function analizarOmr(
     reprojectionErrorPromedio,
     blurVar: metricasImagen.blurVar,
     brilloMedio: metricasImagen.brilloMedio,
+    colorCast: metricasColor.colorCast,
+    saturationMean: metricasColor.saturationMean,
     confianzaMedia,
     ratioAmbiguas
   });

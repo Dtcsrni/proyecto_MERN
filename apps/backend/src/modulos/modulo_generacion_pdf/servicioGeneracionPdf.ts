@@ -28,8 +28,19 @@ type PerfilPlantillaOmr = {
   marcaCuadradoQuietZone: number;
   burbujaRadio: number;
   burbujaPasoY: number;
+  burbujaStroke: number;
+  burbujaOffsetX: number;
+  omrHeaderGap: number;
+  omrTagWidth: number;
+  omrTagHeight: number;
+  omrTagFontSize: number;
+  omrLabelFontSize: number;
+  omrBoxBorderWidth: number;
+  omrPanelPadding: number;
   cajaOmrAncho: number;
   fiducialSize: number;
+  fiducialMargin: number;
+  fiducialQuietZone: number;
 };
 
 const PERFIL_OMR_V1: PerfilPlantillaOmr = {
@@ -43,8 +54,19 @@ const PERFIL_OMR_V1: PerfilPlantillaOmr = {
   marcaCuadradoQuietZone: 4,
   burbujaRadio: 3.4,
   burbujaPasoY: 8.4,
+  burbujaStroke: 1.2,
+  burbujaOffsetX: 9.2,
+  omrHeaderGap: 12,
+  omrTagWidth: 26,
+  omrTagHeight: 11,
+  omrTagFontSize: 7.4,
+  omrLabelFontSize: 5.8,
+  omrBoxBorderWidth: 1.4,
+  omrPanelPadding: 0,
   cajaOmrAncho: 42,
-  fiducialSize: 5
+  fiducialSize: 5,
+  fiducialMargin: 6,
+  fiducialQuietZone: 0
 };
 
 const PERFIL_OMR_V2: PerfilPlantillaOmr = {
@@ -58,8 +80,19 @@ const PERFIL_OMR_V2: PerfilPlantillaOmr = {
   marcaCuadradoQuietZone: 4,
   burbujaRadio: 5,
   burbujaPasoY: 14,
+  burbujaStroke: 1.25,
+  burbujaOffsetX: 11,
+  omrHeaderGap: 14,
+  omrTagWidth: 28,
+  omrTagHeight: 12,
+  omrTagFontSize: 7.8,
+  omrLabelFontSize: 6.1,
+  omrBoxBorderWidth: 1.75,
+  omrPanelPadding: 3.2,
   cajaOmrAncho: 60,
-  fiducialSize: 7
+  fiducialSize: 7,
+  fiducialMargin: 7.5,
+  fiducialQuietZone: 2.2
 };
 
 function obtenerPerfilPlantilla(templateVersion: number | undefined): PerfilPlantillaOmr {
@@ -111,6 +144,25 @@ function agregarMarcasRegistro(page: PDFPage, margen: number, perfil: PerfilPlan
       color: rgb(0, 0, 0)
     });
   }
+}
+
+function dibujarFiducialOmr(page: PDFPage, x: number, y: number, size: number, quietZone: number) {
+  if (quietZone > 0) {
+    page.drawRectangle({
+      x: x - size / 2 - quietZone,
+      y: y - size / 2 - quietZone,
+      width: size + quietZone * 2,
+      height: size + quietZone * 2,
+      color: rgb(1, 1, 1)
+    });
+  }
+  page.drawRectangle({
+    x: x - size / 2,
+    y: y - size / 2,
+    width: size,
+    height: size,
+    color: rgb(0, 0, 0)
+  });
 }
 
 async function agregarQr(pdfDoc: PDFDocument, page: PDFPage, qrTexto: string, margen: number, perfil: PerfilPlantillaOmr) {
@@ -588,8 +640,8 @@ export async function generarPdfExamen({
   const OMR_TOTAL_LETRAS = 5;
   const omrRadio = perfilOmr.burbujaRadio;
   const omrPasoY = perfilOmr.burbujaPasoY;
-  const omrPadding = 2.2;
-  const omrExtraTitulo = 9.5;
+  const omrPadding = perfilOmr.version === 2 ? 3.1 : 2.2;
+  const omrExtraTitulo = perfilOmr.version === 2 ? 10.5 : 9.5;
 
   const anchoColRespuesta = perfilOmr.cajaOmrAncho;
   const gutterRespuesta = 10;
@@ -638,10 +690,28 @@ export async function generarPdfExamen({
   // Se guarda el mapa de posiciones para el escaneo OMR posterior.
   const paginasOmr: Array<{
     numeroPagina: number;
+    qr: {
+      texto: string;
+      x: number;
+      y: number;
+      size: number;
+      padding: number;
+    };
+    marcasPagina: {
+      tipo: 'lineas' | 'cuadrados';
+      size: number;
+      quietZone: number;
+      tl: { x: number; y: number };
+      tr: { x: number; y: number };
+      bl: { x: number; y: number };
+      br: { x: number; y: number };
+    };
     preguntas: Array<{
       numeroPregunta: number;
       idPregunta: string;
       opciones: Array<{ letra: string; x: number; y: number }>;
+      cajaOmr?: { x: number; y: number; width: number; height: number };
+      perfilOmr?: { radio: number; pasoY: number; cajaAncho: number };
       fiduciales?: {
         leftTop: { x: number; y: number };
         leftBottom: { x: number; y: number };
@@ -678,6 +748,8 @@ export async function generarPdfExamen({
       numeroPregunta: number;
       idPregunta: string;
       opciones: Array<{ letra: string; x: number; y: number }>;
+      cajaOmr?: { x: number; y: number; width: number; height: number };
+      perfilOmr?: { radio: number; pasoY: number; cajaAncho: number };
       fiduciales?: {
         leftTop: { x: number; y: number };
         leftBottom: { x: number; y: number };
@@ -703,7 +775,16 @@ export async function generarPdfExamen({
 
     // Marcas y QR (OMR/escaneo)
     agregarMarcasRegistro(page, margen, perfilOmr);
-    const { x: xQr, y: yQr, padding: qrPadding } = await agregarQr(pdfDoc, page, qrTextoPagina, margen, perfilOmr);
+    const { x: xQr, y: yQr, padding: qrPadding, qrSize } = await agregarQr(pdfDoc, page, qrTextoPagina, margen, perfilOmr);
+    const marcasPagina = {
+      tipo: perfilOmr.marcasEsquina,
+      size: perfilOmr.marcaCuadradoSize,
+      quietZone: perfilOmr.marcaCuadradoQuietZone,
+      tl: { x: margen, y: ALTO_CARTA - margen },
+      tr: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen },
+      bl: { x: margen, y: margen },
+      br: { x: ANCHO_CARTA - margen, y: margen }
+    };
 
     // Folio impreso debajo del QR (sin invadir el quiet-zone) y dentro del encabezado.
     // Si no hay espacio suficiente (p. ej. pagina 1), se reubica al pie para evitar traslapes.
@@ -1043,56 +1124,110 @@ export async function generarPdfExamen({
       // Importante: NO se alinea por columnas de opciones, porque si hay 2 columnas algunas letras comparten Y.
       // En su lugar, se dibuja A–E con espaciado fijo. Esto evita superposiciones siempre.
       const letras = Array.from({ length: OMR_TOTAL_LETRAS }, (_v, i) => String.fromCharCode(65 + i));
-      const headerGap = 12;
+      const headerGap = perfilOmr.omrHeaderGap;
       const yPrimeraBurbuja = yInicioOpciones - headerGap;
       const top = yPrimeraBurbuja + omrRadio + omrExtraTitulo + 8;
       const yUltimaBurbuja = yPrimeraBurbuja - (OMR_TOTAL_LETRAS - 1) * omrPasoY;
-      const omrExtraBottom = 6;
+      const omrExtraBottom = perfilOmr.version === 2 ? 7 : 6;
       const bottom = yUltimaBurbuja - omrRadio - 4 - omrExtraBottom;
       const hCaja = Math.max(40, top - bottom);
+      const panelPad = perfilOmr.omrPanelPadding;
+
+      if (panelPad > 0) {
+        page.drawRectangle({
+          x: xColRespuesta - panelPad,
+          y: bottom - panelPad,
+          width: anchoColRespuesta + panelPad * 2,
+          height: hCaja + panelPad * 2,
+          color: rgb(1, 1, 1)
+        });
+      }
 
       page.drawRectangle({
         x: xColRespuesta,
         y: bottom,
         width: anchoColRespuesta,
         height: hCaja,
-        borderWidth: 1.4,
+        borderWidth: perfilOmr.omrBoxBorderWidth,
         borderColor: rgb(0, 0, 0),
         color: rgb(1, 1, 1)
       });
+      if (perfilOmr.version === 2) {
+        page.drawRectangle({
+          x: xColRespuesta + 1.5,
+          y: bottom + 1.5,
+          width: Math.max(8, anchoColRespuesta - 3),
+          height: Math.max(8, hCaja - 3),
+          borderWidth: 0.8,
+          borderColor: rgb(0.78, 0.82, 0.86)
+        });
+      }
       // Etiqueta con numero de pregunta (recuadro).
-      const hTag = 11;
-      const wTag = 26;
-        const yTag = top - hTag - 6;
+      const hTag = perfilOmr.omrTagHeight;
+      const wTag = perfilOmr.omrTagWidth;
+      const yTag = top - hTag - 6;
       page.drawRectangle({ x: xColRespuesta, y: yTag, width: wTag, height: hTag, color: colorPrimario });
-      page.drawText(`#${numero}`, { x: xColRespuesta + 4, y: yTag + 2.2, size: 7.4, font: fuenteBold, color: rgb(1, 1, 1) });
-        const label = 'RESP';
-        const labelSize = 5.8;
-        const labelWidth = fuenteBold.widthOfTextAtSize(label, labelSize);
-        const maxLabelSpace = anchoColRespuesta - wTag - 8;
-        if (labelWidth <= maxLabelSpace) {
-          const xLabel = xColRespuesta + wTag + 2;
-          page.drawText(label, { x: xLabel, y: yTag + 2.1, size: labelSize, font: fuenteBold, color: colorPrimario });
-        }
+      page.drawText(`#${numero}`, {
+        x: xColRespuesta + 4,
+        y: yTag + 2.2,
+        size: perfilOmr.omrTagFontSize,
+        font: fuenteBold,
+        color: rgb(1, 1, 1)
+      });
+      const label = 'RESP';
+      const labelSize = perfilOmr.omrLabelFontSize;
+      const labelWidth = fuenteBold.widthOfTextAtSize(label, labelSize);
+      const maxLabelSpace = anchoColRespuesta - wTag - 8;
+      if (labelWidth <= maxLabelSpace) {
+        const xLabel = xColRespuesta + wTag + 2;
+        page.drawText(label, { x: xLabel, y: yTag + 2.1, size: labelSize, font: fuenteBold, color: colorPrimario });
+      }
 
-      const xBurbuja = xColRespuesta + omrPadding + 7;
+      const xBurbuja = xColRespuesta + omrPadding + perfilOmr.burbujaOffsetX;
       for (let i = 0; i < letras.length; i += 1) {
         const letra = letras[i];
         const yBurbuja = yPrimeraBurbuja - i * omrPasoY;
-        page.drawCircle({ x: xBurbuja, y: yBurbuja, size: omrRadio, borderWidth: 1.2, borderColor: rgb(0, 0, 0) });
-        page.drawText(letra, { x: xBurbuja + 8.5, y: yBurbuja - 3, size: 7.4, font: fuente, color: rgb(0.12, 0.12, 0.12) });
+        page.drawCircle({
+          x: xBurbuja,
+          y: yBurbuja,
+          size: omrRadio,
+          borderWidth: perfilOmr.burbujaStroke,
+          borderColor: rgb(0, 0, 0)
+        });
+        if (perfilOmr.version === 2) {
+          page.drawCircle({
+            x: xBurbuja,
+            y: yBurbuja,
+            size: Math.max(0.8, omrRadio - 1.6),
+            borderWidth: 0.35,
+            borderColor: rgb(0.7, 0.72, 0.76)
+          });
+          page.drawCircle({
+            x: xColRespuesta + anchoColRespuesta - 6,
+            y: yBurbuja,
+            size: 0.8,
+            color: rgb(0.76, 0.78, 0.82)
+          });
+        }
+        page.drawText(letra, {
+          x: xBurbuja + omrRadio + (perfilOmr.version === 2 ? 4.6 : 5.1),
+          y: yBurbuja - (perfilOmr.version === 2 ? 3.4 : 3),
+          size: perfilOmr.version === 2 ? 7.7 : 7.4,
+          font: fuente,
+          color: rgb(0.12, 0.12, 0.12)
+        });
         opcionesOmr.push({ letra, x: xBurbuja, y: yBurbuja });
       }
       const fidSize = perfilOmr.fiducialSize;
-      const fidMargin = 6;
+      const fidMargin = perfilOmr.fiducialMargin;
       const xFid = xColRespuesta + fidMargin;
       const xFidRight = xColRespuesta + anchoColRespuesta - fidMargin;
       const yFidTop = top - fidMargin;
       const yFidBottom = bottom + fidMargin;
-      page.drawRectangle({ x: xFid - fidSize / 2, y: yFidTop - fidSize / 2, width: fidSize, height: fidSize, color: rgb(0, 0, 0) });
-      page.drawRectangle({ x: xFid - fidSize / 2, y: yFidBottom - fidSize / 2, width: fidSize, height: fidSize, color: rgb(0, 0, 0) });
-      page.drawRectangle({ x: xFidRight - fidSize / 2, y: yFidTop - fidSize / 2, width: fidSize, height: fidSize, color: rgb(0, 0, 0) });
-      page.drawRectangle({ x: xFidRight - fidSize / 2, y: yFidBottom - fidSize / 2, width: fidSize, height: fidSize, color: rgb(0, 0, 0) });
+      dibujarFiducialOmr(page, xFid, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
+      dibujarFiducialOmr(page, xFid, yFidBottom, fidSize, perfilOmr.fiducialQuietZone);
+      dibujarFiducialOmr(page, xFidRight, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
+      dibujarFiducialOmr(page, xFidRight, yFidBottom, fidSize, perfilOmr.fiducialQuietZone);
 
       cursorY = Math.min(yCol1, yCol2, bottom - 6);
 
@@ -1103,6 +1238,8 @@ export async function generarPdfExamen({
         numeroPregunta: numero,
         idPregunta: pregunta.id,
         opciones: opcionesOmr,
+        cajaOmr: { x: xColRespuesta, y: bottom, width: anchoColRespuesta, height: hCaja },
+        perfilOmr: { radio: omrRadio, pasoY: omrPasoY, cajaAncho: anchoColRespuesta },
         fiduciales: {
           leftTop: { x: xFid, y: yFidTop },
           leftBottom: { x: xFid, y: yFidBottom },
@@ -1119,7 +1256,12 @@ export async function generarPdfExamen({
 
     paginasMeta.push({ numero: numeroPagina, qrTexto: qrTextoPagina, preguntasDel, preguntasAl });
 
-    paginasOmr.push({ numeroPagina, preguntas: mapaPagina });
+    paginasOmr.push({
+      numeroPagina,
+      qr: { texto: qrTextoPagina, x: xQr, y: yQr, size: qrSize, padding: qrPadding },
+      marcasPagina,
+      preguntas: mapaPagina
+    });
     numeroPagina += 1;
   }
 
@@ -1129,7 +1271,23 @@ export async function generarPdfExamen({
     pdfBytes: Buffer.from(pdfBytes),
     paginas: paginasMeta,
     metricasPaginas,
-    mapaOmr: { margenMm, templateVersion: perfilOmr.version, paginas: paginasOmr },
+    mapaOmr: {
+      margenMm,
+      templateVersion: perfilOmr.version,
+      perfil: {
+        qrSize: perfilOmr.qrSize,
+        qrPadding: perfilOmr.qrPadding,
+        qrMarginModulos: perfilOmr.qrMarginModulos,
+        marcasEsquina: perfilOmr.marcasEsquina,
+        marcaCuadradoSize: perfilOmr.marcaCuadradoSize,
+        marcaCuadradoQuietZone: perfilOmr.marcaCuadradoQuietZone,
+        burbujaRadio: perfilOmr.burbujaRadio,
+        burbujaPasoY: perfilOmr.burbujaPasoY,
+        cajaOmrAncho: perfilOmr.cajaOmrAncho,
+        fiducialSize: perfilOmr.fiducialSize
+      },
+      paginas: paginasOmr
+    },
     preguntasRestantes
   };
 }
