@@ -43,3 +43,7 @@ button {
 .error-message {
   color: #c21807;
 }
+
+.aux-link {
+  margin-top: 0.8rem;
+}

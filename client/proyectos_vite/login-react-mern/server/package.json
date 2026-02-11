@@ -2,11 +2,11 @@
   "name": "Aplicacion_Examenes",
   "version": "0.1.0",
   "description": "API de autenticación para login React + MERN.",
-  "main": "server/dist/servidor.js",
+  "main": "src/servidor.ts",
   "scripts": {
-    "dev": "nodemon --watch server/src --ext ts --exec tsx server/src/servidor.ts",
-    "build": "tsc -p server/tsconfig.json",
-    "start": "node server/dist/servidor.js"
+    "dev": "nodemon --watch src --ext ts --exec tsx src/servidor.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx src/servidor.ts"
   },
   "keywords": [],
   "author": "",

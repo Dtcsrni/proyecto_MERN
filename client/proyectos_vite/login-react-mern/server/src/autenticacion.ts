@@ -50,6 +50,21 @@ function firmarToken(usuarioToken: UsuarioToken): string {
 }
 
 /**
+ * Centraliza la configuración de la cookie de sesión.
+ *
+ * Por qué:
+ * - Evita divergencias entre login y registro.
+ */
+function establecerCookieSesion(respuesta: Response, tokenAcceso: string): void {
+  respuesta.cookie("tokenAcceso", tokenAcceso, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 2 * 60 * 60 * 1000
+  });
+}
+
+/**
  * Verifica JWT recibido.
  *
  * Que valida:
@@ -146,8 +161,21 @@ rutasAutenticacion.post("/register", async (solicitud, respuesta, siguiente) => 
       rol: "usuario"
     });
 
-    respuesta.status(201).json({ id: usuarioCreado._id, correo: usuarioCreado.correo, rol: usuarioCreado.rol });
+    const usuarioToken: UsuarioToken = {
+      id: String(usuarioCreado._id),
+      correo: usuarioCreado.correo,
+      rol: usuarioCreado.rol
+    };
+    const tokenAcceso = firmarToken(usuarioToken);
+    establecerCookieSesion(respuesta, tokenAcceso);
+
+    respuesta.status(201).json({ usuario: usuarioToken });
   } catch (error) {
+    // Si hay carrera de concurrencia y Mongo detecta duplicado por índice único.
+    if (error instanceof Error && "code" in error && error.code === 11000) {
+      respuesta.status(409).json({ mensaje: "Ya existe una cuenta con ese correo" });
+      return;
+    }
     siguiente(error);
   }
 });
@@ -198,12 +226,7 @@ rutasAutenticacion.post("/login", async (solicitud, respuesta, siguiente) => {
     // - HttpOnly: JS del navegador no puede leer token.
     // - sameSite=lax: reduce riesgo CSRF.
     // - secure en produccion: solo via HTTPS.
-    respuesta.cookie("tokenAcceso", tokenAcceso, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 2 * 60 * 60 * 1000
-    });
+    establecerCookieSesion(respuesta, tokenAcceso);
 
     respuesta.json({ usuario: usuarioToken });
   } catch (error) {

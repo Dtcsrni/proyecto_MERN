@@ -40,7 +40,7 @@ export function RutaProtegida({
 
   // Paso 3: si la ruta exige rol, validar autorizacion.
   if (rolesPermitidos && !rolesPermitidos.includes(usuario.rol)) {
-    return <div className="panel">No tienes permisos para entrar aquí.</div>;
+    return <Navigate to="/" replace />;
   }
 
   // Paso 4: usuario autenticado/autorizado -> mostrar contenido.

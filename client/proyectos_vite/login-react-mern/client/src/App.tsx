@@ -4,6 +4,7 @@ import { ProveedorAutenticacion } from "./autenticacion";
 import { useAutenticacion } from "./useAutenticacion";
 import { RutaProtegida } from "./RutaProtegida";
 import Login from "./login";
+import Register from "./register";
 
 /**
  * Home privada.
@@ -16,6 +17,7 @@ import Login from "./login";
  */
 function Inicio() {
   const { usuario, cerrarSesion } = useAutenticacion();
+  const puedeVerAdmin = usuario?.rol === "administrador" || usuario?.rol === "super_usuario";
 
   return (
     <section className="panel">
@@ -23,7 +25,7 @@ function Inicio() {
       <p>Sesión activa como: {usuario?.correo}</p>
       <p>Rol actual: {usuario?.rol}</p>
       <div className="actions">
-        <Link to="/admin">Ir al módulo admin</Link>
+        {puedeVerAdmin && <Link to="/admin">Ir al módulo admin</Link>}
         <button type="button" onClick={() => void cerrarSesion()}>
           Cerrar sesión
         </button>
@@ -65,6 +67,7 @@ function App() {
         <main className="app-shell">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route
               path="/"
               element={

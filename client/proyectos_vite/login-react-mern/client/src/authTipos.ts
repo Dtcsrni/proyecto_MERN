@@ -38,5 +38,6 @@ export type ContextoAutenticacion = {
   usuario: UsuarioToken | null;
   cargando: boolean;
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>;
+  registrarCuenta: (correo: string, contrasena: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
 };
