@@ -1,7 +1,0 @@
-flowchart LR
-    U[Usuario en navegador] --> F[Frontend React + Vite]
-    F -->|fetch /api + credentials: include| B[Backend Express]
-    B --> A[Modulo autenticacion + RBAC]
-    A -->|consulta rol vigente por request autenticado| D[(MongoDB - coleccion Usuario)]
-    B --> C[Cookie HttpOnly tokenAcceso JWT]
-    C --> U
