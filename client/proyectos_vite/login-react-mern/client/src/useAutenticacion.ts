@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/useAutenticacion.ts
+ * Que es: Hook personalizado para consumir auth.
+ * Que hace: Simplifica acceso tipado al contexto de autenticacion.
+ * Como lo hace: Envuelve useContext y falla rapido si se usa fuera del Provider.
+ */
+
 import { useContext } from "react";
 import { ContextoAutenticacionApp } from "./authContexto";
 

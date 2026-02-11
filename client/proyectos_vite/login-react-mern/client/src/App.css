@@ -1,3 +1,10 @@
+/*
+ * [BLOQUE DIDACTICO] client/src/App.css
+ * Que es: Estilos de componentes principales del frontend.
+ * Que hace: Da apariencia a paneles, formularios, acciones y tabla administrativa.
+ * Como lo hace: Declara reglas CSS por clases reutilizadas en vistas de autenticacion/admin.
+ */
+
 .app-shell {
   width: min(100%, 680px);
 }

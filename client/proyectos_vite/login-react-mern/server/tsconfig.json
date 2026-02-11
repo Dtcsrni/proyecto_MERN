@@ -1,3 +1,8 @@
+// [BLOQUE DIDACTICO] server/tsconfig.json
+// Que es: Configuracion TypeScript del backend.
+// Que hace: Define como compilar codigo TS del servidor y generar salida.
+// Como lo hace: Ajusta target/modulo/rutas y limita include a src/**/*.
+
 {
     "compilerOptions": {
         "target": "ES2022",

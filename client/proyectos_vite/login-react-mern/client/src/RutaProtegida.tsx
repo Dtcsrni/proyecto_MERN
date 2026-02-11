@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/RutaProtegida.tsx
+ * Que es: Componente guard para rutas privadas.
+ * Que hace: Bloquea acceso sin sesion o sin rol y redirige segun politica.
+ * Como lo hace: Lee contexto de auth y decide entre children o Navigate.
+ */
+
 import React from "react";
 import { Navigate } from "react-router-dom";
 import type { Rol } from "./authTipos";

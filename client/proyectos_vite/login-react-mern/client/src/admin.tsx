@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/admin.tsx
+ * Que es: Vista administrativa de gestion de permisos.
+ * Que hace: Lista usuarios y permite cambiar su rol con validaciones de UI.
+ * Como lo hace: Consume endpoints admin, mantiene estado local y guarda cambios por fila.
+ */
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { consultarApi } from "./api";

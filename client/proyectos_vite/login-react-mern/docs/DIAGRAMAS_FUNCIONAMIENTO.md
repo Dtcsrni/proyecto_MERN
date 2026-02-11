@@ -1,3 +1,8 @@
+## [BLOQUE DIDACTICO] docs/DIAGRAMAS_FUNCIONAMIENTO.md
+- Que es: Documento de apoyo con diagramas del flujo funcional.
+- Que hace: Describe visualmente procesos clave de autenticacion y autorizacion.
+- Como lo hace: Usa secciones y diagramas para explicar interacciones frontend-backend-DB.
+
 # Diagramas de Funcionamiento (login-react-mern)
 
 Este documento resume el flujo principal del proyecto con diagramas Mermaid.

@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/login.tsx
+ * Que es: Pantalla de inicio de sesion.
+ * Que hace: Captura credenciales, autentica usuario y redirige en exito.
+ * Como lo hace: Maneja formulario con estado local y llama iniciarSesion del contexto.
+ */
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";

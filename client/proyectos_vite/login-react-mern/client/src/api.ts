@@ -1,4 +1,11 @@
 /**
+ * [BLOQUE DIDACTICO] client/src/api.ts
+ * Que es: Cliente HTTP reutilizable del frontend.
+ * Que hace: Centraliza llamadas API, manejo de errores y envio de credenciales.
+ * Como lo hace: Envuelve fetch, normaliza headers y parsea respuestas JSON.
+ */
+
+/**
  * Capa mínima de acceso HTTP del frontend.
  *
  * Qué es:

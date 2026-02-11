@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] server/src/baseDatos.ts
+ * Que es: Modulo de infraestructura para conexion a MongoDB.
+ * Que hace: Abre la conexion principal de Mongoose antes de levantar la API.
+ * Como lo hace: Lee MONGODB_URI del entorno y ejecuta mongoose.connect con manejo de errores.
+ */
+
 import mongoose from "mongoose";
 
 /**
