@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/autenticacion.tsx
+ * Que es: Proveedor de estado de autenticacion en React.
+ * Que hace: Gestiona sesion actual y expone acciones de login, registro y logout.
+ * Como lo hace: Mantiene estado con hooks y delega llamadas al helper consultarApi.
+ */
+
 import React, { useEffect, useState } from "react";
 import { consultarApi } from "./api";
 import { ContextoAutenticacionApp } from "./authContexto";

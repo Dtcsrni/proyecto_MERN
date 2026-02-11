@@ -1,3 +1,8 @@
+# [BLOQUE DIDACTICO] docker-compose.yml
+# Que es: Orquestacion local de servicios con Docker Compose.
+# Que hace: Levanta contenedores necesarios para entorno de desarrollo/prueba.
+# Como lo hace: Define servicios, dependencias, puertos, variables y healthchecks.
+
 services:
   mongo:
     image: mongo:7

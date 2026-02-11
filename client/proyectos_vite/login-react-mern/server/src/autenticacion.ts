@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] server/src/autenticacion.ts
+ * Que es: Router de autenticacion y autorizacion (RBAC) del backend.
+ * Que hace: Expone registro, login, sesion, logout y endpoints administrativos.
+ * Como lo hace: Usa JWT en cookie HttpOnly, middlewares de auth/roles y consultas Mongoose.
+ */
+
 import { Router, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

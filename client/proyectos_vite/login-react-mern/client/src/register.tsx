@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/register.tsx
+ * Que es: Pantalla de creacion de cuenta.
+ * Que hace: Valida datos de registro, crea usuario y abre sesion automaticamente.
+ * Como lo hace: Verifica campos en cliente y llama registrarCuenta del contexto.
+ */
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutenticacion } from "./useAutenticacion";

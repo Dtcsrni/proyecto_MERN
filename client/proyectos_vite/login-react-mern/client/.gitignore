@@ -1,3 +1,8 @@
+# [BLOQUE DIDACTICO] client/.gitignore
+# Que es: Lista de exclusiones para control de versiones en cliente.
+# Que hace: Evita versionar artefactos generados o archivos locales.
+# Como lo hace: Incluye patrones de build, dependencias y datos temporales.
+
 # Logs
 logs
 *.log

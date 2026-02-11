@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] server/src/servidor.ts
+ * Que es: Punto de arranque del servidor Express.
+ * Que hace: Configura middlewares, monta rutas y enciende HTTP despues de conectar DB.
+ * Como lo hace: Inicializa Express, aplica CORS/JSON/cookies y llama arrancarServidor().
+ */
+
 import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";

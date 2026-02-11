@@ -1,4 +1,11 @@
 /**
+ * [BLOQUE DIDACTICO] client/src/authTipos.ts
+ * Que es: Contrato de tipos del dominio de autenticacion.
+ * Que hace: Define roles, payload de usuario y API del contexto de auth.
+ * Como lo hace: Declara tipos literales/uniones para seguridad de tipos en compilacion.
+ */
+
+/**
  * Rol de aplicación.
  *
  * Qué es:

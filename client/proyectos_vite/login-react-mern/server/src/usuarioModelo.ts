@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] server/src/usuarioModelo.ts
+ * Que es: Modelo de dominio de usuarios para autenticacion.
+ * Que hace: Define roles permitidos, tipos de token y esquema Mongo de Usuario.
+ * Como lo hace: Declara constantes tipadas y crea un schema Mongoose con validaciones.
+ */
+
 import mongoose from "mongoose";
 
 /**

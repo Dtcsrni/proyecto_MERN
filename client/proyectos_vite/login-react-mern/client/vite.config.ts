@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/vite.config.ts
+ * Que es: Configuracion del servidor/bundler Vite.
+ * Que hace: Define plugins y proxy para comunicar frontend con backend.
+ * Como lo hace: Aplica plugin React y enruta /api al destino configurado.
+ */
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 

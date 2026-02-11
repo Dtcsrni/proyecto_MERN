@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/eslint.config.js
+ * Que es: Configuracion de calidad estatica del frontend.
+ * Que hace: Define reglas de lint para prevenir errores y mantener consistencia.
+ * Como lo hace: Combina presets y reglas especificas para TS/React en ESLint.
+ */
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

@@ -1,3 +1,10 @@
+/**
+ * [BLOQUE DIDACTICO] client/src/App.tsx
+ * Que es: Composicion principal de rutas y pantallas.
+ * Que hace: Define navegacion publica/privada y estructura base de la SPA.
+ * Como lo hace: Usa React Router, contexto de auth y guardas de acceso por rol.
+ */
+
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { ProveedorAutenticacion } from "./autenticacion";

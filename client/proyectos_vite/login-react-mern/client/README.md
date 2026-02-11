@@ -1,3 +1,8 @@
+## [BLOQUE DIDACTICO] client/README.md
+- Que es: Guia del modulo frontend.
+- Que hace: Explica comandos, estructura y uso de la aplicacion cliente.
+- Como lo hace: Documenta pasos operativos y convenciones del proyecto React + Vite.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
