@@ -31,6 +31,13 @@ input {
   padding: 0.65rem 0.8rem;
 }
 
+select {
+  border: 1px solid #d3d9e6;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+}
+
 button {
   border: none;
   border-radius: 10px;
@@ -46,4 +53,26 @@ button {
 
 .aux-link {
   margin-top: 0.8rem;
+}
+
+.success-message {
+  color: #0a7d35;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  border-bottom: 1px solid #e7ebf3;
+  padding: 0.55rem 0.5rem;
+  vertical-align: top;
 }

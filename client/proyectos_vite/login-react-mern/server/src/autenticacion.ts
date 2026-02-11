@@ -1,7 +1,8 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Usuario, type UsuarioToken, type Rol } from "./usuarioModelo.js";
+import mongoose from "mongoose";
+import { ROLES_VALIDOS, Usuario, type UsuarioToken, type Rol } from "./usuarioModelo.js";
 
 /**
  * GUIA (Backend) - router de autenticacion y autorizacion
@@ -80,6 +81,8 @@ function verificarToken(tokenAcceso: string): UsuarioToken {
 // Tipo auxiliar para pasar usuario autenticado entre middlewares/controladores.
 type SolicitudConUsuario = Request & { usuario?: UsuarioToken };
 
+type RolEditable = Exclude<Rol, "super_usuario"> | "super_usuario";
+
 /**
  * Middleware de autenticacion.
  *
@@ -118,6 +121,18 @@ function autorizarRoles(...rolesPermitidos: Rol[]) {
     }
     siguiente();
   };
+}
+
+function esRolValido(rol: unknown): rol is RolEditable {
+  return typeof rol === "string" && ROLES_VALIDOS.includes(rol as Rol);
+}
+
+function puedeGestionarRol(actorRol: Rol, rolObjetivo: Rol): boolean {
+  if (actorRol === "super_usuario") return true;
+  if (actorRol === "administrador") {
+    return rolObjetivo !== "super_usuario";
+  }
+  return false;
 }
 
 /**
@@ -275,5 +290,101 @@ rutasAutenticacion.get(
   autorizarRoles("administrador", "super_usuario"),
   (_solicitud, respuesta) => {
     respuesta.json({ ok: true, mensaje: "Zona admin autorizada." });
+  }
+);
+
+/**
+ * GET /usuarios
+ *
+ * Lista usuarios para administración de permisos.
+ */
+rutasAutenticacion.get(
+  "/usuarios",
+  autenticarJWT,
+  autorizarRoles("administrador", "super_usuario"),
+  async (_solicitud, respuesta, siguiente) => {
+    try {
+      const usuarios = await Usuario.find({}, { correo: 1, rol: 1, activo: 1, createdAt: 1, updatedAt: 1 })
+        .sort({ createdAt: -1 })
+        .lean();
+      const serializados = usuarios.map((usuario) => ({
+        id: String(usuario._id),
+        correo: usuario.correo,
+        rol: usuario.rol,
+        activo: usuario.activo,
+        createdAt: usuario.createdAt,
+        updatedAt: usuario.updatedAt
+      }));
+
+      respuesta.json({ usuarios: serializados });
+    } catch (error) {
+      siguiente(error);
+    }
+  }
+);
+
+/**
+ * PATCH /usuarios/:id/rol
+ *
+ * Cambia el rol/permisos de un usuario.
+ */
+rutasAutenticacion.patch(
+  "/usuarios/:id/rol",
+  autenticarJWT,
+  autorizarRoles("administrador", "super_usuario"),
+  async (solicitud: SolicitudConUsuario, respuesta, siguiente) => {
+    try {
+      const idUsuario = solicitud.params.id;
+      const actor = solicitud.usuario;
+      const { rol } = solicitud.body as { rol?: unknown };
+
+      if (!actor) {
+        respuesta.status(401).json({ mensaje: "No autenticado." });
+        return;
+      }
+      if (!mongoose.isValidObjectId(idUsuario)) {
+        respuesta.status(400).json({ mensaje: "El id del usuario es inválido." });
+        return;
+      }
+      if (!esRolValido(rol)) {
+        respuesta.status(400).json({ mensaje: "El rol enviado no es válido." });
+        return;
+      }
+      if (!puedeGestionarRol(actor.rol, rol)) {
+        respuesta.status(403).json({ mensaje: "No tienes permisos para asignar ese rol." });
+        return;
+      }
+      if (actor.id === idUsuario) {
+        respuesta.status(400).json({ mensaje: "No puedes cambiar tu propio rol desde este módulo." });
+        return;
+      }
+
+      const usuarioObjetivo = await Usuario.findById(idUsuario);
+      if (!usuarioObjetivo) {
+        respuesta.status(404).json({ mensaje: "Usuario no encontrado." });
+        return;
+      }
+
+      if (!puedeGestionarRol(actor.rol, usuarioObjetivo.rol)) {
+        respuesta.status(403).json({ mensaje: "No tienes permisos para modificar a este usuario." });
+        return;
+      }
+
+      usuarioObjetivo.rol = rol;
+      await usuarioObjetivo.save();
+
+      respuesta.json({
+        usuario: {
+          id: String(usuarioObjetivo._id),
+          correo: usuarioObjetivo.correo,
+          rol: usuarioObjetivo.rol,
+          activo: usuarioObjetivo.activo,
+          createdAt: usuarioObjetivo.createdAt,
+          updatedAt: usuarioObjetivo.updatedAt
+        }
+      });
+    } catch (error) {
+      siguiente(error);
+    }
   }
 );
