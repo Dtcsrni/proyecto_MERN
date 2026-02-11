@@ -9,6 +9,11 @@
   width: min(100%, 680px);
 }
 
+.panel-stack {
+  display: grid;
+  gap: 1rem;
+}
+
 .panel {
   background: #ffffff;
   border-radius: 14px;

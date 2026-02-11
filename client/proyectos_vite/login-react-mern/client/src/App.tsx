@@ -13,6 +13,7 @@ import { RutaProtegida } from "./RutaProtegida";
 import Login from "./login";
 import Register from "./register";
 import Admin from "./admin";
+import { ActividadesDesarrollador } from "./ActividadesDesarrollador";
 
 /**
  * Home privada.
@@ -28,17 +29,20 @@ function Inicio() {
   const puedeVerAdmin = usuario?.rol === "administrador" || usuario?.rol === "super_usuario";
 
   return (
-    <section className="panel">
-      <h1>Panel principal</h1>
-      <p>Sesión activa como: {usuario?.correo}</p>
-      <p>Rol actual: {usuario?.rol}</p>
-      <div className="actions">
-        {puedeVerAdmin && <Link to="/admin">Ir al módulo admin</Link>}
-        <button type="button" onClick={() => void cerrarSesion()}>
-          Cerrar sesión
-        </button>
-      </div>
-    </section>
+    <div className="panel-stack">
+      <section className="panel">
+        <h1>Panel principal</h1>
+        <p>Sesión activa como: {usuario?.correo}</p>
+        <p>Rol actual: {usuario?.rol}</p>
+        <div className="actions">
+          {puedeVerAdmin && <Link to="/admin">Ir al módulo admin</Link>}
+          <button type="button" onClick={() => void cerrarSesion()}>
+            Cerrar sesión
+          </button>
+        </div>
+      </section>
+      <ActividadesDesarrollador />
+    </div>
   );
 }
 

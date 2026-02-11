@@ -301,6 +301,35 @@ rutasAutenticacion.get(
 );
 
 /**
+ * GET /usuarios/resumen
+ *
+ * Lista un resumen de cuentas para exportación (rol desarrollador).
+ */
+rutasAutenticacion.get(
+  "/usuarios/resumen",
+  autenticarJWT,
+  autorizarRoles("desarrollador", "administrador", "super_usuario"),
+  async (_solicitud, respuesta, siguiente) => {
+    try {
+      const cuentas = await Usuario.find({}, { correo: 1, rol: 1, activo: 1, createdAt: 1 })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const serializadas = cuentas.map((cuenta) => ({
+        correo: cuenta.correo,
+        rol: cuenta.rol,
+        activo: cuenta.activo,
+        createdAt: cuenta.createdAt
+      }));
+
+      respuesta.json({ cuentas: serializadas, total: serializadas.length });
+    } catch (error) {
+      siguiente(error);
+    }
+  }
+);
+
+/**
  * GET /usuarios
  *
  * Lista usuarios para administración de permisos.
