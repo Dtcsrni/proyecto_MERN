@@ -1,22 +1,40 @@
-//Helper para llamadas remotas a la API desde el frontend
-//Las credenciales deben incluir el cookies httpOnly tokenAcceso para autenticación
-
+/**
+ * Capa mínima de acceso HTTP del frontend.
+ *
+ * Qué es:
+ * - Un helper genérico para llamar endpoints del backend.
+ *
+ * Qué hace:
+ * - Normaliza headers.
+ * - Incluye cookies (`credentials: "include"`) en todas las llamadas.
+ * - Unifica el manejo de errores HTTP.
+ *
+ * Por qué está así:
+ * - En este proyecto la sesión vive en cookie HttpOnly, no en localStorage.
+ * - Centralizar fetch evita repetir lógica en cada componente.
+ */
 export async function consultarApi<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
-    const respuesta = await fetch(ruta, {...opciones, 
-        headers: {
-            "Content-Type": "application/json",
-            ...opciones.headers || {}
-        },
-        credentials: "include"
-    });
+  const headers = new Headers(opciones.headers);
 
-    //intentamos leer JSON incluido. Si falla devolvemos un objeto vacío
-    const datos = (await respuesta.json().catch(() => ({}))) as any;
+  // Si el cuerpo es JSON, fija Content-Type automáticamente.
+  // Si es FormData, NO lo fija para que el navegador agregue el boundary correcto.
+  if (!headers.has("Content-Type") && opciones.body && !(opciones.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
-    //Si no es una respuesta 200, lanzamos un error a la GUI
-    if (!respuesta.ok) {
-        throw new Error(datos.mensaje || "Error desconocido al comunicarse con el servidor.");
-    }
+  const respuesta = await fetch(ruta, {
+    ...opciones,
+    headers,
+    credentials: "include"
+  });
 
-    return datos as T;
+  // El backend devuelve JSON en éxito y en error.
+  // Si por alguna razón llega algo no-JSON, caemos a {} y evitamos romper la UI.
+  const datos = (await respuesta.json().catch(() => ({}))) as { mensaje?: string };
+  if (!respuesta.ok) {
+    // Propagamos un mensaje legible hacia los componentes (login, rutas, etc.).
+    throw new Error(datos.mensaje || "No se pudo completar la solicitud.");
+  }
+
+  return datos as T;
 }

@@ -1,16 +1,17 @@
 {
   "name": "Aplicacion_Examenes",
   "version": "0.1.0",
-  "description": "Aplicación para gestionar exámenes universitarios, incluyendo autenticación, gestión de evaluaciones y generación de informes.",
-  "main": "index.js",
+  "description": "API de autenticación para login React + MERN.",
+  "main": "server/dist/servidor.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --watch src --ext ts --exec tsx  src"
+    "dev": "nodemon --watch server/src --ext ts --exec tsx server/src/servidor.ts",
+    "build": "tsc -p server/tsconfig.json",
+    "start": "node server/dist/servidor.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -20,5 +21,15 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.6"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.10.1",
+    "nodemon": "^3.1.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
 }
