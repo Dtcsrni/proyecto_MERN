@@ -1,0 +1,15 @@
+flowchart TD
+    A[Request a endpoint protegido] --> B[Leer cookie tokenAcceso]
+    B --> C{Existe cookie?}
+    C -- No --> X[401 No autenticado]
+    C -- Si --> D[verificarToken JWT]
+    D --> E{JWT valido?}
+    E -- No --> Y[401 + clearCookie]
+    E -- Si --> F[Buscar usuario activo en DB por id]
+    F --> G{Usuario existe y activo?}
+    G -- No --> Z[401 + clearCookie]
+    G -- Si --> H[Inyectar solicitud.usuario con rol vigente]
+    H --> I[autorizarRoles ...]
+    I --> J{Rol permitido?}
+    J -- No --> K[403 Acceso denegado]
+    J -- Si --> L[Ejecutar controlador]

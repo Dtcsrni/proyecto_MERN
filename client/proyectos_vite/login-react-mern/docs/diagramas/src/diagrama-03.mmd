@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant F as ProveedorAutenticacion
+    participant B as Backend (/api/auth/me)
+    participant DB as MongoDB
+
+    F->>B: GET /api/auth/me (con cookie)
+    B->>B: verificarToken(JWT)
+    alt JWT valido
+        B->>DB: Buscar usuario activo por id del token
+        alt Usuario vigente encontrado
+            DB-->>B: usuario (correo + rol actual)
+            B-->>F: 200 { usuario vigente }
+        else Usuario eliminado/inactivo
+            DB-->>B: null
+            B-->>F: 401 + clearCookie(tokenAcceso)
+        end
+    else JWT invalido/expirado
+        B-->>F: 401 + clearCookie(tokenAcceso)
+    end
+    alt Respuesta 200
+        F->>F: setUsuario(usuario)
+        F->>F: setCargando(false)
+    else Respuesta 401
+        F->>F: setUsuario(null)
+        F->>F: setCargando(false)
+    end
