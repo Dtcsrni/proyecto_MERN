@@ -1,0 +1,22 @@
+%%{init: {'theme':'base','themeVariables':{'background':'#FFFFFF','primaryColor':'#EAF2FF','primaryTextColor':'#0B1220','primaryBorderColor':'#1E3A8A','lineColor':'#1F2937','secondaryColor':'#E8FFF2','tertiaryColor':'#FFF4E5','fontFamily':'Arial','fontSize':'15px'}}}%%
+%% Diagrama: Contexto del sistema de autenticacion y autorizacion.
+%% Alcance: vista de alto nivel, no muestra detalles de cada endpoint.
+flowchart LR
+    U[Usuario]
+    FE[ProveedorAutenticacion + RutaProtegida + consultarApi]
+    BE[rutasAutenticacion + autenticarJWT + autorizarRoles]
+    AU[verificarToken + cargarUsuarioVigente]
+    DB[(MongoDB: Usuario)]
+    CK[cookie tokenAcceso]
+    N1[NOTA RBAC estricta: autenticarJWT usa cargarUsuarioVigente para leer rol actual desde DB en cada request protegido]
+
+    U --> FE
+    FE -->|fetch /api/auth/* + credentials include| BE
+    BE --> AU
+    AU -->|Usuario.findOne id activo true| DB
+    BE --> CK
+    CK --> U
+    N1 -.-> AU
+
+    classDef nota fill:#FFF8E7,stroke:#B45309,stroke-width:1.8px,color:#7C2D12;
+    class N1 nota;
