@@ -91,6 +91,21 @@ type SolicitudConUsuario = Request & { usuario?: UsuarioToken };
 type RolEditable = Exclude<Rol, "super_usuario"> | "super_usuario";
 
 /**
+ * RBAC estricta (KISS):
+ * en cada request autenticada tomamos el rol real desde DB y no el rol del JWT.
+ * Así, un cambio de rol aplica de inmediato sin esperar a que expire el token.
+ */
+async function cargarUsuarioVigente(desdeToken: UsuarioToken): Promise<UsuarioToken | null> {
+  const usuario = await Usuario.findOne({ _id: desdeToken.id, activo: true }, { correo: 1, rol: 1 }).lean();
+  if (!usuario) return null;
+  return {
+    id: String(usuario._id),
+    correo: usuario.correo,
+    rol: usuario.rol
+  };
+}
+
+/**
  * Middleware de autenticacion.
  *
  * Flujo didactico:
@@ -98,7 +113,11 @@ type RolEditable = Exclude<Rol, "super_usuario"> | "super_usuario";
  * - Verifica token.
  * - Inyecta `solicitud.usuario` para handlers siguientes.
  */
-function autenticarJWT(solicitud: SolicitudConUsuario, respuesta: Response, siguiente: NextFunction): void {
+async function autenticarJWT(
+  solicitud: SolicitudConUsuario,
+  respuesta: Response,
+  siguiente: NextFunction
+): Promise<void> {
   try {
     const tokenAcceso = solicitud.cookies?.tokenAcceso as string | undefined;
     if (!tokenAcceso) {
@@ -106,9 +125,26 @@ function autenticarJWT(solicitud: SolicitudConUsuario, respuesta: Response, sigu
       return;
     }
 
-    solicitud.usuario = verificarToken(tokenAcceso);
+    const usuarioToken = verificarToken(tokenAcceso);
+    const usuarioVigente = await cargarUsuarioVigente(usuarioToken);
+    if (!usuarioVigente) {
+      respuesta.clearCookie("tokenAcceso", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production"
+      });
+      respuesta.status(401).json({ mensaje: "Sesión no válida o cuenta inactiva." });
+      return;
+    }
+
+    solicitud.usuario = usuarioVigente;
     siguiente();
   } catch {
+    respuesta.clearCookie("tokenAcceso", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    });
     respuesta.status(401).json({ mensaje: "Token inválido o expirado." });
   }
 }
