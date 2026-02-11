@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Cargando
+    Cargando --> Autenticado: /me OK
+    Cargando --> Invitado: /me 401
+    Invitado --> Autenticado: login OK
+    Autenticado --> Invitado: logout OK
+    Autenticado --> Invitado: token expira / me 401
+    Autenticado --> Invitado: cuenta inactiva o removida / me 401

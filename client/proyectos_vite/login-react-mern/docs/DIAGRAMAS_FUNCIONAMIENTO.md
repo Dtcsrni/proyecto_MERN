@@ -13,9 +13,9 @@ Este documento resume el flujo principal del proyecto con diagramas Mermaid.
 flowchart LR
     U[Usuario en navegador] --> F[Frontend React + Vite]
     F -->|fetch /api + credentials: include| B[Backend Express]
-    B --> A[Modulo autenticacion]
-    A --> D[(MongoDB - coleccion Usuario)]
-    B --> C[Cookie HttpOnly tokenAcceso]
+    B --> A[Modulo autenticacion + RBAC]
+    A -->|consulta rol vigente por request autenticado| D[(MongoDB - coleccion Usuario)]
+    B --> C[Cookie HttpOnly tokenAcceso JWT]
     C --> U
 ```
 
@@ -49,14 +49,26 @@ sequenceDiagram
 sequenceDiagram
     participant F as ProveedorAutenticacion
     participant B as Backend (/api/auth/me)
+    participant DB as MongoDB
 
     F->>B: GET /api/auth/me (con cookie)
-    alt Token valido
-        B-->>F: 200 { usuario }
+    B->>B: verificarToken(JWT)
+    alt JWT valido
+        B->>DB: Buscar usuario activo por id del token
+        alt Usuario vigente encontrado
+            DB-->>B: usuario (correo + rol actual)
+            B-->>F: 200 { usuario vigente }
+        else Usuario eliminado/inactivo
+            DB-->>B: null
+            B-->>F: 401 + clearCookie(tokenAcceso)
+        end
+    else JWT invalido/expirado
+        B-->>F: 401 + clearCookie(tokenAcceso)
+    end
+    alt Respuesta 200
         F->>F: setUsuario(usuario)
         F->>F: setCargando(false)
-    else Token ausente o invalido
-        B-->>F: 401
+    else Respuesta 401
         F->>F: setUsuario(null)
         F->>F: setCargando(false)
     end
@@ -74,7 +86,7 @@ flowchart TD
     P -- No --> OK[Render children]
     P -- Si --> H{usuario.rol incluido?}
     H -- Si --> OK
-    H -- No --> N[Render: No tienes permisos]
+    H -- No --> N[Redirect /]
 ```
 
 ## 5) Modelo de datos de usuario
@@ -102,5 +114,36 @@ stateDiagram-v2
     Invitado --> Autenticado: login OK
     Autenticado --> Invitado: logout OK
     Autenticado --> Invitado: token expira / me 401
+    Autenticado --> Invitado: cuenta inactiva o removida / me 401
 ```
+
+## 7) RBAC estricta en middleware (KISS)
+
+```mermaid
+flowchart TD
+    A[Request a endpoint protegido] --> B[Leer cookie tokenAcceso]
+    B --> C{Existe cookie?}
+    C -- No --> X[401 No autenticado]
+    C -- Si --> D[verificarToken JWT]
+    D --> E{JWT valido?}
+    E -- No --> Y[401 + clearCookie]
+    E -- Si --> F[Buscar usuario activo en DB por id]
+    F --> G{Usuario existe y activo?}
+    G -- No --> Z[401 + clearCookie]
+    G -- Si --> H[Inyectar solicitud.usuario con rol vigente]
+    H --> I[autorizarRoles ...]
+    I --> J{Rol permitido?}
+    J -- No --> K[403 Acceso denegado]
+    J -- Si --> L[Ejecutar controlador]
+```
+
+## 8) Diagramas renderizados (SVG)
+
+- Arquitectura general: `docs/diagramas/render/diagrama-01.svg`
+- Flujo inicio de sesion: `docs/diagramas/render/diagrama-02.svg`
+- Restauracion de sesion: `docs/diagramas/render/diagrama-03.svg`
+- Logica de RutaProtegida: `docs/diagramas/render/diagrama-04.svg`
+- Modelo de datos Usuario: `docs/diagramas/render/diagrama-05.svg`
+- Maquina de estados de sesion: `docs/diagramas/render/diagrama-06.svg`
+- RBAC estricta middleware: `docs/diagramas/render/diagrama-07.svg`
 
