@@ -4,24 +4,45 @@ import jwt from "jsonwebtoken";
 import { Usuario, type UsuarioToken, type Rol } from "./usuarioModelo.js";
 
 /**
- * Router de autenticación:
- * - /register: crea usuario (solo práctica)
- * - /login: valida credenciales y crea cookie con JWT
- * - /me: devuelve sesión actual
- * - /logout: borra cookie
- * - /admin: demo RBAC real
+ * GUIA (Backend) - router de autenticacion y autorizacion
+ *
+ * 1) Que es:
+ * - Conjunto de endpoints y middlewares para controlar acceso.
+ *
+ * 2) Endpoints incluidos:
+ * - POST /register
+ * - POST /login
+ * - GET  /me
+ * - POST /logout
+ * - GET  /admin (ejemplo RBAC)
+ *
+ * 3) Por que se disena asi:
+ * - Se separa autenticacion (quien eres) de autorizacion (que puedes hacer).
  */
 export const rutasAutenticacion = Router();
 
-const RONDAS_SAL = 12;      // costo de bcrypt (seguridad vs tiempo)
+// Seguridad - Paso A: costo bcrypt (mas alto = mas seguro, pero consume mas CPU).
+const RONDAS_SAL = 12;
+// Seguridad - Paso B: tiempo de vida de token de sesion.
 const DURACION_TOKEN = "2h";
 
-/** Validación mínima (didáctica) */
+/**
+ * Utilidad - validar correo.
+ *
+ * Por que:
+ * - Corta rapido requests claramente invalidas.
+ * - Mantiene el ejemplo simple para estudio.
+ */
 function esCorreoValido(correo: unknown): correo is string {
   return typeof correo === "string" && correo.includes("@") && correo.includes(".");
 }
 
-/** Firma JWT (sign) con secreto del .env */
+/**
+ * Crea JWT firmado.
+ *
+ * Por que:
+ * - El backend puede verificar integridad del token en cada request sin guardar sesion en memoria.
+ */
 function firmarToken(usuarioToken: UsuarioToken): string {
   const secretoJWT = process.env.JWT_SECRETO;
   if (!secretoJWT) throw new Error("Falta JWT_SECRETO en .env");
@@ -29,8 +50,11 @@ function firmarToken(usuarioToken: UsuarioToken): string {
 }
 
 /**
- * Verifica JWT (verify) = valida firma + expiración.
- * No usar decode() para autorizar, porque NO valida firma. ([npmjs.com](https://www.npmjs.com/package/jsonwebtoken?utm_source=chatgpt.com))
+ * Verifica JWT recibido.
+ *
+ * Que valida:
+ * - Firma criptográfica.
+ * - Expiración.
  */
 function verificarToken(tokenAcceso: string): UsuarioToken {
   const secretoJWT = process.env.JWT_SECRETO;
@@ -38,13 +62,16 @@ function verificarToken(tokenAcceso: string): UsuarioToken {
   return jwt.verify(tokenAcceso, secretoJWT) as UsuarioToken;
 }
 
-/** Request local con usuario para no crear archivo de tipos extra */
+// Tipo auxiliar para pasar usuario autenticado entre middlewares/controladores.
 type SolicitudConUsuario = Request & { usuario?: UsuarioToken };
 
 /**
- * Middleware de autenticación:
- * - Lee cookie tokenAcceso (HttpOnly)
- * - Si existe y es válida, guarda solicitud.usuario
+ * Middleware de autenticacion.
+ *
+ * Flujo didactico:
+ * - Lee cookie `tokenAcceso`.
+ * - Verifica token.
+ * - Inyecta `solicitud.usuario` para handlers siguientes.
  */
 function autenticarJWT(solicitud: SolicitudConUsuario, respuesta: Response, siguiente: NextFunction): void {
   try {
@@ -61,7 +88,12 @@ function autenticarJWT(solicitud: SolicitudConUsuario, respuesta: Response, sigu
   }
 }
 
-/** Middleware RBAC por roles */
+/**
+ * Middleware de autorizacion por roles (RBAC).
+ *
+ * Por que separado:
+ * - Reutilizable en cualquier endpoint que necesite permisos distintos.
+ */
 function autorizarRoles(...rolesPermitidos: Rol[]) {
   return (solicitud: SolicitudConUsuario, respuesta: Response, siguiente: NextFunction): void => {
     const rolActual = solicitud.usuario?.rol;
@@ -75,9 +107,15 @@ function autorizarRoles(...rolesPermitidos: Rol[]) {
 
 /**
  * POST /register
- * - Normaliza correo
- * - Aplica bcrypt.hash
- * - Crea usuario con rol "usuario"
+ *
+ * Paso 1 (registro):
+ * - Valida inputs básicos.
+ * - Normaliza correo.
+ * - Evita correo duplicado.
+ * - Guarda contraseña como hash bcrypt.
+ *
+ * Por que:
+ * - Nunca se debe persistir contraseña en texto plano.
  */
 rutasAutenticacion.post("/register", async (solicitud, respuesta, siguiente) => {
   try {
@@ -116,9 +154,14 @@ rutasAutenticacion.post("/register", async (solicitud, respuesta, siguiente) => 
 
 /**
  * POST /login
- * - Busca usuario
- * - bcrypt.compare contra hash
- * - Firma token y lo guarda en cookie HttpOnly
+ *
+ * Paso 2 (login):
+ * - Busca usuario activo por correo.
+ * - Compara contraseña ingresada con hash almacenado.
+ * - Emite JWT y lo envía en cookie HttpOnly.
+ *
+ * Por que cookie HttpOnly:
+ * - Reduce exposición frente a lectura por scripts en el navegador.
  */
 rutasAutenticacion.post("/login", async (solicitud, respuesta, siguiente) => {
   try {
@@ -151,11 +194,14 @@ rutasAutenticacion.post("/login", async (solicitud, respuesta, siguiente) => {
 
     const tokenAcceso = firmarToken(usuarioToken);
 
-    // Cookie HttpOnly: el JS del navegador no puede leerla
+    // Seguridad cookie:
+    // - HttpOnly: JS del navegador no puede leer token.
+    // - sameSite=lax: reduce riesgo CSRF.
+    // - secure en produccion: solo via HTTPS.
     respuesta.cookie("tokenAcceso", tokenAcceso, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "development",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 2 * 60 * 60 * 1000
     });
 
@@ -165,18 +211,41 @@ rutasAutenticacion.post("/login", async (solicitud, respuesta, siguiente) => {
   }
 });
 
-/** GET /me: requiere sesión */
+/**
+ * GET /me
+ *
+ * Paso 3 (sesion):
+ * Devuelve el usuario autenticado a partir del token ya validado por middleware.
+ * Se usa en frontend para restaurar sesión al recargar la página.
+ */
 rutasAutenticacion.get("/me", autenticarJWT, (solicitud: SolicitudConUsuario, respuesta) => {
   respuesta.json({ usuario: solicitud.usuario });
 });
 
-/** POST /logout: borra cookie */
+/**
+ * POST /logout
+ *
+ * Paso 4 (logout):
+ * Elimina cookie de sesión en cliente.
+ * Se usan los mismos flags base de la cookie original para asegurar borrado consistente.
+ */
 rutasAutenticacion.post("/logout", (_solicitud, respuesta) => {
-  respuesta.clearCookie("tokenAcceso");
+  respuesta.clearCookie("tokenAcceso", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  });
   respuesta.json({ mensaje: "Sesión cerrada." });
 });
 
-/** GET /admin: demo RBAC real */
+/**
+ * GET /admin
+ *
+ * Paso 5 (autorizacion por rol):
+ * Ejemplo de endpoint protegido por:
+ * - autenticación válida
+ * - rol permitido
+ */
 rutasAutenticacion.get(
   "/admin",
   autenticarJWT,

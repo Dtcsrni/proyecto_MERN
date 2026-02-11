@@ -1,35 +1,91 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import "./App.css";
+import { ProveedorAutenticacion } from "./autenticacion";
+import { useAutenticacion } from "./useAutenticacion";
+import { RutaProtegida } from "./RutaProtegida";
+import Login from "./login";
 
-function App() {
-  const [count, setCount] = useState(0)
+/**
+ * Home privada.
+ *
+ * Qué muestra:
+ * - Identidad y rol del usuario autenticado.
+ *
+ * Por qué es útil:
+ * - Permite validar rápidamente que sesión y claims de rol están llegando bien.
+ */
+function Inicio() {
+  const { usuario, cerrarSesion } = useAutenticacion();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <section className="panel">
+      <h1>Panel principal</h1>
+      <p>Sesión activa como: {usuario?.correo}</p>
+      <p>Rol actual: {usuario?.rol}</p>
+      <div className="actions">
+        <Link to="/admin">Ir al módulo admin</Link>
+        <button type="button" onClick={() => void cerrarSesion()}>
+          Cerrar sesión
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </section>
+  );
 }
 
-export default App
+/**
+ * Pantalla de ejemplo para rol administrativo.
+ *
+ * Su objetivo es didáctico: demostrar control de acceso por rol.
+ */
+function Admin() {
+  return (
+    <section className="panel">
+      <h1>Módulo administrador</h1>
+      <p>Esta ruta solo permite roles administrativos.</p>
+      <Link to="/">Volver al inicio</Link>
+    </section>
+  );
+}
+
+/**
+ * Composición principal de la SPA.
+ *
+ * Estructura:
+ * - `ProveedorAutenticacion`: estado global de sesión.
+ * - `BrowserRouter`: navegación cliente.
+ * - `RutaProtegida`: guard de autenticación/autorización.
+ *
+ * Por qué este orden:
+ * - Las rutas necesitan acceder al contexto de auth para decidir acceso.
+ */
+function App() {
+  return (
+    <ProveedorAutenticacion>
+      <BrowserRouter>
+        <main className="app-shell">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <RutaProtegida>
+                  <Inicio />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RutaProtegida rolesPermitidos={["administrador", "super_usuario"]}>
+                  <Admin />
+                </RutaProtegida>
+              }
+            />
+          </Routes>
+        </main>
+      </BrowserRouter>
+    </ProveedorAutenticacion>
+  );
+}
+
+export default App;

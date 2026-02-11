@@ -1,49 +1,77 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { usarAutenticacion } from "./autenticacion";
-import "./login.css";
+import { useAutenticacion } from "./useAutenticacion";
 
 /**
- * UI de login (2.5.1 Aplicaciones para usuarios):
- * - Captura correo y contraseña
- * - Llama iniciarSesion
- * - Si ok: redirige a /
+ * GUIA (Frontend) - pantalla de login
+ *
+ * 1) Que es:
+ * - Componente de interfaz para iniciar sesion.
+ *
+ * 2) Que hace:
+ * - Lee correo y contrasena del formulario.
+ * - Llama `iniciarSesion` del Provider.
+ * - Redirige al inicio en exito.
+ * - Muestra mensaje si hay error.
+ *
+ * 3) Por que se disena asi:
+ * - Este componente solo maneja experiencia de usuario.
+ * - La logica de autenticacion real vive en el Provider/API.
  */
 export default function Login() {
-  const { iniciarSesion } = usarAutenticacion();
+  const { iniciarSesion } = useAutenticacion();
   const navegar = useNavigate();
 
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Flujo LOGIN UI - Paso 1: interceptar submit del formulario.
   async function alEnviar(evento: React.FormEvent) {
     evento.preventDefault();
     setError(null);
 
     try {
+      // Paso 2: delegar autenticacion al caso de uso del contexto.
       await iniciarSesion(correo, contrasena);
+      // Paso 3: entrar al home; `replace` evita volver al login con "atras".
       navegar("/", { replace: true });
-    } catch (e: any) {
-      setError(e.message || "No se pudo iniciar sesión.");
+    } catch (error: unknown) {
+      // Paso 4 (error): mensaje amigable para usuario.
+      const mensaje = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
+      setError(mensaje);
     }
   }
 
   return (
-    <div className="login-container">
-      <h2>Iniciar sesión</h2>
+    <section className="panel login-panel">
+      <h1>Iniciar sesión</h1>
 
       <form onSubmit={alEnviar}>
-        <label>Correo</label>
-        <input value={correo} onChange={(e) => setCorreo(e.target.value)} />
+        <label htmlFor="correo">Correo</label>
+        <input
+          id="correo"
+          type="email"
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          autoComplete="email"
+          required
+        />
 
-        <label>Contraseña</label>
-        <input type="password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+        <label htmlFor="contrasena">Contraseña</label>
+        <input
+          id="contrasena"
+          type="password"
+          value={contrasena}
+          onChange={(e) => setContrasena(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
 
         <button type="submit">Entrar</button>
       </form>
 
       {error && <p className="error-message">{error}</p>}
-    </div>
+    </section>
   );
 }

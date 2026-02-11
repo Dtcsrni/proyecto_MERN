@@ -1,42 +1,45 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.app-shell {
+  width: min(100%, 680px);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.panel {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(14, 32, 58, 0.12);
+  padding: 1.5rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.login-panel form {
+  display: grid;
+  gap: 0.75rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.card {
-  padding: 2em;
+label {
+  font-weight: 600;
 }
 
-.read-the-docs {
-  color: #888;
+input {
+  border: 1px solid #d3d9e6;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  background: #0f4ab8;
+  color: #fff;
+  cursor: pointer;
+}
+
+.error-message {
+  color: #c21807;
 }
