@@ -5,6 +5,7 @@ import { useAutenticacion } from "./useAutenticacion";
 import { RutaProtegida } from "./RutaProtegida";
 import Login from "./login";
 import Register from "./register";
+import Admin from "./admin";
 
 /**
  * Home privada.
@@ -30,21 +31,6 @@ function Inicio() {
           Cerrar sesión
         </button>
       </div>
-    </section>
-  );
-}
-
-/**
- * Pantalla de ejemplo para rol administrativo.
- *
- * Su objetivo es didáctico: demostrar control de acceso por rol.
- */
-function Admin() {
-  return (
-    <section className="panel">
-      <h1>Módulo administrador</h1>
-      <p>Esta ruta solo permite roles administrativos.</p>
-      <Link to="/">Volver al inicio</Link>
     </section>
   );
 }
