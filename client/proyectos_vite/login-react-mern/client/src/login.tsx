@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAutenticacion } from "./useAutenticacion";
 
@@ -72,6 +73,9 @@ export default function Login() {
       </form>
 
       {error && <p className="error-message">{error}</p>}
+      <p className="aux-link">
+        ¿No tienes cuenta? <Link to="/register">Crear cuenta</Link>
+      </p>
     </section>
   );
 }

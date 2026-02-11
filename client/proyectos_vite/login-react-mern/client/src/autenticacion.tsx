@@ -53,6 +53,16 @@ export function ProveedorAutenticacion({ children }: { children: React.ReactNode
     setUsuario(respuesta.usuario);
   }
 
+  // Flujo REGISTRO - Paso 1:
+  // Crea una cuenta nueva y deja sesión iniciada en backend.
+  async function registrarCuenta(correo: string, contrasena: string) {
+    const respuesta = await consultarApi<{ usuario: UsuarioToken }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ correo, contrasena })
+    });
+    setUsuario(respuesta.usuario);
+  }
+
   // Flujo LOGOUT - Paso 1:
   // Se invalida/borrar cookie en servidor.
   // Paso 2:
@@ -63,7 +73,9 @@ export function ProveedorAutenticacion({ children }: { children: React.ReactNode
   }
 
   return (
-    <ContextoAutenticacionApp.Provider value={{ usuario, cargando, iniciarSesion, cerrarSesion }}>
+    <ContextoAutenticacionApp.Provider
+      value={{ usuario, cargando, iniciarSesion, registrarCuenta, cerrarSesion }}
+    >
       {children}
     </ContextoAutenticacionApp.Provider>
   );
