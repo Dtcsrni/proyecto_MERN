@@ -9,7 +9,6 @@ import {
   buscarMejorOffsetPregunta,
   calcularMetricasPregunta,
   evaluarConOffset,
-  type CentroOpcion,
   type EstadoImagenOmr
 } from './omrCore';
 
@@ -58,7 +57,6 @@ const OMR_STRONG_SCORE = Number.parseFloat(process.env.OMR_STRONG_SCORE || '0.09
 const OMR_SECOND_RATIO = Number.parseFloat(process.env.OMR_SECOND_RATIO || '0.75');
 const OMR_SCORE_STD = Number.parseFloat(process.env.OMR_SCORE_STD || '0.6');
 const OMR_ALIGN_RANGE = Number.parseFloat(process.env.OMR_ALIGN_RANGE || '22');
-const OMR_ALIGN_STEP = Number.parseFloat(process.env.OMR_ALIGN_STEP || '2');
 const OMR_VERT_RANGE = Number.parseFloat(process.env.OMR_VERT_RANGE || '12');
 const OMR_VERT_STEP = Number.parseFloat(process.env.OMR_VERT_STEP || '2');
 const OMR_OFFSET_X = Number.parseFloat(process.env.OMR_OFFSET_X || '0');
@@ -260,9 +258,9 @@ function calcularCalidadPagina(args: {
     confianzaMedia,
     ratioAmbiguas
   } = args;
-  const factorTransformacion = tipoTransformacion === 'escala' ? 0.62 : tipoTransformacion === 'homografia' ? 0.9 : 1;
+  const factorTransformacion = tipoTransformacion === 'escala' ? 0.74 : tipoTransformacion === 'homografia' ? 0.9 : 1;
   const factorQr = qrDetectado ? 1 : 0.78;
-  const factorBlur = clamp01((blurVar - 70) / 320);
+  const factorBlur = Math.max(0.35, clamp01((blurVar - 70) / 320));
   const factorExposicion = clamp01(1 - Math.abs(brilloMedio - 145) / 120);
   const factorRepro = clamp01(1 - reprojectionErrorPromedio / 6);
   const factorColorBalance = clamp01(1 - colorCast / 0.24);
@@ -280,6 +278,53 @@ function calcularCalidadPagina(args: {
     clamp01(confianzaMedia) * 0.01 +
     factorNoAmbiguas * 0.01;
   return clamp01(calidad);
+}
+
+function resolverEstadoAnalisis(args: {
+  calidadPagina: number;
+  confianzaMedia: number;
+  ratioAmbiguas: number;
+  totalRespuestas: number;
+}) {
+  const { calidadPagina, confianzaMedia, ratioAmbiguas, totalRespuestas } = args;
+  const motivos: string[] = [];
+  const advertencias: string[] = [];
+  const puedeRechazarPorCalidad = totalRespuestas >= 3;
+  let estado: ResultadoOmr['estadoAnalisis'] = 'ok';
+  let anularRespuestas = false;
+
+  if (calidadPagina < OMR_QUALITY_REJECT_MIN && puedeRechazarPorCalidad) {
+    const senalMuyDebil = confianzaMedia < 0.2 || ratioAmbiguas > 0.85;
+    if (senalMuyDebil) {
+      estado = 'rechazado_calidad';
+      anularRespuestas = true;
+      motivos.push(`Calidad insuficiente (${calidadPagina.toFixed(2)} < ${OMR_QUALITY_REJECT_MIN.toFixed(2)})`);
+      advertencias.push(`Pagina rechazada por baja calidad (${calidadPagina.toFixed(2)})`);
+    } else {
+      estado = 'requiere_revision';
+      motivos.push(`Calidad baja (${calidadPagina.toFixed(2)}), revisar manualmente`);
+    }
+  } else if (calidadPagina < OMR_QUALITY_REJECT_MIN && !puedeRechazarPorCalidad) {
+    estado = 'requiere_revision';
+    motivos.push(`Calidad baja en muestra reducida (${calidadPagina.toFixed(2)})`);
+  } else if (
+    calidadPagina < OMR_QUALITY_REVIEW_MIN ||
+    confianzaMedia < OMR_AUTO_CONF_MIN ||
+    ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX
+  ) {
+    estado = 'requiere_revision';
+    if (calidadPagina < OMR_QUALITY_REVIEW_MIN) {
+      motivos.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
+    }
+    if (confianzaMedia < OMR_AUTO_CONF_MIN) {
+      motivos.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
+    }
+    if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
+      motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
+    }
+  }
+
+  return { estado, motivos, advertencias, anularRespuestas };
 }
 
 type MetricasColorimetria = {
@@ -987,8 +1032,6 @@ function detectarOpcion(
   let pixelesOuter = 0;
   let sumaOuter = 0;
   let sumaOuterSq = 0;
-  let sumaSq = 0;
-  let sumaRingSq = 0;
   let masaTotal = 0;
   let masaRadial = 0;
   let masaX = 0;
@@ -1006,7 +1049,6 @@ function detectarOpcion(
       if (dist <= radio * radio) {
         pixeles += 1;
         suma += intensidad;
-        sumaSq += intensidad * intensidad;
         if (dist <= coreSq) {
           pixelesCore += 1;
         } else {
@@ -1016,7 +1058,6 @@ function detectarOpcion(
         if (dist <= ringOuter * ringOuter) {
           pixelesRing += 1;
           sumaRing += intensidad;
-          sumaRingSq += intensidad * intensidad;
         } else {
           pixelesOuter += 1;
           sumaOuter += intensidad;
@@ -1031,10 +1072,6 @@ function detectarOpcion(
   const promedioOuter = sumaOuter / Math.max(1, pixelesOuter);
   const varOuter = Math.max(0, sumaOuterSq / Math.max(1, pixelesOuter) - promedioOuter * promedioOuter);
   const stdOuter = Math.sqrt(varOuter);
-  const varCentro = Math.max(0, sumaSq / Math.max(1, pixeles) - promedio * promedio);
-  const varRing = Math.max(0, sumaRingSq / Math.max(1, pixelesRing) - promedioRing * promedioRing);
-  const stdCentro = Math.sqrt(varCentro);
-  const stdRing = Math.sqrt(varRing);
   const umbral = Math.max(35, Math.min(220, Math.min(umbralBase, promedioOuter - Math.max(8, stdOuter * 0.6))));
 
   for (let y = -outerOuter; y <= outerOuter; y += paso) {
@@ -1899,35 +1936,21 @@ export async function analizarOmr(
   if (OMR_QUALITY_WARN_MIN >= 0 && calidadPagina < OMR_QUALITY_WARN_MIN) {
     advertencias.push(`Calidad de pagina baja (${calidadPagina.toFixed(2)})`);
   }
-  let estadoAnalisis: ResultadoOmr['estadoAnalisis'] = 'ok';
-  const puedeRechazarPorCalidad = respuestasDetectadas.length >= 3;
-  if (calidadPagina < OMR_QUALITY_REJECT_MIN && puedeRechazarPorCalidad) {
+  const decisionEstado = resolverEstadoAnalisis({
+    calidadPagina,
+    confianzaMedia,
+    ratioAmbiguas,
+    totalRespuestas: respuestasDetectadas.length
+  });
+  const estadoAnalisis: ResultadoOmr['estadoAnalisis'] = decisionEstado.estado;
+  if (decisionEstado.anularRespuestas) {
     for (const r of respuestasDetectadas) {
       r.opcion = null;
       r.confianza = 0;
     }
-    estadoAnalisis = 'rechazado_calidad';
-    motivosRevision.push(`Calidad insuficiente (${calidadPagina.toFixed(2)} < ${OMR_QUALITY_REJECT_MIN.toFixed(2)})`);
-    advertencias.push(`Pagina rechazada por baja calidad (${calidadPagina.toFixed(2)})`);
-  } else if (calidadPagina < OMR_QUALITY_REJECT_MIN && !puedeRechazarPorCalidad) {
-    estadoAnalisis = 'requiere_revision';
-    motivosRevision.push(`Calidad baja en muestra reducida (${calidadPagina.toFixed(2)})`);
-  } else if (
-    calidadPagina < OMR_QUALITY_REVIEW_MIN ||
-    confianzaMedia < OMR_AUTO_CONF_MIN ||
-    ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX
-  ) {
-    estadoAnalisis = 'requiere_revision';
-    if (calidadPagina < OMR_QUALITY_REVIEW_MIN) {
-      motivosRevision.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
-    }
-    if (confianzaMedia < OMR_AUTO_CONF_MIN) {
-      motivosRevision.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
-    }
-    if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
-      motivosRevision.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
-    }
   }
+  motivosRevision.push(...decisionEstado.motivos);
+  advertencias.push(...decisionEstado.advertencias);
   try {
     await exportarPatchesOmr(data, width, height, patches, {
       folio: debugInfo?.folio,

@@ -1,58 +1,38 @@
-# Sincronización entre computadoras (paquete)
+# Sincronizacion entre computadoras (paquete)
 
-Esta opción permite mover datos del sistema entre instalaciones (por ejemplo, de una PC a otra) mediante un archivo.
+Permite mover datos operativos entre instalaciones del sistema mediante archivo de paquete.
 
-## Qué sincroniza
-
-El paquete incluye (según disponibilidad):
-
-- Materias (períodos)
+## Cobertura de sincronizacion
+- Periodos/materias
 - Alumnos
 - Banco de preguntas
-- Plantillas de examen
-- Exámenes generados
-- Entregas / banderas / calificaciones asociadas
-- PDFs (opcional, **best-effort** y puede hacer el paquete pesado)
+- Plantillas
+- Examenes generados
+- Entregas, banderas y calificaciones
+- PDFs comprimidos (opcional)
 
-## Reglas de conflicto (importación)
+## Garantias
+- Importacion idempotente.
+- Resolucion por recencia (`updatedAt`) para conflictos.
+- Validacion de integridad por checksum SHA-256.
 
-- Si un registro ya existe en la computadora destino, se conserva el que tenga `updatedAt` más reciente.
-- El paquete es **idempotente**: se puede importar varias veces.
+## Flujo de uso
+1. Exportar paquete en equipo origen.
+2. Transferir archivo.
+3. Validar/importar en equipo destino (dry-run + confirmacion).
 
-## Integridad / anti-corrupción
+## Endpoints backend
+- `POST /api/sincronizaciones/paquete/exportar`
+- `POST /api/sincronizaciones/paquete/importar`
+- `POST /api/sincronizaciones/push`
+- `POST /api/sincronizaciones/pull`
 
-- El export incluye `checksumSha256` (SHA-256 del JSON descomprimido).
-- En importación, el backend valida ese checksum antes de aplicar cambios.
-  - Si el checksum no coincide, el import se **bloquea** para evitar corrupción silenciosa.
-- Los PDFs (si se incluyen) también llevan checksum y se descartan si no coincide.
+## Seguridad
+- Requiere sesion docente y permisos de sincronizacion.
+- Se valida compatibilidad de docente antes de aplicar importacion.
+- En entorno cloud, operaciones internas usan API key.
 
-## Uso desde la UI (Docente)
-
-1. En la computadora origen, entra a la vista **Publicar**.
-2. En el panel **Sincronizar entre computadoras**:
-   - (Opcional) elige una Materia
-   - (Opcional) define "Desde" para export incremental
-   - (Opcional) marca "Incluir PDFs"
-  - Presiona **Exportar paquete** y guarda el archivo `.ep-sync.json` (compatible con `.seu-sync.json`)
-3. Copia el archivo a la otra computadora (USB/Drive).
-4. En la computadora destino, entra a la misma vista y usa **Importar paquete**.
-
-Durante la importación:
-- Primero se hace una validación ("dry-run") del paquete.
-- El sistema te pide confirmación antes de aplicar cambios.
-
-Notas:
-- El paquete solo se puede importar en la misma cuenta/docente (mismo `docenteId`).
-- El paquete incluye `docenteCorreo` y la importacion valida contra el correo de la sesion activa.
-- Si incluyes PDFs, el backend limita el tamaño para evitar paquetes gigantes.
-
-## Endpoints (API)
-
-- `POST /sincronizaciones/paquete/exportar`
-  - body: `{ periodoId?: string, desde?: ISODateString, incluirPdfs?: boolean }`
-  - response: `{ paqueteBase64, checksumSha256, checksumGzipSha256, exportadoEn, conteos }`
-
-- `POST /sincronizaciones/paquete/importar`
-  - body: `{ paqueteBase64: string, checksumSha256?: string, dryRun?: boolean }`
-  - response (dry-run): `{ mensaje, checksumSha256, conteos }`
-  - response (import): `{ mensaje, resultados, pdfsGuardados }`
+## Recomendaciones
+- Evitar incluir PDFs salvo cuando sea necesario (peso del paquete).
+- Mantener respaldo antes de importaciones masivas.
+- Ejecutar dry-run siempre en migraciones entre equipos.

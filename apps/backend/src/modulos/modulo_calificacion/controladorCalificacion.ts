@@ -136,7 +136,8 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     }
   });
 
-  const aciertosFinal = typeof aciertos === 'number' ? aciertos : aciertosCalculados;
+  const usarAciertosDetectados = respuestas.length > 0;
+  const aciertosFinal = usarAciertosDetectados ? aciertosCalculados : typeof aciertos === 'number' ? aciertos : aciertosCalculados;
   const totalFinal = total || totalReactivos || aciertosFinal || 1;
   const aciertosAjustados = Math.min(aciertosFinal, totalFinal);
 

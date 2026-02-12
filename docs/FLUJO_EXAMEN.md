@@ -1,50 +1,67 @@
 # Flujo de examen
 
-## 1) Crear banco de preguntas
-- Docente crea preguntas con 5 opciones y 1 correcta.
-- Se guarda versión actual y se permite versionado futuro.
+Flujo funcional vigente del sistema (2026-02-11).
 
-## 2) Crear plantilla de examen
-- Se define tipo (parcial/global), titulo e instrucciones.
-- Se asocian preguntas del banco.
+## 1) Preparacion academica
+- Crear materia/periodo.
+- Registrar alumnos activos.
+- Crear/editar banco de preguntas versionadas.
 
-## 3) Generar exámenes imprimibles
-- Se aleatoriza orden de preguntas y opciones.
-- Se genera PDF carta con QR por página.
-- Se guarda `mapaVariante` para reconstruir respuestas correctas.
+## 2) Plantilla de examen
+- Crear plantilla de tipo `parcial` o `global`.
+- Seleccionar preguntas directas o por temas.
+- Definir numero de paginas e instrucciones.
+- Previsualizar plantilla antes de generar.
 
-## 4) Imprimir
-- Impresión a doble cara según tipo:
-  - Parcial: 1 hoja (2 páginas).
-  - Global: 2 hojas (4 páginas).
+## 3) Generacion de examen
+- Generar examen individual o por lote.
+- El backend produce:
+  - PDF imprimible por examen.
+  - `mapaVariante` (orden preguntas/opciones).
+  - `mapaOmr` (coordenadas QR, fiduciales y burbujas).
+  - `folio` unico por examen.
 
-## 5) Vincular al recibir
-- Se escanea QR de la primera página.
-- Se busca alumno y se vincula examen -> alumno.
-- Estado cambia a ENTREGADO.
+## 4) Aplicacion y entrega
+- Imprimir y aplicar examen.
+- Vincular examen entregado con alumno via folio/QR.
+- Estado del examen: `generado` -> `entregado`.
 
-## 6) Escaneo OMR
-- Captura desde celular o cámara.
-- Se detecta QR y página.
-- Se corrige perspectiva con marcas.
-- Se detectan burbujas y se genera vista de verificacion.
-- Docente puede ajustar respuestas antes de calificar.
+## 5) Escaneo OMR
+- Subir imagen por pagina (`/api/omr/analizar`).
+- El motor OMR:
+  - detecta QR/pagina/template
+  - corrige geometria (homografia o escala controlada)
+  - evalua marcas y confianza por pregunta
+  - calcula calidad de pagina y estado de analisis
+- Resultado por pagina: respuestas detectadas + auditoria OMR.
 
-## 7) Calificar
-- Se compara con clave real según `mapaVariante`.
-- Calificacion exacta:
-  - calificación = (aciertos * 5) / totalReactivos
-  - bono máximo 0.5, calificación final tope 5.0
-- Parcial/global: 5 examen + 5 evaluacion continua o proyecto (tope 10).
-- Banderas de revisión solo como sugerencias (sin acusaciones automáticas).
+## 6) Calificacion
+- Endpoint: `/api/calificaciones/calificar`.
+- Si se envian `respuestasDetectadas`, los aciertos se calculan desde OMR.
+- Si no se envian, puede usarse captura manual.
+- Se guarda:
+  - aciertos y total
+  - calificacion examen/final/parcial/global
+  - auditoria OMR (`omrAuditoria`)
+- Estado del examen: `entregado` -> `calificado`.
 
-## 8) Publicar y portal alumno
-- Docente publica resultados hacia nube.
-- Alumno consulta resultados en portal siempre disponible.
-- Codigo de acceso con vigencia 12h y un solo uso.
-- Acceso alumno: codigo + matricula.
+## 7) Analitica y exportacion
+- Export CSV por periodo:
+  - `GET /api/analiticas/calificaciones-csv?periodoId=...`
+- Banderas y reportes de revision disponibles para seguimiento.
 
-## 9) Exportar CSV
-- Exportacion CSV sin dependencias de Excel.
-- Endpoint: `GET /api/analiticas/calificaciones-csv?periodoId=...`.
-- Columnas por defecto: `matricula,nombre,grupo,parcial1,parcial2,global,final,banderas`.
+## 8) Publicacion y portal alumno
+- Publicar resultados al portal cloud (`/api/sincronizaciones/publicar`).
+- Generar codigo de acceso temporal (`/api/sincronizaciones/codigo-acceso`).
+- Alumno consulta en portal con matricula + codigo.
+
+## 9) Sincronizacion entre equipos
+- Exportar paquete (`/api/sincronizaciones/paquete/exportar`).
+- Importar paquete (`/api/sincronizaciones/paquete/importar`).
+- Opcional: push/pull asincrono con servidor intermedio.
+
+## Puntos de control de confiabilidad
+- RBAC por permisos por endpoint.
+- Validaciones strict de payload (Zod).
+- Estado OMR con criterios de revision/rechazo.
+- Suite automatizada de pruebas en backend, portal y frontend.

@@ -41,8 +41,21 @@ describe('portal alumno', () => {
             alumnoId,
             examenGeneradoId: examenId,
             tipoExamen: 'parcial',
+            totalReactivos: 3,
+            aciertos: 2,
             calificacionExamenFinalTexto: '4',
-            calificacionParcialTexto: '9'
+            calificacionParcialTexto: '9',
+            respuestasDetectadas: [
+              { numeroPregunta: 1, opcion: 'A', confianza: 0.95 },
+              { numeroPregunta: 2, opcion: 'C', confianza: 0.88 },
+              { numeroPregunta: 3, opcion: 'D', confianza: 0.9 }
+            ],
+            comparativaRespuestas: [
+              { numeroPregunta: 1, correcta: 'A', detectada: 'A', coincide: true, confianza: 0.95 },
+              { numeroPregunta: 2, correcta: 'B', detectada: 'C', coincide: false, confianza: 0.88 },
+              { numeroPregunta: 3, correcta: 'D', detectada: 'D', coincide: true, confianza: 0.9 }
+            ],
+            omrAuditoria: { estadoAnalisis: 'requiere_revision', revisionConfirmada: true, calidadPagina: 0.84 }
           }
         ],
         examenes: [{ examenGeneradoId: examenId, folio, pdfComprimidoBase64 }],
@@ -66,6 +79,9 @@ describe('portal alumno', () => {
 
     expect(resultados.body.resultados).toHaveLength(1);
     expect(resultados.body.resultados[0].folio).toBe(folio);
+    expect(resultados.body.resultados[0].aciertos).toBe(2);
+    expect(resultados.body.resultados[0].comparativaRespuestas).toHaveLength(3);
+    expect(resultados.body.resultados[0].omrAuditoria?.revisionConfirmada).toBe(true);
 
     const pdf = await request(app)
       .get(`/api/portal/examen/${folio}`)
@@ -83,4 +99,3 @@ describe('portal alumno', () => {
     expect(respuesta.body.error.codigo).toBe('NO_AUTORIZADO');
   });
 });
-

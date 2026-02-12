@@ -1,54 +1,68 @@
 # Despliegue
 
-## Local (docente)
-- Usa Docker Compose con perfil dev:
-  ```bash
-  npm run stack:dev
-  ```
-- El backend local siempre corre en Docker (API + Mongo).
-- Servicios:
-  - `mongo_local`
-  - `api_docente_local`
-  - `web_docente_local`
+## Estrategia general
+- Operacion docente local recomendada con Docker Compose.
+- Portal alumno desacoplado para despliegue cloud.
 
-## Portal alumno (local)
-- Levanta el portal cloud localmente:
-  ```bash
-  npm run dev:portal
-  ```
+## Desarrollo local
+Levantar stack base:
+```bash
+npm run stack:dev
+```
 
-## Producción local (perfil prod)
-- Usa el perfil prod para probar build optimizado:
-  ```bash
-  npm run stack:prod
-  ```
+Alternativa separada:
+```bash
+npm run dev:backend
+npm run dev:frontend
+npm run dev:portal
+```
 
-## Cloud Run (portal alumno)
-- Servicio separado: `apps/portal_alumno_cloud`.
-- API solo lectura y UI `app_alumno`.
-- Despliegue recomendado:
-  1) Build y push de imagen Docker del portal.
-  2) Deploy en Cloud Run con variables de entorno.
-  3) Configurar dominio público (HTTPS).
-  4) Configurar job de limpieza (Cloud Scheduler + endpoint).
+## Produccion local (ensayo)
+```bash
+npm run stack:prod
+```
 
-Variables sugeridas:
+## Servicios locales tipicos
+- `mongo_local`
+- `api_docente_local` / `api_docente_prod`
+- `web_docente_prod` (segun perfil)
+
+## Portal alumno cloud
+App objetivo: `apps/portal_alumno_cloud`.
+
+Recomendaciones:
+1. Build de imagen Docker del portal.
+2. Deploy a servicio administrado (ej. Cloud Run).
+3. Configurar variables de entorno y API key.
+4. Restringir CORS a origenes esperados.
+5. Programar limpieza/retencion segun politica.
+
+## Variables clave
+Backend docente:
 - `MONGODB_URI`
-- `PUERTO_PORTAL`
-- `CORS_ORIGENES`
-- `PORTAL_API_KEY`
-- `CODIGO_ACCESO_HORAS`
-
-Variables en backend docente para publicar:
+- `JWT_SECRETO`
 - `PORTAL_ALUMNO_URL`
 - `PORTAL_ALUMNO_API_KEY`
 
-## Sincronización
-- Desde local: botón "Publicar resultados" ejecuta push a cloud.
-- Cloud Scheduler llama endpoint de limpieza de datos vencidos.
+Portal cloud:
+- `MONGODB_URI`
+- `PORTAL_API_KEY`
+- `CODIGO_ACCESO_HORAS`
+- `CORS_ORIGENES`
 
-## Retención en nube
-- Retención mínima: 1 mes + 1 mes post-ciclo.
-- Purga anticipada si el almacenamiento free tier lo exige.
-- Respaldo local antes de eliminar (CSV/JSON + PDFs/imágenes).
-- Endpoint sugerido: `POST /api/portal/limpiar` con API key.
+Referencia completa: `docs/AUTO_ENV.md`.
+
+## Operacion y verificacion
+- Estado rapido:
+```bash
+npm run status
+```
+- Checks previos a liberar:
+```bash
+npm run test:ci
+npm run docs:check
+```
+
+## Notas de retencion y respaldo
+- Mantener respaldo local antes de purgas cloud.
+- Si se sincronizan PDFs comprimidos, monitorear peso y politica de almacenamiento.

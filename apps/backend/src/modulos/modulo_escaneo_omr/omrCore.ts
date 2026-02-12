@@ -323,8 +323,8 @@ export function calcularMetricasPregunta(args: {
 
   const dobleMarcada =
     (segundoScore >= umbrales.strongScore && ratio >= umbrales.secondRatio) ||
-    opcionesCompetitivas >= 2 ||
-    fuertesDirectos >= 2 ||
+    opcionesCompetitivas >= 3 ||
+    fuertesDirectos >= 3 ||
     (top1 >= minTopScoreForAmbiguity && topRatio >= ambiguityRatio && topZScore >= minTopZScore * 0.75) ||
     (!consistenciaAnclada && anclaConfiable && top1 >= scoreMinAnclado) ||
     (hTop >= minHybridConfidence * 0.9 && hSecond >= minHybridConfidence * 0.9 && topRatio >= 0.78);
@@ -334,7 +334,16 @@ export function calcularMetricasPregunta(args: {
     (rasgosTop ? rasgosTop.fillDelta >= minFillDelta : false) &&
     gapCentroTop >= minCenterGap &&
     ringOnlyTop < 0.32;
-  const suficiente = suficienteBase && suficienteHibrida && (consistenciaAnclada || anclaConfiable);
+  const suficienteHibridaFlex =
+    hTop >= minHybridConfidence * 0.82 &&
+    gapCentroTop >= minCenterGap * 0.78 &&
+    ringOnlyTop < 0.38 &&
+    topRatio <= 0.72;
+  const respaldoDominante = topZScore >= minTopZScore + 0.45 && topRatio <= 0.66 && mejorScore >= umbralScore * 1.03;
+  const suficiente =
+    suficienteBase &&
+    (suficienteHibrida || suficienteHibridaFlex || respaldoDominante) &&
+    (consistenciaAnclada || anclaConfiable || respaldoDominante);
   const confianzaBase = Math.min(1, Math.max(0, mejorScore * 1.8));
   const penalizacion = dobleMarcada ? 0.5 : 1;
   const penalizacionAnclada = consistenciaAnclada ? 1 : anclaConfiable ? 0.72 : 0.35;

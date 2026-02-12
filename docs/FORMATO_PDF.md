@@ -1,31 +1,48 @@
 # Formato PDF y OMR
 
-## Formato carta
-- Tamaño: 216 x 279 mm (8.5 x 11 in).
-- Margen seguro recomendado: 10 mm.
-- Fuente limpia y alto contraste (baja tinta).
+Especificacion operativa del formato de examen y su lectura OMR.
 
-## Marcas de registro
-- Líneas cortas en esquinas para corrección de perspectiva.
-- Usadas por el pipeline OMR para alinear.
+## Formato de pagina
+- Carta US (`612x792 pt`).
+- Margen configurable (default 10 mm).
+- QR por pagina con texto: `EXAMEN:<FOLIO>:P<n>[:TV<1|2>]`.
+- Marcas de registro/fiduciales incluidas en layout.
 
-## QR por página
-- QR en esquina superior derecha con quiet zone.
-- Primera página incluye folio y página (ej. EXAMEN:ABC123:P1).
+## Plantillas OMR soportadas
+- Template v1 (compatibilidad y menor densidad grafica).
+- Template v2 (burbujas y QR mas robustos en captura real).
+- Seleccion de template por estrategia interna de generacion.
 
-## Layouts
-- Parcial: 2 páginas (1 hoja doble cara).
-- Global: 4 páginas (2 hojas doble cara).
+## Mapa OMR persistido
+Cada examen generado guarda `mapaOmr` con:
+- perfil de template
+- QR por pagina (posicion y tamano)
+- marcas de pagina
+- preguntas por pagina
+- opciones por pregunta con coordenadas exactas
+- fiduciales por bloque OMR
 
-## Burbujas y opciones
-- 5 opciones A-E con burbujas.
-- Ubicación consistente para facilitar detección.
-- Guardar `mapaVariante` para reconstruir orden real.
+Esto permite que el escaneo no dependa de OCR libre, sino de geometria conocida.
 
-## OMR pipeline
-1) Detectar QR y número de página.
-2) Corregir perspectiva con marcas.
-3) Segmentar zona de respuestas.
-4) Detectar burbuja marcada.
-5) Mostrar verificación manual al docente.
-6) Guardar `mapaOmr` (posiciones exactas por página).
+## Pipeline OMR actual
+1. Decodifica imagen y normaliza colorimetria.
+2. Detecta QR y template.
+3. Elige transformacion geometrica (QR/homografia/escala) con heuristica de coherencia.
+4. Ajusta centros por fiduciales y caja OMR.
+5. Evalua burbujas por rasgos fotometricos e hibridos.
+6. Clasifica respuesta por pregunta (opcion/confianza).
+7. Calcula calidad de pagina y estado de analisis:
+   - `ok`
+   - `requiere_revision`
+   - `rechazado_calidad`
+
+## Criterios de salida OMR
+- `respuestasDetectadas`: arreglo por pregunta.
+- `confianzaPromedioPagina` y `ratioAmbiguas`.
+- `calidadPagina` en rango `[0,1]`.
+- `motivosRevision` y `advertencias` para trazabilidad.
+
+## Consideraciones operativas
+- OMR puede degradarse por desenfoque, distorsion severa, contraste pobre o recortes.
+- El sistema mantiene modo de revision manual cuando la calidad no permite auto-calificar con seguridad.
+- La calificacion final usa `mapaVariante` para comparar respuestas detectadas contra clave correcta real.

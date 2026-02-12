@@ -1,45 +1,54 @@
 # Arquitectura
 
 ## Resumen
-La plataforma se divide en dos piezas:
-1) Backend y frontend docente local (monolito modular).
-2) Servicio cloud separado para portal alumno (solo lectura).
+EvaluaPro usa arquitectura de monorepo con separacion por aplicaciones:
+1. API docente local (`apps/backend`) como sistema de escritura y orquestacion.
+2. Frontend docente/alumno (`apps/frontend`) como UI principal.
+3. API/portal alumno cloud (`apps/portal_alumno_cloud`) como read-model para consulta de resultados.
 
 ## Componentes principales
-- Backend docente: Express + MongoDB + TypeScript.
-- Frontend docente/alumno: React + Vite + TypeScript.
-- Cloud Run: servicio portal alumno (API lectura + UI app_alumno).
+- Backend docente:
+  - Express + TypeScript + Mongoose.
+  - Arquitectura modular por dominio (`modulos/*`).
+  - Capas compartidas (`compartido/*`) e infraestructura (`infraestructura/*`).
+- Frontend:
+  - React + Vite.
+  - Apps desacopladas por destino (`app_docente`, `app_alumno`).
+- Portal cloud:
+  - API orientada a consumo alumno y sincronizacion desde backend local.
 
-## Capas del backend
-- `modulos/`: dominio de negocio (alumnos, banco, PDF, OMR, calificación, etc.).
-- `infraestructura/`: adaptadores externos (DB, archivos, correo).
-- `compartido/`: errores, validaciones, tipos y utilidades.
+## Modulos funcionales backend
+- `modulo_autenticacion`
+- `modulo_alumnos`
+- `modulo_banco_preguntas`
+- `modulo_generacion_pdf`
+- `modulo_vinculacion_entrega`
+- `modulo_escaneo_omr`
+- `modulo_calificacion`
+- `modulo_analiticas`
+- `modulo_sincronizacion_nube`
+- `modulo_admin_docentes`
+- `modulo_papelera`
 
-## Diagrama de arquitectura (lógico)
-Fuente: `docs/diagramas/src/arquitectura/arquitectura-logica.mmd`
+## Contratos de arquitectura
+- Rutas publicas solo en autenticacion y salud.
+- El resto del API backend se monta despues de `requerirDocente`.
+- Cada endpoint sensible aplica permisos (`requerirPermiso`) por accion.
+- El portal cloud trata resultados como vista derivada de sincronizacion, no como fuente primaria de escritura academica.
 
-![Arquitectura logica](diagramas/rendered/arquitectura/arquitectura-logica.svg)
+## Datos y persistencia
+- Fuente primaria local: MongoDB (docentes, examenes, calificaciones, estado operativo).
+- Artefactos locales: PDFs y activos OMR en almacenamiento local del backend.
+- Fuente de consulta alumno: MongoDB cloud en portal, alimentada por sincronizacion.
 
-## Diagrama de despliegue (local + nube)
-Fuente: `docs/diagramas/src/arquitectura/arquitectura-despliegue.mmd`
+## Diagramas
+- Arquitectura logica: `diagramas/rendered/arquitectura/arquitectura-logica.svg`
+- Arquitectura de despliegue: `diagramas/rendered/arquitectura/arquitectura-despliegue.svg`
+- Vista C4: `ARQUITECTURA_C4.md`
 
-![Arquitectura despliegue](diagramas/rendered/arquitectura/arquitectura-despliegue.svg)
-
-Ver todos los diagramas en `docs/DIAGRAMAS.md`.
-
-Ver la versión C4 en `docs/ARQUITECTURA_C4.md`.
-
-## Decisiones clave
-- Monolito modular local: menos complejidad, fácil mantenimiento.
-- Servicio cloud separado: alta disponibilidad para alumno sin exponer red local.
-- Calificacion exacta: Decimal.js y fraccion almacenada.
-- PDF carta: baja tinta, márgenes seguros y QR en cada página.
-- PDFs locales se almacenan en `data/examenes` (ignorado por git).
-- Autenticación docente con JWT y validación por objeto.
-- Portal alumno con codigo de acceso temporal (12h, 1 uso).
-- OMR guiado por mapa de posiciones generado junto al PDF.
-- Sincronizacion local -> cloud protegida por API key.
-
-## Nomenclatura
-- Rutas, variables y modulos en espanol mexicano con camelCase.
-- Colecciones en plural (docentes, alumnos, etc.).
+## Decisiones tecnicas vigentes
+- Monolito modular backend para velocidad de cambio y trazabilidad.
+- OMR guiado por mapa geometrico generado junto al PDF.
+- Calificacion exacta y auditable con metadatos OMR.
+- RBAC por permisos de accion, no por menus.
+- Sincronizacion desacoplada (paquete local y push/pull remoto).
