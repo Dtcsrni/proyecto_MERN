@@ -124,7 +124,7 @@ function construirPdf(cuentas: CuentaExportable[], total: number): void {
 
   for (const cuenta of cuentas) {
     // Si no cabe otra fila, creamos página nueva y repetimos el encabezado de la tabla.
-    if (y > limiteInferior - altoFila) {
+    if (y > limiteInferior - altoFila || cuentas.length >2) {
       doc.addPage();
       // Reiniciamos cursor al margen superior para la nueva hoja.
       y = margen;
