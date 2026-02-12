@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/App.tsx
- * Que es: Composicion principal de rutas y pantallas.
- * Que hace: Define navegacion publica/privada y estructura base de la SPA.
- * Como lo hace: Usa React Router, contexto de auth y guardas de acceso por rol.
+ * Que es: ensamblador principal de rutas y layout base de la SPA.
+ * Que hace: separa rutas publicas/privadas y monta paneles por rol.
+ * Como lo hace: envuelve la app con Provider de auth + Router + guardas RBAC.
  */
 
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
@@ -16,13 +16,12 @@ import Admin from "./admin";
 import { ActividadesDesarrollador } from "./ActividadesDesarrollador";
 
 /**
- * Home privada.
+ * Inicio privado.
  *
- * Qué muestra:
- * - Identidad y rol del usuario autenticado.
- *
- * Por qué es útil:
- * - Permite validar rápidamente que sesión y claims de rol están llegando bien.
+ * Responsabilidades:
+ * - Mostrar identidad/rol de la sesion actual.
+ * - Exponer salida de sesion.
+ * - Publicar accesos condicionales por rol (admin y actividades desarrollador).
  */
 function Inicio() {
   const { usuario, cerrarSesion } = useAutenticacion();
@@ -47,15 +46,12 @@ function Inicio() {
 }
 
 /**
- * Composición principal de la SPA.
+ * Composicion principal de rutas.
  *
- * Estructura:
- * - `ProveedorAutenticacion`: estado global de sesión.
- * - `BrowserRouter`: navegación cliente.
- * - `RutaProtegida`: guard de autenticación/autorización.
- *
- * Por qué este orden:
- * - Las rutas necesitan acceder al contexto de auth para decidir acceso.
+ * Orden intencional:
+ * 1) `ProveedorAutenticacion`: mantiene estado global de sesion.
+ * 2) `BrowserRouter`: resuelve navegacion en cliente.
+ * 3) `RutaProtegida`: decide acceso segun autenticacion/rol.
  */
 function App() {
   return (

@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/RutaProtegida.tsx
- * Que es: Componente guard para rutas privadas.
- * Que hace: Bloquea acceso sin sesion o sin rol y redirige segun politica.
- * Como lo hace: Lee contexto de auth y decide entre children o Navigate.
+ * Que es: guard declarativo para rutas privadas.
+ * Que hace: bloquea acceso sin sesion o sin rol autorizado.
+ * Como lo hace: consulta contexto auth y devuelve `Navigate` o `children`.
  */
 
 import React from "react";
@@ -11,7 +11,7 @@ import type { Rol } from "./authTipos";
 import { useAutenticacion } from "./useAutenticacion";
 
 /**
- * GUIA (Frontend) - guard de ruta protegida
+ * GUIA (Frontend) - guard de rutas protegidas
  *
  * 1) Que es:
  * - Componente que decide si una vista privada se puede mostrar.

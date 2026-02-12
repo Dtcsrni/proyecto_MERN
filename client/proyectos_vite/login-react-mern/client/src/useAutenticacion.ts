@@ -1,15 +1,15 @@
 /**
  * [BLOQUE DIDACTICO] client/src/useAutenticacion.ts
- * Que es: Hook personalizado para consumir auth.
- * Que hace: Simplifica acceso tipado al contexto de autenticacion.
- * Como lo hace: Envuelve useContext y falla rapido si se usa fuera del Provider.
+ * Que es: hook de acceso al contexto de autenticacion.
+ * Que hace: evita importar/usear `useContext` en cada componente consumidor.
+ * Como lo hace: encapsula lectura del contexto y valida que exista Provider.
  */
 
 import { useContext } from "react";
 import { ContextoAutenticacionApp } from "./authContexto";
 
 /**
- * Hook de acceso al contexto de autenticación.
+ * Hook de acceso al contexto de autenticacion.
  *
  * Qué hace:
  * - Devuelve el contexto ya tipado para usarlo en componentes.

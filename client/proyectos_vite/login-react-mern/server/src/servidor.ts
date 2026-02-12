@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] server/src/servidor.ts
- * Que es: Punto de arranque del servidor Express.
- * Que hace: Configura middlewares, monta rutas y enciende HTTP despues de conectar DB.
- * Como lo hace: Inicializa Express, aplica CORS/JSON/cookies y llama arrancarServidor().
+ * Que es: punto de entrada del backend Express.
+ * Que hace: compone middlewares, rutas y manejo global de errores.
+ * Como lo hace: crea app, conecta DB y luego publica el puerto HTTP.
  */
 
 import "dotenv/config";
@@ -27,6 +27,7 @@ const puerto = Number(process.env.PUERTO || 3000);
 // CORS con credenciales: necesario para enviar cookie de sesión desde el frontend.
 // `origin` restringe qué frontend puede consumir la API.
 aplicacion.use(cors({ origin: process.env.ORIGEN_CORS, credentials: true }));
+// Parser JSON para body de login, registro y endpoints administrativos.
 aplicacion.use(express.json());
 // Permite leer cookies del request (tokenAcceso).
 aplicacion.use(cookieParser());

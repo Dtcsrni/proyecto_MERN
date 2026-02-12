@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] server/src/autenticacion.ts
- * Que es: Router de autenticacion y autorizacion (RBAC) del backend.
- * Que hace: Expone registro, login, sesion, logout y endpoints administrativos.
- * Como lo hace: Usa JWT en cookie HttpOnly, middlewares de auth/roles y consultas Mongoose.
+ * Que es: router del dominio de autenticacion y autorizacion RBAC.
+ * Que hace: expone login/registro/sesion y operaciones administrativas de usuarios.
+ * Como lo hace: combina JWT en cookie HttpOnly + middlewares + consultas Mongoose.
  */
 
 import { Router, type Request, type Response, type NextFunction } from "express";
@@ -88,6 +88,7 @@ function verificarToken(tokenAcceso: string): UsuarioToken {
 // Tipo auxiliar para pasar usuario autenticado entre middlewares/controladores.
 type SolicitudConUsuario = Request & { usuario?: UsuarioToken };
 
+// Alias explicito para roles editables en endpoint PATCH /usuarios/:id/rol.
 type RolEditable = Exclude<Rol, "super_usuario"> | "super_usuario";
 
 /**
@@ -166,10 +167,13 @@ function autorizarRoles(...rolesPermitidos: Rol[]) {
   };
 }
 
+// Valida que el rol recibido por request exista en la lista canonical.
 function esRolValido(rol: unknown): rol is RolEditable {
   return typeof rol === "string" && ROLES_VALIDOS.includes(rol as Rol);
 }
 
+// Regla de negocio de administracion de roles.
+// `super_usuario` gestiona todo; `administrador` no toca cuentas super.
 function puedeGestionarRol(actorRol: Rol, rolObjetivo: Rol): boolean {
   if (actorRol === "super_usuario") return true;
   if (actorRol === "administrador") {
@@ -339,7 +343,12 @@ rutasAutenticacion.get(
 /**
  * GET /usuarios/resumen
  *
- * Lista un resumen de cuentas para exportación (rol desarrollador).
+ * Lista un resumen de cuentas para exportacion de reportes PDF.
+ *
+ * Decisiones de diseño:
+ * - Solo devuelve campos de lectura necesarios para el documento.
+ * - Evita exponer `hashContrasena` u otros atributos sensibles.
+ * - Ordena por fecha descendente para que el reporte priorice altas recientes.
  */
 rutasAutenticacion.get(
   "/usuarios/resumen",
@@ -347,10 +356,12 @@ rutasAutenticacion.get(
   autorizarRoles("desarrollador", "administrador", "super_usuario"),
   async (_solicitud, respuesta, siguiente) => {
     try {
+      // Proyección mínima para reducir payload y costo de serialización.
       const cuentas = await Usuario.find({}, { correo: 1, rol: 1, activo: 1, createdAt: 1 })
         .sort({ createdAt: -1 })
         .lean();
 
+      // Respuesta minimalista: solo campos usados por el exportador.
       const serializadas = cuentas.map((cuenta) => ({
         correo: cuenta.correo,
         rol: cuenta.rol,
@@ -358,6 +369,7 @@ rutasAutenticacion.get(
         createdAt: cuenta.createdAt
       }));
 
+      // `total` evita que el frontend recalcule y mantiene trazabilidad del lote.
       respuesta.json({ cuentas: serializadas, total: serializadas.length });
     } catch (error) {
       siguiente(error);

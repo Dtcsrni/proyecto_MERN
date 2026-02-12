@@ -1,14 +1,14 @@
 /**
  * [BLOQUE DIDACTICO] server/src/baseDatos.ts
- * Que es: Modulo de infraestructura para conexion a MongoDB.
- * Que hace: Abre la conexion principal de Mongoose antes de levantar la API.
- * Como lo hace: Lee MONGODB_URI del entorno y ejecuta mongoose.connect con manejo de errores.
+ * Que es: modulo de infraestructura para conexion MongoDB.
+ * Que hace: inicializa la conexion principal de Mongoose.
+ * Como lo hace: lee `MONGODB_URI` y ejecuta `mongoose.connect` antes de iniciar HTTP.
  */
 
 import mongoose from "mongoose";
 
 /**
- * Inicializa conexión MongoDB para todo el proceso.
+ * Inicializa conexion MongoDB para todo el proceso.
  *
  * Qué hace:
  * - Lee `MONGODB_URI` desde entorno.
@@ -18,6 +18,7 @@ import mongoose from "mongoose";
  * - Si la DB no conecta, la API no debería arrancar "a medias".
  */
 export async function conectarBaseDatos(): Promise<void> {
+  // Fallback local util para entorno de desarrollo.
   const uriMongo = process.env.MONGODB_URI || "mongodb://localhost:27017/mern-login";
 
   if (!uriMongo) {

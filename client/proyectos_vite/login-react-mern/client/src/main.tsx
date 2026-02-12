@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/main.tsx
- * Que es: Punto de entrada del frontend React.
- * Que hace: Monta la aplicacion en el DOM e inicializa estilos globales.
- * Como lo hace: Usa createRoot para renderizar App dentro del elemento #root.
+ * Que es: entrypoint del frontend React.
+ * Que hace: carga estilos globales y monta la aplicacion en `#root`.
+ * Como lo hace: usa `createRoot` con `StrictMode` para chequeos de desarrollo.
  */
 
 import { StrictMode } from "react";
@@ -11,7 +11,7 @@ import "./index.css";
 import App from "./App";
 
 /**
- * Punto de entrada del frontend.
+ * Punto de arranque del arbol React.
  *
  * `StrictMode` se usa en desarrollo para detectar patrones problemáticos
  * (efectos no idempotentes, APIs deprecadas, etc.).

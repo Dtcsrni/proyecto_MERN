@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/login.tsx
- * Que es: Pantalla de inicio de sesion.
- * Que hace: Captura credenciales, autentica usuario y redirige en exito.
- * Como lo hace: Maneja formulario con estado local y llama iniciarSesion del contexto.
+ * Que es: pantalla publica de inicio de sesion.
+ * Que hace: captura credenciales, intenta autenticacion y redirige en exito.
+ * Como lo hace: maneja estado del formulario y delega login al contexto.
  */
 
 import React, { useState } from "react";
@@ -34,18 +34,18 @@ export default function Login() {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Flujo LOGIN UI - Paso 1: interceptar submit del formulario.
+  // Controlador de submit del formulario.
   async function alEnviar(evento: React.FormEvent) {
     evento.preventDefault();
     setError(null);
 
     try {
-      // Paso 2: delegar autenticacion al caso de uso del contexto.
+      // Paso 1: delegar autenticacion al caso de uso del contexto.
       await iniciarSesion(correo, contrasena);
-      // Paso 3: entrar al home; `replace` evita volver al login con "atras".
+      // Paso 2: entrar al home; `replace` evita volver al login con "atras".
       navegar("/", { replace: true });
     } catch (error: unknown) {
-      // Paso 4 (error): mensaje amigable para usuario.
+      // Paso 3 (error): mensaje legible para usuario final.
       const mensaje = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
       setError(mensaje);
     }

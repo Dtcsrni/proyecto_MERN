@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/admin.tsx
- * Que es: Vista administrativa de gestion de permisos.
- * Que hace: Lista usuarios y permite cambiar su rol con validaciones de UI.
- * Como lo hace: Consume endpoints admin, mantiene estado local y guarda cambios por fila.
+ * Que es: modulo de administracion de roles y permisos.
+ * Que hace: lista cuentas, permite seleccionar un nuevo rol y persistir cambios.
+ * Como lo hace: consume endpoints protegidos, aplica reglas RBAC en UI y sincroniza estado local.
  */
 
 import { useEffect, useState } from "react";
@@ -30,7 +30,12 @@ const PERMISOS_POR_ROL: Record<Rol, string> = {
 };
 
 /**
- * Módulo administrativo para gestionar permisos de usuarios.
+ * Pantalla de administracion.
+ *
+ * Flujo resumido:
+ * 1) Cargar usuarios al montar.
+ * 2) Permitir edicion temporal del rol por fila.
+ * 3) Confirmar cambio con PATCH y refrescar solo la fila afectada.
  */
 export default function Admin() {
   const { usuario } = useAutenticacion();
@@ -47,9 +52,14 @@ export default function Admin() {
     : ROLES_DISPONIBLES.filter((rol) => rol !== "super_usuario");
 
   useEffect(() => {
+    // Carga inicial de la tabla administrativa.
     void cargarUsuarios();
   }, []);
 
+  /**
+   * Obtiene el listado base para la tabla.
+   * Se reinician mensajes para evitar mostrar errores viejos entre recargas.
+   */
   async function cargarUsuarios() {
     setCargando(true);
     setError(null);
@@ -67,12 +77,23 @@ export default function Admin() {
     }
   }
 
+  /**
+   * Guarda en memoria el rol elegido sin persistir todavia.
+   * La persistencia real ocurre en `guardarRol`.
+   */
   function cambiarRolTemporal(idUsuario: string, rol: Rol) {
     setEdiciones((estadoActual) => ({ ...estadoActual, [idUsuario]: rol }));
     setAviso(null);
     setError(null);
   }
 
+  /**
+   * Persiste un cambio de rol para una fila especifica.
+   *
+   * Reglas de seguridad de UI:
+   * - no enviar PATCH si no hubo cambio.
+   * - deshabilitar fila mientras se guarda para evitar doble envio.
+   */
   async function guardarRol(usuarioFila: UsuarioAdmin) {
     const rolNuevo = ediciones[usuarioFila.id] ?? usuarioFila.rol;
     if (rolNuevo === usuarioFila.rol) return;
@@ -135,9 +156,13 @@ export default function Admin() {
             </thead>
             <tbody>
               {usuarios.map((usuarioFila) => {
+                // `rolSeleccionado` refleja lo que el admin eligio en UI,
+                // aunque aun no se haya enviado al backend.
                 const rolSeleccionado = ediciones[usuarioFila.id] ?? usuarioFila.rol;
                 const huboCambio = rolSeleccionado !== usuarioFila.rol;
+                // Un admin no-super no puede editar cuentas super_usuario.
                 const bloqueadoPorSuper = !puedeAsignarSuper && usuarioFila.rol === "super_usuario";
+                // Proteccion adicional: evitar autoedicion del rol propio.
                 const esMismoUsuario = usuario?.id === usuarioFila.id;
                 const deshabilitado =
                   guardandoId === usuarioFila.id || bloqueadoPorSuper || esMismoUsuario;

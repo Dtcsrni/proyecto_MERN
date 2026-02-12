@@ -1,14 +1,14 @@
 /**
  * [BLOQUE DIDACTICO] server/src/usuarioModelo.ts
- * Que es: Modelo de dominio de usuarios para autenticacion.
- * Que hace: Define roles permitidos, tipos de token y esquema Mongo de Usuario.
- * Como lo hace: Declara constantes tipadas y crea un schema Mongoose con validaciones.
+ * Que es: modelo de dominio para cuentas autenticadas.
+ * Que hace: define roles validos, tipo del token y esquema Mongo de usuario.
+ * Como lo hace: combina tipos TS + esquema Mongoose con restricciones.
  */
 
 import mongoose from "mongoose";
 
 /**
- * Roles permitidos por la aplicación.
+ * Roles permitidos por la aplicacion.
  *
  * Se comparten entre:
  * - Persistencia (esquema Mongo).
@@ -19,7 +19,7 @@ export const ROLES_VALIDOS = ["administrador", "usuario", "desarrollador", "supe
 export type Rol = (typeof ROLES_VALIDOS)[number];
 
 /**
- * Payload mínimo que viaja en el token.
+ * Payload minimo que viaja en el token.
  *
  * Por qué mínimo:
  * - Reduce tamaño del JWT.
@@ -32,7 +32,7 @@ export type UsuarioToken = {
 };
 
 /**
- * Esquema de usuario para autenticación.
+ * Esquema de usuario para autenticacion.
  *
  * Decisiones:
  * - `correo` único y normalizado en minúsculas para evitar duplicados lógicos.

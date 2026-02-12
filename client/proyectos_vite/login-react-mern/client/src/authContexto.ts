@@ -1,15 +1,15 @@
 /**
  * [BLOQUE DIDACTICO] client/src/authContexto.ts
- * Que es: Contexto React para compartir estado de auth.
- * Que hace: Permite que cualquier componente consuma la sesion sin prop drilling.
- * Como lo hace: Crea un contexto tipado inicializado en null para uso con Provider.
+ * Que es: contexto React del dominio de autenticacion.
+ * Que hace: comparte estado/acciones de sesion sin prop drilling.
+ * Como lo hace: crea un contexto tipado con valor inicial `null`.
  */
 
 import { createContext } from "react";
 import type { ContextoAutenticacion } from "./authTipos";
 
 /**
- * Contenedor React para compartir estado de autenticación.
+ * Contenedor React para compartir estado de autenticacion.
  *
  * Por qué inicia en `null`:
  * - Obliga a consumirlo dentro de `ProveedorAutenticacion`.
