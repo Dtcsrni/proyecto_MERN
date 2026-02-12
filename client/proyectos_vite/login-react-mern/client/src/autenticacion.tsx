@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/autenticacion.tsx
- * Que es: Proveedor de estado de autenticacion en React.
- * Que hace: Gestiona sesion actual y expone acciones de login, registro y logout.
- * Como lo hace: Mantiene estado con hooks y delega llamadas al helper consultarApi.
+ * Que es: provider React para el dominio de autenticacion.
+ * Que hace: mantiene la sesion actual y expone casos de uso de auth.
+ * Como lo hace: guarda estado local + invoca endpoints via `consultarApi`.
  */
 
 import React, { useEffect, useState } from "react";
@@ -48,8 +48,8 @@ export function ProveedorAutenticacion({ children }: { children: React.ReactNode
     })();
   }, []);
 
-  // Flujo LOGIN - Paso 1:
-  // La UI envia correo/contrasena y este modulo coordina la llamada.
+  // Caso de uso: login.
+  // La UI entrega credenciales y este modulo coordina request + estado.
   async function iniciarSesion(correo: string, contrasena: string) {
     const respuesta = await consultarApi<{ usuario: UsuarioToken }>("/api/auth/login", {
       method: "POST",
@@ -60,8 +60,8 @@ export function ProveedorAutenticacion({ children }: { children: React.ReactNode
     setUsuario(respuesta.usuario);
   }
 
-  // Flujo REGISTRO - Paso 1:
-  // Crea una cuenta nueva y deja sesión iniciada en backend.
+  // Caso de uso: registro.
+  // El backend crea cuenta y devuelve sesion activa.
   async function registrarCuenta(correo: string, contrasena: string) {
     const respuesta = await consultarApi<{ usuario: UsuarioToken }>("/api/auth/register", {
       method: "POST",
@@ -70,10 +70,9 @@ export function ProveedorAutenticacion({ children }: { children: React.ReactNode
     setUsuario(respuesta.usuario);
   }
 
-  // Flujo LOGOUT - Paso 1:
-  // Se invalida/borrar cookie en servidor.
-  // Paso 2:
-  // Se limpia estado local para reflejar salida inmediata en UI.
+  // Caso de uso: logout.
+  // 1) backend limpia cookie.
+  // 2) frontend limpia usuario actual.
   async function cerrarSesion() {
     await consultarApi("/api/auth/logout", { method: "POST" });
     setUsuario(null);

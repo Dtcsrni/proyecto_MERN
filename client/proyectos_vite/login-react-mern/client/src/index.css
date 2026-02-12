@@ -1,10 +1,11 @@
 /*
  * [BLOQUE DIDACTICO] client/src/index.css
- * Que es: Hoja de estilos globales de la aplicacion.
- * Que hace: Establece base visual general para body, tipografia y layout raiz.
- * Como lo hace: Aplica reglas globales que se heredan en todos los componentes.
+ * Que es: estilos globales compartidos por toda la SPA.
+ * Que hace: define tipografia, fondo base y reglas de layout raiz.
+ * Como lo hace: aplica selectores globales (`:root`, `body`, `#root`, tipografia comun).
  */
 
+/* Variables base y acabado tipografico general. */
 :root {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
@@ -17,16 +18,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Modelo de caja coherente para todos los elementos. */
 * {
   box-sizing: border-box;
 }
 
+/* Reseteo minimo del body para ocupar toda la pantalla. */
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
 }
 
+/* Centra el contenedor de la app en viewport completa. */
 #root {
   min-height: 100vh;
   display: grid;
@@ -34,16 +38,19 @@ body {
   padding: 1rem;
 }
 
+/* Escala de titulo principal adaptable a viewport. */
 h1 {
   margin-top: 0;
   font-size: clamp(1.45rem, 2vw, 2rem);
 }
 
+/* Estilo base para enlaces navegables. */
 a {
   color: #0f4ab8;
   text-decoration: none;
 }
 
+/* Feedback visual al pasar el mouse sobre enlaces. */
 a:hover {
   text-decoration: underline;
 }

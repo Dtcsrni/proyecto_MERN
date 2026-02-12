@@ -1,12 +1,12 @@
 /**
  * [BLOQUE DIDACTICO] client/src/authTipos.ts
- * Que es: Contrato de tipos del dominio de autenticacion.
- * Que hace: Define roles, payload de usuario y API del contexto de auth.
- * Como lo hace: Declara tipos literales/uniones para seguridad de tipos en compilacion.
+ * Que es: contrato de tipos del dominio de autenticacion.
+ * Que hace: define roles validos, shape del usuario y API del contexto.
+ * Como lo hace: usa unions literales y tipos estructurados de TypeScript.
  */
 
 /**
- * Rol de aplicación.
+ * Rol de aplicacion.
  *
  * Qué es:
  * - El conjunto de perfiles que pueden venir en el token.
@@ -18,7 +18,7 @@
 export type Rol = "usuario" | "administrador" | "desarrollador" | "super_usuario";
 
 /**
- * Forma mínima del usuario autenticado en frontend.
+ * Shape minima del usuario autenticado en frontend.
  *
  * Qué contiene:
  * - Solo lo necesario para UI y autorización.
@@ -33,7 +33,7 @@ export type UsuarioToken = {
 };
 
 /**
- * Contrato público del contexto de autenticación.
+ * Contrato publico del contexto de autenticacion.
  *
  * Qué ofrece:
  * - Estado (`usuario`, `cargando`) + acciones (`iniciarSesion`, `cerrarSesion`).

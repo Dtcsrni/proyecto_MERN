@@ -1,8 +1,8 @@
 /**
  * [BLOQUE DIDACTICO] client/src/register.tsx
- * Que es: Pantalla de creacion de cuenta.
- * Que hace: Valida datos de registro, crea usuario y abre sesion automaticamente.
- * Como lo hace: Verifica campos en cliente y llama registrarCuenta del contexto.
+ * Que es: pantalla publica de alta de cuentas.
+ * Que hace: valida datos minimos, registra la cuenta y abre sesion automaticamente.
+ * Como lo hace: usa estado local de formulario y delega el caso de uso al contexto de auth.
  */
 
 import React, { useState } from "react";
@@ -10,12 +10,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAutenticacion } from "./useAutenticacion";
 
 /**
- * Pantalla de creación de cuenta.
+ * Pantalla de registro.
  *
- * Flujo:
- * - Valida formato básico en cliente.
- * - Crea cuenta en backend.
- * - Si registro fue exitoso, entra a la app con sesión iniciada.
+ * Flujo principal:
+ * 1) Validar correo y contrasena en cliente.
+ * 2) Invocar `registrarCuenta`.
+ * 3) Redirigir al inicio cuando el backend devuelve sesion activa.
  */
 export default function Register() {
   const { registrarCuenta } = useAutenticacion();
@@ -26,6 +26,7 @@ export default function Register() {
   const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Controlador del submit con validaciones basicas de UX antes de ir al backend.
   async function alEnviar(evento: React.FormEvent) {
     evento.preventDefault();
     setError(null);
@@ -45,6 +46,7 @@ export default function Register() {
     }
 
     try {
+      // Si el registro es exitoso, el backend ya dejo cookie de sesion.
       await registrarCuenta(correoNormalizado, contrasena);
       navegar("/", { replace: true });
     } catch (errorDesconocido: unknown) {

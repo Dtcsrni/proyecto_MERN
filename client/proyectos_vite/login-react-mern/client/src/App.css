@@ -1,19 +1,22 @@
 /*
  * [BLOQUE DIDACTICO] client/src/App.css
- * Que es: Estilos de componentes principales del frontend.
- * Que hace: Da apariencia a paneles, formularios, acciones y tabla administrativa.
- * Como lo hace: Declara reglas CSS por clases reutilizadas en vistas de autenticacion/admin.
+ * Que es: hoja de estilos de componentes de alto nivel.
+ * Que hace: define layout de paneles, formularios y tabla de administracion.
+ * Como lo hace: agrupa reglas reutilizables por clase para vistas autenticadas/publicas.
  */
 
+/* Limita ancho del contenido principal para legibilidad en desktop. */
 .app-shell {
   width: min(100%, 680px);
 }
 
+/* Permite apilar paneles en el inicio (panel principal + actividades por rol). */
 .panel-stack {
   display: grid;
   gap: 1rem;
 }
 
+/* Tarjeta base usada por todas las vistas. */
 .panel {
   background: #ffffff;
   border-radius: 14px;
@@ -21,11 +24,13 @@
   padding: 1.5rem;
 }
 
+/* Organiza formularios de login/registro en columna con separacion uniforme. */
 .login-panel form {
   display: grid;
   gap: 0.75rem;
 }
 
+/* Grupo de acciones con comportamiento adaptable en pantallas pequenas. */
 .actions {
   display: flex;
   gap: 0.75rem;
@@ -33,16 +38,19 @@
   flex-wrap: wrap;
 }
 
+/* Tipografia base de etiquetas de formulario. */
 label {
   font-weight: 600;
 }
 
+/* Campo de texto estandar para inputs. */
 input {
   border: 1px solid #d3d9e6;
   border-radius: 10px;
   padding: 0.65rem 0.8rem;
 }
 
+/* Select estandar para edicion de roles. */
 select {
   border: 1px solid #d3d9e6;
   border-radius: 10px;
@@ -50,6 +58,7 @@ select {
   background: #fff;
 }
 
+/* Boton primario base de la interfaz. */
 button {
   border: none;
   border-radius: 10px;
@@ -59,28 +68,34 @@ button {
   cursor: pointer;
 }
 
+/* Mensajeria de error consistente entre pantallas. */
 .error-message {
   color: #c21807;
 }
 
+/* Margen auxiliar para enlaces secundarios bajo formularios. */
 .aux-link {
   margin-top: 0.8rem;
 }
 
+/* Mensajeria positiva para operaciones exitosas. */
 .success-message {
   color: #0a7d35;
 }
 
+/* Contenedor con scroll horizontal para tablas en mobile. */
 .admin-table-wrap {
   overflow-x: auto;
 }
 
+/* Tabla de gestion de cuentas. */
 .admin-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
 }
 
+/* Celdas y encabezados con separador visual uniforme. */
 .admin-table th,
 .admin-table td {
   text-align: left;
