@@ -5,6 +5,7 @@ import { cerrarMongoTest, conectarMongoTest, limpiarMongoTest } from '../utils/m
 
 describe('plantillas CRUD + previsualizacion', () => {
   const app = crearApp();
+  const TOTAL_PREGUNTAS_TEST = 12;
 
   beforeAll(async () => {
     await conectarMongoTest();
@@ -30,6 +31,29 @@ describe('plantillas CRUD + previsualizacion', () => {
     return respuesta.body.token as string;
   }
 
+  async function crearPreguntas(params: { auth: { Authorization: string }; periodoId: string; total: number }) {
+    const preguntasIds: string[] = [];
+    for (let i = 0; i < params.total; i += 1) {
+      const preguntaResp = await request(app)
+        .post('/api/banco-preguntas')
+        .set(params.auth)
+        .send({
+          periodoId: params.periodoId,
+          enunciado: `Pregunta ${i + 1}`,
+          opciones: [
+            { texto: 'Opcion A', esCorrecta: true },
+            { texto: 'Opcion B', esCorrecta: false },
+            { texto: 'Opcion C', esCorrecta: false },
+            { texto: 'Opcion D', esCorrecta: false },
+            { texto: 'Opcion E', esCorrecta: false }
+          ]
+        })
+        .expect(201);
+      preguntasIds.push(preguntaResp.body.pregunta._id as string);
+    }
+    return preguntasIds;
+  }
+
   it('permite editar, previsualizar y archivar una plantilla sin examenes generados', async () => {
     const token = await registrarDocente();
     const auth = { Authorization: `Bearer ${token}` };
@@ -46,25 +70,7 @@ describe('plantillas CRUD + previsualizacion', () => {
       .expect(201);
     const periodoId = periodoResp.body.periodo._id as string;
 
-    const preguntasIds: string[] = [];
-    for (let i = 0; i < 60; i += 1) {
-      const preguntaResp = await request(app)
-        .post('/api/banco-preguntas')
-        .set(auth)
-        .send({
-          periodoId,
-          enunciado: `Pregunta ${i + 1}`,
-          opciones: [
-            { texto: 'Opcion A', esCorrecta: true },
-            { texto: 'Opcion B', esCorrecta: false },
-            { texto: 'Opcion C', esCorrecta: false },
-            { texto: 'Opcion D', esCorrecta: false },
-            { texto: 'Opcion E', esCorrecta: false }
-          ]
-        })
-        .expect(201);
-      preguntasIds.push(preguntaResp.body.pregunta._id as string);
-    }
+    const preguntasIds = await crearPreguntas({ auth, periodoId, total: TOTAL_PREGUNTAS_TEST });
 
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')
@@ -126,25 +132,7 @@ describe('plantillas CRUD + previsualizacion', () => {
       .expect(201);
     const periodoId = periodoResp.body.periodo._id as string;
 
-    const preguntasIds: string[] = [];
-    for (let i = 0; i < 60; i += 1) {
-      const preguntaResp = await request(app)
-        .post('/api/banco-preguntas')
-        .set(auth)
-        .send({
-          periodoId,
-          enunciado: `Pregunta ${i + 1}`,
-          opciones: [
-            { texto: 'Opcion A', esCorrecta: true },
-            { texto: 'Opcion B', esCorrecta: false },
-            { texto: 'Opcion C', esCorrecta: false },
-            { texto: 'Opcion D', esCorrecta: false },
-            { texto: 'Opcion E', esCorrecta: false }
-          ]
-        })
-        .expect(201);
-      preguntasIds.push(preguntaResp.body.pregunta._id as string);
-    }
+    const preguntasIds = await crearPreguntas({ auth, periodoId, total: TOTAL_PREGUNTAS_TEST });
 
     const plantillaResp = await request(app)
       .post('/api/examenes/plantillas')

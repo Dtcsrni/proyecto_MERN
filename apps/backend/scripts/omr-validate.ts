@@ -118,7 +118,7 @@ async function main() {
   resultados.sort((a, b) => a.numero - b.numero);
   let correctas = 0;
   let detectadas = 0;
-  let total = resultados.length;
+  const total = resultados.length;
   const detalle = resultados.map((r) => {
     if (r.detectada) detectadas += 1;
     const ok = r.detectada && r.esperada && r.detectada === r.esperada;

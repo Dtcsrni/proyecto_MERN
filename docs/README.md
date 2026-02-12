@@ -1,23 +1,26 @@
 # docs/
 
-Documentación de **Sistema EvaluaPro (EP)**.
+Documentacion oficial del estado actual de Sistema EvaluaPro.
 
-Estado actual: MVP en **Beta**. La definición de versión estable y criterios de salida de Beta
-están en `VERSIONADO.md` y `PRUEBAS.md`.
+Ultima actualizacion integral: 2026-02-11.
 
-## Lecturas recomendadas
-- Arquitectura: `ARQUITECTURA.md`
-- Arquitectura C4: `ARQUITECTURA_C4.md`
-- Flujo del examen: `FLUJO_EXAMEN.md`
-- Formato PDF / OMR: `FORMATO_PDF.md`
-- Seguridad: `SEGURIDAD.md`
-- Despliegue: `DESPLIEGUE.md`
-- Pruebas: `PRUEBAS.md`
+## Lectura recomendada
+- `ARQUITECTURA.md`: vista tecnica del sistema completo.
+- `ARQUITECTURA_C4.md`: vista C4 (contexto/contenedores/componentes).
+- `FLUJO_EXAMEN.md`: flujo funcional end-to-end.
+- `FORMATO_PDF.md`: especificacion PDF/OMR.
+- `ROLES_PERMISOS.md`: RBAC backend y capacidades por rol.
+- `SEGURIDAD.md`: controles implementados y pendientes.
+- `SINCRONIZACION_ENTRE_COMPUTADORAS.md`: paquete export/import y push/pull.
+- `PRUEBAS.md`: estrategia de pruebas y criterios de salida.
+- `DESPLIEGUE.md`: despliegue local y cloud.
+- `VERSIONADO.md`: politica de version y release.
 
-## Índices autogenerados
-- Índice: `AUTO_DOCS_INDEX.md`
-- Variables de entorno: `AUTO_ENV.md`
+## Documentos auto-generados
+- `AUTO_DOCS_INDEX.md`: indice de docs.
+- `AUTO_ENV.md`: inventario de variables de entorno detectadas.
 
 ## Diagramas
-- Catálogo: `DIAGRAMAS.md`
-- Fuentes Mermaid y renders: `diagramas/`
+- Catalogo y convenciones: `DIAGRAMAS.md`
+- Fuentes Mermaid: `diagramas/src/`
+- Render SVG: `diagramas/rendered/`

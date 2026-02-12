@@ -14,7 +14,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [PRUEBAS.md](PRUEBAS.md) — Pruebas automatizadas
 - [README.md](README.md) — docs/
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
-- [SEGURIDAD.md](SEGURIDAD.md) — Seguridad (OWASP API Top 10 2023)
-- [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronización entre computadoras (paquete)
-- [VERSIONADO.md](VERSIONADO.md) — Versionado (alpha / beta / estable)
+- [SEGURIDAD.md](SEGURIDAD.md) — Seguridad
+- [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronizacion entre computadoras (paquete)
+- [VERSIONADO.md](VERSIONADO.md) — Versionado
 - [AUTO_ENV.md](AUTO_ENV.md) — Variables de entorno (auto-generado)

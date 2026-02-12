@@ -1,42 +1,29 @@
-# Versionado (alpha / beta / estable)
+# Versionado
 
-Este repo usa SemVer ($MAJOR.MINOR.PATCH) con canales mediante pre-release.
+## Politica
+Se usa SemVer en raiz del monorepo.
 
-## Definición de canales
+## Estado actual
+- Version declarada actual: `0.1.0`.
+- Canal operativo: beta funcional (MVP extendido).
 
-- **Alpha**: versiones `0.y.z` (o `x.y.z-alpha.n`) para cambios rápidos y potencialmente incompatibles.
-- **Beta**: versiones `x.y.z-beta.n` cuando el API/UX está casi estable pero puede haber ajustes.
-- **Estable**: versiones `>= 1.0.0` sin sufijo pre-release.
+## Definiciones
+- Alpha: cambios de alto movimiento con contratos inestables.
+- Beta: contratos principales funcionales con ajustes controlados.
+- Estable: release candidata cuando pasa bateria completa de calidad y no hay cambios breaking pendientes.
 
-Recomendación práctica:
+## Criterios para promover release estable
+Debe pasar:
+- `npm run test:ci`
+- `npm run test:portal`
+- `npm run test:frontend`
+- `npm run routes:check`
+- `npm run docs:check`
+- `npm run diagramas:check`
+- `npm run diagramas:render:check`
+- `npm run diagramas:consistencia:check`
 
-- Mientras la base evoluciona fuerte, mantener `0.y.z`.
-- Cuando el contrato principal (API docente + portal + frontend) esté consolidado, mover a `1.0.0-beta.1`.
-- Promover a `1.0.0` cuando:
-  - `npm run test:ci` esté verde
-  - docs (incluyendo `npm run docs:check`) esté verde
-  - no haya cambios breaking pendientes
-
-## Criterio de estabilidad operativa (MVP Beta)
-
-En este proyecto, la **versión estable más reciente** es la última que cumple **todas** las suites y checks
-críticos, aunque el número SemVer siga en `0.x` o con sufijo beta. Para considerar estable:
-
-- `npm run test:ci` (backend, reintentos, harness estricto).
-- `npm run test:portal` y `npm run test:frontend`.
-- `npm run routes:check` (guardarrail de rutas y contratos).
-- `npm run docs:check` y `npm run diagramas:check`.
-
-La versión **MVP** se mantiene en **Beta** hasta que se complete y valide automáticamente el primer ciclo
-docente/alumno (materia → plantilla → generación → vinculación → escaneo → calificación → sincronización).
-
-## Workflow recomendado
-
-1) Actualiza `CHANGELOG.md` con lo que cambió.
-2) Ejecuta `npm run test:ci`.
-3) Crea tag de release (manual) y publica artefactos según tu pipeline.
-
-Notas:
-
-- En monorepos, este repo usa una **versión única** en la raíz para representar el estado del sistema.
-- Si en el futuro necesitas versionar apps por separado, se puede migrar a versionado por paquete (p.ej. Changesets).
+## Convenciones de cambio
+- Cambios funcionales relevantes: actualizar docs y pruebas en el mismo ciclo.
+- Cambios en rutas o permisos: validar guardarrailes y diagramas.
+- Cambios OMR/calificacion: incluir pruebas de regresion.

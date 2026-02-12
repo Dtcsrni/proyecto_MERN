@@ -176,11 +176,16 @@ router.post('/sincronizar', async (req, res) => {
     'alumnoId',
     'examenGeneradoId',
     'tipoExamen',
+    'totalReactivos',
+    'aciertos',
     'calificacionExamenFinalTexto',
     'calificacionParcialTexto',
     'calificacionGlobalTexto',
     'evaluacionContinuaTexto',
-    'proyectoTexto'
+    'proyectoTexto',
+    'respuestasDetectadas',
+    'comparativaRespuestas',
+    'omrAuditoria'
   ];
   for (const calificacion of calificaciones) {
     if (!tieneSoloClavesPermitidas(calificacion, clavesCalificacionPermitidas)) {
@@ -258,11 +263,16 @@ router.post('/sincronizar', async (req, res) => {
         grupo: typeof alumno.grupo === 'string' ? alumno.grupo.trim() : undefined,
         folio: folioNormalizado,
         tipoExamen: calificacion.tipoExamen,
+        totalReactivos: calificacion.totalReactivos,
+        aciertos: calificacion.aciertos,
         calificacionExamenFinalTexto: calificacion.calificacionExamenFinalTexto,
         calificacionParcialTexto: calificacion.calificacionParcialTexto,
         calificacionGlobalTexto: calificacion.calificacionGlobalTexto,
         evaluacionContinuaTexto: calificacion.evaluacionContinuaTexto,
         proyectoTexto: calificacion.proyectoTexto,
+        respuestasDetectadas: Array.isArray(calificacion.respuestasDetectadas) ? calificacion.respuestasDetectadas : [],
+        comparativaRespuestas: Array.isArray(calificacion.comparativaRespuestas) ? calificacion.comparativaRespuestas : [],
+        omrAuditoria: calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object' ? calificacion.omrAuditoria : undefined,
         banderas: banderasExamen,
         pdfComprimidoBase64: typeof examen?.pdfComprimidoBase64 === 'string' ? examen.pdfComprimidoBase64 : undefined
       },

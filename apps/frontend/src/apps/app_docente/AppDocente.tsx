@@ -1270,7 +1270,6 @@ export function AppDocente() {
             return clienteApi.enviar<{ preview: PreviewCalificacion }>('/calificaciones/calificar', { ...payload, soloPreview: true });
           }}
           resultado={resultadoOmr}
-          respuestas={respuestasEditadas}
           onActualizar={actualizarRespuestasOmrActivas}
           onActualizarPregunta={actualizarRespuestaPreguntaOmrActiva}
           claveCorrectaPorNumero={claveCorrectaOmrActiva}
@@ -7694,7 +7693,6 @@ function SeccionEscaneo({
   onAnalizar,
   onPrevisualizar,
   resultado,
-  respuestas,
   onActualizar,
   onActualizarPregunta,
   respuestasCombinadas,
@@ -7723,7 +7721,6 @@ function SeccionEscaneo({
     respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
   }) => Promise<{ preview: PreviewCalificacion }>;
   resultado: ResultadoOmr | null;
-  respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
   onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
   respuestasCombinadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
@@ -7763,7 +7760,6 @@ function SeccionEscaneo({
     }>
   >([]);
 
-  const respuestasSeguras = useMemo(() => (Array.isArray(respuestas) ? respuestas : []), [respuestas]);
   const respuestasCombinadasSeguras = useMemo(
     () => (Array.isArray(respuestasCombinadas) ? respuestasCombinadas : []),
     [respuestasCombinadas]
@@ -8473,7 +8469,6 @@ function SeccionCalificaciones({
   onAnalizar,
   onPrevisualizar,
   resultado,
-  respuestas,
   onActualizar,
   onActualizarPregunta,
   revisionOmrConfirmada,
@@ -8505,7 +8500,6 @@ function SeccionCalificaciones({
     respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
   }) => Promise<{ preview: PreviewCalificacion }>;
   resultado: ResultadoOmr | null;
-  respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
   onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
   revisionOmrConfirmada: boolean;
@@ -8575,7 +8569,6 @@ function SeccionCalificaciones({
             onAnalizar={onAnalizar}
             onPrevisualizar={onPrevisualizar}
             resultado={resultado}
-            respuestas={respuestas}
             onActualizar={onActualizar}
             onActualizarPregunta={onActualizarPregunta}
             respuestasCombinadas={respuestasParaCalificar}

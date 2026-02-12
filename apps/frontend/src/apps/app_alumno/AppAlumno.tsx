@@ -28,9 +28,27 @@ const basePortal = import.meta.env.VITE_PORTAL_BASE_URL || 'http://localhost:808
 type Resultado = {
   folio: string;
   tipoExamen: string;
+  totalReactivos?: number;
+  aciertos?: number;
   calificacionExamenFinalTexto: string;
   calificacionParcialTexto?: string;
   calificacionGlobalTexto?: string;
+  respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+  comparativaRespuestas?: Array<{
+    numeroPregunta: number;
+    correcta: string | null;
+    detectada: string | null;
+    coincide: boolean;
+    confianza?: number;
+  }>;
+  omrAuditoria?: {
+    estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+    revisionConfirmada?: boolean;
+    calidadPagina?: number;
+    confianzaPromedioPagina?: number;
+    ratioAmbiguas?: number;
+    motivosRevision?: string[];
+  };
 };
 
 export function AppAlumno() {
@@ -38,6 +56,10 @@ export function AppAlumno() {
   const [matricula, setMatricula] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [resultados, setResultados] = useState<Resultado[]>([]);
+  const [detalleAbiertoFolio, setDetalleAbiertoFolio] = useState<string | null>(null);
+  const [detallesPorFolio, setDetallesPorFolio] = useState<Record<string, Resultado>>({});
+  const [cargandoDetallePorFolio, setCargandoDetallePorFolio] = useState<Record<string, boolean>>({});
+  const [errorDetallePorFolio, setErrorDetallePorFolio] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(false);
   const intentosFallidosRef = useRef(0);
   const [cooldownHasta, setCooldownHasta] = useState(0);
@@ -125,6 +147,17 @@ export function AppAlumno() {
       setCargando(true);
       const respuesta = await clientePortal.obtener<{ resultados: Resultado[] }>('/resultados');
       setResultados(respuesta.resultados);
+      const detallesIniciales = (respuesta.resultados || []).reduce(
+        (acumulado, resultado) => {
+          const tieneDetalle = Array.isArray(resultado.comparativaRespuestas) || Boolean(resultado.omrAuditoria);
+          if (tieneDetalle && resultado.folio) acumulado[resultado.folio] = resultado;
+          return acumulado;
+        },
+        {} as Record<string, Resultado>
+      );
+      if (Object.keys(detallesIniciales).length > 0) {
+        setDetallesPorFolio((prev) => ({ ...prev, ...detallesIniciales }));
+      }
       void clientePortal.registrarEventosUso({
         eventos: [
           {
@@ -151,6 +184,47 @@ export function AppAlumno() {
       });
     } finally {
       setCargando(false);
+    }
+  }
+
+  function estadoRevision(resultado: Resultado | undefined) {
+    const estado = resultado?.omrAuditoria?.estadoAnalisis;
+    const revisionConfirmada = Boolean(resultado?.omrAuditoria?.revisionConfirmada);
+    if (!estado) return { clase: '', texto: 'Sin auditoria OMR' };
+    if (estado === 'rechazado_calidad') return { clase: 'error', texto: 'OMR rechazado por calidad' };
+    if (revisionConfirmada) return { clase: 'ok', texto: 'Revision manual confirmada' };
+    if (estado === 'requiere_revision') return { clase: 'warning', texto: 'Pendiente de revision manual' };
+    return { clase: 'ok', texto: 'OMR validado automaticamente' };
+  }
+
+  async function onToggleDetalle(folio: string) {
+    if (!folio) return;
+    if (detalleAbiertoFolio === folio) {
+      setDetalleAbiertoFolio(null);
+      return;
+    }
+    setDetalleAbiertoFolio(folio);
+    if (detallesPorFolio[folio]) return;
+
+    try {
+      setCargandoDetallePorFolio((prev) => ({ ...prev, [folio]: true }));
+      setErrorDetallePorFolio((prev) => ({ ...prev, [folio]: '' }));
+      const respuesta = await clientePortal.obtener<{ resultado: Resultado }>(`/resultados/${folio}`);
+      if (respuesta?.resultado) {
+        setDetallesPorFolio((prev) => ({ ...prev, [folio]: respuesta.resultado }));
+      }
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo cargar el detalle del examen');
+      setErrorDetallePorFolio((prev) => ({ ...prev, [folio]: msg }));
+      emitToast({
+        level: 'error',
+        title: 'Detalle no disponible',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'alumno')
+      });
+    } finally {
+      setCargandoDetallePorFolio((prev) => ({ ...prev, [folio]: false }));
     }
   }
 
@@ -297,6 +371,10 @@ export function AppAlumno() {
                       </div>
                     </div>
                     <div className="item-actions">
+                      <button className="boton secundario" type="button" onClick={() => void onToggleDetalle(resultado.folio)}>
+                        <Icono nombre={detalleAbiertoFolio === resultado.folio ? 'chevron' : 'info'} />{' '}
+                        {detalleAbiertoFolio === resultado.folio ? 'Ocultar detalle' : 'Ver detalle'}
+                      </button>
                       <button
                         className="boton secundario"
                         type="button"
@@ -369,6 +447,75 @@ export function AppAlumno() {
                       </button>
                     </div>
                   </div>
+                  {detalleAbiertoFolio === resultado.folio && (
+                    <div className="alumno-detalle">
+                      {cargandoDetallePorFolio[resultado.folio] && (
+                        <p className="mensaje" role="status">
+                          <Spinner /> Cargando detalle del examen...
+                        </p>
+                      )}
+                      {errorDetallePorFolio[resultado.folio] && (
+                        <InlineMensaje tipo="error">{errorDetallePorFolio[resultado.folio]}</InlineMensaje>
+                      )}
+                      {!cargandoDetallePorFolio[resultado.folio] && !errorDetallePorFolio[resultado.folio] && (
+                        <>
+                          {(() => {
+                            const detalle = detallesPorFolio[resultado.folio] ?? resultado;
+                            const estado = estadoRevision(detalle);
+                            const comparativa = Array.isArray(detalle.comparativaRespuestas) ? detalle.comparativaRespuestas : [];
+                            const aciertos = comparativa.filter((item) => item.coincide).length;
+                            const total = comparativa.length;
+                            return (
+                              <>
+                                <div className="item-meta">
+                                  <span>Reactivos: {detalle.totalReactivos ?? total ?? '-'}</span>
+                                  <span>Aciertos detectados: {typeof detalle.aciertos === 'number' ? detalle.aciertos : aciertos}</span>
+                                  <span className={`badge ${estado.clase}`}>{estado.texto}</span>
+                                </div>
+                                {detalle.omrAuditoria?.motivosRevision && detalle.omrAuditoria.motivosRevision.length > 0 && (
+                                  <InlineMensaje tipo="info">
+                                    Motivos de revision: {detalle.omrAuditoria.motivosRevision.join(' | ')}
+                                  </InlineMensaje>
+                                )}
+                                <div className="alumno-detalle-tabla-wrap">
+                                  {comparativa.length === 0 ? (
+                                    <InlineMensaje tipo="info">
+                                      Aun no hay comparativa de respuestas para este examen.
+                                    </InlineMensaje>
+                                  ) : (
+                                    <table className="alumno-detalle-tabla">
+                                      <thead>
+                                        <tr>
+                                          <th>Pregunta</th>
+                                          <th>Clave correcta</th>
+                                          <th>Tu respuesta</th>
+                                          <th>Estado</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {comparativa.map((item) => (
+                                          <tr key={`${resultado.folio}-q-${item.numeroPregunta}`}>
+                                            <td>{item.numeroPregunta}</td>
+                                            <td>{item.correcta ?? '-'}</td>
+                                            <td>{item.detectada ?? '-'}</td>
+                                            <td>
+                                              <span className={`badge ${item.coincide ? 'ok' : 'error'}`}>
+                                                {item.coincide ? 'Correcta' : 'Incorrecta'}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </li>
             ))}

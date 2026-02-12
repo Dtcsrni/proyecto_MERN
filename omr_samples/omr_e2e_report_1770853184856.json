@@ -1,0 +1,42 @@
+{
+  "fechaIso": "2026-02-11T23:39:44.856Z",
+  "folio": "B719FD30",
+  "examenGeneradoId": "698d134084c54dfb8e439daa",
+  "totalPreguntasMarcadas": 8,
+  "aciertosReconocimiento": 0,
+  "precisionReconocimiento": 0,
+  "estadoAnalisisOmr": "rechazado_calidad",
+  "calidadPagina": 0.6232188572819701,
+  "confianzaPromedioPagina": 0,
+  "ratioAmbiguas": 1,
+  "advertenciasOmr": [
+    "Se eligio transformacion por escala por mayor coherencia de marcas",
+    "Pagina rechazada por baja calidad (0.62)"
+  ],
+  "respuestasEsperadas": {
+    "1": "A",
+    "2": "B",
+    "3": "C",
+    "4": "D",
+    "5": "E",
+    "6": "A",
+    "7": "B",
+    "8": "C"
+  },
+  "respuestasDetectadas": {
+    "1": null,
+    "2": null,
+    "3": null,
+    "4": null,
+    "5": null,
+    "6": null,
+    "7": null,
+    "8": null
+  },
+  "calificacion": {
+    "aciertos": 0,
+    "totalReactivos": 8,
+    "calificacionExamenFinalTexto": "0",
+    "calificacionParcialTexto": "0"
+  }
+}

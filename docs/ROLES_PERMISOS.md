@@ -1,77 +1,45 @@
 # Roles, accesos y permisos (RBAC)
 
-Este documento describe el sistema de roles/permisos para el backend docente y su uso en frontend.
+## Roles vigentes
+- `admin`
+- `docente`
+- `coordinador`
+- `auxiliar`
+- `lector`
 
-## Resumen
+Fuente de verdad: `apps/backend/src/infraestructura/seguridad/rbac.ts`.
 
-- Los roles se asignan en `Docente.roles`.
-- El token JWT incluye roles (emitido al login/registro/refresco).
-- El API valida permisos en cada ruta protegida con middleware.
-- El endpoint `/api/autenticacion/perfil` devuelve `roles` y `permisos` efectivos.
-- El frontend oculta secciones según `permisos` (la validación real se hace en el backend).
+## Permisos
+Catalogo principal (resumen):
+- Alumnos: `alumnos:leer`, `alumnos:gestionar`, `alumnos:eliminar_dev`
+- Periodos: `periodos:leer`, `periodos:gestionar`, `periodos:archivar`, `periodos:eliminar_dev`
+- Banco: `banco:leer`, `banco:gestionar`, `banco:archivar`
+- Plantillas: `plantillas:leer`, `plantillas:gestionar`, `plantillas:archivar`, `plantillas:previsualizar`, `plantillas:eliminar_dev`
+- Examenes: `examenes:leer`, `examenes:generar`, `examenes:archivar`, `examenes:regenerar`, `examenes:descargar`
+- Entregas: `entregas:gestionar`
+- OMR: `omr:analizar`
+- Calificaciones: `calificaciones:calificar`, `calificaciones:publicar`
+- Analiticas: `analiticas:leer`
+- Sincronizacion: `sincronizacion:listar`, `sincronizacion:exportar`, `sincronizacion:importar`, `sincronizacion:push`, `sincronizacion:pull`
+- Cuenta: `cuenta:leer`, `cuenta:actualizar`
+- Admin docentes: `docentes:administrar`
 
-## Roles disponibles
-
-- `admin`: acceso total + gestión de docentes.
-- `docente`: rol operativo completo (flujo estándar de creación, aplicación y calificación).
-- `coordinador`: gestiona periodos/alumnos/banco/plantillas y generación; sin calificar ni OMR.
-- `auxiliar`: lectura + entrega/OMR/calificación (apoyo de evaluación).
-- `lector`: solo lectura (consulta de datos y reportes).
-
-## Permisos disponibles
-
-- `alumnos:leer`, `alumnos:gestionar`, `alumnos:eliminar_dev`
-- `periodos:leer`, `periodos:gestionar`, `periodos:archivar`, `periodos:eliminar_dev`
-- `banco:leer`, `banco:gestionar`, `banco:archivar`
-- `plantillas:leer`, `plantillas:gestionar`, `plantillas:archivar`, `plantillas:previsualizar`, `plantillas:eliminar_dev`
-- `examenes:leer`, `examenes:generar`, `examenes:archivar`, `examenes:regenerar`, `examenes:descargar`
-- `entregas:gestionar`
-- `omr:analizar`
-- `calificaciones:calificar`, `calificaciones:publicar`
-- `analiticas:leer`
-- `sincronizacion:listar`, `sincronizacion:exportar`, `sincronizacion:importar`, `sincronizacion:push`, `sincronizacion:pull`
-- `cuenta:leer`, `cuenta:actualizar`
-- `docentes:administrar`
-
-## Mapeo de permisos por rol (resumen)
-
+## Matriz de capacidades por rol
 - `admin`: todos los permisos.
-- `docente`: todos excepto `docentes:administrar` y permisos `*_eliminar_dev` (dev).
-- `coordinador`: sin `omr:analizar`, `calificaciones:calificar` ni `calificaciones:publicar`.
-- `auxiliar`: lectura + `entregas:gestionar`, `omr:analizar`, `calificaciones:calificar`.
-- `lector`: solo lectura (sin escritura, sin OMR/calificación).
+- `docente`: operacion completa docente (sin privilegios administrativos de docentes).
+- `coordinador`: gestion academica y generacion, sin OMR/calificacion.
+- `auxiliar`: lectura + entrega + OMR + calificacion.
+- `lector`: solo lectura.
 
-El detalle exacto se mantiene en `apps/backend/src/infraestructura/seguridad/rbac.ts`.
+## Enforcement
+- Backend aplica permisos con `requerirPermiso(...)` por endpoint.
+- Frontend usa permisos para habilitar/ocultar acciones, pero la autoridad final es backend.
+- Endpoint de perfil devuelve roles y permisos efectivos.
 
-## Endpoints admin (gestión de docentes)
-
+## Endpoints admin
 Requieren `docentes:administrar`:
+- `GET /api/admin/docentes`
+- `POST /api/admin/docentes/:docenteId`
 
-- `GET /api/admin/docentes?activo=1&q=texto&limite=50&offset=0`
-- `POST /api/admin/docentes/:docenteId` con body `{ roles?: string[], activo?: boolean }`
-
-## Notas de seguridad
-
-- El backend es la fuente de verdad y bloquea todo acceso sin permisos.
-- El frontend muestra/oculta secciones y deshabilita acciones segun `permisos` (formularios, botones y acciones criticas).
-- `plantillas:eliminar_dev`, `periodos:eliminar_dev` y `alumnos:eliminar_dev` solo se permiten en `NODE_ENV=development`.
-
-## Contraste UI (WCAG)
-
-- Script de verificacion: `scripts/contrast-check.mjs`
-- Ejecucion: `node scripts/contrast-check.mjs`
-- Revisa pares tipicos (texto/superficie, chips, estados, botones) en temas claro/oscuro.
-
-## Ejemplo de respuesta de perfil
-
-```json
-{
-  "docente": {
-    "id": "...",
-    "nombreCompleto": "Ejemplo",
-    "correo": "docente@ejemplo.test",
-    "roles": ["docente"],
-    "permisos": ["periodos:leer", "periodos:gestionar", "..."]
-  }
-}
-```
+## Reglas dev-only
+Permisos `*_eliminar_dev` solo se permiten en entorno `development`.

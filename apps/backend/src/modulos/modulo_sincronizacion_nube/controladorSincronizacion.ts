@@ -168,6 +168,94 @@ function parsearFechaIso(valor?: string): Date | null {
   return Number.isFinite(fecha.getTime()) ? fecha : null;
 }
 
+function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: number[]) {
+  const indiceCorrecto = opciones.findIndex((opcion) => opcion.esCorrecta);
+  if (indiceCorrecto < 0) return null;
+  const posicion = orden.findIndex((indice) => indice === indiceCorrecto);
+  if (posicion < 0) return null;
+  return String.fromCharCode(65 + posicion);
+}
+
+type RespuestaDetectadaSync = {
+  numeroPregunta: number;
+  opcion: string | null;
+  confianza?: number;
+};
+
+type ComparativaRespuestaSync = {
+  numeroPregunta: number;
+  correcta: string | null;
+  detectada: string | null;
+  coincide: boolean;
+  confianza?: number;
+};
+
+function construirComparativaRespuestas(
+  examen: Record<string, unknown> | undefined,
+  preguntasDb: Array<Record<string, unknown>>,
+  respuestasDetectadas: RespuestaDetectadaSync[]
+): ComparativaRespuestaSync[] {
+  if (!examen) return [];
+  const mapaVariante = (examen.mapaVariante ?? {}) as {
+    ordenPreguntas?: string[];
+    ordenOpcionesPorPregunta?: Record<string, number[]>;
+  };
+  const ordenPreguntas = Array.isArray(mapaVariante.ordenPreguntas)
+    ? mapaVariante.ordenPreguntas.map((item) => String(item))
+    : [];
+  if (!ordenPreguntas.length) return [];
+
+  const mapaPreguntas = new Map<string, Record<string, unknown>>(
+    preguntasDb.map((pregunta) => [String(pregunta._id), pregunta])
+  );
+  const respuestasPorNumero = new Map<number, RespuestaDetectadaSync>(
+    (Array.isArray(respuestasDetectadas) ? respuestasDetectadas : []).map((respuesta) => [
+      Number(respuesta.numeroPregunta),
+      {
+        numeroPregunta: Number(respuesta.numeroPregunta),
+        opcion: typeof respuesta.opcion === 'string' ? respuesta.opcion.toUpperCase() : null,
+        ...(typeof respuesta.confianza === 'number' ? { confianza: respuesta.confianza } : {})
+      }
+    ])
+  );
+
+  const comparativa: ComparativaRespuestaSync[] = [];
+  ordenPreguntas.forEach((idPregunta, idx) => {
+    const numeroPregunta = idx + 1;
+    const pregunta = mapaPreguntas.get(idPregunta);
+    const detectada = respuestasPorNumero.get(numeroPregunta);
+
+    let correcta: string | null = null;
+    if (pregunta) {
+      const versiones = Array.isArray(pregunta.versiones) ? (pregunta.versiones as Array<Record<string, unknown>>) : [];
+      const versionActual = Number(pregunta.versionActual ?? 0);
+      const version =
+        versiones.find((item) => Number(item.numeroVersion ?? 0) === versionActual) ??
+        versiones[0];
+      const opciones = Array.isArray(version?.opciones) ? (version!.opciones as Array<{ esCorrecta: boolean }>) : [];
+      const ordenOpcionesCrudo =
+        mapaVariante.ordenOpcionesPorPregunta && Array.isArray(mapaVariante.ordenOpcionesPorPregunta[idPregunta])
+          ? mapaVariante.ordenOpcionesPorPregunta[idPregunta]
+          : [0, 1, 2, 3, 4];
+      const ordenOpciones = ordenOpcionesCrudo
+        .map((valor) => Number(valor))
+        .filter((valor) => Number.isInteger(valor) && valor >= 0);
+      correcta = obtenerLetraCorrecta(opciones, ordenOpciones);
+    }
+
+    const opcionDetectada = detectada?.opcion ?? null;
+    comparativa.push({
+      numeroPregunta,
+      correcta,
+      detectada: opcionDetectada,
+      coincide: Boolean(correcta && opcionDetectada && correcta === opcionDetectada),
+      ...(typeof detectada?.confianza === 'number' ? { confianza: detectada.confianza } : {})
+    });
+  });
+
+  return comparativa;
+}
+
 function crearErrorServidorSincronizacionNoConfigurado(codigo: 'SYNC_SERVIDOR_NO_CONFIG' | 'PORTAL_NO_CONFIG') {
   return new ErrorAplicacion(
     codigo,
@@ -555,6 +643,19 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
   const calificaciones = await Calificacion.find({ docenteId, periodoId }).lean();
   const banderas = await BanderaRevision.find({ docenteId }).lean();
   const examenes = await ExamenGenerado.find({ docenteId, periodoId }).lean();
+  const examenesMap = new Map<string, Record<string, unknown>>(examenes.map((examen) => [String(examen._id), examen as Record<string, unknown>]));
+  const preguntasIds = Array.from(
+    new Set(
+      examenes
+        .flatMap((examen) => {
+          const orden = (examen.mapaVariante?.ordenPreguntas ?? []) as unknown[];
+          return Array.isArray(orden) ? orden : [];
+        })
+        .map((id) => String(id))
+        .filter(Boolean)
+    )
+  );
+  const preguntasDb = preguntasIds.length ? await BancoPregunta.find({ _id: { $in: preguntasIds } }).lean() : [];
   const codigo = await CodigoAcceso.findOne({ docenteId, periodoId, usado: false }).lean();
 
   const examenesPayload = [] as Array<Record<string, unknown>>;
@@ -585,15 +686,41 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
     grupo: alumno.grupo
   }));
   const calificacionesPayload = calificaciones.map((calificacion) => ({
+    ...(() => {
+      const respuestasDetectadas = Array.isArray(calificacion.respuestasDetectadas)
+        ? (calificacion.respuestasDetectadas as RespuestaDetectadaSync[])
+            .map((respuesta) => ({
+              numeroPregunta: Number(respuesta?.numeroPregunta),
+              opcion: typeof respuesta?.opcion === 'string' ? respuesta.opcion.toUpperCase() : null,
+              ...(typeof respuesta?.confianza === 'number' ? { confianza: respuesta.confianza } : {})
+            }))
+            .filter((respuesta) => Number.isInteger(respuesta.numeroPregunta) && respuesta.numeroPregunta > 0)
+        : [];
+      const comparativaRespuestas = construirComparativaRespuestas(
+        examenesMap.get(String(calificacion.examenGeneradoId)),
+        preguntasDb as Array<Record<string, unknown>>,
+        respuestasDetectadas
+      );
+      return {
+        respuestasDetectadas,
+        comparativaRespuestas
+      };
+    })(),
     docenteId: calificacion.docenteId,
     alumnoId: calificacion.alumnoId,
     examenGeneradoId: calificacion.examenGeneradoId,
     tipoExamen: calificacion.tipoExamen,
+    totalReactivos: calificacion.totalReactivos,
+    aciertos: calificacion.aciertos,
     calificacionExamenFinalTexto: calificacion.calificacionExamenFinalTexto,
     calificacionParcialTexto: calificacion.calificacionParcialTexto,
     calificacionGlobalTexto: calificacion.calificacionGlobalTexto,
     evaluacionContinuaTexto: calificacion.evaluacionContinuaTexto,
-    proyectoTexto: calificacion.proyectoTexto
+    proyectoTexto: calificacion.proyectoTexto,
+    omrAuditoria:
+      calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object'
+        ? calificacion.omrAuditoria
+        : undefined
   }));
   const banderasPayload = banderas.map((bandera) => ({
     examenGeneradoId: bandera.examenGeneradoId,

@@ -1900,6 +1900,37 @@ p {
   box-shadow: var(--sombraSuave);
 }
 
+.alumno-detalle {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--borde);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.alumno-detalle-tabla-wrap {
+  overflow-x: auto;
+}
+
+.alumno-detalle-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.alumno-detalle-tabla th,
+.alumno-detalle-tabla td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.alumno-detalle-tabla th {
+  font-weight: 800;
+  color: var(--texto);
+}
+
 .alerta {
   margin-top: 0.75rem;
   padding: 0.75rem;
