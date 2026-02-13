@@ -1,3 +1,9 @@
+/**
+ * bd
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 //Script para conectar a MONGODB
 //Si falla, se detiene el proceso sin BD.
 //Si no hay BD se muestra error de conexión a la API

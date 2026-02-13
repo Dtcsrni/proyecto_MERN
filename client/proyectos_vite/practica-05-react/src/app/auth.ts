@@ -1,3 +1,9 @@
+/**
+ * auth
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 //Lógica para autenticar usuario almacenando datos en Local Storage
 //-Persistencia local en navegador
 //-Almacenamiento de strings

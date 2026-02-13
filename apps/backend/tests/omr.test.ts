@@ -1,3 +1,9 @@
+/**
+ * omr.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del servicio OMR.
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';

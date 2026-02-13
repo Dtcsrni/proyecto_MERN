@@ -1,3 +1,9 @@
+/**
+ * vitestStrict
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
 export type StrictHarnessOptions = {

@@ -1,3 +1,9 @@
+/**
+ * mongo
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Helpers de Mongo en memoria para pruebas.
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';

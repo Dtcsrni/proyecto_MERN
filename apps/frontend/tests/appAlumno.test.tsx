@@ -1,3 +1,9 @@
+/**
+ * appAlumno.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas basicas de la app alumno.
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';

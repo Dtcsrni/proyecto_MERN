@@ -1,3 +1,9 @@
+/**
+ * rateLimit.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cerrarMongoTest, conectarMongoTest, limpiarMongoTest } from './utils/mongo';

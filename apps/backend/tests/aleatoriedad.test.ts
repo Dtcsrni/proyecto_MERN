@@ -1,3 +1,9 @@
+/**
+ * aleatoriedad.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de utilidades de aleatoriedad.
 import { describe, expect, it } from 'vitest';
 import { barajar } from '../src/compartido/utilidades/aleatoriedad';

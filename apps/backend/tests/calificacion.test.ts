@@ -1,3 +1,9 @@
+/**
+ * calificacion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de calculo exacto de calificaciones.
 import { describe, expect, it } from 'vitest';
 import {

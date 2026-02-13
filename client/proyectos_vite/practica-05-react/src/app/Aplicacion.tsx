@@ -1,3 +1,9 @@
+/**
+ * Aplicacion
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { useEffect, useMemo, useState } from "react";
 import type { EstadoTarea, Tarea } from "../types.ts";
 import {StatusTareas} from '../components/StatusTareas.tsx';

@@ -1,3 +1,9 @@
+/**
+ * wait-api
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';

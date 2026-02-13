@@ -1,3 +1,9 @@
+/**
+ * dashboard-sw
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*
   Dashboard Service Worker
   - Evita cachear HTML de navegación para no reintroducir "no se ven los cambios".

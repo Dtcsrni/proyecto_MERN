@@ -1,3 +1,9 @@
+/**
+ * ia-docblocks
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +15,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-function construirDocblock(relPath) {
+const EXTENSIONES = new Set(['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'sh', 'ps1', 'cmd']);
+
+function extension(relPath) {
+  return path.extname(relPath).slice(1).toLowerCase();
+}
+
+function construirDocblock(relPath, ext) {
   const base = path.basename(relPath);
   const nombre = base.replace(/\.(ts|tsx|js|jsx|mjs|cjs|d\.ts)$/, '');
   const secciones = [];
@@ -70,6 +82,21 @@ function construirDocblock(relPath) {
     limites = 'Mantener seguridad por defecto y orden de middleware/boot.';
   }
 
+  if (ext === 'sh' || ext === 'ps1') {
+    secciones.push(`# ${nombre}`);
+    secciones.push('#');
+    secciones.push(`# Responsabilidad: ${responsabilidad}`);
+    secciones.push(`# Limites: ${limites}`);
+    return secciones.join('\n');
+  }
+  if (ext === 'cmd') {
+    secciones.push(`:: ${nombre}`);
+    secciones.push('::');
+    secciones.push(`:: Responsabilidad: ${responsabilidad}`);
+    secciones.push(`:: Limites: ${limites}`);
+    return secciones.join('\n');
+  }
+
   secciones.push('/**');
   secciones.push(` * ${nombre}`);
   secciones.push(' *');
@@ -79,25 +106,48 @@ function construirDocblock(relPath) {
   return secciones.join('\n');
 }
 
+function tieneCabeceraContextual(contenido, ext) {
+  const inicio = contenido.slice(0, 500);
+  if (ext === 'ts' || ext === 'tsx') return /^\s*\/\*\*/.test(inicio);
+  if (ext === 'js' || ext === 'jsx' || ext === 'mjs' || ext === 'cjs') return /^\s*(\/\*\*|\/\/ )/.test(inicio);
+  if (ext === 'sh' || ext === 'ps1') return /^\s*#/.test(inicio);
+  if (ext === 'cmd') return /^\s*(::|REM\s)/i.test(inicio);
+  return true;
+}
+
+function inyectarCabecera(contenido, docblock, ext) {
+  // Respeta shebang en scripts shell/node.
+  if ((ext === 'sh' || ext === 'js' || ext === 'mjs' || ext === 'cjs') && contenido.startsWith('#!')) {
+    const finLinea = contenido.indexOf('\n');
+    if (finLinea > -1) {
+      const shebang = contenido.slice(0, finLinea + 1);
+      const resto = contenido.slice(finLinea + 1);
+      return `${shebang}${docblock}\n${resto}`;
+    }
+  }
+  return `${docblock}\n${contenido}`;
+}
+
 async function main() {
   const { stdout } = await exec('git ls-files', { cwd: rootDir, windowsHide: true, maxBuffer: 12 * 1024 * 1024 });
   const archivos = stdout
     .split(/\r?\n/)
     .map((x) => x.trim())
     .filter(Boolean)
-    .filter((r) => r.startsWith('apps/'))
-    .filter((r) => r.includes('/src/'))
-    .filter((r) => /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(r))
+    .filter((r) => {
+      const ext = extension(r);
+      return EXTENSIONES.has(ext);
+    })
     .filter((r) => !r.includes('/node_modules/'));
 
   let actualizados = 0;
   for (const rel of archivos) {
     const full = path.join(rootDir, rel);
     const contenido = await fs.readFile(full, 'utf8');
-    const inicio = contenido.slice(0, 400);
-    if (/^\s*\/\*\*/.test(inicio)) continue;
-    const doc = construirDocblock(rel);
-    const nuevo = `${doc}\n${contenido}`;
+    const ext = extension(rel);
+    if (tieneCabeceraContextual(contenido, ext)) continue;
+    const doc = construirDocblock(rel, ext);
+    const nuevo = inyectarCabecera(contenido, doc, ext);
     await fs.writeFile(full, nuevo, 'utf8');
     actualizados += 1;
   }

@@ -1,3 +1,9 @@
+/**
+ * clientePortal.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del cliente API del portal alumno.
 import { describe, expect, it, vi } from 'vitest';
 import {
