@@ -32,6 +32,7 @@ if (shouldCheck && process.env.DIAGRAMAS_RENDER_CHECK === '0') {
 const srcDir = path.join(rootDir, 'docs', 'diagramas', 'src');
 const outDir = path.join(rootDir, 'docs', 'diagramas', 'rendered');
 const mermaidConfigPath = path.join(rootDir, 'docs', 'diagramas', 'mermaid.config.json');
+const puppeteerConfigPath = path.join(rootDir, 'docs', 'diagramas', 'puppeteer.config.json');
 
 function normalizarSaltosLinea(texto) {
   return texto.replace(/\r\n/g, '\n');
@@ -74,20 +75,35 @@ function runMmdc({ inputPath, outputPath }) {
       env.PUPPETEER_EXECUTABLE_PATH = env.MMDC_CHROMIUM_PATH;
     }
 
+    const includePuppeteerConfig = process.env.DIAGRAMAS_PUPPETEER_CONFIG !== '0';
+    const puppeteerArg = includePuppeteerConfig ? ` -p "${puppeteerConfigPath}"` : '';
+
     const child = isWindows
-      ? spawn(`"${mmdcPath}" -i "${inputPath}" -o "${outputPath}" -c "${mermaidConfigPath}"`, {
+      ? spawn(`"${mmdcPath}" -i "${inputPath}" -o "${outputPath}" -c "${mermaidConfigPath}"${puppeteerArg}`, {
           cwd: rootDir,
           stdio: 'pipe',
           shell: true,
           env,
           windowsHide: true
         })
-      : spawn(mmdcPath, ['-i', inputPath, '-o', outputPath, '-c', mermaidConfigPath], {
+      : spawn(
+          mmdcPath,
+          [
+            '-i',
+            inputPath,
+            '-o',
+            outputPath,
+            '-c',
+            mermaidConfigPath,
+            ...(includePuppeteerConfig ? ['-p', puppeteerConfigPath] : [])
+          ],
+          {
           cwd: rootDir,
           stdio: 'pipe',
           shell: false,
           env
-        });
+          }
+        );
 
     let stderr = '';
     child.stderr?.on('data', (d) => {
