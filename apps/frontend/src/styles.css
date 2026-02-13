@@ -1931,6 +1931,23 @@ p {
   color: var(--texto);
 }
 
+.helper-panel {
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(241, 247, 255, 0.9), rgba(255, 255, 255, 0.95));
+}
+
+.helper-panel__pasos {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.helper-panel__notas {
+  margin-top: 10px;
+}
+
 .alerta {
   margin-top: 0.75rem;
   padding: 0.75rem;

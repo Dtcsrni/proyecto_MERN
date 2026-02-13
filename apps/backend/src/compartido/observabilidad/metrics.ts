@@ -16,6 +16,9 @@ const exportacionesListaTotales = {
   firma: 0,
   errores: 0
 };
+const etapasOmrDuracionMs = new Map<string, number>();
+const etapasOmrTotales = new Map<string, number>();
+const pipelineOmrTotales = { total: 0, errores: 0, duracionAcumuladaMs: 0 };
 
 const cubetasMs = [25, 50, 100, 250, 500, 1000, 2500, 5000];
 const histogramaDuracion = new Map<number, number>();
@@ -53,6 +56,31 @@ export function registrarExportacionLista(tipo: 'csv' | 'docx' | 'firma', exito:
   if (tipo === 'csv') exportacionesListaTotales.csv += 1;
   if (tipo === 'docx') exportacionesListaTotales.docx += 1;
   if (tipo === 'firma') exportacionesListaTotales.firma += 1;
+}
+
+export function registrarOmrEtapa(
+  etapa: 'deteccion' | 'scoring' | 'calidad' | 'qr' | 'debug',
+  duracionMs: number,
+  exito: boolean,
+  requestId?: string
+) {
+  const claveTotal = `${etapa}|${exito ? 'ok' : 'error'}`;
+  etapasOmrTotales.set(claveTotal, (etapasOmrTotales.get(claveTotal) ?? 0) + 1);
+  etapasOmrDuracionMs.set(etapa, (etapasOmrDuracionMs.get(etapa) ?? 0) + Math.max(0, duracionMs));
+  if (!exito && requestId) {
+    // requestId queda disponible para correlacion en logs del middleware;
+    // aqui solo contabilizamos sin exponer datos sensibles.
+    void requestId;
+  }
+}
+
+export function registrarOmrPipeline(exito: boolean, duracionMs: number, requestId?: string) {
+  pipelineOmrTotales.total += 1;
+  pipelineOmrTotales.duracionAcumuladaMs += Math.max(0, duracionMs);
+  if (!exito) pipelineOmrTotales.errores += 1;
+  if (!exito && requestId) {
+    void requestId;
+  }
 }
 
 export function exportarMetricasPrometheus(): string {
@@ -103,5 +131,37 @@ export function exportarMetricasPrometheus(): string {
   lineas.push('# HELP evaluapro_lista_export_error_total Total de fallos de exportacion de lista academica');
   lineas.push('# TYPE evaluapro_lista_export_error_total counter');
   lineas.push(`evaluapro_lista_export_error_total ${exportacionesListaTotales.errores}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_stage_duration_ms Duracion acumulada de etapas OMR en milisegundos');
+  lineas.push('# TYPE evaluapro_omr_stage_duration_ms counter');
+  for (const [etapa, valor] of etapasOmrDuracionMs.entries()) {
+    lineas.push(`evaluapro_omr_stage_duration_ms{stage="${etapa}"} ${valor}`);
+  }
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_stage_errors_total Total de ejecuciones por etapa OMR y estado');
+  lineas.push('# TYPE evaluapro_omr_stage_errors_total counter');
+  for (const [clave, valor] of etapasOmrTotales.entries()) {
+    const [etapa, estado] = clave.split('|');
+    lineas.push(`evaluapro_omr_stage_errors_total{stage="${etapa}",status="${estado}"} ${valor}`);
+  }
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_pipeline_total Total de ejecuciones del pipeline OMR');
+  lineas.push('# TYPE evaluapro_omr_pipeline_total counter');
+  lineas.push(`evaluapro_omr_pipeline_total ${pipelineOmrTotales.total}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_pipeline_error_total Total de errores del pipeline OMR');
+  lineas.push('# TYPE evaluapro_omr_pipeline_error_total counter');
+  lineas.push(`evaluapro_omr_pipeline_error_total ${pipelineOmrTotales.errores}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_pipeline_duration_ms Promedio de duracion del pipeline OMR en milisegundos');
+  lineas.push('# TYPE evaluapro_omr_pipeline_duration_ms gauge');
+  const promedioPipeline =
+    pipelineOmrTotales.total > 0 ? pipelineOmrTotales.duracionAcumuladaMs / pipelineOmrTotales.total : 0;
+  lineas.push(`evaluapro_omr_pipeline_duration_ms ${Number(promedioPipeline.toFixed(2))}`);
   return lineas.join('\n');
 }

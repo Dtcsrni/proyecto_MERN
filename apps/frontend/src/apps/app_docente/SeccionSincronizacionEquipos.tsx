@@ -1,62 +1,36 @@
 /**
  * SeccionSincronizacionEquipos
  *
- * Responsabilidad: Seccion funcional del shell docente.
- * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
+ * Operacion de sincronizacion entre computadoras via servidor intermedio.
  */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/**
- * App docente: panel basico para banco, examenes, entrega y calificacion.
- */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { guardarTokenDocente, limpiarTokenDocente, obtenerTokenDocente } from '../../servicios_api/clienteApi';
-import { accionToastSesionParaError, mensajeUsuarioDeErrorConSugerencia, onSesionInvalidada } from '../../servicios_api/clienteComun';
+import { useMemo, useState } from 'react';
+import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';
-import { Icono, Spinner } from '../../ui/iconos';
+import { Icono } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
-import { TemaBoton } from '../../tema/TemaBoton';
 import { AyudaFormulario } from './AyudaFormulario';
-import { clienteApi } from './clienteApiDocente';
-import { SeccionAutenticacion } from './SeccionAutenticacion';
-import { SeccionAlumnos } from './SeccionAlumnos';
-import { SeccionBanco } from './SeccionBanco';
-import { SeccionCuenta } from './SeccionCuenta';
-import { QrAccesoMovil, SeccionEscaneo } from './SeccionEscaneo';
-import { SeccionPlantillas } from './SeccionPlantillas';
-import { SeccionPeriodos, SeccionPeriodosArchivados } from './SeccionPeriodos';
 import { registrarAccionDocente } from './telemetriaDocente';
-import type {
-  Alumno,
-  Docente,
-  EnviarConPermiso,
-  ExamenGeneradoClave,
-  Periodo,
-  PermisosUI,
-  Plantilla,
-  Pregunta,
-  PreviewCalificacion,
-  PreviewPlantilla,
-  RegistroSincronizacion,
-  RespuestaSyncPull,
-  RespuestaSyncPush,
-  ResultadoAnalisisOmr,
-  ResultadoOmr,
-  RevisionExamenOmr,
-  RevisionPaginaOmr
-} from './tipos';
-import {
-  combinarRespuestasOmrPaginas,
-  construirClaveCorrectaExamen,
-  consolidarResultadoOmrExamen,
-  esMensajeError,
-  etiquetaMateria,
-  mensajeDeError,
-  normalizarResultadoOmr,
-  obtenerSesionDocenteId,
-  obtenerVistaInicial,
-} from './utilidades';
+import type { RespuestaSyncPull, RespuestaSyncPush } from './tipos';
+import { mensajeDeError } from './utilidades';
 
+type ReporteOperacion = {
+  tipo: 'push' | 'pull';
+  mensaje: string;
+  ejecutadoEn: number;
+  duracionMs: number;
+  conteos?: Record<string, number>;
+  cursor?: string | null;
+  paquetesRecibidos?: number;
+  pdfsGuardados?: number;
+};
+
+function formatearFecha(valor?: number | null) {
+  if (!valor) return '-';
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString();
+}
 
 export function SeccionSincronizacionEquipos({
   onPushServidor,
@@ -66,22 +40,41 @@ export function SeccionSincronizacionEquipos({
   onPullServidor: (payload: { desde?: string; limite?: number }) => Promise<RespuestaSyncPull>;
 }) {
   const [incluyePdfs, setIncluyePdfs] = useState(false);
+  const [desde, setDesde] = useState('');
+  const [limitePull, setLimitePull] = useState(20);
   const [mensaje, setMensaje] = useState('');
   const [tipoMensaje, setTipoMensaje] = useState<'info' | 'ok' | 'warning' | 'error'>('info');
   const [ultimoCursor, setUltimoCursor] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [trayendo, setTrayendo] = useState(false);
+  const [reporte, setReporte] = useState<ReporteOperacion | null>(null);
+
+  const limiteNormalizado = useMemo(() => {
+    if (!Number.isFinite(limitePull)) return 20;
+    return Math.max(1, Math.min(200, Math.floor(limitePull)));
+  }, [limitePull]);
 
   async function enviarCambios() {
+    const inicio = Date.now();
     try {
-      const inicio = Date.now();
       setEnviando(true);
       setMensaje('');
-      const respuesta = await onPushServidor({ incluirPdfs: incluyePdfs });
+      const respuesta = await onPushServidor({
+        incluirPdfs: incluyePdfs,
+        ...(desde ? { desde: new Date(desde).toISOString() } : {})
+      });
       const msg = respuesta.mensaje || 'Paquete enviado';
       setMensaje(msg);
       setTipoMensaje(msg.toLowerCase().includes('sin cambios') ? 'info' : 'ok');
       setUltimoCursor(respuesta.cursor || respuesta.exportadoEn || null);
+      setReporte({
+        tipo: 'push',
+        mensaje: msg,
+        ejecutadoEn: Date.now(),
+        duracionMs: Date.now() - inicio,
+        conteos: respuesta.conteos,
+        cursor: respuesta.cursor || respuesta.exportadoEn || null
+      });
       emitToast({ level: 'ok', title: 'Sincronizacion', message: msg, durationMs: 2400 });
       registrarAccionDocente('sync_push_servidor', true, Date.now() - inicio);
     } catch (error) {
@@ -102,17 +95,29 @@ export function SeccionSincronizacionEquipos({
   }
 
   async function traerCambios() {
+    const inicio = Date.now();
     try {
-      const inicio = Date.now();
       setTrayendo(true);
       setMensaje('');
-      const respuesta = await onPullServidor({});
+      const respuesta = await onPullServidor({
+        ...(desde ? { desde: new Date(desde).toISOString() } : {}),
+        limite: limiteNormalizado
+      });
       const msg = respuesta.mensaje || 'Paquetes aplicados';
       setMensaje(msg);
       setTipoMensaje(msg.toLowerCase().includes('sin cambios') ? 'info' : 'ok');
       if (respuesta.ultimoCursor) {
         setUltimoCursor(respuesta.ultimoCursor);
       }
+      setReporte({
+        tipo: 'pull',
+        mensaje: msg,
+        ejecutadoEn: Date.now(),
+        duracionMs: Date.now() - inicio,
+        cursor: respuesta.ultimoCursor,
+        paquetesRecibidos: respuesta.paquetesRecibidos,
+        pdfsGuardados: respuesta.pdfsGuardados
+      });
       emitToast({ level: 'ok', title: 'Sincronizacion', message: msg, durationMs: 2400 });
       registrarAccionDocente('sync_pull_servidor', true, Date.now() - inicio);
     } catch (error) {
@@ -141,41 +146,82 @@ export function SeccionSincronizacionEquipos({
         <p className="nota">
           Usa un servidor intermedio para mantener una sola fuente de verdad por docente, sin requerir que los equipos esten en linea al mismo tiempo.
         </p>
-        <InlineMensaje tipo="info">
-          Esta funcion no reemplaza los backups locales: exporta un respaldo antes de cambios grandes.
-        </InlineMensaje>
-        <label className="campo campo--checkbox">
-          <input type="checkbox" checked={incluyePdfs} onChange={(e) => setIncluyePdfs(e.target.checked)} />
-          Incluir PDFs en el envio (mas pesado)
-        </label>
+
+        <div className="estado-datos-grid" role="group" aria-label="Parametros de sincronizacion entre equipos">
+          <label className="campo campo--checkbox">
+            <input type="checkbox" checked={incluyePdfs} onChange={(e) => setIncluyePdfs(e.target.checked)} />
+            Incluir PDFs en push (mas pesado)
+          </label>
+          <label className="campo">
+            Desde (opcional)
+            <input type="datetime-local" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          </label>
+          <label className="campo">
+            Limite de paquetes pull
+            <input
+              type="number"
+              min={1}
+              max={200}
+              step={1}
+              value={limiteNormalizado}
+              onChange={(e) => setLimitePull(Number(e.target.value || 20))}
+            />
+          </label>
+        </div>
+
         <div className="acciones">
           <Boton type="button" icono={<Icono nombre="publicar" />} cargando={enviando} onClick={enviarCambios}>
-            {enviando ? 'Enviando.' : 'Enviar cambios'}
+            {enviando ? 'Enviando...' : 'Enviar cambios (push)'}
           </Boton>
           <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={trayendo} onClick={traerCambios}>
-            {trayendo ? 'Trayendo.' : 'Traer cambios'}
+            {trayendo ? 'Trayendo...' : 'Traer cambios (pull)'}
           </Boton>
         </div>
-        {ultimoCursor && <div className="nota">Ultima marca recibida: {new Date(ultimoCursor).toLocaleString()}</div>}
+
+        {ultimoCursor && <div className="nota">Ultima marca de sincronizacion: {new Date(ultimoCursor).toLocaleString()}</div>}
+
+        {reporte && (
+          <div className="item-glass" aria-live="polite">
+            <div className="estado-datos-header">
+              <div>
+                <div className="estado-datos-titulo">Ultima operacion: {reporte.tipo.toUpperCase()}</div>
+                <div className="nota">{formatearFecha(reporte.ejecutadoEn)} · {reporte.duracionMs} ms</div>
+              </div>
+              <span className={`estado-chip ${tipoMensaje === 'error' ? 'error' : tipoMensaje === 'ok' ? 'ok' : 'info'}`}>
+                {tipoMensaje === 'error' ? 'Error' : tipoMensaje === 'ok' ? 'Ok' : 'Info'}
+              </span>
+            </div>
+            {reporte.tipo === 'push' && reporte.conteos && (
+              <div className="nota">
+                {Object.entries(reporte.conteos)
+                  .map(([clave, valor]) => `${clave}: ${valor}`)
+                  .join(' | ')}
+              </div>
+            )}
+            {reporte.tipo === 'pull' && (
+              <div className="nota">
+                Paquetes recibidos: {reporte.paquetesRecibidos ?? 0} · PDFs guardados: {reporte.pdfsGuardados ?? 0}
+              </div>
+            )}
+          </div>
+        )}
+
         {mensaje && <InlineMensaje tipo={tipoMensaje}>{mensaje}</InlineMensaje>}
       </div>
 
-      <aside className="shell-aside" aria-label="Ayuda de sincronizacion">
+      <aside className="shell-aside" aria-label="Ayuda de sincronizacion entre equipos">
         <div className="shell-asideCard">
-          <AyudaFormulario titulo="Para que sirve y como usarlo">
+          <AyudaFormulario titulo="Operacion recomendada entre computadoras">
             <p>
-              <b>Proposito:</b> sincronizar cambios entre equipos del mismo docente usando un servidor intermedio.
+              <b>Push:</b> ejecutalo en la computadora que tiene los cambios mas recientes.
+            </p>
+            <p>
+              <b>Pull:</b> ejecutalo en las computadoras restantes para aplicar cambios pendientes.
             </p>
             <ul className="lista">
-              <li>
-                <b>Enviar cambios:</b> sube tus cambios al servidor para que otros equipos los puedan traer despues.
-              </li>
-              <li>
-                <b>Traer cambios:</b> aplica los cambios pendientes del servidor en esta computadora.
-              </li>
-              <li>
-                <b>Cuenta:</b> usa el mismo docente en todos los equipos para conservar la fuente de verdad.
-              </li>
+              <li>Usa la misma cuenta docente en todos los equipos.</li>
+              <li>Si hay lotes grandes, primero push sin PDFs y luego una corrida con PDFs.</li>
+              <li>Antes de sesiones criticas, exporta backup local por archivo.</li>
             </ul>
           </AyudaFormulario>
         </div>

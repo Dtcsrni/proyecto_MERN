@@ -13,7 +13,7 @@ import { crearApp as crearAppPortal } from '../apps/portal_alumno_cloud/src/app'
 type Medicion = {
   service: 'backend' | 'portal';
   route: string;
-  method: 'GET';
+  method: 'GET' | 'POST';
   iterations: number;
   warmup: number;
   failures: number;
@@ -28,8 +28,9 @@ type Medicion = {
 type DefRuta = {
   service: 'backend' | 'portal';
   route: string;
-  method: 'GET';
+  method: 'GET' | 'POST';
   expectedStatus: number;
+  body?: Record<string, unknown>;
 };
 
 type Resultado = {
@@ -43,6 +44,11 @@ type Resultado = {
 const rutas: DefRuta[] = [
   { service: 'backend', route: '/api/salud/live', method: 'GET', expectedStatus: 200 },
   { service: 'backend', route: '/api/metrics', method: 'GET', expectedStatus: 200 },
+  // Endpoints criticos de negocio medidos en modo no autenticado para monitorear no-regresion de middleware/ruteo.
+  { service: 'backend', route: '/api/examenes/generados', method: 'GET', expectedStatus: 401 },
+  { service: 'backend', route: '/api/omr/analizar', method: 'POST', expectedStatus: 401, body: {} },
+  { service: 'backend', route: '/api/sincronizaciones/pull', method: 'POST', expectedStatus: 401, body: {} },
+  { service: 'backend', route: '/api/analiticas/lista-academica-csv?periodoId=PERF', method: 'GET', expectedStatus: 401 },
   { service: 'portal', route: '/api/portal/salud/live', method: 'GET', expectedStatus: 200 },
   { service: 'portal', route: '/api/portal/metrics', method: 'GET', expectedStatus: 200 }
 ];
@@ -64,7 +70,8 @@ async function medirRuta(
 
   for (let i = 0; i < warmup + iterations; i += 1) {
     const inicio = process.hrtime.bigint();
-    const resp = await request(app)[def.method.toLowerCase() as 'get'](def.route);
+    const metodo = request(app)[def.method.toLowerCase() as 'get' | 'post'](def.route);
+    const resp = def.body ? await metodo.send(def.body) : await metodo;
     const fin = process.hrtime.bigint();
     const ms = Number(fin - inicio) / 1_000_000;
 
@@ -101,12 +108,12 @@ async function run() {
   const warmup = Math.max(1, Number.parseInt(process.env.PERF_WARMUP || '10', 10));
   const output = path.resolve(process.cwd(), process.env.PERF_REPORT_PATH || 'reports/perf/latest.json');
 
-  const appBackend = crearAppBackend();
-  const appPortal = crearAppPortal();
   const resultados: Medicion[] = [];
 
   for (const ruta of rutas) {
-    const app = ruta.service === 'backend' ? appBackend : appPortal;
+    // Se crea una app nueva por ruta para evitar sesgo por acumulacion de rate-limit
+    // entre escenarios de medicion diferentes.
+    const app = ruta.service === 'backend' ? crearAppBackend() : crearAppPortal();
     const medicion = await medirRuta(app, ruta, iterations, warmup);
     resultados.push(medicion);
   }

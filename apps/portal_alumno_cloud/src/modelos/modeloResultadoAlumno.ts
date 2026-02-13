@@ -8,6 +8,7 @@ const ResultadoAlumnoSchema = new Schema(
     periodoId: { type: Schema.Types.ObjectId, required: true },
     docenteId: { type: Schema.Types.ObjectId, required: true },
     alumnoId: { type: Schema.Types.ObjectId, required: true },
+    examenGeneradoId: { type: Schema.Types.ObjectId },
     matricula: { type: String, required: true },
     nombreCompleto: { type: String, required: true },
     grupo: { type: String },

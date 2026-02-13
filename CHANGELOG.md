@@ -2,7 +2,18 @@
 
 Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 
-## [Unreleased] - 2026-02-13
+## [Unreleased]
+
+### Changed
+- Ola 2C (sincronizacion) avanzó con particion interna sin romper API:
+  - Nuevo archivo `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`.
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` delega hashing, parsing, LWW y errores de conectividad.
+- Correccion LWW en importacion de paquetes para preservar `updatedAt` del paquete al aplicar `upsert`.
+- Pruebas de sincronizacion reforzadas y validadas:
+  - `apps/backend/tests/sincronizacion.test.ts`
+  - `apps/frontend/tests/sincronizacion.behavior.test.tsx`
+
+## [0.2.0-beta.1] - 2026-02-13
 
 ### Added
 - Documento de inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`.
@@ -47,6 +58,15 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Preflight operativo para generación de examen global en producción:
   - `scripts/release/preflight-global-prod.mjs`
   - `docs/OPERACION_EXAMEN_GLOBAL_PROD.md`
+- Ola 2A (OMR) iniciada con pipeline modular y canary:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/types.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/qr/etapaQr.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/deteccion/etapaDeteccion.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/calidad/etapaCalidad.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/debug/etapaDebug.ts`
 
 ### Changed
 - Actualización integral de documentación raíz y técnica:
@@ -103,6 +123,23 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `docs/RUNBOOK_OPERACION.md`
   - `scripts/README.md`
   - `docs/README.md`
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada compatible con feature flag:
+  - `FEATURE_OMR_PIPELINE_V2=0|1` (por defecto desactivado para rollout canary)
+- Observabilidad OMR agregada en `/api/metrics`:
+  - `evaluapro_omr_stage_duration_ms`
+  - `evaluapro_omr_stage_errors_total`
+  - `evaluapro_omr_pipeline_total`
+  - `evaluapro_omr_pipeline_error_total`
+  - `evaluapro_omr_pipeline_duration_ms`
+- `scripts/perf-collect.ts` ampliado para medir rutas criticas de negocio (examenes/omr/sincronizaciones/analiticas).
+- `scripts/bigbang-olas-check.mjs` actualizado para validar el monolito OMR en `servicioOmrLegacy.ts`.
+- `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` con layout parametrico milimetrico para impresion:
+  - grilla configurable
+  - alturas de encabezado configurables
+  - zona segura inferior configurable
+  - politica de bajo consumo de tinta (menos rellenos solidos).
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` ahora ajusta parametros de deteccion usando geometria real del `mapaOmr` generado por pagina.
+- `apps/backend/tests/integracion/pdfImpresionContrato.test.ts` ampliado para validar presencia y rangos del perfil de layout parametrico en `mapaOmr`.
 
 ### Fixed
 - Selectores ambiguos en pruebas de refactor (`Plantillas` y `Banco`) que generaban fallos falsos negativos.

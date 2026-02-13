@@ -45,10 +45,15 @@ Commit de referencia: `dffa43f`.
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
 - Ola 2: pendiente (backend core)
-  - `servicioOmr.ts`: 1854
-  - `controladorGeneracionPdf.ts`: 1260
-  - `servicioGeneracionPdf.ts`: 1158
-  - `controladorSincronizacion.ts`: 989
+  - OMR: en curso (Ola 2A iniciada con pipeline modular + flag canary)
+    - `servicioOmr.ts`: fachada v2 (feature flag)
+    - `servicioOmrLegacy.ts`: motor legado (monolito)
+  - PDF:
+    - `controladorGeneracionPdf.ts`: 1389
+    - `servicioGeneracionPdf.ts`: 1396
+  - Sincronizacion (Ola 2C en progreso):
+    - `controladorSincronizacion.ts`: 885
+    - `sincronizacionInterna.ts`: modulo extraido para utilidades, hashing y LWW
 - Ola 3: pendiente (`api/v2` + migracion dual completa)
 - Ola 4: pendiente (hardening final + retiro de compatibilidad temporal)
 
@@ -113,6 +118,7 @@ Commit de referencia: `dffa43f`.
   - `npm run test:portal:ci`
   - `npm run perf:check`
   - `npm run pipeline:contract:check`
+  - `npm run bigbang:olas:strict`
 - Cobertura frontend observada:
   - lines 39.20
   - functions 40.28
@@ -138,7 +144,10 @@ Commit de referencia: `dffa43f`.
   - `lista-academica.manifest.json` con SHA-256 por archivo.
 
 ## 9) Brechas para `1.0-beta`
-1. Completar Ola 2 (backend OMR/PDF/Sync con objetivo p95).
+1. Completar Ola 2:
+- OMR 2A: continuar particion interna del motor legado por etapas reales (no solo orquestacion).
+- PDF 2B: separar controller/use-case/domain/infra.
+- Sync 2C: separar controlador por casos de uso y politicas.
 2. Completar Ola 3 (`api/v2` + migracion dual integral).
 3. Completar Ola 4 (hardening final + retiro de compatibilidad temporal).
 4. Continuar rampa de cobertura frontend hacia 45 en 4 metricas sin exclusiones artificiales.

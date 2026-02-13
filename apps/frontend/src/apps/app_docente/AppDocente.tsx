@@ -32,7 +32,8 @@ import type {
   ResultadoAnalisisOmr,
   ResultadoOmr,
   RevisionExamenOmr,
-  RevisionPaginaOmr
+  RevisionPaginaOmr,
+  SolicitudRevisionAlumno
 } from './tipos';
 import {
   combinarRespuestasOmrPaginas,
@@ -111,6 +112,7 @@ export function AppDocente() {
   const [examenAlumnoId, setExamenAlumnoId] = useState<string | null>(null);
   const [paginaOmrActiva, setPaginaOmrActiva] = useState<number | null>(null);
   const [revisionesOmr, setRevisionesOmr] = useState<RevisionExamenOmr[]>([]);
+  const [solicitudesRevision, setSolicitudesRevision] = useState<SolicitudRevisionAlumno[]>([]);
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [ultimaActualizacionDatos, setUltimaActualizacionDatos] = useState<number | null>(null);
 
@@ -226,6 +228,18 @@ export function AppDocente() {
   useEffect(() => {
     void refrescarDatos();
   }, [refrescarDatos]);
+
+  useEffect(() => {
+    if (!docente || vista !== 'calificaciones' || !permisosUI.calificaciones.calificar) return;
+    void clienteApi
+      .obtener<{ solicitudes: SolicitudRevisionAlumno[] }>('/calificaciones/revision/solicitudes')
+      .then((respuesta) => {
+        setSolicitudesRevision(Array.isArray(respuesta.solicitudes) ? respuesta.solicitudes : []);
+      })
+      .catch(() => {
+        setSolicitudesRevision([]);
+      });
+  }, [docente, permisosUI.calificaciones.calificar, vista]);
 
   function refrescarMaterias() {
     if (!permisosUI.periodos.leer) {
@@ -701,6 +715,30 @@ export function AppDocente() {
               return Promise.reject(new Error('SIN_PERMISO'));
             }
             return clienteApi.enviar('/calificaciones/calificar', payload);
+          }}
+          solicitudesRevision={solicitudesRevision}
+          onSincronizarSolicitudesRevision={async () => {
+            if (!permisosUI.calificaciones.calificar) {
+              avisarSinPermiso('No tienes permiso para revisar solicitudes.');
+              throw new Error('SIN_PERMISO');
+            }
+            await clienteApi.enviar('/calificaciones/revision/solicitudes/sincronizar', {});
+            const respuesta = await clienteApi.obtener<{ solicitudes: SolicitudRevisionAlumno[] }>('/calificaciones/revision/solicitudes');
+            setSolicitudesRevision(Array.isArray(respuesta.solicitudes) ? respuesta.solicitudes : []);
+            return respuesta;
+          }}
+          onResolverSolicitudRevision={async (id, estado, respuestaDocente) => {
+            if (!permisosUI.calificaciones.calificar) {
+              avisarSinPermiso('No tienes permiso para resolver solicitudes.');
+              throw new Error('SIN_PERMISO');
+            }
+            await clienteApi.enviar(`/calificaciones/revision/solicitudes/${encodeURIComponent(id)}/resolver`, {
+              estado,
+              ...(respuestaDocente ? { respuestaDocente } : {})
+            });
+            const respuesta = await clienteApi.obtener<{ solicitudes: SolicitudRevisionAlumno[] }>('/calificaciones/revision/solicitudes');
+            setSolicitudesRevision(Array.isArray(respuesta.solicitudes) ? respuesta.solicitudes : []);
+            return respuesta;
           }}
         />
       )}
