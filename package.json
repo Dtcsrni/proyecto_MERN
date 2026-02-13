@@ -20,7 +20,11 @@
     "react",
     "vite"
   ],
-  "workspaces": ["apps/backend", "apps/frontend", "apps/portal_alumno_cloud"],
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "apps/portal_alumno_cloud"
+  ],
   "engines": {
     "node": ">=24"
   },
@@ -40,6 +44,8 @@
     "test:portal:ci": "node scripts/retry.mjs --name portal --attempts 3 --delay-ms 750 --command \"npm -C apps/portal_alumno_cloud run test\"",
     "test:frontend": "npm -C apps/frontend run test",
     "test:frontend:ci": "node scripts/retry.mjs --name frontend --attempts 5 --delay-ms 900 --command \"npm -C apps/frontend run test -- --pool=forks --reporter=verbose\" --fallback-command \"npm -C apps/frontend run test -- --pool=threads --reporter=verbose\"",
+    "test:flujo-docente:ci": "npm -C apps/backend run test -- --reporter=verbose tests/integracion/flujoDocenteParcialE2E.test.ts tests/integracion/flujoDocenteGlobalE2E.test.ts",
+    "test:coverage:ci": "npm -C apps/backend run test:coverage && npm -C apps/portal_alumno_cloud run test:coverage && npm -C apps/frontend run test:coverage",
     "docs:generate": "node scripts/docs.mjs --write",
     "docs:check": "node scripts/docs.mjs --check",
     "diagramas:generate": "node scripts/diagramas.mjs --write",
@@ -49,6 +55,9 @@
     "diagramas:consistencia:check": "node scripts/diagramas-consistencia.mjs --check",
     "docs:sync": "npm run diagramas:generate && npm run diagramas:render && npm run docs:generate",
     "routes:check": "node scripts/routes-check.mjs",
+    "security:env:check": "node scripts/security-env-check.mjs",
+    "security:audit": "npm audit --audit-level=high",
+    "pipeline:contract:check": "node -e \"const fs=require('fs');['ci/pipeline.contract.md','ci/pipeline.matrix.json'].forEach(p=>{if(!fs.existsSync(p)){throw new Error('Missing '+p)}});console.log('pipeline contract OK');\"",
     "test:ci": "npm run lint && npm run typecheck && npm run build && npm run docs:check && npm run diagramas:check && npm run diagramas:render:check && npm run diagramas:consistencia:check && npm run routes:check && npm run test:backend:ci && npm run test:portal:ci && npm run test:frontend:ci",
     "build": "npm run --workspaces --if-present build",
     "lint": "npm run --workspaces --if-present lint",
@@ -71,6 +80,7 @@
     "@types/supertest": "^2.0.16",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^8.57.1",
     "jsdom": "^27.4.0",
     "mongodb-memory-server": "^9.5.0",

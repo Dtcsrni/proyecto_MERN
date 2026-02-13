@@ -38,6 +38,9 @@ const jwtSecreto = process.env.JWT_SECRETO ?? '';
 if (entorno === 'production' && !jwtSecreto) {
   throw new Error('JWT_SECRETO es requerido en producción');
 }
+if (entorno === 'production' && !mongoUri) {
+  throw new Error('MONGODB_URI es requerido en producción');
+}
 const jwtSecretoEfectivo = jwtSecreto || 'cambia-este-secreto';
 const jwtExpiraHoras = Number(process.env.JWT_EXPIRA_HORAS ?? 8);
 const refreshTokenDias = Number(process.env.REFRESH_TOKEN_DIAS ?? 30);

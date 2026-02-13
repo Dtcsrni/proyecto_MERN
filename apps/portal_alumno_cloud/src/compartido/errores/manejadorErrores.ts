@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { logError } from '../../infraestructura/logging/logger';
 
 /**
  * Middleware de manejo de errores (portal alumno).
@@ -7,15 +8,17 @@ import type { NextFunction, Request, Response } from 'express';
  * - En produccion, evita filtrar `error.message` al cliente.
  * - En test/dev, devuelve el mensaje para facilitar diagnostico.
  */
-export function manejadorErroresPortal(error: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function manejadorErroresPortal(error: unknown, req: Request, res: Response, _next: NextFunction) {
   void _next;
 
   const entorno = process.env.NODE_ENV;
 
-  // Log minimo: en produccion conviene reemplazar por logger estructurado.
-  if (entorno !== 'test' && error instanceof Error) {
-    // eslint-disable-next-line no-console
-    console.error(error);
+  if (entorno !== 'test') {
+    logError('Error no controlado en portal', error, {
+      requestId: (req as Request & { requestId?: string }).requestId,
+      route: req.path,
+      method: req.method
+    });
   }
 
   const exponerMensaje = entorno !== 'production';

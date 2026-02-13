@@ -1,0 +1,53 @@
+groups:
+  - name: evaluapro-alertas-minimas
+    rules:
+      - alert: ApiDocenteDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: api-docente
+        annotations:
+          summary: API docente sin respuesta
+          description: El target backend no responde al scrape de Prometheus por 2 minutos.
+
+      - alert: ApiDocenteHighP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(evaluapro_http_request_duration_ms_bucket[5m])
+            )
+          ) > 1200
+        for: 10m
+        labels:
+          severity: warning
+          service: api-docente
+        annotations:
+          summary: Latencia p95 alta en API docente
+          description: La latencia p95 supera 1200ms por 10 minutos.
+
+      - alert: ApiDocenteHigh5xx
+        expr: |
+          sum(rate(evaluapro_http_requests_total{status=~"5.."}[5m]))
+          /
+          sum(rate(evaluapro_http_requests_total[5m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: api-docente
+        annotations:
+          summary: Tasa de errores 5xx elevada en API docente
+          description: El ratio de 5xx supera 5% por 5 minutos.
+
+      - alert: PortalAuthFailuresHigh
+        expr: |
+          sum(rate(evaluapro_portal_http_requests_total{status=~"401|403"}[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: portal-alumno
+        annotations:
+          summary: Fallas de autenticacion elevadas en portal
+          description: TODO: ajustar con métrica dedicada de auth cuando exista en portal.

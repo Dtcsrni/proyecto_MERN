@@ -38,11 +38,11 @@ export function SeccionCuenta({
   const [restaurandoId, setRestaurandoId] = useState<string | null>(null);
 
   const coincide = contrasenaNueva && contrasenaNueva === contrasenaNueva2;
-  const requierePwdActual = Boolean(docente.tieneContrasena);
+  const requiereContrasenaActual = Boolean(docente.tieneContrasena);
   const requiereGoogle = Boolean(docente.tieneGoogle && !docente.tieneContrasena);
 
-  const reauthOk = requierePwdActual ? Boolean(contrasenaActual.trim()) : requiereGoogle ? Boolean(credentialReauth) : Boolean(contrasenaActual.trim() || credentialReauth);
-  const puedeGuardar = Boolean(contrasenaNueva.trim().length >= 8 && coincide && reauthOk);
+  const reautenticacionValida = requiereContrasenaActual ? Boolean(contrasenaActual.trim()) : requiereGoogle ? Boolean(credentialReauth) : Boolean(contrasenaActual.trim() || credentialReauth);
+  const puedeGuardar = Boolean(contrasenaNueva.trim().length >= 8 && coincide && reautenticacionValida);
 
   function hayGoogleConfigurado() {
     return Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
@@ -54,11 +54,11 @@ export function SeccionCuenta({
       setGuardando(true);
       setMensaje('');
 
-      const payload: Record<string, unknown> = { contrasenaNueva };
-      if (contrasenaActual.trim()) payload.contrasenaActual = contrasenaActual;
-      if (credentialReauth) payload.credential = credentialReauth;
+      const cuerpo: Record<string, unknown> = { contrasenaNueva };
+      if (contrasenaActual.trim()) cuerpo.contrasenaActual = contrasenaActual;
+      if (credentialReauth) cuerpo.credential = credentialReauth;
 
-      await clienteApi.enviar('/autenticacion/definir-contrasena', payload);
+      await clienteApi.enviar('/autenticacion/definir-contrasena', cuerpo);
       setMensaje('Contrasena actualizada');
       emitToast({ level: 'ok', title: 'Cuenta', message: 'Contrasena actualizada', durationMs: 2400 });
       registrarAccionDocente('definir_contrasena', true, Date.now() - inicio);
@@ -88,20 +88,20 @@ export function SeccionCuenta({
       setGuardando(true);
       setMensaje('');
 
-      const payload: Record<string, unknown> = {};
-      if (institucionPdf.trim()) payload.institucion = institucionPdf.trim();
-      if (lemaPdf.trim()) payload.lema = lemaPdf.trim();
+      const cuerpo: Record<string, unknown> = {};
+      if (institucionPdf.trim()) cuerpo.institucion = institucionPdf.trim();
+      if (lemaPdf.trim()) cuerpo.lema = lemaPdf.trim();
       if (logoIzqPdf.trim() || logoDerPdf.trim()) {
-        payload.logos = {
+        cuerpo.logos = {
           ...(logoIzqPdf.trim() ? { izquierdaPath: logoIzqPdf.trim() } : {}),
           ...(logoDerPdf.trim() ? { derechaPath: logoDerPdf.trim() } : {})
         };
       }
 
-      const resp = await clienteApi.enviar<{ preferenciasPdf: Docente['preferenciasPdf'] }>('/autenticacion/preferencias/pdf', payload);
+      const respuesta = await clienteApi.enviar<{ preferenciasPdf: Docente['preferenciasPdf'] }>('/autenticacion/preferencias/pdf', cuerpo);
       onDocenteActualizado({
         ...docente,
-        preferenciasPdf: resp.preferenciasPdf
+        preferenciasPdf: respuesta.preferenciasPdf
       });
 
       setMensaje('Preferencias de PDF guardadas');
@@ -127,8 +127,8 @@ export function SeccionCuenta({
     if (!esAdmin || !esDev) return;
     setCargandoPapelera(true);
     try {
-      const resp = await clienteApi.obtener<{ items: Array<Record<string, unknown>> }>('/papelera?limite=60');
-      setPapelera(resp.items ?? []);
+      const respuesta = await clienteApi.obtener<{ items: Array<Record<string, unknown>> }>('/papelera?limite=60');
+      setPapelera(respuesta.items ?? []);
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo cargar la papelera');
       setMensaje(msg);
@@ -137,10 +137,10 @@ export function SeccionCuenta({
     }
   }, [esAdmin, esDev]);
 
-  async function restaurarPapelera(id: string) {
-    setRestaurandoId(id);
+  async function restaurarPapelera(idElemento: string) {
+    setRestaurandoId(idElemento);
     try {
-      await clienteApi.enviar(`/papelera/${encodeURIComponent(id)}/restaurar`, {});
+      await clienteApi.enviar(`/papelera/${encodeURIComponent(idElemento)}/restaurar`, {});
       emitToast({ level: 'ok', title: 'Papelera', message: 'Elemento restaurado', durationMs: 2200 });
       await cargarPapelera();
     } catch (error) {
@@ -162,12 +162,12 @@ export function SeccionCuenta({
     return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString();
   }
 
-  function tituloPapelera(item: Record<string, unknown>) {
-    const payload = (item.payload as Record<string, unknown>) ?? {};
-    const tipo = String(item.tipo ?? '');
-    if (tipo === 'plantilla') return String((payload.plantilla as Record<string, unknown>)?.titulo ?? '').trim();
-    if (tipo === 'periodo') return String((payload.periodo as Record<string, unknown>)?.nombre ?? '').trim();
-    if (tipo === 'alumno') return String((payload.alumno as Record<string, unknown>)?.nombreCompleto ?? '').trim();
+  function tituloPapelera(elemento: Record<string, unknown>) {
+    const cuerpo = (elemento.payload as Record<string, unknown>) ?? {};
+    const tipo = String(elemento.tipo ?? '');
+    if (tipo === 'plantilla') return String((cuerpo.plantilla as Record<string, unknown>)?.titulo ?? '').trim();
+    if (tipo === 'periodo') return String((cuerpo.periodo as Record<string, unknown>)?.nombre ?? '').trim();
+    if (tipo === 'alumno') return String((cuerpo.alumno as Record<string, unknown>)?.nombreCompleto ?? '').trim();
     return '';
   }
 
@@ -310,12 +310,12 @@ export function SeccionCuenta({
           <p className="nota">Reautenticacion con Google (recomendado).</p>
           <GoogleLogin
             onSuccess={(cred) => {
-              const token = cred.credential;
-              if (!token) {
+              const credencialGoogle = cred.credential;
+              if (!credencialGoogle) {
                 setMensaje('No se recibio credencial de Google.');
                 return;
               }
-              setCredentialReauth(token);
+              setCredentialReauth(credencialGoogle);
               setMensaje('Reautenticacion con Google lista.');
             }}
             onError={() => setMensaje('No se pudo reautenticar con Google.')}

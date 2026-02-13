@@ -11,6 +11,7 @@
  * - La telemetria se maneja best-effort (no debe interrumpir la UX).
  */
 import { Router, type Request, type Response } from 'express';
+import mongoose from 'mongoose';
 import { gunzipSync } from 'zlib';
 import { configuracion } from './configuracion';
 import { CodigoAcceso } from './modelos/modeloCodigoAcceso';
@@ -20,6 +21,7 @@ import { ResultadoAlumno } from './modelos/modeloResultadoAlumno';
 import { SesionAlumno } from './modelos/modeloSesionAlumno';
 import { generarTokenSesion } from './servicios/servicioSesion';
 import { requerirSesionAlumno, type SolicitudAlumno } from './servicios/middlewareSesion';
+import { exportarMetricasPrometheus } from './infraestructura/observabilidad/metrics';
 
 const router = Router();
 
@@ -125,6 +127,38 @@ function esMetaSeguro(meta: unknown): boolean {
 
 router.get('/salud', (_req, res) => {
   res.json({ estado: 'ok', tiempoActivo: process.uptime() });
+});
+
+router.get('/salud/live', (_req, res) => {
+  res.json({
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    servicio: 'portal-alumno',
+    env: process.env.NODE_ENV ?? 'development'
+  });
+});
+
+router.get('/salud/ready', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  const lista = estadoDb === 1 || !configuracion.mongoUri;
+  res.status(lista ? 200 : 503).json({
+    estado: lista ? 'ok' : 'degradado',
+    tiempoActivo: process.uptime(),
+    dependencias: {
+      db: {
+        estado: estadoDb,
+        lista
+      }
+    }
+  });
+});
+
+router.get('/metrics', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(
+    `${exportarMetricasPrometheus()}\n\n# HELP evaluapro_portal_db_ready_state Estado de conexión MongoDB del portal (0-3)\n# TYPE evaluapro_portal_db_ready_state gauge\nevaluapro_portal_db_ready_state ${estadoDb}\n`
+  );
 });
 
 router.post('/sincronizar', async (req, res) => {
