@@ -42,6 +42,13 @@ type Resultado = {
     coincide: boolean;
     confianza?: number;
   }>;
+  omrCapturas?: Array<{
+    numeroPagina: number;
+    formato: 'jpg' | 'jpeg' | 'png' | 'webp';
+    imagenBase64: string;
+    calidad?: number;
+    sugerencias?: string[];
+  }>;
   omrAuditoria?: {
     estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
     revisionConfirmada?: boolean;
@@ -243,6 +250,14 @@ export function AppAlumno() {
       return;
     }
     const comentario = (comentarioRevisionPorFolio[folio] ?? '').trim();
+    if (comentario.length < 12) {
+      emitToast({
+        level: 'warn',
+        title: 'Comentario obligatorio',
+        message: 'Explica brevemente el motivo de revisión (mínimo 12 caracteres).'
+      });
+      return;
+    }
     try {
       await clientePortal.enviar('/solicitudes-revision', {
         folio,
@@ -602,7 +617,7 @@ export function AppAlumno() {
                                       onChange={(event) =>
                                         setComentarioRevisionPorFolio((prev) => ({ ...prev, [resultado.folio]: event.target.value }))
                                       }
-                                      placeholder="Comentario opcional para el docente"
+                                      placeholder="Comentario obligatorio: explica por qué solicitas revisión"
                                       rows={2}
                                       style={{ width: '100%', minHeight: 58 }}
                                     />
@@ -627,6 +642,32 @@ export function AppAlumno() {
                                     >
                                       <Icono nombre="ok" /> Enviar conformidad
                                     </button>
+                                  </div>
+                                )}
+                                {Array.isArray(detalle.omrCapturas) && detalle.omrCapturas.length > 0 && (
+                                  <div className="panel alumno-detalle" aria-label="Capturas OMR por página">
+                                    <h4>Capturas OMR por página</h4>
+                                    <div className="guia-grid">
+                                      {detalle.omrCapturas
+                                        .slice()
+                                        .sort((a, b) => Number(a.numeroPagina) - Number(b.numeroPagina))
+                                        .map((captura) => (
+                                          <div className="item-glass" key={`${resultado.folio}-captura-${captura.numeroPagina}`}>
+                                            <div className="item-meta">
+                                              <span>Página {captura.numeroPagina}</span>
+                                              {typeof captura.calidad === 'number' && <span>Calidad: {(captura.calidad * 100).toFixed(0)}%</span>}
+                                            </div>
+                                            <img
+                                              className="preview"
+                                              alt={`Captura OMR página ${captura.numeroPagina}`}
+                                              src={`data:image/${captura.formato};base64,${captura.imagenBase64}`}
+                                            />
+                                            {Array.isArray(captura.sugerencias) && captura.sugerencias.length > 0 && (
+                                              <InlineMensaje tipo="info">{captura.sugerencias.join(' | ')}</InlineMensaje>
+                                            )}
+                                          </div>
+                                        ))}
+                                    </div>
                                   </div>
                                 )}
                               </>

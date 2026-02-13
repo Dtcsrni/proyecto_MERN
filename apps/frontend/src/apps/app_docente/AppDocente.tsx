@@ -115,7 +115,6 @@ export function AppDocente() {
   const [solicitudesRevision, setSolicitudesRevision] = useState<SolicitudRevisionAlumno[]>([]);
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [ultimaActualizacionDatos, setUltimaActualizacionDatos] = useState<number | null>(null);
-
   function cerrarSesion() {
     // Best-effort: limpia refresh token server-side.
     void clienteApi.enviar('/autenticacion/salir', {});
@@ -124,12 +123,9 @@ export function AppDocente() {
     emitToast({ level: 'info', title: 'Sesion', message: 'Sesion cerrada', durationMs: 2200 });
     registrarAccionDocente('logout', true);
   }
-
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const montadoRef = useRef(true);
-
   // Nota UX: ocultamos el badge de estado API (no aporta al flujo docente).
-
   useEffect(() => {
     if (itemsVista.length === 0) return;
     const vistaBase = vista === 'periodos_archivados' ? 'periodos' : vista;
@@ -137,22 +133,18 @@ export function AppDocente() {
       setVista(itemsVista[0].id);
     }
   }, [itemsVista, vista]);
-
   useSesionDocente({ setDocente, onCerrarSesion: cerrarSesion, montadoRef });
-
   useEffect(() => {
     montadoRef.current = true;
     return () => {
       montadoRef.current = false;
     };
   }, []);
-
   const refrescarDatos = useCallback(async () => {
     if (!docente) return;
     if (montadoRef.current) setCargandoDatos(true);
     try {
       const tareas: Array<Promise<void>> = [];
-
       if (permisosUI.alumnos.leer) {
         tareas.push(
           clienteApi.obtener<{ alumnos: Alumno[] }>('/alumnos').then((al) => {
@@ -162,7 +154,6 @@ export function AppDocente() {
       } else {
         setAlumnos([]);
       }
-
       if (permisosUI.periodos.leer) {
         tareas.push(
           Promise.all([
@@ -176,13 +167,10 @@ export function AppDocente() {
             const archivadas = (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).periodos ??
               (peArchivadas as unknown as { periodos?: Periodo[]; materias?: Periodo[] }).materias ??
               [];
-
             const activasArray = Array.isArray(activas) ? activas : [];
             const archivadasArray = Array.isArray(archivadas) ? archivadas : [];
-
             const ids = (lista: Periodo[]) => lista.map((m) => m._id).filter(Boolean).sort().join('|');
             const mismoContenido = activasArray.length > 0 && ids(activasArray) === ids(archivadasArray);
-
             // Fallback: si el backend ignora ?activo y devuelve lo mismo, separa localmente.
             if (mismoContenido) {
               setPeriodos(activasArray.filter((m) => m.activo !== false));
@@ -197,7 +185,6 @@ export function AppDocente() {
         setPeriodos([]);
         setPeriodosArchivados([]);
       }
-
       if (permisosUI.plantillas.leer) {
         tareas.push(
           clienteApi.obtener<{ plantillas: Plantilla[] }>('/examenes/plantillas').then((pl) => {
@@ -207,7 +194,6 @@ export function AppDocente() {
       } else {
         setPlantillas([]);
       }
-
       if (permisosUI.banco.leer) {
         tareas.push(
           clienteApi.obtener<{ preguntas: Pregunta[] }>('/banco-preguntas').then((pr) => {
@@ -217,18 +203,15 @@ export function AppDocente() {
       } else {
         setPreguntas([]);
       }
-
       await Promise.all(tareas);
       setUltimaActualizacionDatos(Date.now());
     } finally {
       if (montadoRef.current) setCargandoDatos(false);
     }
   }, [docente, permisosUI.alumnos.leer, permisosUI.banco.leer, permisosUI.periodos.leer, permisosUI.plantillas.leer]);
-
   useEffect(() => {
     void refrescarDatos();
   }, [refrescarDatos]);
-
   useEffect(() => {
     if (!docente || vista !== 'calificaciones' || !permisosUI.calificaciones.calificar) return;
     void clienteApi
@@ -240,7 +223,6 @@ export function AppDocente() {
         setSolicitudesRevision([]);
       });
   }, [docente, permisosUI.calificaciones.calificar, vista]);
-
   function refrescarMaterias() {
     if (!permisosUI.periodos.leer) {
       setPeriodos([]);
@@ -253,13 +235,10 @@ export function AppDocente() {
     ]).then(([peActivas, peArchivadas]) => {
       const activas = peActivas.periodos ?? peActivas.materias ?? [];
       const archivadas = peArchivadas.periodos ?? peArchivadas.materias ?? [];
-
       const activasArray = Array.isArray(activas) ? activas : [];
       const archivadasArray = Array.isArray(archivadas) ? archivadas : [];
-
       const ids = (lista: Periodo[]) => lista.map((m) => m._id).filter(Boolean).sort().join('|');
       const mismoContenido = activasArray.length > 0 && ids(activasArray) === ids(archivadasArray);
-
       if (mismoContenido) {
         setPeriodos(activasArray.filter((m) => m.activo !== false));
         setPeriodosArchivados(activasArray.filter((m) => m.activo === false));
@@ -270,7 +249,6 @@ export function AppDocente() {
       setUltimaActualizacionDatos(Date.now());
     });
   }
-
   const examenOmrActivo = useMemo(
     () => revisionesOmr.find((item) => item.examenId === examenIdOmr) ?? null,
     [examenIdOmr, revisionesOmr]
@@ -298,7 +276,6 @@ export function AppDocente() {
             .sort((a, b) => a - b),
     [claveCorrectaOmrActiva, examenOmrActivo]
   );
-
   const seleccionarRevisionOmr = useCallback(
     (examenId: string, numeroPagina: number) => {
       const examen = revisionesOmr.find((item) => item.examenId === examenId);
@@ -314,7 +291,6 @@ export function AppDocente() {
     },
     [revisionesOmr]
   );
-
   const actualizarRespuestasOmrActivas = useCallback(
     (nuevas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => {
       setRespuestasEditadas(nuevas);
@@ -348,7 +324,6 @@ export function AppDocente() {
     },
     [examenIdOmr, paginaOmrActiva]
   );
-
   const actualizarRespuestaPreguntaOmrActiva = useCallback(
     (numeroPregunta: number, opcion: string | null) => {
       const numero = Number(numeroPregunta);
@@ -407,7 +382,6 @@ export function AppDocente() {
     },
     [examenIdOmr, paginaOmrActiva]
   );
-
   const confirmarRevisionOmrActiva = useCallback(
     (confirmada: boolean) => {
       setRevisionOmrConfirmada(confirmada);
@@ -418,7 +392,6 @@ export function AppDocente() {
     },
     [examenIdOmr]
   );
-
   const contenido = docente ? (
     <div className="panel">
       <nav
@@ -442,15 +415,12 @@ export function AppDocente() {
                 return;
               }
               event.preventDefault();
-
               const ultimo = itemsVista.length - 1;
               let idxNuevo = idx;
-
               if (event.key === 'ArrowLeft') idxNuevo = Math.max(0, idx - 1);
               if (event.key === 'ArrowRight') idxNuevo = Math.min(ultimo, idx + 1);
               if (event.key === 'Home') idxNuevo = 0;
               if (event.key === 'End') idxNuevo = ultimo;
-
               const nuevoId = itemsVista[idxNuevo]?.id;
               if (!nuevoId) return;
               setVista(nuevoId);
@@ -465,7 +435,6 @@ export function AppDocente() {
           })()
         ))}
       </nav>
-
       {cargandoDatos && (
         <div className="panel" aria-live="polite">
           <InlineMensaje tipo="info" leading={<Spinner />}>
@@ -473,7 +442,6 @@ export function AppDocente() {
           </InlineMensaje>
         </div>
       )}
-
       {vista === 'banco' && (
         <SeccionBanco
           preguntas={preguntas}
@@ -498,7 +466,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'periodos' && (
         <SeccionPeriodos
           periodos={periodos}
@@ -510,14 +477,12 @@ export function AppDocente() {
           avisarSinPermiso={avisarSinPermiso}
         />
       )}
-
       {vista === 'periodos_archivados' && (
         <SeccionPeriodosArchivados
           periodos={periodosArchivados}
           onVerActivas={() => setVista('periodos')}
         />
       )}
-
       {vista === 'alumnos' && (
         <SeccionAlumnos
           alumnos={alumnos}
@@ -536,7 +501,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'plantillas' && (
         <SeccionPlantillas
           plantillas={plantillas}
@@ -566,7 +530,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'entrega' && (
         <SeccionEntrega
           alumnos={alumnos}
@@ -584,7 +547,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'calificaciones' && (
         <SeccionCalificaciones
           alumnos={alumnos}
@@ -742,7 +704,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'publicar' && (
         <SeccionSincronizacion
           periodos={periodos}
@@ -811,7 +772,6 @@ export function AppDocente() {
           }}
         />
       )}
-
       {vista === 'cuenta' && (
         <SeccionCuenta
           docente={docente}
@@ -831,6 +791,5 @@ export function AppDocente() {
       }}
     />
   );
-
   return <ShellDocente docente={docente} onCerrarSesion={cerrarSesion}>{contenido}</ShellDocente>;
 }

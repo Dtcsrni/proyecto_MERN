@@ -11,10 +11,11 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 2. `lint`
 3. `typecheck`
 4. `test`
-5. `coverage-check`
-6. `build`
-7. `docs-check`
-8. `security-scan`
+5. `ux-quality-check`
+6. `coverage-check`
+7. `build`
+8. `docs-check`
+9. `security-scan`
 
 ### Profile `extended` (blocking for `main`, `release/*`, `schedule`, or manual dispatch)
 1. `setup`
@@ -54,6 +55,12 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
   - `npm run test:frontend:ci`
 - Flaky policy: retries only for explicitly retriable jobs/scripts
 
+### ux-quality-check
+- Command: `npm run test:ux-quality:ci`
+- Policy: blocking gate
+- Scope: baseline UX contract (ayudas contextuales, iconografia minima, labels/landmarks y navegacion clara en pantallas criticas)
+- Output: frontend test report (runner-native)
+
 ### flujo-docente-check
 - Command: `npm run test:flujo-docente:ci`
 - Policy: blocking gate
@@ -89,6 +96,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 
 ### ux-visual-check
 - Commands:
+  - `npm run test:ux-quality:ci`
   - `npm run test:ux-visual:ci`
   - `npm run test:e2e:journeys:ci`
 - Policy: blocking gate

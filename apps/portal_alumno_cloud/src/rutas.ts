@@ -220,6 +220,7 @@ router.post('/sincronizar', async (req, res) => {
     'proyectoTexto',
     'respuestasDetectadas',
     'comparativaRespuestas',
+    'omrCapturas',
     'omrAuditoria'
   ];
   for (const calificacion of calificaciones) {
@@ -308,6 +309,7 @@ router.post('/sincronizar', async (req, res) => {
         proyectoTexto: calificacion.proyectoTexto,
         respuestasDetectadas: Array.isArray(calificacion.respuestasDetectadas) ? calificacion.respuestasDetectadas : [],
         comparativaRespuestas: Array.isArray(calificacion.comparativaRespuestas) ? calificacion.comparativaRespuestas : [],
+        omrCapturas: Array.isArray(calificacion.omrCapturas) ? calificacion.omrCapturas : [],
         omrAuditoria: calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object' ? calificacion.omrAuditoria : undefined,
         banderas: banderasExamen,
         pdfComprimidoBase64: typeof examen?.pdfComprimidoBase64 === 'string' ? examen.pdfComprimidoBase64 : undefined
@@ -571,6 +573,7 @@ router.post('/solicitudes-revision', requerirSesionAlumno, async (req: Solicitud
       const numeroPregunta = Number(item?.numeroPregunta);
       if (!Number.isInteger(numeroPregunta) || numeroPregunta <= 0) return null;
       const comentario = normalizarString(item?.comentario).slice(0, 500);
+      if (comentario.length < 12) return null;
       const externoId = `${folio}:${req.alumnoId}:${numeroPregunta}`;
       return SolicitudRevision.updateOne(
         { externoId },
@@ -594,6 +597,15 @@ router.post('/solicitudes-revision', requerirSesionAlumno, async (req: Solicitud
     .filter(Boolean);
 
   await Promise.all(operaciones as Array<Promise<unknown>>);
+  if (operaciones.length === 0) {
+    responderError(
+      res,
+      400,
+      'COMENTARIO_OBLIGATORIO',
+      'Cada solicitud debe incluir comentario obligatorio (minimo 12 caracteres)'
+    );
+    return;
+  }
 
   const pendientes = await SolicitudRevision.find({ alumnoId: req.alumnoId, folio, estado: 'pendiente' })
     .sort({ numeroPregunta: 1 })
@@ -652,6 +664,9 @@ router.post('/sincronizacion-docente/solicitudes-revision/pull', async (req, res
     solicitadoEn: s.solicitadoEn ? new Date(s.solicitadoEn).toISOString() : new Date().toISOString(),
     atendidoEn: s.atendidoEn ? new Date(s.atendidoEn).toISOString() : null,
     respuestaDocente: s.respuestaDocente,
+    firmaDocente: s.firmaDocente,
+    firmadoEn: s.firmadoEn ? new Date(s.firmadoEn).toISOString() : null,
+    cerradoEn: s.cerradoEn ? new Date(s.cerradoEn).toISOString() : null,
     conformidadAlumno: Boolean(s.conformidadAlumno),
     conformidadActualizadaEn: s.conformidadActualizadaEn ? new Date(s.conformidadActualizadaEn).toISOString() : null,
     updatedAt: s.updatedAt ? new Date(s.updatedAt).toISOString() : new Date().toISOString()
@@ -665,13 +680,16 @@ router.post('/sincronizacion-docente/solicitudes-revision/pull', async (req, res
 
 router.post('/sincronizacion-docente/solicitudes-revision/update', async (req, res) => {
   if (!requerirApiKey(req, res)) return;
-  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['externoId', 'estado', 'respuestaDocente', 'conformidadAlumno'])) {
+  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['externoId', 'estado', 'respuestaDocente', 'conformidadAlumno', 'firmaDocente', 'firmadoEn', 'cerradoEn'])) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
     return;
   }
   const externoId = normalizarString((req.body as { externoId?: unknown })?.externoId);
   const estado = normalizarString((req.body as { estado?: unknown })?.estado).toLowerCase();
   const respuestaDocente = normalizarString((req.body as { respuestaDocente?: unknown })?.respuestaDocente).slice(0, 500);
+  const firmaDocente = normalizarString((req.body as { firmaDocente?: unknown })?.firmaDocente).slice(0, 200);
+  const firmadoEn = parsearFechaIso((req.body as { firmadoEn?: unknown })?.firmadoEn);
+  const cerradoEn = parsearFechaIso((req.body as { cerradoEn?: unknown })?.cerradoEn);
   const conformidadAlumno = Boolean((req.body as { conformidadAlumno?: unknown })?.conformidadAlumno);
   if (!externoId) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'externoId requerido');
@@ -682,8 +700,18 @@ router.post('/sincronizacion-docente/solicitudes-revision/update', async (req, r
   if (estado === 'atendida' || estado === 'rechazada' || estado === 'pendiente') {
     update.estado = estado;
     if (estado !== 'pendiente') update.atendidoEn = new Date();
+    if (estado === 'atendida') {
+      update.firmadoEn = new Date();
+      update.firmaDocente = 'firmado-docente';
+    }
+    if (estado === 'rechazada') {
+      update.cerradoEn = new Date();
+    }
   }
   if (respuestaDocente) update.respuestaDocente = respuestaDocente;
+  if (firmaDocente) update.firmaDocente = firmaDocente;
+  if (firmadoEn) update.firmadoEn = firmadoEn;
+  if (cerradoEn) update.cerradoEn = cerradoEn;
   if (conformidadAlumno) {
     update.conformidadAlumno = true;
     update.conformidadActualizadaEn = new Date();

@@ -18,6 +18,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `SEGURIDAD.md`: controles implementados y pendientes.
 - `SINCRONIZACION_ENTRE_COMPUTADORAS.md`: paquete export/import y push/pull.
 - `PRUEBAS.md`: estrategia de pruebas y criterios de salida.
+- `UX_QUALITY_CRITERIA.md`: criterios bloqueantes y verificables de calidad GUI/UX.
 - `DESPLIEGUE.md`: despliegue local y cloud.
 - `VERSIONADO.md`: politica de version y release.
 - `ENGINEERING_BASELINE.md`: baseline de ingeniería y reglas de gobernanza técnica.
@@ -54,6 +55,7 @@ Gate adicional bloqueante:
 - `global-grade-check`: valida reglas y contrato de calificacion global.
 - `pdf-print-check`: valida contrato PDF de impresion (Carta y trazabilidad).
 - `ux-visual-check`: valida regresion visual de pantallas criticas.
+- `ux-quality-check`: valida contrato UX basico (ayudas, iconografia y accesibilidad minima).
 - `perf-check`: valida presupuesto p95/failures contra baseline (`docs/perf/baseline.json`).
 
 Estado de referencia del corte 2026-02-13:

@@ -212,10 +212,13 @@ export type SolicitudRevisionAlumno = {
   folio: string;
   numeroPregunta: number;
   comentario?: string;
-  estado: 'pendiente' | 'atendida' | 'rechazada';
+  estado: 'pendiente' | 'atendida' | 'rechazada' | 'cerrada';
   solicitadoEn?: string;
   atendidoEn?: string | null;
   respuestaDocente?: string;
+  firmaDocente?: string;
+  firmadoEn?: string | null;
+  cerradoEn?: string | null;
   alumnoNombreCompleto?: string;
   conformidadAlumno?: boolean;
   conformidadActualizadaEn?: string | null;

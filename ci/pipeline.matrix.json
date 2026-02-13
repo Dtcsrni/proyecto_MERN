@@ -7,6 +7,7 @@
       "lint",
       "typecheck",
       "test",
+      "ux-quality-check",
       "coverage-check",
       "build",
       "docs-check",
@@ -64,6 +65,15 @@
       ]
     },
     {
+      "name": "ux-quality-check",
+      "commands": [
+        "npm run test:ux-quality:ci"
+      ],
+      "artifacts": [
+        "apps/frontend/tests/ux.quality.test.tsx"
+      ]
+    },
+    {
       "name": "flujo-docente-check",
       "commands": [
         "npm run test:flujo-docente:ci"
@@ -114,6 +124,7 @@
     {
       "name": "ux-visual-check",
       "commands": [
+        "npm run test:ux-quality:ci",
         "npm run test:ux-visual:ci",
         "npm run test:e2e:journeys:ci"
       ],

@@ -12,6 +12,15 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Pruebas de sincronizacion reforzadas y validadas:
   - `apps/backend/tests/sincronizacion.test.ts`
   - `apps/frontend/tests/sincronizacion.behavior.test.tsx`
+- UX contractual endurecida con gate bloqueante adicional:
+  - Nuevo test `apps/frontend/tests/ux.quality.test.tsx`.
+  - Nuevo script raíz `npm run test:ux-quality:ci`.
+  - `CI Checks` ahora ejecuta `Etapa ux-quality-check`.
+  - Contrato/matriz CI actualizados (`ci/pipeline.contract.md`, `ci/pipeline.matrix.json`).
+- Mejoras de ayuda contextual en sincronización docente:
+  - `apps/frontend/src/apps/app_docente/SeccionSincronizacion.tsx` usa `HelperPanel` con flujo recomendado.
+- Nueva guía de criterios verificables GUI/UX:
+  - `docs/UX_QUALITY_CRITERIA.md`.
 
 ## [0.2.0-beta.1] - 2026-02-13
 

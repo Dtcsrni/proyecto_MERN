@@ -50,6 +50,7 @@
     "test:pdf-print:ci": "npm -C apps/backend run test -- --reporter=verbose tests/integracion/pdfImpresionContrato.test.ts",
     "test:pdf-visual:ci": "npm run test:pdf-print:ci",
     "test:ux-visual:ci": "npm -C apps/frontend run test -- --reporter=verbose tests/ux.visual.test.tsx",
+    "test:ux-quality:ci": "npm -C apps/frontend run test -- --reporter=verbose tests/ux.quality.test.tsx",
     "test:e2e:journeys:ci": "npm run test:ux-visual:ci",
     "test:dataset-prodlike:ci": "node scripts/testing/export-anon-fixture.mjs && node scripts/testing/validate-anon-fixture.mjs && node scripts/testing/import-anon-fixture.mjs",
     "test:qa:manifest": "node scripts/testing/generar-qa-manifest.mjs",

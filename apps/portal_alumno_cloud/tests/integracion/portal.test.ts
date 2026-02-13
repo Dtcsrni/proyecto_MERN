@@ -156,6 +156,15 @@ describe('portal alumno', () => {
       })
       .expect(201);
 
+    await request(app)
+      .post('/api/portal/solicitudes-revision')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        folio,
+        solicitudes: [{ numeroPregunta: 1, comentario: 'corto' }]
+      })
+      .expect(400);
+
     const pull = await request(app)
       .post('/api/portal/sincronizacion-docente/solicitudes-revision/pull')
       .set({ 'x-api-key': apiKey })
