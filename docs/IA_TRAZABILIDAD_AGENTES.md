@@ -59,9 +59,12 @@ Resultado: `coverage-check` sigue bloqueando.
 2. `docs/README.md`
 3. `docs/ENGINEERING_BASELINE.md`
 4. `docs/INVENTARIO_PROYECTO.md`
-5. `CHANGELOG.md`
-6. `scripts/README.md`
-7. `package.json` (scripts raiz)
+5. `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
+6. `docs/handoff/PLANTILLA_HANDOFF_IA.md`
+7. `docs/handoff/sesiones/<YYYY-MM-DD>/*`
+8. `CHANGELOG.md`
+9. `scripts/README.md`
+10. `package.json` (scripts raiz)
 
 ### F. Fuentes que no gobiernan el proyecto
 1. Cualquier archivo bajo `node_modules/**`
@@ -132,14 +135,15 @@ Si falla un gate, no avanzar de ola. Corregir, revalidar y actualizar estado.
 
 ## 5) Formato de handoff entre sesiones/agentes
 
-Usar este formato en reporte final:
+Generacion automatica recomendada:
+- `npm run ia:handoff:quick`
+- `npm run ia:handoff:full`
 
-1. Objetivo de sesion
-2. Archivos modificados
-3. Resultado por comando (verde/rojo + dato clave)
-4. Cambios que quedaron pendientes
-5. Riesgos abiertos
-6. Siguiente paso exacto recomendado
+Plantilla oficial:
+- `docs/handoff/PLANTILLA_HANDOFF_IA.md`
+
+Salida automatica por sesion:
+- `docs/handoff/sesiones/<YYYY-MM-DD>/<sesion>.md`
 
 ## 6) Siguiente objetivo recomendado (segun estado actual)
 1. Cerrar Ola 1:

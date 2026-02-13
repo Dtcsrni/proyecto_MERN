@@ -1,3 +1,16 @@
+/**
+ * Seccion de plantillas y generacion de examenes.
+ *
+ * Este componente coordina estado y handlers, mientras que la UI pesada
+ * esta particionada en:
+ * - PlantillasFormulario
+ * - PlantillasListado
+ * - PlantillasGenerados
+ *
+ * Nota de mantenimiento:
+ * Mantener la regla de dependencia unidireccional
+ * components -> hooks -> services -> clienteApiDocente.
+ */
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorRemoto, accionToastSesionParaError } from '../../servicios_api/clienteComun';

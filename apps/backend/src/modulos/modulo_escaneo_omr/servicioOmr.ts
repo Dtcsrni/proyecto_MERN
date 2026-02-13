@@ -45,12 +45,15 @@ type MapaOmrPagina = {
   }>;
 };
 
+// Geometria base de hoja carta en puntos PDF.
 const ANCHO_CARTA = 612;
 const ALTO_CARTA = 792;
 const MM_A_PUNTOS = 72 / 25.4;
 const QR_SIZE_PTS_V1 = 68;
 const QR_SIZE_PTS_V2 = 88;
 
+// Parametros de deteccion ajustables por entorno.
+// Se mantienen centralizados aqui para facilitar calibracion y auditoria.
 const OMR_SCORE_MIN = Number.parseFloat(process.env.OMR_SCORE_MIN || '0.08');
 const OMR_DELTA_MIN = Number.parseFloat(process.env.OMR_DELTA_MIN || '0.02');
 const OMR_STRONG_SCORE = Number.parseFloat(process.env.OMR_STRONG_SCORE || '0.09');
@@ -116,6 +119,7 @@ type PerfilDeteccionOmr = {
 };
 
 function resolverPerfilDeteccion(templateVersion: TemplateVersion): PerfilDeteccionOmr {
+  // Perfil V2: parametros mas tolerantes a variaciones de captura.
   if (templateVersion === 2) {
     return {
       version: 2,

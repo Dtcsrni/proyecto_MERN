@@ -14,6 +14,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [FORMATO_PDF.md](FORMATO_PDF.md) — Formato PDF y OMR
 - [GUIA_FORMULARIOS.md](GUIA_FORMULARIOS.md) — Guía para llenar formularios (UI)
 - [IA_TRAZABILIDAD_AGENTES.md](IA_TRAZABILIDAD_AGENTES.md) — Trazabilidad IA del Proyecto
+- [INVENTARIO_CODIGO_EXHAUSTIVO.md](INVENTARIO_CODIGO_EXHAUSTIVO.md) — Inventario Exhaustivo de Codigo
 - [INVENTARIO_PROYECTO.md](INVENTARIO_PROYECTO.md) — Inventario Tecnico del Proyecto
 - [PRUEBAS.md](PRUEBAS.md) — Pruebas automatizadas
 - [README.md](README.md) — docs/
