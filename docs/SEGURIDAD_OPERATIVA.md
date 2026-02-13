@@ -31,3 +31,4 @@
 - [ ] Métricas y alertas mínimas operativas.
 - [ ] Alertas mínimas activas desde `ops/observabilidad/alert.rules.yml`.
 - [ ] Runbook de incidentes disponible (`docs/RUNBOOK_OPERACION.md`).
+- [ ] Gate de promoción estable con docente humano en producción ejecutado y evidenciado en `docs/release/evidencias/<version>/`.

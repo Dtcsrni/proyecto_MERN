@@ -30,6 +30,11 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 Se considera candidato estable cuando pasan:
 ```bash
 npm run test:ci
+npm run test:flujo-docente:ci
+npm run test:coverage:ci
+npm run perf:check
+npm run security:env:check
+npm run security:audit
 npm run test:portal
 npm run test:frontend
 npm run routes:check
@@ -38,6 +43,10 @@ npm run diagramas:check
 npm run diagramas:render:check
 npm run diagramas:consistencia:check
 ```
+
+Adicional obligatorio para promover a estable:
+- 10 corridas CI consecutivas en verde.
+- evidencia de flujo docente humano en producción (`docs/release/evidencias/<version>/`).
 
 ## Comandos de uso frecuente
 - Backend completo:

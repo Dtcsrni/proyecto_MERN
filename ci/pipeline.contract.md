@@ -108,3 +108,14 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 ## Exit criteria
 - Pipeline marked green only when all mandatory stages pass
 - Release candidates require 10 consecutive green runs without flaky infra failures >10%
+
+## Stable release gate (post-CI, manual + automated evidence)
+This gate is outside CI stages and applies only when promoting `beta` to `stable`.
+
+Required:
+1. 10 consecutive green CI runs.
+2. Human production teacher flow completed (full docente flow).
+3. Automated evidence package generated with:
+   - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
+4. Evidence committed under:
+   - `docs/release/evidencias/<version>/`

@@ -19,6 +19,7 @@ Ultima actualizacion integral: 2026-02-11.
 - `DEVOPS_BASELINE.md`: baseline de operación/entrega y contrato CI/CD.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
+- `RELEASE_GATE_STABLE.md`: gate formal beta -> estable con validación humana en producción.
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`: indice de docs.

@@ -1,0 +1,10 @@
+{
+  "docenteId": "docente-humano-activo",
+  "autenticacionValida": true,
+  "periodoGestionado": true,
+  "alumnoGestionado": true,
+  "reactivosYPlantilla": true,
+  "examenGenerado": true,
+  "entregaVinculada": true,
+  "calificacionCompleta": true
+}
