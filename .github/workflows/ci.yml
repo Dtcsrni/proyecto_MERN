@@ -6,14 +6,16 @@ on:
       - "**"
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verificaciones:
-    name: Verificaciones de contrato
+  verificaciones_core:
+    name: Verificaciones Core (PR bloqueante)
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -53,36 +55,8 @@ jobs:
           npm run test:portal:ci
           npm run test:frontend:ci
 
-      - name: Etapa flujo-docente-check
-        run: npm run test:flujo-docente:ci
-
-      - name: Etapa dataset-prodlike-check
-        run: npm run test:dataset-prodlike:ci
-
-      - name: Etapa docente-alumno-e2e-check
-        run: npm run test:e2e:docente-alumno:ci
-
-      - name: Etapa global-grade-check
-        run: npm run test:global-grade:ci
-
-      - name: Etapa pdf-print-check
-        run: |
-          npm run test:pdf-print:ci
-          npm run test:pdf-visual:ci
-
-      - name: Etapa ux-visual-check
-        run: |
-          npm run test:ux-visual:ci
-          npm run test:e2e:journeys:ci
-
       - name: Etapa coverage-check
         run: npm run test:coverage:ci
-
-      - name: Etapa perf-check
-        run: npm run perf:check
-
-      - name: Etapa bigbang-olas-strict-check
-        run: npm run bigbang:olas:strict
 
       - name: Etapa build
         run: npm run build
@@ -113,6 +87,67 @@ jobs:
         with:
           name: npm-audit-report
           path: npm-audit-report.json
+
+  verificaciones_ext:
+    name: Verificaciones Extendidas (Main/Release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs:
+      - verificaciones_core
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/heads/release/')
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/portal_alumno_cloud/package-lock.json
+
+      - name: Etapa setup
+        run: npm ci
+
+      - name: Preparar runtime sharp (linux-x64)
+        run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
+
+      - name: Etapa flujo-docente-check
+        run: npm run test:flujo-docente:ci
+
+      - name: Etapa dataset-prodlike-check
+        run: npm run test:dataset-prodlike:ci
+
+      - name: Etapa docente-alumno-e2e-check
+        run: npm run test:e2e:docente-alumno:ci
+
+      - name: Etapa global-grade-check
+        run: npm run test:global-grade:ci
+
+      - name: Etapa pdf-print-check
+        run: |
+          npm run test:pdf-print:ci
+          npm run test:pdf-visual:ci
+
+      - name: Etapa ux-visual-check
+        run: |
+          npm run test:ux-visual:ci
+          npm run test:e2e:journeys:ci
+
+      - name: Etapa perf-check
+        run: npm run perf:check
+
+      - name: Etapa bigbang-olas-strict-check
+        run: npm run bigbang:olas:strict
 
       - name: Publicar reporte de performance
         if: always()
