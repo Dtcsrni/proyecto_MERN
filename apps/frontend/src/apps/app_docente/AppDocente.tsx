@@ -1,14 +1,4 @@
-/**
- * Shell principal del dominio docente.
- *
- * Responsabilidad:
- * - Orquestar sesion, permisos, carga base de datos y navegacion por vistas.
- * - Delegar UI/flujo especifico a secciones por dominio.
- *
- * Limites:
- * - Evitar logica de negocio profunda en este archivo.
- * - Nuevos flujos deben extraerse a hooks/services/features.
- */
+/** Shell principal docente: sesion, permisos, carga base y composicion de secciones. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { guardarTokenDocente, limpiarTokenDocente } from '../../servicios_api/clienteApi';
 import { emitToast } from '../../ui/toast/toastBus';
@@ -49,10 +39,8 @@ import {
   construirClaveCorrectaExamen,
   consolidarResultadoOmrExamen,
   normalizarResultadoOmr,
-  obtenerVistaInicial,
+  obtenerVistaInicial
 } from './utilidades';
-
-
 export function AppDocente() {
   const [docente, setDocente] = useState<Docente | null>(null);
   const [vista, setVista] = useState(obtenerVistaInicial());

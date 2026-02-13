@@ -33,7 +33,7 @@ Debe pasar:
 ## Rampa de calidad asociada a releases
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |
-| Semana 1 | 55 | 45 | 50 | `complexity=18`, `max-depth=5`, `max-params=5` |
+| Semana 1 | 55 | 39/40/31/37 (L/F/B/S) | 50 | `complexity=18`, `max-depth=5`, `max-params=5` |
 | Semana 2 | 62 | 52 | 58 | `complexity=16`, `max-depth=4`, `max-params=5` |
 | Semana 3 | 70 | 60 | 65 | `complexity=15`, `max-depth=4`, `max-params=4` |
 

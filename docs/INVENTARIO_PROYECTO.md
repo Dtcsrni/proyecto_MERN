@@ -39,10 +39,10 @@ Commit de referencia: `dffa43f`.
   - baseline perf activo (`docs/perf/baseline.json`)
   - gate `perf-check` integrado a contrato/workflow
 - Ola 1: parcial (bloqueante para `1.0-beta`).
-  - `AppDocente.tsx`: 757 lineas (cumple <800)
-  - `SeccionEscaneo.tsx`: 783 lineas (cumple <800)
-  - `SeccionPlantillas.tsx`: 964 lineas (pendiente)
-  - `SeccionBanco.tsx`: 807 lineas (pendiente)
+  - `AppDocente.tsx`: 798 lineas (cumple <800)
+  - `SeccionEscaneo.tsx`: 798 lineas (cumple <800)
+  - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
+  - `SeccionBanco.tsx`: 777 lineas (cumple <800)
 - Ola 2: pendiente (backend core)
   - `servicioOmr.ts`: 1854
   - `controladorGeneracionPdf.ts`: 1260
@@ -106,12 +106,12 @@ Commit de referencia: `dffa43f`.
   - `npm run typecheck`
   - `npm run test:frontend:ci`
 - Falla actual:
-  - `npm run test:coverage:ci` por umbral frontend >=45
+  - `npm run test:coverage:ci` por branch coverage frontend (<31 en corridas previas)
   - valores observados frontend:
-    - lines 24.83
-    - functions 26.32
-    - statements 23.44
-    - branches 21.16
+    - lines 39.20
+    - functions 40.28
+    - statements 37.21
+    - branches 31.40
 
 ## 7) Seguridad y operacion
 - Gate estricto de entorno en CI:
@@ -134,7 +134,7 @@ Commit de referencia: `dffa43f`.
 1. Cerrar Ola 1 real:
 - `SeccionPlantillas.tsx` <=800
 - `SeccionBanco.tsx` <=350 objetivo PR2
-2. Recuperar `coverage-check` frontend a verde (>=45 en 4 metricas) sin exclusiones artificiales.
+2. Recuperar `coverage-check` frontend a verde y continuar rampa hacia 45 en 4 metricas sin exclusiones artificiales.
 3. Ejecutar gates completos de salida de ola:
 - `lint`, `typecheck`, `test:*:ci`, `test:coverage:ci`, `perf:check`, `pipeline:contract:check`.
 

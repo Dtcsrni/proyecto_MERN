@@ -1,16 +1,4 @@
-/**
- * Seccion de plantillas y generacion de examenes.
- *
- * Este componente coordina estado y handlers, mientras que la UI pesada
- * esta particionada en:
- * - PlantillasFormulario
- * - PlantillasListado
- * - PlantillasGenerados
- *
- * Nota de mantenimiento:
- * Mantener la regla de dependencia unidireccional
- * components -> hooks -> services -> clienteApiDocente.
- */
+/** Seccion de plantillas y generacion de examenes (orquestacion UI + handlers). */
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorRemoto, accionToastSesionParaError } from '../../servicios_api/clienteComun';
@@ -22,6 +10,11 @@ import { clienteApi } from './clienteApiDocente';
 import { PlantillasFormulario } from './features/plantillas/components/PlantillasFormulario';
 import { PlantillasGenerados } from './features/plantillas/components/PlantillasGenerados';
 import { PlantillasListado } from './features/plantillas/components/PlantillasListado';
+import {
+  usePlantillasGeneradosActions,
+  type ExamenGeneradoResumen
+} from './features/plantillas/hooks/usePlantillasGeneradosActions';
+import { usePlantillasPreviewActions } from './features/plantillas/hooks/usePlantillasPreviewActions';
 import { registrarAccionDocente } from './telemetriaDocente';
 import type {
   Alumno,
@@ -78,17 +71,6 @@ export function SeccionPlantillas({
     'Por favor conteste las siguientes preguntas referentes al parcial. ' +
     'Rellene el círculo de la respuesta más adecuada, evitando salirse del mismo. ' +
     'Cada pregunta vale 10 puntos si está completa y es correcta.';
-
-  type ExamenGeneradoResumen = {
-    _id: string;
-    folio: string;
-    plantillaId: string;
-    alumnoId?: string | null;
-    estado?: string;
-    generadoEn?: string;
-    descargadoEn?: string;
-    paginas?: Array<{ numero: number; qrTexto?: string; preguntasDel?: number; preguntasAl?: number }>;
-  };
 
   const [titulo, setTitulo] = useState('');
   const [tipo, setTipo] = useState<'parcial' | 'global'>('parcial');
@@ -193,203 +175,35 @@ export function SeccionPlantillas({
     void cargarExamenesGenerados();
   }, [plantillaId, cargarExamenesGenerados]);
 
-  const descargarPdfExamen = useCallback(
-    async (examen: ExamenGeneradoResumen) => {
-      if (descargandoExamenId === examen._id) return;
-      if (!puedeDescargarExamenes) {
-        avisarSinPermiso('No tienes permiso para descargar examenes.');
-        return;
-      }
-      const token = obtenerTokenDocente();
-      if (!token) {
-        setMensajeGeneracion('Sesion no valida. Vuelve a iniciar sesion.');
-        return;
-      }
-
-      const intentar = async (t: string) =>
-        fetch(`${clienteApi.baseApi}/examenes/generados/${encodeURIComponent(examen._id)}/pdf`, {
-          credentials: 'include',
-          headers: { Authorization: `Bearer ${t}` }
-        });
-
-      try {
-        setDescargandoExamenId(examen._id);
-        setMensajeGeneracion('');
-
-        let resp = await intentar(token);
-        if (resp.status === 401) {
-          const nuevo = await clienteApi.intentarRefrescarToken();
-          if (nuevo) resp = await intentar(nuevo);
-        }
-
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
-
-        const blob = await resp.blob();
-        const cd = resp.headers.get('Content-Disposition') || '';
-        const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"|filename=([^;]+)/i);
-        const nombreDesdeHeader = match
-          ? decodeURIComponent(String(match[1] || match[2] || match[3] || '').trim().replace(/^"|"$/g, ''))
-          : '';
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombreDesdeHeader || `examen_${String(examen.folio || 'examen')}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-
-        emitToast({ level: 'ok', title: 'PDF', message: 'Descarga iniciada', durationMs: 1800 });
-        await cargarExamenesGenerados();
-      } catch (error) {
-        const msg = mensajeDeError(error, 'No se pudo descargar el PDF');
-        setMensajeGeneracion(msg);
-        emitToast({
-          level: 'error',
-          title: 'No se pudo descargar',
-          message: msg,
-          durationMs: 5200,
-          action: accionToastSesionParaError(error, 'docente')
-        });
-      } finally {
-        setDescargandoExamenId(null);
-      }
-    },
-    [avisarSinPermiso, cargarExamenesGenerados, descargandoExamenId, puedeDescargarExamenes]
-  );
-
-  const descargarPdfLote = useCallback(async () => {
-    if (!lotePdfUrl) return;
-    if (!puedeDescargarExamenes) {
-      avisarSinPermiso('No tienes permiso para descargar examenes.');
-      return;
-    }
-    const token = obtenerTokenDocente();
-    if (!token) {
-      setMensajeGeneracion('Sesion no valida. Vuelve a iniciar sesion.');
-      return;
-    }
-    try {
-      const resp = await fetch(`${clienteApi.baseApi}${lotePdfUrl}`, {
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `examenes_lote_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudo descargar el PDF de lote');
-      setMensajeGeneracion(msg);
-      emitToast({
-        level: 'error',
-        title: 'No se pudo descargar',
-        message: msg,
-        durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
-      });
-    }
-  }, [avisarSinPermiso, lotePdfUrl, puedeDescargarExamenes]);
-
-  const regenerarPdfExamen = useCallback(
-    async (examen: ExamenGeneradoResumen) => {
-      if (regenerandoExamenId === examen._id) return;
-      if (!puedeRegenerarExamenes) {
-        avisarSinPermiso('No tienes permiso para regenerar examenes.');
-        return;
-      }
-      try {
-        setMensajeGeneracion('');
-        setRegenerandoExamenId(examen._id);
-
-        const yaDescargado = Boolean(String(examen.descargadoEn || '').trim());
-
-        let forzar = false;
-        if (yaDescargado) {
-          const ok = globalThis.confirm(
-            'Este examen ya fue descargado. Regenerarlo puede cambiar el PDF (y tu copia descargada).\n\n¿Deseas continuar?'
-          );
-          if (!ok) return;
-          forzar = true;
-        }
-
-        await enviarConPermiso(
-          'examenes:regenerar',
-          `/examenes/generados/${encodeURIComponent(examen._id)}/regenerar`,
-          { ...(forzar ? { forzar: true } : {}) },
-          'No tienes permiso para regenerar examenes.'
-        );
-
-        emitToast({ level: 'ok', title: 'Examen', message: 'PDF regenerado', durationMs: 2000 });
-        await cargarExamenesGenerados();
-      } catch (error) {
-        const msg = mensajeDeError(error, 'No se pudo regenerar el PDF');
-        setMensajeGeneracion(msg);
-        emitToast({
-          level: 'error',
-          title: 'No se pudo regenerar',
-          message: msg,
-          durationMs: 5200,
-          action: accionToastSesionParaError(error, 'docente')
-        });
-      } finally {
-        setRegenerandoExamenId(null);
-      }
-    },
-    [avisarSinPermiso, cargarExamenesGenerados, enviarConPermiso, puedeRegenerarExamenes, regenerandoExamenId]
-  );
-
-  const archivarExamenGenerado = useCallback(
-    async (examen: ExamenGeneradoResumen) => {
-      if (archivandoExamenId === examen._id) return;
-      if (!puedeArchivarExamenes) {
-        avisarSinPermiso('No tienes permiso para archivar examenes.');
-        return;
-      }
-      try {
-        setMensajeGeneracion('');
-        setArchivandoExamenId(examen._id);
-
-        const ok = globalThis.confirm(
-          `¿Archivar el examen generado (folio: ${String(examen.folio || '').trim() || 'sin folio'})?\n\nSe ocultará del listado activo, pero no se borrarán sus datos.`
-        );
-        if (!ok) return;
-
-        await enviarConPermiso(
-          'examenes:archivar',
-          `/examenes/generados/${encodeURIComponent(examen._id)}/archivar`,
-          {},
-          'No tienes permiso para archivar examenes.'
-        );
-
-        emitToast({ level: 'ok', title: 'Examen', message: 'Examen archivado', durationMs: 2000 });
-        await cargarExamenesGenerados();
-      } catch (error) {
-        const msg = mensajeDeError(error, 'No se pudo archivar el examen');
-        setMensajeGeneracion(msg);
-        emitToast({
-          level: 'error',
-          title: 'No se pudo archivar',
-          message: msg,
-          durationMs: 5200,
-          action: accionToastSesionParaError(error, 'docente')
-        });
-      } finally {
-        setArchivandoExamenId(null);
-      }
-    },
-    [avisarSinPermiso, cargarExamenesGenerados, enviarConPermiso, puedeArchivarExamenes, archivandoExamenId]
-  );
+  const { descargarPdfExamen, descargarPdfLote, regenerarPdfExamen, archivarExamenGenerado } = usePlantillasGeneradosActions({
+    avisarSinPermiso,
+    puedeDescargarExamenes,
+    puedeRegenerarExamenes,
+    puedeArchivarExamenes,
+    descargandoExamenId,
+    regenerandoExamenId,
+    archivandoExamenId,
+    setDescargandoExamenId,
+    setRegenerandoExamenId,
+    setArchivandoExamenId,
+    setMensajeGeneracion,
+    cargarExamenesGenerados,
+    enviarConPermiso,
+    lotePdfUrl
+  });
+  const { cargarPreviewPlantilla, togglePreviewPlantilla, cargarPreviewPdfPlantilla, cerrarPreviewPdfPlantilla } =
+    usePlantillasPreviewActions({
+      puedePrevisualizarPlantillas,
+      avisarSinPermiso,
+      previewPorPlantillaId,
+      cargandoPreviewPlantillaId,
+      cargandoPreviewPdfPlantillaId,
+      setPreviewPorPlantillaId,
+      setCargandoPreviewPlantillaId,
+      setPlantillaPreviewId,
+      setPreviewPdfUrlPorPlantillaId,
+      setCargandoPreviewPdfPlantillaId
+    });
 
   const preguntasDisponibles = useMemo(() => {
     if (!periodoId) return [];
@@ -664,100 +478,6 @@ export function SeccionPlantillas({
     } finally {
       setEliminandoPlantillaId(null);
     }
-  }
-
-  async function cargarPreviewPlantilla(id: string) {
-    if (cargandoPreviewPlantillaId === id) return;
-    if (!puedePrevisualizarPlantillas) {
-      avisarSinPermiso('No tienes permiso para previsualizar plantillas.');
-      return;
-    }
-    try {
-      setCargandoPreviewPlantillaId(id);
-      const payload = await clienteApi.obtener<PreviewPlantilla>(
-        `/examenes/plantillas/${encodeURIComponent(id)}/previsualizar`
-      );
-      setPreviewPorPlantillaId((prev) => ({ ...prev, [id]: payload }));
-    } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudo generar la previsualizacion de la plantilla');
-      emitToast({
-        level: 'error',
-        title: 'Previsualizacion',
-        message: msg,
-        durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
-      });
-    } finally {
-      setCargandoPreviewPlantillaId(null);
-    }
-  }
-
-  async function togglePreviewPlantilla(id: string) {
-    if (cargandoPreviewPlantillaId === id) return;
-    setPlantillaPreviewId((prev) => (prev === id ? null : id));
-    if (!previewPorPlantillaId[id]) {
-      await cargarPreviewPlantilla(id);
-    }
-  }
-
-  async function cargarPreviewPdfPlantilla(id: string) {
-    if (cargandoPreviewPdfPlantillaId === id) return;
-    if (!puedePrevisualizarPlantillas) {
-      avisarSinPermiso('No tienes permiso para previsualizar plantillas.');
-      return;
-    }
-    const token = obtenerTokenDocente();
-    if (!token) {
-      emitToast({ level: 'error', title: 'Sesion no valida', message: 'Vuelve a iniciar sesion.', durationMs: 4200 });
-      return;
-    }
-
-    const intentar = async (t: string) =>
-      fetch(`${clienteApi.baseApi}/examenes/plantillas/${encodeURIComponent(id)}/previsualizar/pdf`, {
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${t}` }
-      });
-
-    try {
-      setCargandoPreviewPdfPlantillaId(id);
-      let resp = await intentar(token);
-      if (resp.status === 401) {
-        const nuevo = await clienteApi.intentarRefrescarToken();
-        if (nuevo) resp = await intentar(nuevo);
-      }
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      setPreviewPdfUrlPorPlantillaId((prev) => {
-        const anterior = prev[id];
-        if (anterior) URL.revokeObjectURL(anterior);
-        return { ...prev, [id]: url };
-      });
-    } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudo generar el PDF de previsualizacion');
-      emitToast({
-        level: 'error',
-        title: 'Previsualizacion PDF',
-        message: msg,
-        durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
-      });
-    } finally {
-      setCargandoPreviewPdfPlantillaId(null);
-    }
-  }
-
-  function cerrarPreviewPdfPlantilla(id: string) {
-    setPreviewPdfUrlPorPlantillaId((prev) => {
-      const actual = prev[id];
-      if (actual) URL.revokeObjectURL(actual);
-      const copia = { ...prev };
-      delete copia[id];
-      return copia;
-    });
   }
 
   async function crear() {
