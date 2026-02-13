@@ -1,3 +1,9 @@
+/**
+ * vitest.base
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Opciones Vitest compartidas por las apps.
 export const baseVitestConfig = {
   clearMocks: true,

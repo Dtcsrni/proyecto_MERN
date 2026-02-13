@@ -1,3 +1,9 @@
+/**
+ * qrEscaneoOmr.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de escaneo QR asociado a un examen generado (OMR).
 import request from 'supertest';
 import QRCode from 'qrcode';

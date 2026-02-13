@@ -29,7 +29,7 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - Comando:
   - `npm run ia:docblocks`
 - Uso:
-  - agrega cabeceras de contexto a archivos `apps/*/src` que no tengan docblock inicial.
+  - agrega cabeceras de contexto a archivos versionados comentables del repo (`ts`, `tsx`, `js`, `jsx`, `mjs`, `cjs`, `sh`, `ps1`, `cmd`) que no tengan cabecera inicial.
 
 ## Inventario de codigo por sesion
 - Script: `inventario-codigo.mjs`

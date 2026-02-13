@@ -1,3 +1,9 @@
+/**
+ * configuracion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de configuracion.
 import { describe, expect, it } from 'vitest';
 import { configuracion } from '../src/configuracion';

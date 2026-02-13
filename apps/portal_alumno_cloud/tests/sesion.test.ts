@@ -1,3 +1,9 @@
+/**
+ * sesion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de servicio de sesion.
 import { describe, expect, it } from 'vitest';
 import { generarTokenSesion, hashToken } from '../src/servicios/servicioSesion';

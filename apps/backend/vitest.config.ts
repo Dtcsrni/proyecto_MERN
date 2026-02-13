@@ -1,3 +1,9 @@
+/**
+ * vitest.config
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Configuracion Vitest del backend.
 import { defineConfig } from 'vitest/config';
 import { baseVitestConfig } from '../../vitest.base';

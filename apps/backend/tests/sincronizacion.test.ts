@@ -1,3 +1,9 @@
+/**
+ * sincronizacion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del modulo de sincronizacion a nube.
 import type { Response } from 'express';
 import type { SolicitudDocente } from '../src/modulos/modulo_autenticacion/middlewareAutenticacion';

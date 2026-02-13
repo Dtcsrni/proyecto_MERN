@@ -1,3 +1,9 @@
+/**
+ * vitest.config
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Configuracion Vitest del frontend React.
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';

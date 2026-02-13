@@ -1,3 +1,9 @@
+/**
+ * sanitizarMongo.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import type { NextFunction, Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { sanitizarMongo } from '../src/infraestructura/seguridad/sanitizarMongo';

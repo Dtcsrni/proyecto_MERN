@@ -1,3 +1,9 @@
+/**
+ * setup
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { instalarTestHardening } from '../../../test-utils/vitestStrict';
 
 // Setup comun para pruebas del backend.

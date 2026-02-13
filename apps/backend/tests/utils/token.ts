@@ -1,3 +1,9 @@
+/**
+ * token
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Helpers de tokens de prueba.
 import { crearTokenDocente } from '../../src/modulos/modulo_autenticacion/servicioTokens';
 

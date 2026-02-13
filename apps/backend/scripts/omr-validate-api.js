@@ -1,3 +1,9 @@
+/**
+ * omr-validate-api
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /* eslint-disable no-console */
 const fs = require('node:fs/promises');
 const path = require('node:path');

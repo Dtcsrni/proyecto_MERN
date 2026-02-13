@@ -1,3 +1,9 @@
+/**
+ * app
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 //Definicion de frontend que consume API
 
 const express = require('express');

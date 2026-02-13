@@ -1,3 +1,9 @@
+/**
+ * apiKey.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import request from 'supertest';
 import { describe, it } from 'vitest';
 import { crearApp } from '../src/app';

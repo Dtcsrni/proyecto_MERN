@@ -1,3 +1,9 @@
+/**
+ * autenticacionServicios.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de servicios de autenticacion.
 import { describe, expect, it } from 'vitest';
 import { crearHash, compararContrasena } from '../src/modulos/modulo_autenticacion/servicioHash';

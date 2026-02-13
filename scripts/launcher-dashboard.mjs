@@ -1,3 +1,9 @@
+/**
+ * launcher-dashboard
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*
   Local web dashboard to control the dev stack.
   - Serves a small HTML UI and JSON endpoints on localhost.

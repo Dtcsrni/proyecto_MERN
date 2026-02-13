@@ -1,3 +1,9 @@
+/**
+ * nota
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 //Definición de esquema (Schema) que define la forma (campos y reglas)
 //de los documentos. 
 //timestamps: true agrega automáticamente campos de createdAt y updatedAt

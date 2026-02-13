@@ -1,3 +1,9 @@
+/**
+ * app
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*Script para formularios POE*/
 /*-Estado: listaReactivos*/
 /*-Validacion: cantidad mínima de preguntas y formularios no vacios*/

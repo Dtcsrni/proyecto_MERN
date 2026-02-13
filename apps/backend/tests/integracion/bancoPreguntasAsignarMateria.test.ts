@@ -1,3 +1,9 @@
+/**
+ * bancoPreguntasAsignarMateria.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // La app ya no soporta preguntas "sin materia" (legacy).
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';

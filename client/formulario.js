@@ -1,3 +1,9 @@
+/**
+ * formulario
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /* eslint-env browser */
 /* CRUD mínimo con delegación 🧺🫧
    Estado (fuente de verdad) 🧱
