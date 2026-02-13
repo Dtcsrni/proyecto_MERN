@@ -40,8 +40,15 @@ function normalizarSaltosLinea(texto) {
   return texto.replace(/\r\n/g, '\n');
 }
 
+function compararDeterministico(a, b) {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 async function walkFiles(dir) {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const entries = (await fs.readdir(dir, { withFileTypes: true })).sort((a, b) =>
+    compararDeterministico(a.name, b.name)
+  );
   const files = [];
   for (const entry of entries) {
     if (entry.name.startsWith('.DS_Store')) continue;
@@ -71,12 +78,14 @@ function agruparArea(relPath) {
 }
 
 async function generarDocsIndex() {
-  const entries = await fs.readdir(docsDir, { withFileTypes: true });
+  const entries = (await fs.readdir(docsDir, { withFileTypes: true })).sort((a, b) =>
+    compararDeterministico(a.name, b.name)
+  );
   const mdFiles = entries
     .filter((e) => e.isFile() && e.name.toLowerCase().endsWith('.md'))
     .map((e) => e.name)
     .filter((name) => !name.startsWith('AUTO_'))
-    .sort((a, b) => a.localeCompare(b, 'es'));
+    .sort(compararDeterministico);
 
   const items = [];
   for (const fileName of mdFiles) {
@@ -145,10 +154,10 @@ async function generarEnvDoc() {
     }
   }
 
-  const variables = [...envToPaths.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+  const variables = [...envToPaths.keys()].sort(compararDeterministico);
   const grouped = new Map();
   for (const variable of variables) {
-    const paths = [...(envToPaths.get(variable) ?? [])].sort((a, b) => a.localeCompare(b, 'es'));
+    const paths = [...(envToPaths.get(variable) ?? [])].sort(compararDeterministico);
     const areas = new Set(paths.map(agruparArea));
     for (const area of areas) {
       const arr = grouped.get(area) ?? [];

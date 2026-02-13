@@ -3,8 +3,8 @@
 Este archivo se genera con `npm run docs:generate`.
 No editar a mano: los cambios se pisan al regenerar.
 
-- [ARQUITECTURA_C4.md](ARQUITECTURA_C4.md) — Arquitectura C4
 - [ARQUITECTURA.md](ARQUITECTURA.md) — Arquitectura
+- [ARQUITECTURA_C4.md](ARQUITECTURA_C4.md) — Arquitectura C4
 - [DESPLIEGUE.md](DESPLIEGUE.md) — Despliegue
 - [DEVOPS_BASELINE.md](DEVOPS_BASELINE.md) — DevOps Baseline
 - [DIAGRAMAS.md](DIAGRAMAS.md) — Diagramas
@@ -23,8 +23,8 @@ No editar a mano: los cambios se pisan al regenerar.
 - [RELEASE_GATE_STABLE.md](RELEASE_GATE_STABLE.md) — Gate de Promocion a Estable
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
 - [RUNBOOK_OPERACION.md](RUNBOOK_OPERACION.md) — Runbook Operación (Local + Cloud mínimo)
-- [SEGURIDAD_OPERATIVA.md](SEGURIDAD_OPERATIVA.md) — Checklist de Seguridad Operativa
 - [SEGURIDAD.md](SEGURIDAD.md) — Seguridad
+- [SEGURIDAD_OPERATIVA.md](SEGURIDAD_OPERATIVA.md) — Checklist de Seguridad Operativa
 - [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronizacion entre computadoras (paquete)
 - [VERSIONADO.md](VERSIONADO.md) — Versionado
 - [AUTO_ENV.md](AUTO_ENV.md) — Variables de entorno (auto-generado)
