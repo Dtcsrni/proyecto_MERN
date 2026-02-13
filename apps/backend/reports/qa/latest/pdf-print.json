@@ -1,12 +1,12 @@
 {
   "version": "1",
-  "ejecutadoEn": "2026-02-13T14:45:26.901Z",
-  "archivo": "FDB7E581.pdf",
-  "contentDisposition": "attachment; filename=\"examen_Periodo_Global_2026_Examen_global_lote-415F78E5_folio-FDB7E581.pdf\"",
+  "ejecutadoEn": "2026-02-13T14:59:12.493Z",
+  "archivo": "18CC1AA5.pdf",
+  "contentDisposition": "attachment; filename=\"examen_Periodo_Global_2026_Examen_global_lote-54ADF6CF_folio-18CC1AA5.pdf\"",
   "paginaTamanoCartaOk": true,
   "qrFolioEnTodasLasPaginas": true,
   "reglasTintaOk": true,
-  "hashSha256": "962f2cc8155e51d81cad439198628e0e6aca1e520dd584e43bfcb2d0e26bfd46",
-  "bytes": 83816,
+  "hashSha256": "f0acd9ea562afaa7b5513c30e1a074574addb648b902417f5f28d9f82a16deb3",
+  "bytes": 83725,
   "paginas": 1
 }
