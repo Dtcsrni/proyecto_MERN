@@ -67,6 +67,8 @@
     "security:audit": "npm audit --audit-level=high",
     "docs:carpetas:generate": "node scripts/generar-readmes-carpetas.mjs",
     "inventario:codigo": "node scripts/inventario-codigo.mjs",
+    "bigbang:olas:check": "node scripts/bigbang-olas-check.mjs",
+    "bigbang:olas:strict": "node scripts/bigbang-olas-check.mjs --strict",
     "perf:collect": "tsx scripts/perf-collect.ts",
     "perf:baseline": "node scripts/perf-baseline.mjs",
     "perf:check": "npm run perf:collect && node scripts/perf-check.mjs",

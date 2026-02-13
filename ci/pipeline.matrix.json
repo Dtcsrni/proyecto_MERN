@@ -116,6 +116,15 @@
       ]
     },
     {
+      "name": "bigbang-olas-strict-check",
+      "commands": [
+        "npm run bigbang:olas:strict"
+      ],
+      "artifacts": [
+        "reports/qa/latest/olas-bigbang.json"
+      ]
+    },
+    {
       "name": "build",
       "commands": [
         "npm run build"
