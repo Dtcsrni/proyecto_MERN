@@ -5,13 +5,55 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import os from 'node:os';
 import QRCode from 'qrcode';
+import type { RespuestaLiveness, RespuestaReadiness, RespuestaSalud } from '../tipos/observabilidad';
+import { exportarMetricasPrometheus } from '../observabilidad/metrics';
 
 const router = Router();
 
 router.get('/', (_req, res) => {
   const estado = mongoose.connection.readyState; // 0,1,2,3
   const textoEstado = ['desconectado', 'conectado', 'conectando', 'desconectando'][estado] ?? 'desconocido';
-  res.json({ estado: 'ok', tiempoActivo: process.uptime(), db: { estado, descripcion: textoEstado } });
+  const payload: RespuestaSalud & { db: { estado: number; descripcion: string } } = {
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    db: { estado, descripcion: textoEstado }
+  };
+  res.json(payload);
+});
+
+router.get('/live', (_req, res) => {
+  const payload: RespuestaLiveness = {
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    servicio: 'api-docente',
+    env: process.env.NODE_ENV ?? 'development'
+  };
+  res.json(payload);
+});
+
+router.get('/ready', (_req, res) => {
+  const estado = mongoose.connection.readyState; // 0,1,2,3
+  const textoEstado = ['desconectado', 'conectado', 'conectando', 'desconectando'][estado] ?? 'desconocido';
+  const lista = estado === 1;
+  const payload: RespuestaReadiness = {
+    estado: lista ? 'ok' : 'degradado',
+    tiempoActivo: process.uptime(),
+    dependencias: {
+      db: {
+        estado,
+        descripcion: textoEstado,
+        lista
+      }
+    }
+  };
+  res.status(lista ? 200 : 503).json(payload);
+});
+
+router.get('/metrics', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  const payload = `${exportarMetricasPrometheus()}\n\n# HELP evaluapro_db_ready_state Estado de conexión MongoDB (0-3)\n# TYPE evaluapro_db_ready_state gauge\nevaluapro_db_ready_state ${estadoDb}\n`;
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(payload);
 });
 
 function esIpPrivada(ip: string) {

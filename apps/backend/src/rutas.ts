@@ -22,12 +22,17 @@ import rutasAnaliticas from './modulos/modulo_analiticas/rutasAnaliticas';
 import rutasSincronizacionNube from './modulos/modulo_sincronizacion_nube/rutasSincronizacionNube';
 import rutasAdminDocentes from './modulos/modulo_admin_docentes/rutasAdminDocentes';
 import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
+import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
 
 export function crearRouterApi() {
   const router = Router();
 
   // Endpoints sin autenticacion (usados por health checks y login).
   router.use('/salud', rutasSalud);
+  router.get('/metrics', (_req, res) => {
+    res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(exportarMetricasPrometheus());
+  });
   router.use('/autenticacion', rutasAutenticacion);
 
   // A partir de aqui: todas las rutas requieren sesion de docente.

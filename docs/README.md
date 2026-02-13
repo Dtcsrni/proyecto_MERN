@@ -15,6 +15,10 @@ Ultima actualizacion integral: 2026-02-11.
 - `PRUEBAS.md`: estrategia de pruebas y criterios de salida.
 - `DESPLIEGUE.md`: despliegue local y cloud.
 - `VERSIONADO.md`: politica de version y release.
+- `ENGINEERING_BASELINE.md`: baseline de ingeniería y reglas de gobernanza técnica.
+- `DEVOPS_BASELINE.md`: baseline de operación/entrega y contrato CI/CD.
+- `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
+- `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`: indice de docs.
@@ -24,3 +28,40 @@ Ultima actualizacion integral: 2026-02-11.
 - Catalogo y convenciones: `DIAGRAMAS.md`
 - Fuentes Mermaid: `diagramas/src/`
 - Render SVG: `diagramas/rendered/`
+- Observabilidad base:
+  - Prometheus: `ops/observabilidad/prometheus.yml`
+  - Alertas: `ops/observabilidad/alert.rules.yml`
+  - Dashboard Grafana: `ops/observabilidad/grafana/dashboard-evaluapro.json`
+
+## Calidad y CI (rampa activa)
+El pipeline `CI Checks` ejecuta gates bloqueantes y progresivos.
+
+Gate adicional bloqueante:
+- `flujo-docente-check`: valida flujo docente E2E (`parcial` + `global`) y exportacion de lista academica firmada.
+
+| Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
+| --- | --- | --- | --- | --- |
+| Semana 1 | 55 | 45 | 50 | `complexity=18`, `max-depth=5`, `max-params=5` |
+| Semana 2 | 62 | 52 | 58 | `complexity=16`, `max-depth=4`, `max-params=5` |
+| Semana 3 | 70 | 60 | 65 | `complexity=15`, `max-depth=4`, `max-params=4` |
+
+## Salida academica firmada
+Endpoints backend:
+- `GET /api/analiticas/lista-academica-csv?periodoId=<id>`
+- `GET /api/analiticas/lista-academica-docx?periodoId=<id>`
+- `GET /api/analiticas/lista-academica-firma?periodoId=<id>`
+
+Archivos:
+- `lista-academica.csv`
+- `lista-academica.docx`
+- `lista-academica.manifest.json`
+
+Firma de integridad:
+- algoritmo `sha256`
+- manifiesto con hash por archivo y tamano en bytes
+
+## Seguridad/Operación (iteración fase 4/5)
+- `security-scan` en CI corre en modo producción estricto:
+  - `NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check`
+- CI genera artefacto de auditoría:
+  - `npm-audit-report.json`

@@ -3,6 +3,7 @@ export type NivelLog = 'info' | 'warn' | 'error' | 'ok' | 'system';
 type Meta = Record<string, unknown>;
 
 const servicio = 'portal-alumno';
+const env = process.env.NODE_ENV ?? 'development';
 
 function serializarError(error: unknown) {
   if (!error) return undefined;
@@ -16,18 +17,26 @@ function serializarError(error: unknown) {
   return { value: String(error) };
 }
 
+function nivelEstandar(level: NivelLog): 'info' | 'warn' | 'error' {
+  if (level === 'warn') return 'warn';
+  if (level === 'error') return 'error';
+  return 'info';
+}
+
 export function log(level: NivelLog, msg: string, meta: Meta = {}) {
+  const levelStd = nivelEstandar(level);
   const entry = {
-    ts: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
     service: servicio,
-    level,
-    msg,
+    env,
+    level: levelStd,
+    message: msg,
     ...meta
   };
 
   const line = JSON.stringify(entry);
-  if (level === 'error') console.error(line);
-  else if (level === 'warn') console.warn(line);
+  if (levelStd === 'error') console.error(line);
+  else if (levelStd === 'warn') console.warn(line);
   else console.log(line);
 }
 

@@ -14,3 +14,9 @@ pnpm-debug.log*
 
 # TypeScript incremental build artifacts
 *.tsbuildinfo
+
+# Coverage and local scan artifacts
+coverage/
+apps/**/coverage/
+apps/backend/storage/omr_scans/
+*.lcov

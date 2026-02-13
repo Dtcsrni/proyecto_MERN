@@ -13,6 +13,7 @@ import rateLimit from 'express-rate-limit';
 import { configuracion } from './configuracion';
 import { crearRouterApi } from './rutas';
 import { manejadorErrores } from './compartido/errores/manejadorErrores';
+import { middlewareIdSolicitud, middlewareRegistroSolicitud } from './compartido/observabilidad/middlewareObservabilidad';
 import { sanitizarMongo } from './infraestructura/seguridad/sanitizarMongo';
 
 export function crearApp() {
@@ -33,6 +34,8 @@ export function crearApp() {
   );
   app.use(express.json({ limit: configuracion.limiteJson }));
   app.use(sanitizarMongo());
+  app.use(middlewareIdSolicitud);
+  app.use(middlewareRegistroSolicitud);
   app.use(
     rateLimit({
       windowMs: configuracion.rateLimitWindowMs,

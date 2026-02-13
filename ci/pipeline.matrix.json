@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "node": ">=24",
+  "stages": [
+    {
+      "name": "setup",
+      "commands": [
+        "npm ci"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "lint",
+      "commands": [
+        "npm run lint"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "typecheck",
+      "commands": [
+        "npm run typecheck"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "test",
+      "commands": [
+        "npm run test:backend:ci",
+        "npm run test:portal:ci",
+        "npm run test:frontend:ci"
+      ],
+      "artifacts": [
+        "test-report-backend.txt",
+        "test-report-portal.txt",
+        "test-report-frontend.txt"
+      ]
+    },
+    {
+      "name": "flujo-docente-check",
+      "commands": [
+        "npm run test:flujo-docente:ci"
+      ],
+      "artifacts": [
+        "apps/backend/tests/integracion/flujoDocenteParcialE2E.test.ts",
+        "apps/backend/tests/integracion/flujoDocenteGlobalE2E.test.ts"
+      ]
+    },
+    {
+      "name": "coverage-check",
+      "commands": [
+        "npm run test:coverage:ci"
+      ],
+      "artifacts": [
+        "apps/backend/coverage/**",
+        "apps/frontend/coverage/**",
+        "apps/portal_alumno_cloud/coverage/**"
+      ]
+    },
+    {
+      "name": "build",
+      "commands": [
+        "npm run build"
+      ],
+      "artifacts": [
+        "apps/backend/dist/**",
+        "apps/frontend/dist/**",
+        "apps/portal_alumno_cloud/dist/**"
+      ]
+    },
+    {
+      "name": "docs-check",
+      "commands": [
+        "npm run docs:check",
+        "npm run diagramas:check",
+        "npm run diagramas:render:check",
+        "npm run diagramas:consistencia:check",
+        "npm run routes:check"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "security-scan",
+      "commands": [
+        "NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check",
+        "npm audit --audit-level=high --json > npm-audit-report.json",
+        "npm run security:audit"
+      ],
+      "artifacts": [
+        "npm-audit-report.json"
+      ]
+    },
+    {
+      "name": "package",
+      "commands": [
+        "docker build -f apps/backend/Dockerfile .",
+        "docker build -f apps/frontend/Dockerfile .",
+        "docker build -f apps/portal_alumno_cloud/Dockerfile apps/portal_alumno_cloud"
+      ],
+      "artifacts": [
+        "image-digests.txt"
+      ]
+    }
+  ],
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "apps/portal_alumno_cloud"
+  ]
+}

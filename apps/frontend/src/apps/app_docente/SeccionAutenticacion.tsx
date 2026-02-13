@@ -23,7 +23,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
   const [modo, setModo] = useState<'ingresar' | 'registrar'>('ingresar');
   const [enviando, setEnviando] = useState(false);
   const [cooldownHasta, setCooldownHasta] = useState<number | null>(null);
-  const cooldownTimer = useRef<number | null>(null);
+  const temporizadorCooldown = useRef<number | null>(null);
   const [credentialRegistroGoogle, setCredentialRegistroGoogle] = useState<string | null>(null);
   const [crearContrasenaAhora, setCrearContrasenaAhora] = useState(true);
   const [mostrarRecuperar, setMostrarRecuperar] = useState(false);
@@ -49,7 +49,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
   const cooldownActivo = cooldownMs > 0;
 
   useEffect(() => () => {
-    if (cooldownTimer.current) window.clearTimeout(cooldownTimer.current);
+    if (temporizadorCooldown.current) window.clearTimeout(temporizadorCooldown.current);
   }, []);
 
   function correoPermitido(correoAValidar: string) {
@@ -64,8 +64,8 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         .replace(/-/g, '+')
         .replace(/_/g, '/')
         .padEnd(Math.ceil(partes[1].length / 4) * 4, '=');
-      const json = atob(base64);
-      return JSON.parse(json) as Record<string, unknown>;
+      const textoJson = atob(base64);
+      return JSON.parse(textoJson) as Record<string, unknown>;
     } catch {
       return null;
     }
@@ -87,10 +87,10 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
     const restante = Math.ceil(duracion / 1000);
     setCooldownHasta(Date.now() + duracion);
     setMensaje(`Demasiadas solicitudes. Espera ${restante}s e intenta de nuevo.`);
-    if (cooldownTimer.current) {
-      window.clearTimeout(cooldownTimer.current);
+    if (temporizadorCooldown.current) {
+      window.clearTimeout(temporizadorCooldown.current);
     }
-    cooldownTimer.current = window.setTimeout(() => {
+    temporizadorCooldown.current = window.setTimeout(() => {
       setCooldownHasta(null);
     }, duracion);
   }
@@ -153,8 +153,8 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
       if (bloquearSiEnCurso()) return;
       const inicio = Date.now();
       const payload = decodificarPayloadJwt(credential);
-      const email = typeof payload?.email === 'string' ? payload.email : undefined;
-      if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+      const correoGoogle = typeof payload?.email === 'string' ? payload.email : undefined;
+      if (correoGoogle && dominiosPermitidos.length > 0 && !correoPermitido(correoGoogle)) {
         const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
         setMensaje(msg);
         emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
@@ -205,8 +205,8 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
       }
 
       const payload = decodificarPayloadJwt(credentialRecuperarGoogle);
-      const email = typeof payload?.email === 'string' ? payload.email : undefined;
-      if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+      const correoGoogle = typeof payload?.email === 'string' ? payload.email : undefined;
+      if (correoGoogle && dominiosPermitidos.length > 0 && !correoPermitido(correoGoogle)) {
         const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
         setMensaje(msg);
         emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
@@ -487,27 +487,27 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
                 }
 
                 const payload = decodificarPayloadJwt(token);
-                const email = typeof payload?.email === 'string' ? payload.email : undefined;
-                const name = typeof payload?.name === 'string' ? payload.name : undefined;
-                const givenName = typeof payload?.given_name === 'string' ? payload.given_name : undefined;
-                const familyName = typeof payload?.family_name === 'string' ? payload.family_name : undefined;
+                const correoGoogle = typeof payload?.email === 'string' ? payload.email : undefined;
+                const nombreCompletoGoogle = typeof payload?.name === 'string' ? payload.name : undefined;
+                const nombreGoogle = typeof payload?.given_name === 'string' ? payload.given_name : undefined;
+                const apellidoGoogle = typeof payload?.family_name === 'string' ? payload.family_name : undefined;
 
-                if (email && dominiosPermitidos.length > 0 && !correoPermitido(email)) {
+                if (correoGoogle && dominiosPermitidos.length > 0 && !correoPermitido(correoGoogle)) {
                   const msg = `Solo se permiten correos institucionales: ${politicaDominiosTexto}`;
                   setMensaje(msg);
                   emitToast({ level: 'error', title: 'Correo no permitido', message: msg, durationMs: 5200 });
                   return;
                 }
 
-                if (email) setCorreo(email);
+                if (correoGoogle) setCorreo(correoGoogle);
 
                 const nombresActual = nombres.trim();
                 const apellidosActual = apellidos.trim();
 
-                if (givenName && !nombresActual) setNombres(givenName);
-                if (familyName && !apellidosActual) setApellidos(familyName);
-                if (name && (!nombresActual || !apellidosActual)) {
-                  const partes = name
+                if (nombreGoogle && !nombresActual) setNombres(nombreGoogle);
+                if (apellidoGoogle && !apellidosActual) setApellidos(apellidoGoogle);
+                if (nombreCompletoGoogle && (!nombresActual || !apellidosActual)) {
+                  const partes = nombreCompletoGoogle
                     .split(' ')
                     .map((p) => p.trim())
                     .filter(Boolean);
