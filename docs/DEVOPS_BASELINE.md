@@ -23,6 +23,9 @@ Fecha de baseline: 2026-02-13.
 - Contrato agnóstico de pipeline:
   - `ci/pipeline.contract.md`
   - `ci/pipeline.matrix.json`
+- Workflows separados por responsabilidad:
+  - `.github/workflows/ci.yml` (`CI Checks`): quality gates bloqueantes.
+  - `.github/workflows/package.yml` (`Package Images`): empaquetado Docker + `image-digests.txt`.
 
 ## Seguridad de configuración
 - Local: `.env` y `.env.example`.
@@ -41,3 +44,12 @@ Fecha de baseline: 2026-02-13.
 
 ## Criterio de salida Fase 0/Fase 1
 - Baseline versionado + contrato pipeline utilizable en cualquier runner.
+
+## Estado operativo del corte (2026-02-13)
+- Security scan estricto activo:
+  - `NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check`
+  - `npm audit --audit-level=high --json > npm-audit-report.json`
+- Evidencias operativas centralizadas en `docs/INVENTARIO_PROYECTO.md`.
+- Trazabilidad multi-sesion de agentes centralizada en:
+  - `AGENTS.md`
+  - `docs/IA_TRAZABILIDAD_AGENTES.md`

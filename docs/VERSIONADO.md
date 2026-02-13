@@ -7,6 +7,8 @@ Se usa SemVer en raiz del monorepo.
 - Version declarada actual: `0.1.0`.
 - Canal operativo: beta funcional (MVP extendido).
 - Politica objetivo: `1.0-beta` con cero fallos de gates; promoción a estable con gate humano en produccion.
+- Seguimiento de olas y bloqueos vigente: `docs/INVENTARIO_PROYECTO.md`.
+- Trazabilidad de continuidad entre agentes: `AGENTS.md` y `docs/IA_TRAZABILIDAD_AGENTES.md`.
 
 ## Definiciones
 - Alpha: cambios de alto movimiento con contratos inestables.
