@@ -1,0 +1,201 @@
+export type Docente = {
+  id: string;
+  nombreCompleto: string;
+  nombres?: string;
+  apellidos?: string;
+  correo: string;
+  roles?: string[];
+  permisos?: string[];
+  tieneContrasena?: boolean;
+  tieneGoogle?: boolean;
+  preferenciasPdf?: {
+    institucion?: string;
+    lema?: string;
+    logos?: { izquierdaPath?: string; derechaPath?: string };
+  };
+};
+
+export type Alumno = {
+  _id: string;
+  matricula: string;
+  nombreCompleto: string;
+  periodoId?: string;
+  nombres?: string;
+  apellidos?: string;
+  correo?: string;
+  grupo?: string;
+  activo?: boolean;
+  createdAt?: string;
+};
+
+export type Periodo = {
+  _id: string;
+  nombre: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  grupos?: string[];
+  activo?: boolean;
+  createdAt?: string;
+  archivadoEn?: string;
+  resumenArchivado?: {
+    alumnos?: number;
+    bancoPreguntas?: number;
+    plantillas?: number;
+    examenesGenerados?: number;
+    calificaciones?: number;
+    codigosAcceso?: number;
+  };
+};
+
+export type Plantilla = {
+  _id: string;
+  titulo: string;
+  tipo: 'parcial' | 'global';
+  numeroPaginas: number;
+  // Legacy (deprecado): puede existir en plantillas antiguas.
+  totalReactivos?: number;
+  periodoId?: string;
+  preguntasIds?: string[];
+  temas?: string[];
+  instrucciones?: string;
+  createdAt?: string;
+};
+
+export type PreviewPlantilla = {
+  plantillaId: string;
+  numeroPaginas: number;
+  totalDisponibles?: number;
+  totalUsados?: number;
+  fraccionVaciaUltimaPagina?: number;
+  advertencias?: string[];
+  conteoPorTema?: Array<{ tema: string; disponibles: number }>;
+  temasDisponiblesEnMateria?: Array<{ tema: string; disponibles: number }>;
+  paginas: Array<{
+    numero: number;
+    preguntasDel: number;
+    preguntasAl: number;
+    elementos: string[];
+    preguntas: Array<{ numero: number; id: string; tieneImagen: boolean; enunciadoCorto: string }>;
+  }>;
+};
+
+export type Pregunta = {
+  _id: string;
+  periodoId?: string;
+  tema?: string;
+  activo?: boolean;
+  versionActual?: number;
+  versiones: Array<{
+    numeroVersion?: number;
+    enunciado: string;
+    imagenUrl?: string;
+    opciones?: Array<{ texto: string; esCorrecta: boolean }>;
+  }>;
+  createdAt?: string;
+};
+
+export type RegistroSincronizacion = {
+  _id?: string;
+  estado?: 'pendiente' | 'exitoso' | 'fallido' | string;
+  tipo?: string;
+  detalles?: Record<string, unknown>;
+  ejecutadoEn?: string;
+  createdAt?: string;
+};
+
+export type RespuestaSyncPush = {
+  mensaje?: string;
+  conteos?: Record<string, number>;
+  cursor?: string | null;
+  exportadoEn?: string;
+};
+
+export type RespuestaSyncPull = {
+  mensaje?: string;
+  paquetesRecibidos?: number;
+  ultimoCursor?: string | null;
+  pdfsGuardados?: number;
+};
+
+export type ResultadoOmr = {
+  respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  advertencias: string[];
+  qrTexto?: string;
+  calidadPagina: number;
+  estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+  motivosRevision: string[];
+  templateVersionDetectada: 1 | 2;
+  confianzaPromedioPagina: number;
+  ratioAmbiguas: number;
+};
+
+export type PermisosUI = {
+  periodos: { leer: boolean; gestionar: boolean; archivar: boolean };
+  alumnos: { leer: boolean; gestionar: boolean };
+  banco: { leer: boolean; gestionar: boolean; archivar: boolean };
+  plantillas: { leer: boolean; gestionar: boolean; archivar: boolean; previsualizar: boolean };
+  examenes: { leer: boolean; generar: boolean; archivar: boolean; regenerar: boolean; descargar: boolean };
+  entregas: { gestionar: boolean };
+  omr: { analizar: boolean };
+  calificaciones: { calificar: boolean };
+  publicar: { publicar: boolean };
+  sincronizacion: { listar: boolean; exportar: boolean; importar: boolean; push: boolean; pull: boolean };
+  cuenta: { leer: boolean; actualizar: boolean };
+};
+
+export type EnviarConPermiso = <T = unknown>(
+  permiso: string,
+  ruta: string,
+  payload: unknown,
+  mensaje: string,
+  opciones?: { timeoutMs?: number }
+) => Promise<T>;
+
+export type PreviewCalificacion = {
+  aciertos: number;
+  totalReactivos: number;
+  calificacionExamenFinalTexto?: string;
+  calificacionExamenTexto?: string;
+  calificacionParcialTexto?: string;
+  calificacionGlobalTexto?: string;
+};
+
+export type ResultadoAnalisisOmr = {
+  resultado: ResultadoOmr;
+  examenId: string;
+  folio: string;
+  numeroPagina: number;
+  alumnoId?: string | null;
+  templateVersionDetectada?: 1 | 2;
+};
+
+export type RevisionPaginaOmr = {
+  numeroPagina: number;
+  resultado: ResultadoOmr;
+  respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  imagenBase64?: string;
+  nombreArchivo?: string;
+  actualizadoEn: number;
+};
+
+export type RevisionExamenOmr = {
+  examenId: string;
+  folio: string;
+  alumnoId?: string | null;
+  paginas: RevisionPaginaOmr[];
+  claveCorrectaPorNumero: Record<number, string>;
+  ordenPreguntas: number[];
+  revisionConfirmada: boolean;
+  actualizadoEn: number;
+  creadoEn: number;
+};
+
+export type ExamenGeneradoClave = {
+  _id?: string;
+  periodoId?: string;
+  mapaVariante?: {
+    ordenPreguntas?: string[];
+    ordenOpcionesPorPregunta?: Record<string, number[]>;
+  };
+  preguntasIds?: string[];
+};
