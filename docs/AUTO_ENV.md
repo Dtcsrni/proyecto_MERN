@@ -7,11 +7,11 @@ Nota: esto detecta uso por texto (regex). Si agregas una variable nueva en códi
 este documento se actualiza automáticamente al regenerar.
 
 ## Backend
-- `API_BASE` (usado en: apps/backend/scripts/omr_calibrate.js, apps/backend/scripts/omr-validate-api.js)
+- `API_BASE` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `CODIGO_ACCESO_HORAS` (usado en: apps/backend/src/configuracion.ts)
 - `CORS_ORIGENES` (usado en: apps/backend/src/configuracion.ts)
 - `DOMINIOS_CORREO_PERMITIDOS` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/setup.ts)
-- `EMAIL` (usado en: apps/backend/scripts/omr_calibrate.js, apps/backend/scripts/omr-validate-api.js)
+- `EMAIL` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `EXAMEN_INSTITUCION` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts)
 - `EXAMEN_LEMA` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts)
 - `EXAMEN_LOGO_DER_PATH` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts)
@@ -22,8 +22,8 @@ este documento se actualiza automáticamente al regenerar.
 - `JWT_EXPIRA_HORAS` (usado en: apps/backend/src/configuracion.ts)
 - `JWT_SECRETO` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/integracion/listaAcademicaContratos.test.ts)
 - `LIMITE_JSON` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/contrato/limitesPayload.test.ts)
-- `MONGO_URI` (usado en: apps/backend/src/configuracion.ts)
 - `MONGODB_URI` (usado en: apps/backend/scripts/omr-run.ts, apps/backend/scripts/omr-validate.ts, apps/backend/src/configuracion.ts)
+- `MONGO_URI` (usado en: apps/backend/src/configuracion.ts)
 - `NODE_ENV` (usado en: apps/backend/scripts/debugCrearPeriodo.ts, apps/backend/src/compartido/errores/manejadorErrores.ts, apps/backend/src/compartido/salud/rutasSalud.ts, apps/backend/src/configuracion.ts, apps/backend/src/infraestructura/logging/logger.ts, apps/backend/src/modulos/modulo_autenticacion/rutasAutenticacion.ts, apps/backend/src/modulos/modulo_autenticacion/seedAdmin.ts, apps/backend/tests/errores.test.ts, apps/backend/tests/setup.ts)
 - `OMR_ALIGN_RANGE` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
 - `OMR_AMBIGUITY_RATIO` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
@@ -42,7 +42,7 @@ este documento se actualiza automáticamente al regenerar.
 - `OMR_IMAGEN_BASE64_MAX_CHARS` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/contrato/limitesPayload.test.ts)
 - `OMR_LOCAL_DRIFT_PENALTY` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
 - `OMR_LOCAL_SEARCH_RATIO` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
-- `OMR_MAX_BASE64` (usado en: apps/backend/scripts/omr_calibrate.js, apps/backend/scripts/omr-validate-api.js)
+- `OMR_MAX_BASE64` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `OMR_MAX_CENTER_DRIFT_RATIO` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
 - `OMR_MIN_CENTER_GAP` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
 - `OMR_MIN_FILL_DELTA` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
@@ -64,7 +64,7 @@ este documento se actualiza automáticamente al regenerar.
 - `OMR_V2_ENABLED` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts)
 - `OMR_VERT_RANGE` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
 - `OMR_VERT_STEP` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts)
-- `PASSWORD` (usado en: apps/backend/scripts/omr_calibrate.js, apps/backend/scripts/omr-validate-api.js)
+- `PASSWORD` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `PORT` (usado en: apps/backend/src/configuracion.ts)
 - `PORTAL_ALUMNO_API_KEY` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts)
 - `PORTAL_ALUMNO_URL` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts)
@@ -94,7 +94,7 @@ este documento se actualiza automáticamente al regenerar.
 - `RATE_LIMIT_WINDOW_MS` (usado en: apps/portal_alumno_cloud/src/configuracion.ts, apps/portal_alumno_cloud/tests/rateLimit.test.ts)
 
 ## Frontend
-- `DEV` (usado en: apps/frontend/src/apps/app_docente/hooks/usePermisosDocente.ts, apps/frontend/src/apps/app_docente/SeccionAutenticacion.tsx, apps/frontend/src/ui/errores/ErrorBoundary.tsx)
+- `DEV` (usado en: apps/frontend/src/apps/app_docente/SeccionAutenticacion.tsx, apps/frontend/src/apps/app_docente/hooks/usePermisosDocente.ts, apps/frontend/src/ui/errores/ErrorBoundary.tsx)
 - `PROD` (usado en: apps/frontend/src/pwa.ts)
 - `VITE_API_BASE_URL` (usado en: apps/frontend/src/servicios_api/clienteApi.ts)
 - `VITE_APP_DESTINO` (usado en: apps/frontend/src/App.tsx, apps/frontend/src/pwa.ts)
