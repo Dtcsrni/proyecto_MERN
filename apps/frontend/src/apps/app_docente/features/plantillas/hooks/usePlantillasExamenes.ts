@@ -1,1 +1,0 @@
-export function usePlantillasExamenes() { return {}; }
