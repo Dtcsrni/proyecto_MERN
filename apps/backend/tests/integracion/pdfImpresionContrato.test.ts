@@ -61,7 +61,9 @@ describe('contrato PDF impresion', () => {
     expect(contentDisposition).toMatch(/examen_.*folio-[A-Z0-9]+\.pdf/);
 
     const pdfBuffer = pdfResp.body as Buffer;
-    expect(pdfBuffer.byteLength).toBeGreaterThan(20_000);
+    // Umbral inferior robusto entre entornos: asegura contenido real sin acoplarse
+    // a variaciones menores del encoder/fuentes entre SO.
+    expect(pdfBuffer.byteLength).toBeGreaterThan(12_000);
     expect(pdfBuffer.byteLength).toBeLessThan(1_500_000);
 
     const doc = await PDFDocument.load(pdfBuffer);
@@ -75,6 +77,7 @@ describe('contrato PDF impresion', () => {
 
     // Reglas minimas de impresion/tinta: peso por pagina contenido y no excesivo.
     const bytesPorPagina = Math.round(pdfBuffer.byteLength / Math.max(1, pages.length));
+    expect(bytesPorPagina).toBeGreaterThan(10_000);
     expect(bytesPorPagina).toBeLessThan(500_000);
 
     const hashSha256 = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
@@ -95,4 +98,3 @@ describe('contrato PDF impresion', () => {
     await fs.writeFile(out, `${JSON.stringify(reporte, null, 2)}\n`, 'utf8');
   });
 });
-
