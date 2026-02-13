@@ -1,3 +1,9 @@
+/**
+ * tema
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 export type PreferenciaTema = 'auto' | 'light' | 'dark';
 export type TemaAplicado = 'light' | 'dark';
 export type BucketTiempo = 'dawn' | 'day' | 'dusk' | 'night';

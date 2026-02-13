@@ -1,3 +1,9 @@
+/**
+ * BancoListadoPreguntas
+ *
+ * Responsabilidad: Componente de UI del dominio docente (presentacion y eventos de vista).
+ * Limites: Evitar acoplar IO directo; preferir hooks/services del feature.
+ */
 import { Boton } from '../../../../../ui/ux/componentes/Boton';
 import { idCortoMateria, obtenerVersionPregunta, preguntaTieneCodigo } from '../../../utilidades';
 import type { Pregunta } from '../../../tipos';

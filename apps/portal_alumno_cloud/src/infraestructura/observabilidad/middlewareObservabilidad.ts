@@ -1,3 +1,9 @@
+/**
+ * middlewareObservabilidad
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { log } from '../logging/logger';

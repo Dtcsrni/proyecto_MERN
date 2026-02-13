@@ -1,3 +1,9 @@
+/**
+ * useBancoPreguntas
+ *
+ * Responsabilidad: Hook de orquestacion de estado/efectos para el feature docente.
+ * Limites: Mantener dependencia unidireccional: hooks -> services -> clienteApi.
+ */
 import { useMemo, useState } from 'react';
 import { estimarPaginasParaPreguntas, normalizarNombreTema } from '../../../SeccionBanco.helpers';
 import type { Pregunta } from '../../../tipos';

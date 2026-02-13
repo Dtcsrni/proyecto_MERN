@@ -1,3 +1,9 @@
+/**
+ * telemetriaDocente
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { clienteApi } from './clienteApiDocente';
 import { obtenerSesionDocenteId } from './utilidades';
 

@@ -1,3 +1,9 @@
+/**
+ * BancoAjustePreguntas
+ *
+ * Responsabilidad: Componente de UI del dominio docente (presentacion y eventos de vista).
+ * Limites: Evitar acoplar IO directo; preferir hooks/services del feature.
+ */
 import { Boton } from '../../../../../ui/ux/componentes/Boton';
 import { Icono } from '../../../../../ui/iconos';
 import { obtenerVersionPregunta } from '../../../utilidades';

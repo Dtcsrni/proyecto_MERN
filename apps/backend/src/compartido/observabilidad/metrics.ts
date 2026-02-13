@@ -1,3 +1,9 @@
+/**
+ * metrics
+ *
+ * Responsabilidad: Punto comun de metricas/logs/correlacion para operacion.
+ * Limites: Evitar romper nombres de metricas o formato de log en produccion.
+ */
 const inicioDelProceso = Date.now();
 
 type ClaveSolicitud = `${string}|${string}|${number}`;

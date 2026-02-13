@@ -1,3 +1,9 @@
+/**
+ * CampoTexto
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import { forwardRef, useId } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 

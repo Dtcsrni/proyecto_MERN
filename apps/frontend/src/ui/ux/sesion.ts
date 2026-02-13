@@ -1,3 +1,9 @@
+/**
+ * sesion
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 export function obtenerSessionId(clave: string) {
   const existente = sessionStorage.getItem(clave);
   if (existente) return existente;

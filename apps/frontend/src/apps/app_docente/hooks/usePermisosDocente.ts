@@ -1,3 +1,9 @@
+/**
+ * usePermisosDocente
+ *
+ * Responsabilidad: Hook transversal del shell docente.
+ * Limites: Mantener estado derivado predecible y efectos idempotentes.
+ */
 import { useCallback, useMemo } from 'react';
 import type { Docente } from '../tipos';
 

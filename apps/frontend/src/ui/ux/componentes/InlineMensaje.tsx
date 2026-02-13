@@ -1,3 +1,9 @@
+/**
+ * InlineMensaje
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import type { ReactNode } from 'react';
 import { Icono } from '../../iconos';
 

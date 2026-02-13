@@ -1,3 +1,9 @@
+/**
+ * middlewareObservabilidad
+ *
+ * Responsabilidad: Punto comun de metricas/logs/correlacion para operacion.
+ * Limites: Evitar romper nombres de metricas o formato de log en produccion.
+ */
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { log } from '../../infraestructura/logging/logger';

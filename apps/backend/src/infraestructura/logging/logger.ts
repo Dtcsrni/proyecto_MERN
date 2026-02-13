@@ -1,3 +1,9 @@
+/**
+ * logger
+ *
+ * Responsabilidad: Configuracion de logging estructurado para el servicio.
+ * Limites: No exponer secretos en logs ni degradar trazabilidad por requestId.
+ */
 export type NivelLog = 'info' | 'warn' | 'error' | 'ok' | 'system';
 
 type Meta = Record<string, unknown>;

@@ -24,6 +24,20 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - Salida:
   - `docs/handoff/sesiones/<YYYY-MM-DD>/<sesion>.md`
 
+## Comentarios autoexplicativos por archivo
+- Script: `ia-docblocks.mjs`
+- Comando:
+  - `npm run ia:docblocks`
+- Uso:
+  - agrega cabeceras de contexto a archivos `apps/*/src` que no tengan docblock inicial.
+
+## Inventario de codigo por sesion
+- Script: `inventario-codigo.mjs`
+- Comando:
+  - `npm run inventario:codigo`
+- Salida:
+  - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
+
 Notas:
 - Varios scripts asumen Docker Desktop iniciado.
 - Ver README principal para el flujo completo: `../README.md`.

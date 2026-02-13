@@ -7,6 +7,12 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ### Added
 - Documento de inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`.
 - Inventario exhaustivo de codigo/config versionado: `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
+- Paquete de handoff IA automatico:
+  - `scripts/ia-handoff.mjs`
+  - `docs/handoff/PLANTILLA_HANDOFF_IA.md`
+  - `docs/handoff/README.md`
+- Script de estandarizacion de cabeceras de contexto:
+  - `scripts/ia-docblocks.mjs`
 - Shell de UI docente extraído a `apps/frontend/src/apps/app_docente/ShellDocente.tsx`.
 - Guía de operación para agentes IA: `AGENTS.md`.
 - Documento de trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`.
@@ -33,6 +39,10 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`
   - `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`
   - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`
+- Scripts raiz actualizados con comandos:
+  - `npm run ia:handoff:quick`
+  - `npm run ia:handoff:full`
+  - `npm run ia:docblocks`
 
 ### Fixed
 - Selectores ambiguos en pruebas de refactor (`Plantillas` y `Banco`) que generaban fallos falsos negativos.

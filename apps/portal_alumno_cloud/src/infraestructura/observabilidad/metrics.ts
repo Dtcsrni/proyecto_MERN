@@ -1,3 +1,9 @@
+/**
+ * metrics
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 const inicioDelProceso = Date.now();
 
 type ClaveSolicitud = `${string}|${string}|${number}`;

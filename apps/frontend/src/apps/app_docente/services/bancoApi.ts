@@ -1,3 +1,9 @@
+/**
+ * bancoApi
+ *
+ * Responsabilidad: Capa de acceso IO/API del dominio docente.
+ * Limites: No mezclar logica de render ni estado de UI.
+ */
 import { clienteApi } from '../clienteApiDocente';
 import type { TemaBanco } from '../SeccionBanco.helpers';
 

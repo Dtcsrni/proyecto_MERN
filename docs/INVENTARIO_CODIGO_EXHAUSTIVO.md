@@ -1,11 +1,11 @@
 # Inventario Exhaustivo de Codigo
 
-Fecha de generacion: 2026-02-13 06:10:29
+Fecha de generacion: 2026-02-13 06:19:14
 Fuente: git ls-files (solo archivos versionados, excluye node_modules).
 
 ## Resumen
 
-- Total de piezas de codigo/config ejecutable inventariadas: 390
+- Total de piezas de codigo/config ejecutable inventariadas: 391
 - Extensiones incluidas: ts, tsx, js, jsx, mjs, cjs, json, yml, yaml, sh, cmd, ps1.
 
 ## Conteo por area
@@ -16,7 +16,7 @@ Fuente: git ls-files (solo archivos versionados, excluye node_modules).
 | frontend | 80 |
 | portal_alumno_cloud | 32 |
 | ci | 3 |
-| scripts | 28 |
+| scripts | 29 |
 | ops | 3 |
 | docs | 3 |
 | raiz | 6 |
@@ -319,6 +319,7 @@ Fuente: git ls-files (solo archivos versionados, excluye node_modules).
 - scripts/diagramas.mjs
 - scripts/docs.mjs
 - scripts/ensure-dev-cert.ps1
+- scripts/ia-handoff.mjs
 - scripts/import-backup.mjs
 - scripts/launch-dev.cmd
 - scripts/launch-prod.cmd
@@ -358,4 +359,3 @@ Fuente: git ls-files (solo archivos versionados, excluye node_modules).
 - package.json
 - tsconfig.base.json
 - vitest.base.ts
-

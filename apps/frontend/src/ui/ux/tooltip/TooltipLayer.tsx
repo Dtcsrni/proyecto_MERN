@@ -1,3 +1,9 @@
+/**
+ * TooltipLayer
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import { useEffect, useRef, useState } from 'react';
 
 type TooltipState = {

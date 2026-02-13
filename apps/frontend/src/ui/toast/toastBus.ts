@@ -1,3 +1,9 @@
+/**
+ * toastBus
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 export type ToastLevel = 'info' | 'ok' | 'warn' | 'error';
 
 export type ToastAction = {

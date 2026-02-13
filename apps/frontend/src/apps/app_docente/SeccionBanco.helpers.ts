@@ -1,3 +1,9 @@
+/**
+ * SeccionBanco.helpers
+ *
+ * Responsabilidad: Seccion funcional del shell docente.
+ * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
+ */
 import type { Pregunta } from './tipos';
 import { obtenerVersionPregunta } from './utilidades';
 

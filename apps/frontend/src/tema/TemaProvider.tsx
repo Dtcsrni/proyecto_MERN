@@ -1,3 +1,9 @@
+/**
+ * TemaProvider
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   aplicarTemaDocumento,

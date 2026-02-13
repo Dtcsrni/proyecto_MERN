@@ -1,3 +1,9 @@
+/**
+ * pwa
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Configuración PWA para portales Docente/Alumno.
 // - Selecciona manifest + favicon según VITE_APP_DESTINO.
 // - Registra un Service Worker que no cachea HTML navegacional ni /api/*.
