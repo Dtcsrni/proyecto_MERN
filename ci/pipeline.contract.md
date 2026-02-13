@@ -3,25 +3,33 @@
 ## Purpose
 Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLab CI, Jenkins, Azure, local orchestrator).
 
-## Required stages
+## Execution profiles (recommended)
+The pipeline is intentionally split into two mandatory profiles to optimize feedback speed without lowering release quality.
+
+### Profile `core` (blocking for every PR/push)
 1. `setup`
 2. `lint`
 3. `typecheck`
 4. `test`
-5. `flujo-docente-check`
-6. `dataset-prodlike-check`
-7. `docente-alumno-e2e-check`
-8. `global-grade-check`
-9. `pdf-print-check`
-10. `ux-visual-check`
-11. `coverage-check`
-12. `perf-check`
-13. `bigbang-olas-strict-check`
-14. `build`
-15. `docs-check`
-16. `security-scan`
-17. `qa-manifest`
-18. `package`
+5. `coverage-check`
+6. `build`
+7. `docs-check`
+8. `security-scan`
+
+### Profile `extended` (blocking for `main`, `release/*`, `schedule`, or manual dispatch)
+1. `setup`
+2. `flujo-docente-check`
+3. `dataset-prodlike-check`
+4. `docente-alumno-e2e-check`
+5. `global-grade-check`
+6. `pdf-print-check`
+7. `ux-visual-check`
+8. `perf-check`
+9. `bigbang-olas-strict-check`
+10. `qa-manifest`
+
+### Profile `package`
+1. `package`
 
 ## Stage contract
 ### setup
@@ -162,13 +170,14 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 - QA evidence report (`reports/qa/latest/**`)
 
 ## Quality gates policy (strict progressive)
-- Week 1: setup + lint + typecheck + test + build
-- Week 2: add docs-check + coverage-check
-- Week 3: add security-scan + raise coverage thresholds to target
+- Every PR must pass full `core`.
+- `main`/`release/*` must pass `core` + `extended`.
+- `package` stays isolated in its own workflow for artifact/image generation.
 
 ## Exit criteria
-- Pipeline marked green only when all mandatory stages pass
-- Release candidates require 10 consecutive green runs without flaky infra failures >10%
+- PR pipeline is green only when all `core` stages pass.
+- Mainline/release pipeline is green only when all `core` + `extended` stages pass.
+- Release candidates require 10 consecutive green runs without flaky infra failures >10%.
 
 ## Stable release gate (post-CI, manual + automated evidence)
 This gate is outside CI stages and applies only when promoting `beta` to `stable`.

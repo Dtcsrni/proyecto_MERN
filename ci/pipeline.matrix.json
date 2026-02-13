@@ -1,6 +1,33 @@
 {
   "version": 1,
   "node": ">=24",
+  "profiles": {
+    "core": [
+      "setup",
+      "lint",
+      "typecheck",
+      "test",
+      "coverage-check",
+      "build",
+      "docs-check",
+      "security-scan"
+    ],
+    "extended": [
+      "setup",
+      "flujo-docente-check",
+      "dataset-prodlike-check",
+      "docente-alumno-e2e-check",
+      "global-grade-check",
+      "pdf-print-check",
+      "ux-visual-check",
+      "perf-check",
+      "bigbang-olas-strict-check",
+      "qa-manifest"
+    ],
+    "package": [
+      "package"
+    ]
+  },
   "stages": [
     {
       "name": "setup",
