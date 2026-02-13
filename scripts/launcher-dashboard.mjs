@@ -341,6 +341,13 @@ function isPidAlive(pid) {
   }
 }
 
+function lockAgeMs(startedAt) {
+  if (!startedAt) return Number.POSITIVE_INFINITY;
+  const ts = Date.parse(String(startedAt));
+  if (!Number.isFinite(ts)) return Number.POSITIVE_INFINITY;
+  return Date.now() - ts;
+}
+
 function writeSingletonLock(payload, exclusive = false) {
   try {
     const data = JSON.stringify(payload, null, 2);
@@ -394,6 +401,18 @@ async function ensureSingletonLock() {
         logSystem(`Dashboard ya esta activo: ${url}`, 'ok', { console: true });
         if (!noOpen) openBrowser(url);
       } else {
+        const ageMs = lockAgeMs(existing.startedAt);
+        if (ageMs > 5 * 60 * 1000) {
+          try { if (fs.existsSync(singletonPath)) fs.unlinkSync(singletonPath); } catch {}
+          logSystem('Lock singleton obsoleto detectado. Se recupera automaticamente.', 'warn', { console: true });
+          if (writeSingletonLock(payload, true)) {
+            singletonOwned = true;
+            singletonPayload = payload;
+            return { ok: true, recovered: true };
+          }
+          logSystem('No se pudo reescribir lock singleton recuperado.', 'error', { console: true });
+          return { ok: false };
+        }
         logSystem('Otra instancia del dashboard ya esta iniciando.', 'warn', { console: true });
       }
     } else {
