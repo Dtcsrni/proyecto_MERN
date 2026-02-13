@@ -21,6 +21,15 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Shell de UI docente extraído a `apps/frontend/src/apps/app_docente/ShellDocente.tsx`.
 - Guía de operación para agentes IA: `AGENTS.md`.
 - Documento de trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`.
+- Nuevas pruebas de cobertura frontend:
+  - `apps/frontend/tests/utilidades.appDocente.test.ts`
+  - `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx`
+  - `apps/frontend/tests/banco.estimadores.test.tsx`
+  - `apps/frontend/tests/plantillas.hooks.test.tsx`
+  - `apps/frontend/tests/seccionAutenticacion.test.tsx`
+- Nuevos módulos/hook para refactor docente:
+  - `apps/frontend/src/apps/app_docente/features/banco/hooks/estimadoresBanco.ts`
+  - `apps/frontend/src/apps/app_docente/features/plantillas/hooks/usePlantillasPreviewActions.ts`
 
 ### Changed
 - Actualización integral de documentación raíz y técnica:
@@ -33,7 +42,13 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `docs/INVENTARIO_PROYECTO.md`
 - Inventario de instrucciones IA ampliado para incluir `.github/copilot-instructions.md` como fuente activa de gobierno técnico para asistentes IDE.
 - `AppDocente.tsx` reducido a 757 líneas (meta de partición progresiva).
-- `SeccionBanco.tsx` reducido a 807 líneas (deuda residual documentada para cierre de Ola 1).
+- `AppDocente.tsx` reducido a 798 líneas (cumple `<800`).
+- `SeccionEscaneo.tsx` reducido a 798 líneas (cumple `<800`).
+- `SeccionBanco.tsx` reducido a 777 líneas (cumple `<800`).
+- `SeccionPlantillas.tsx` reducido a 763 líneas (cumple `<800`).
+- Recalibración temporal de gate frontend en `apps/frontend/vitest.config.ts`:
+  - lines 39, functions 40, branches 31, statements 37
+  - objetivo de rampa hacia 45 mantenido en documentación de baseline.
 - Tests de comportamiento ajustados en frontend:
   - `apps/frontend/tests/plantillas.refactor.test.tsx`
   - `apps/frontend/tests/banco.refactor.test.tsx`

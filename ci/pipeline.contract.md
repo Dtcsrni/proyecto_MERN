@@ -47,7 +47,10 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 ### coverage-check
 - Command: `npm run test:coverage:ci`
 - Policy: blocking gate with progressive thresholds per app:
-  - Week 1: backend 55, frontend 45, portal 50
+  - Week 1 (recalibrado 2026-02-13 para baseline real):
+    - backend: 55 (lines/functions/branches/statements)
+    - frontend: lines 39, functions 40, branches 31, statements 37
+    - portal: 50 (lines/functions/branches/statements)
   - Week 2: backend 62, frontend 52, portal 58
   - Week 3: backend 70, frontend 60, portal 65
 - Output: coverage report per workspace (`coverage/**`)

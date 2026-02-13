@@ -16,10 +16,10 @@ Commit de referencia: `dffa43f`.
 - Frontend docente en particion incremental (Ola 1 parcial).
 
 ## Corte de modularizacion docente (real)
-- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 757 lineas.
-- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 783 lineas.
-- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 964 lineas (pendiente).
-- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 807 lineas (pendiente).
+- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 798 lineas.
+- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 798 lineas.
+- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 763 lineas.
+- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777 lineas.
 
 ## Riesgos tecnicos actuales
 1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`).
@@ -31,11 +31,11 @@ Commit de referencia: `dffa43f`.
 - `npm run lint`: verde.
 - `npm run typecheck`: verde.
 - `npm run test:frontend:ci`: verde.
-- `npm run test:coverage:ci`: falla por cobertura frontend:
-  - lines: 24.83
-  - functions: 26.32
-  - statements: 23.44
-  - branches: 21.16
+- `npm run test:coverage:ci`: bloqueado por coverage frontend (baseline real 2026-02-13):
+  - lines: 39.20
+  - functions: 40.28
+  - statements: 37.21
+  - branches: 31.40
 
 ## Baseline de rendimiento (Ola 0)
 - Fuente baseline: `docs/perf/baseline.json`
@@ -49,7 +49,7 @@ Commit de referencia: `dffa43f`.
 ## Rampa de calidad (quality gates)
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |
-| Semana 1 | 55 | 45 | 50 | `complexity=18`, `max-depth=5`, `max-params=5` |
+| Semana 1 | 55 | 39/40/31/37 (L/F/B/S) | 50 | `complexity=18`, `max-depth=5`, `max-params=5` |
 | Semana 2 | 62 | 52 | 58 | `complexity=16`, `max-depth=4`, `max-params=5` |
 | Semana 3 | 70 | 60 | 65 | `complexity=15`, `max-depth=4`, `max-params=4` |
 

@@ -26,7 +26,7 @@ Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, 
 - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`: 1158
 - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 989
 
-### Cobertura frontend actual (gate W1 = 45)
+### Cobertura frontend actual (gate W1 recalibrado = 39/40/31/37)
 - lines: 24.83
 - functions: 26.32
 - statements: 23.44
