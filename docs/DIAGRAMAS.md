@@ -4,6 +4,7 @@ Este catálogo incluye los diagramas necesarios para entender el sistema end-to-
 
 Fuentes Mermaid: `docs/diagramas/src/`.
 SVG renderizados: `docs/diagramas/rendered/`.
+Configuración Mermaid (explicada): `docs/diagramas/mermaid.config.md`.
 
 ## Actualización automática (fuentes)
 

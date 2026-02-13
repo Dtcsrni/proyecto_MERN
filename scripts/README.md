@@ -38,6 +38,13 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - Salida:
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 
+## READMEs de carpetas (base)
+- Script: `generar-readmes-carpetas.mjs`
+- Comando:
+  - `npm run docs:carpetas:generate`
+- Uso:
+  - crea `README.md` base en carpetas objetivo que aún no lo tengan.
+
 Notas:
 - Varios scripts asumen Docker Desktop iniciado.
 - Ver README principal para el flujo completo: `../README.md`.
