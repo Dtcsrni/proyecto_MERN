@@ -16,11 +16,12 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 10. `ux-visual-check`
 11. `coverage-check`
 12. `perf-check`
-13. `build`
-14. `docs-check`
-15. `security-scan`
-16. `qa-manifest`
-17. `package`
+13. `bigbang-olas-strict-check`
+14. `build`
+15. `docs-check`
+16. `security-scan`
+17. `qa-manifest`
+18. `package`
 
 ## Stage contract
 ### setup
@@ -107,6 +108,15 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 - Failure criteria:
   - any route with `p95` over budget
   - any measured route with failures above budget
+
+### bigbang-olas-strict-check
+- Command: `npm run bigbang:olas:strict`
+- Policy: blocking gate
+- Scope:
+  - verifies completion invariants for implemented Big-Bang waves
+  - executes strict local quality gates used as release precondition
+- Output:
+  - `reports/qa/latest/olas-bigbang.json`
 
 ### build
 - Command: `npm run build`

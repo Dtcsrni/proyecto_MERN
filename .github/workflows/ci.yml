@@ -81,6 +81,9 @@ jobs:
       - name: Etapa perf-check
         run: npm run perf:check
 
+      - name: Etapa bigbang-olas-strict-check
+        run: npm run bigbang:olas:strict
+
       - name: Etapa build
         run: npm run build
 
