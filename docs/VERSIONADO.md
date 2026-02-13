@@ -16,6 +16,7 @@ Se usa SemVer en raiz del monorepo.
 Debe pasar:
 - `npm run test:ci`
 - `npm run test:coverage:ci`
+- `npm run perf:check`
 - `npm run test:portal`
 - `npm run test:frontend`
 - `npm run routes:check`

@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-13T10:09:45.477Z",
+  "sourceReport": "reports/perf/latest.json",
+  "baselineFactor": 3,
+  "baselineMarginMs": 50,
+  "budgets": [
+    {
+      "service": "backend",
+      "route": "/api/salud/live",
+      "method": "GET",
+      "baselineP95Ms": 2.34,
+      "budgetP95Ms": 52.34,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/metrics",
+      "method": "GET",
+      "baselineP95Ms": 2.45,
+      "budgetP95Ms": 52.45,
+      "maxFailures": 0
+    },
+    {
+      "service": "portal",
+      "route": "/api/portal/salud/live",
+      "method": "GET",
+      "baselineP95Ms": 2.9,
+      "budgetP95Ms": 52.9,
+      "maxFailures": 0
+    },
+    {
+      "service": "portal",
+      "route": "/api/portal/metrics",
+      "method": "GET",
+      "baselineP95Ms": 2.31,
+      "budgetP95Ms": 52.31,
+      "maxFailures": 0
+    }
+  ]
+}

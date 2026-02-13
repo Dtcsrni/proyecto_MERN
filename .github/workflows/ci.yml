@@ -56,6 +56,9 @@ jobs:
       - name: Etapa coverage-check
         run: npm run test:coverage:ci
 
+      - name: Etapa perf-check
+        run: npm run perf:check
+
       - name: Etapa build
         run: npm run build
 
@@ -79,3 +82,10 @@ jobs:
         with:
           name: npm-audit-report
           path: npm-audit-report.json
+
+      - name: Publicar reporte de performance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-report
+          path: reports/perf/latest.json

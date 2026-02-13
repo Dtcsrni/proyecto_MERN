@@ -10,10 +10,11 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 4. `test`
 5. `flujo-docente-check`
 6. `coverage-check`
-7. `build`
-8. `docs-check`
-9. `security-scan`
-10. `package`
+7. `perf-check`
+8. `build`
+9. `docs-check`
+10. `security-scan`
+11. `package`
 
 ## Stage contract
 ### setup
@@ -51,6 +52,17 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
   - Week 3: backend 70, frontend 60, portal 65
 - Output: coverage report per workspace (`coverage/**`)
 
+### perf-check
+- Command: `npm run perf:check`
+- Policy: blocking gate
+- Inputs:
+  - `docs/perf/baseline.json`
+- Outputs:
+  - `reports/perf/latest.json`
+- Failure criteria:
+  - any route with `p95` over budget
+  - any measured route with failures above budget
+
 ### build
 - Command: `npm run build`
 - Output: compiled artifacts per workspace
@@ -86,6 +98,7 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 - portal build output
 - test reports (if runner supports)
 - docs/diagram checks report (text)
+- performance report (`reports/perf/latest.json`)
 
 ## Quality gates policy (strict progressive)
 - Week 1: setup + lint + typecheck + test + build
