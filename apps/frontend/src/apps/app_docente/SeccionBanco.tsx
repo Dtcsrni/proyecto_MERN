@@ -1,3 +1,15 @@
+/**
+ * Seccion de banco de preguntas.
+ *
+ * Responsabilidad:
+ * - Gestion de preguntas (crear/editar/archivar)
+ * - Gestion de temas por periodo
+ * - Ajustes masivos de reactivos por tema
+ *
+ * Nota de mantenimiento:
+ * La UI esta fragmentada en components/features; este archivo concentra
+ * la orquestacion de estado hasta completar la extraccion total a hooks.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';

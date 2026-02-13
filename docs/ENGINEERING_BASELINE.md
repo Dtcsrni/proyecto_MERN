@@ -8,6 +8,8 @@ Commit de referencia: `dffa43f`.
   - `apps/backend`
   - `apps/frontend`
   - `apps/portal_alumno_cloud`
+- Inventario completo de piezas de codigo/config versionadas:
+  - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
 - Arquitectura backend: monolito modular por dominio (Ola 2 pendiente).

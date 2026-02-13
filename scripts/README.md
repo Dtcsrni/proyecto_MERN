@@ -16,6 +16,14 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - `launch-dev.cmd`
 - `launch-prod.cmd`
 
+## Handoff IA (continuidad de sesiones)
+- Script: `ia-handoff.mjs`
+- Comandos:
+  - `npm run ia:handoff:quick`
+  - `npm run ia:handoff:full`
+- Salida:
+  - `docs/handoff/sesiones/<YYYY-MM-DD>/<sesion>.md`
+
 Notas:
 - Varios scripts asumen Docker Desktop iniciado.
 - Ver README principal para el flujo completo: `../README.md`.

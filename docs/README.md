@@ -26,6 +26,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
 - `RELEASE_GATE_STABLE.md`: gate formal beta -> estable con validación humana en producción.
 - `INVENTARIO_PROYECTO.md`: inventario técnico integral (estado de olas, gates y brechas a `1.0-beta`/estable).
+- `INVENTARIO_CODIGO_EXHAUSTIVO.md`: inventario completo de piezas de codigo/config versionadas por area.
 - `IA_TRAZABILIDAD_AGENTES.md`: trazabilidad multi-sesion para continuidad entre agentes.
 
 ## Documentos auto-generados

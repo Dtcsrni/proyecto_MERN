@@ -1,3 +1,13 @@
+/**
+ * Seccion de escaneo OMR y revision manual.
+ *
+ * Responsabilidad:
+ * - Captura de imagen, analisis OMR y previsualizacion de calificacion.
+ * - Ajuste manual de respuestas cuando la confianza no es suficiente.
+ *
+ * Limite:
+ * - La deteccion OMR real vive en backend; aqui solo se coordina el flujo UI.
+ */
 import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';

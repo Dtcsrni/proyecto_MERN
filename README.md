@@ -16,6 +16,7 @@ Estado actual del repositorio: 2026-02-13.
 
 ## Inventario y trazabilidad (obligatorio)
 - Inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`
+- Inventario exhaustivo de codigo/config versionado: `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Baseline de ingeniería: `docs/ENGINEERING_BASELINE.md`
 - Baseline DevOps: `docs/DEVOPS_BASELINE.md`
 - Gate formal beta -> estable: `docs/RELEASE_GATE_STABLE.md`

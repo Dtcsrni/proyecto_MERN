@@ -70,6 +70,9 @@ Cada sesion debe dejar actualizado:
 1. `docs/INVENTARIO_PROYECTO.md` (estado de avance y brechas).
 2. `docs/ENGINEERING_BASELINE.md` (metricas/gates del corte).
 3. `CHANGELOG.md` (cambios concretos).
+4. Reporte de handoff generado por script:
+   - `npm run ia:handoff:quick`
+   - salida en `docs/handoff/sesiones/<YYYY-MM-DD>/`.
 
 ## 5) Estado de referencia (corte actual)
 Ver `docs/IA_TRAZABILIDAD_AGENTES.md` para snapshot operativo vigente.
