@@ -27,7 +27,7 @@ Estado actual del repositorio: 2026-02-13.
 
 Resumen del corte actual:
 - Ola 0: implementada.
-- Ola 1: parcial (pendiente cierre estructural de `SeccionPlantillas.tsx` y `SeccionBanco.tsx`).
+- Ola 1: completada (frontend docente sin archivos criticos >800 y sin dependencia a legado).
 - Olas 2, 3, 4: pendientes para `1.0-beta`.
 
 ## Apps del monorepo

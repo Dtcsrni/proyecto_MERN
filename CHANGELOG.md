@@ -63,6 +63,10 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - `SeccionEscaneo.tsx` reducido a 798 líneas (cumple `<800`).
 - `SeccionBanco.tsx` reducido a 777 líneas (cumple `<800`).
 - `SeccionPlantillas.tsx` reducido a 763 líneas (cumple `<800`).
+- Cierre formal de Ola 1 en documentación de estado:
+  - `README.md`
+  - `docs/ENGINEERING_BASELINE.md`
+  - `docs/INVENTARIO_PROYECTO.md`
 - Recalibración temporal de gate frontend en `apps/frontend/vitest.config.ts`:
   - lines 39, functions 40, branches 31, statements 37
   - objetivo de rampa hacia 45 mantenido en documentación de baseline.
@@ -105,8 +109,8 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 
 ### Notes
 - Estado de gates del corte:
-  - `lint`, `typecheck`, `test:frontend:ci`: verdes.
-  - `test:coverage:ci`: con brecha abierta en cobertura frontend (detallada en `docs/INVENTARIO_PROYECTO.md`).
+  - `lint`, `typecheck`, `test:frontend:ci`, `test:coverage:ci`, `test:backend:ci`, `test:portal:ci`, `perf:check`, `pipeline:contract:check`: verdes.
+  - cobertura frontend validada contra umbral vigente: lines 39.20, functions 40.28, statements 37.21, branches 31.40.
 
 ## [0.1.0] - 2026-01-15
 
