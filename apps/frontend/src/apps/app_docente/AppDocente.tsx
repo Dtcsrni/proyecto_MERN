@@ -1,15 +1,10 @@
-/**
- * App docente: panel basico para banco, examenes, entrega y calificacion.
- */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { guardarTokenDocente, limpiarTokenDocente, obtenerTokenDocente } from '../../servicios_api/clienteApi';
-import { onSesionInvalidada } from '../../servicios_api/clienteComun';
+import { guardarTokenDocente, limpiarTokenDocente } from '../../servicios_api/clienteApi';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono, Spinner } from '../../ui/iconos';
-import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
-import { TemaBoton } from '../../tema/TemaBoton';
 import { clienteApi } from './clienteApiDocente';
+import { ShellDocente } from './ShellDocente';
 import { SeccionAutenticacion } from './SeccionAutenticacion';
 import { SeccionAlumnos } from './SeccionAlumnos';
 import { SeccionBanco } from './SeccionBanco';
@@ -19,6 +14,8 @@ import { SeccionPeriodos, SeccionPeriodosArchivados } from './SeccionPeriodos';
 import { SeccionEntrega } from './SeccionEntregaInterna';
 import { SeccionCalificaciones } from './SeccionCalificaciones';
 import { SeccionSincronizacion } from './SeccionSincronizacion';
+import { usePermisosDocente } from './hooks/usePermisosDocente';
+import { useSesionDocente } from './hooks/useSesionDocente';
 import { registrarAccionDocente } from './telemetriaDocente';
 import type {
   Alumno,
@@ -41,7 +38,6 @@ import {
   construirClaveCorrectaExamen,
   consolidarResultadoOmrExamen,
   normalizarResultadoOmr,
-  obtenerSesionDocenteId,
   obtenerVistaInicial,
 } from './utilidades';
 
@@ -49,57 +45,16 @@ import {
 export function AppDocente() {
   const [docente, setDocente] = useState<Docente | null>(null);
   const [vista, setVista] = useState(obtenerVistaInicial());
-  const esDev = import.meta.env.DEV;
-  const esAdmin = Boolean(docente?.roles?.includes('admin'));
-  const permisosDocente = useMemo(() => new Set(docente?.permisos ?? []), [docente?.permisos]);
-  const puede = useCallback((permiso: string) => permisosDocente.has(permiso), [permisosDocente]);
-  const permisosUI = useMemo(
-    () => ({
-      periodos: {
-        leer: puede('periodos:leer'),
-        gestionar: puede('periodos:gestionar'),
-        archivar: puede('periodos:archivar')
-      },
-      alumnos: {
-        leer: puede('alumnos:leer'),
-        gestionar: puede('alumnos:gestionar')
-      },
-      banco: {
-        leer: puede('banco:leer'),
-        gestionar: puede('banco:gestionar'),
-        archivar: puede('banco:archivar')
-      },
-      plantillas: {
-        leer: puede('plantillas:leer'),
-        gestionar: puede('plantillas:gestionar'),
-        archivar: puede('plantillas:archivar'),
-        previsualizar: puede('plantillas:previsualizar')
-      },
-      examenes: {
-        leer: puede('examenes:leer'),
-        generar: puede('examenes:generar'),
-        archivar: puede('examenes:archivar'),
-        regenerar: puede('examenes:regenerar'),
-        descargar: puede('examenes:descargar')
-      },
-      entregas: { gestionar: puede('entregas:gestionar') },
-      omr: { analizar: puede('omr:analizar') },
-      calificaciones: { calificar: puede('calificaciones:calificar') },
-      publicar: { publicar: puede('calificaciones:publicar') },
-      sincronizacion: {
-        listar: puede('sincronizacion:listar'),
-        exportar: puede('sincronizacion:exportar'),
-        importar: puede('sincronizacion:importar'),
-        push: puede('sincronizacion:push'),
-        pull: puede('sincronizacion:pull')
-      },
-      cuenta: { leer: puede('cuenta:leer'), actualizar: puede('cuenta:actualizar') }
-    }),
-    [puede]
-  );
-  const puedeEliminarPlantillaDev = esDev && esAdmin && puede('plantillas:eliminar_dev');
-  const puedeEliminarMateriaDev = esDev && esAdmin && puede('periodos:eliminar_dev');
-  const puedeEliminarAlumnoDev = esDev && esAdmin && puede('alumnos:eliminar_dev');
+  const {
+    puede,
+    permisosUI,
+    itemsVista,
+    esAdmin,
+    esDev,
+    puedeEliminarPlantillaDev,
+    puedeEliminarMateriaDev,
+    puedeEliminarAlumnoDev
+  } = usePermisosDocente(docente);
   const avisarSinPermiso = useCallback((mensaje: string) => {
     emitToast({ level: 'warn', title: 'Sin permisos', message: mensaje, durationMs: 4200 });
   }, []);
@@ -169,29 +124,6 @@ export function AppDocente() {
     registrarAccionDocente('logout', true);
   }
 
-  useEffect(() => {
-    return onSesionInvalidada((tipo) => {
-      if (tipo !== 'docente') return;
-      cerrarSesion();
-    });
-  }, []);
-
-  const itemsVista = useMemo(() => {
-    const puedeCalificar = puede('calificaciones:calificar') || puede('omr:analizar');
-    const puedePublicar = puede('sincronizacion:listar') || puede('calificaciones:publicar');
-    const items = [
-      { id: 'periodos', label: 'Materias', icono: 'periodos' as const, mostrar: puede('periodos:leer') },
-      { id: 'alumnos', label: 'Alumnos', icono: 'alumnos' as const, mostrar: puede('alumnos:leer') },
-      { id: 'banco', label: 'Banco', icono: 'banco' as const, mostrar: puede('banco:leer') },
-      { id: 'plantillas', label: 'Plantillas', icono: 'plantillas' as const, mostrar: puede('plantillas:leer') },
-      { id: 'entrega', label: 'Entrega', icono: 'recepcion' as const, mostrar: puede('entregas:gestionar') },
-      { id: 'calificaciones', label: 'Calificaciones', icono: 'calificar' as const, mostrar: puedeCalificar },
-      { id: 'publicar', label: 'Sincronización', icono: 'publicar' as const, mostrar: puedePublicar },
-      { id: 'cuenta', label: 'Cuenta', icono: 'info' as const, mostrar: puede('cuenta:leer') }
-    ];
-    return items.filter((item) => item.mostrar);
-  }, [puede]);
-
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const montadoRef = useRef(true);
 
@@ -205,66 +137,7 @@ export function AppDocente() {
     }
   }, [itemsVista, vista]);
 
-  useEffect(() => {
-    let activo = true;
-
-    (async () => {
-      // Si no hay token local, intenta restaurar sesion via refresh token (cookie httpOnly).
-      if (!obtenerTokenDocente()) {
-        await clienteApi.intentarRefrescarToken();
-      }
-      if (!activo) return;
-      if (!obtenerTokenDocente()) return;
-
-      clienteApi
-        .obtener<{ docente: Docente }>('/autenticacion/perfil')
-        .then((payload) => {
-          if (!activo) return;
-          setDocente(payload.docente);
-        })
-        .catch(() => {
-          if (!activo) return;
-          setDocente(null);
-        });
-    })();
-
-    return () => {
-      activo = false;
-    };
-  }, []);
-
-  const refrescarPerfil = useCallback(async () => {
-    if (!obtenerTokenDocente()) return;
-    try {
-      const payload = await clienteApi.obtener<{ docente: Docente }>('/autenticacion/perfil');
-      if (montadoRef.current) setDocente(payload.docente);
-    } catch {
-      // No interrumpir la sesion si falla el refresh.
-    }
-  }, []);
-
-  useEffect(() => {
-    const intervaloMs = 5 * 60 * 1000;
-    const id = window.setInterval(() => {
-      void refrescarPerfil();
-    }, intervaloMs);
-    return () => window.clearInterval(id);
-  }, [refrescarPerfil]);
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      void refrescarPerfil();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refrescarPerfil]);
-
-  // Sesion de UI (no sensible) para analiticas best-effort.
-  useEffect(() => {
-    if (!obtenerTokenDocente()) return;
-    obtenerSesionDocenteId();
-  }, []);
+  useSesionDocente({ setDocente, onCerrarSesion: cerrarSesion, montadoRef });
 
   useEffect(() => {
     montadoRef.current = true;
@@ -922,35 +795,5 @@ export function AppDocente() {
     />
   );
 
-  return (
-    <section className="card anim-entrada">
-      <div className="cabecera">
-        <div>
-          <p className="eyebrow">
-            <Icono nombre="docente" /> Plataforma Docente
-          </p>
-          <h1>Banco y Examenes</h1>
-        </div>
-        <div className="cabecera__acciones">
-          <TemaBoton />
-          {docente && (
-            <Boton
-              variante="secundario"
-              type="button"
-              icono={<Icono nombre="salir" />}
-              onClick={() => cerrarSesion()}
-            >
-              Salir
-            </Boton>
-          )}
-        </div>
-      </div>
-      {docente && (
-        <InlineMensaje tipo="info">
-          Sesion: {[docente.nombres, docente.apellidos].filter(Boolean).join(' ').trim() || docente.nombreCompleto} ({docente.correo})
-        </InlineMensaje>
-      )}
-      {contenido}
-    </section>
-  );
+  return <ShellDocente docente={docente} onCerrarSesion={cerrarSesion}>{contenido}</ShellDocente>;
 }

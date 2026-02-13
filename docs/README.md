@@ -2,7 +2,12 @@
 
 Documentacion oficial del estado actual de Sistema EvaluaPro.
 
-Ultima actualizacion integral: 2026-02-11.
+Ultima actualizacion integral: 2026-02-13.
+
+## Arranque para agentes IA
+- `../AGENTS.md`: reglas operativas obligatorias para agentes.
+- `../.github/copilot-instructions.md`: convenciones de arquitectura/codigo para asistentes IDE.
+- `IA_TRAZABILIDAD_AGENTES.md`: snapshot real del proyecto + inventario exhaustivo de instrucciones.
 
 ## Lectura recomendada
 - `ARQUITECTURA.md`: vista tecnica del sistema completo.
@@ -20,6 +25,8 @@ Ultima actualizacion integral: 2026-02-11.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
 - `RELEASE_GATE_STABLE.md`: gate formal beta -> estable con validación humana en producción.
+- `INVENTARIO_PROYECTO.md`: inventario técnico integral (estado de olas, gates y brechas a `1.0-beta`/estable).
+- `IA_TRAZABILIDAD_AGENTES.md`: trazabilidad multi-sesion para continuidad entre agentes.
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`: indice de docs.
@@ -40,6 +47,10 @@ El pipeline `CI Checks` ejecuta gates bloqueantes y progresivos.
 Gate adicional bloqueante:
 - `flujo-docente-check`: valida flujo docente E2E (`parcial` + `global`) y exportacion de lista academica firmada.
 - `perf-check`: valida presupuesto p95/failures contra baseline (`docs/perf/baseline.json`).
+
+Estado de referencia del corte 2026-02-13:
+- `lint`, `typecheck`, `test:frontend:ci`: en verde.
+- `coverage-check`: con brecha abierta en frontend (detalle en `INVENTARIO_PROYECTO.md`).
 
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |

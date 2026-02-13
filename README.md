@@ -2,7 +2,7 @@
 
 Plataforma MERN para gestion de evaluaciones universitarias con generacion de examenes PDF, vinculacion por QR, analisis OMR, calificacion automatica asistida y sincronizacion local/cloud.
 
-Estado actual del repositorio: 2026-02-11.
+Estado actual del repositorio: 2026-02-13.
 
 ## Estado actual
 - Monorepo activo con 3 apps: `backend`, `frontend`, `portal_alumno_cloud`.
@@ -10,6 +10,23 @@ Estado actual del repositorio: 2026-02-11.
 - RBAC activo en backend con roles `admin`, `docente`, `coordinador`, `auxiliar`, `lector`.
 - OMR con deteccion por mapa de posiciones + QR + marcas/fiduciales + estado de calidad (`ok`, `requiere_revision`, `rechazado_calidad`).
 - Sincronizacion entre computadoras por paquete y sincronizacion push/pull con servidor intermedio.
+- Contrato CI agnóstico activo con separación de workflows:
+  - `CI Checks`: calidad y seguridad bloqueantes.
+  - `Package Images`: empaquetado Docker.
+
+## Inventario y trazabilidad (obligatorio)
+- Inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`
+- Baseline de ingeniería: `docs/ENGINEERING_BASELINE.md`
+- Baseline DevOps: `docs/DEVOPS_BASELINE.md`
+- Gate formal beta -> estable: `docs/RELEASE_GATE_STABLE.md`
+- Guía para agentes IA: `AGENTS.md`
+- Instrucciones para asistentes IDE: `.github/copilot-instructions.md`
+- Trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`
+
+Resumen del corte actual:
+- Ola 0: implementada.
+- Ola 1: parcial (pendiente cierre estructural de `SeccionPlantillas.tsx` y `SeccionBanco.tsx`).
+- Olas 2, 3, 4: pendientes para `1.0-beta`.
 
 ## Apps del monorepo
 - `apps/backend`: API docente (Express + TypeScript + MongoDB/Mongoose).
@@ -60,6 +77,9 @@ npm run dev:portal
   - `npm run test:ci`
   - `npm run routes:check`
   - `npm run docs:check`
+  - `npm run test:coverage:ci`
+  - `npm run perf:check`
+  - `npm run pipeline:contract:check`
 
 ## Capacidades funcionales actuales
 - Gestion academica: periodos/materias, alumnos, banco de preguntas versionado.
@@ -100,6 +120,7 @@ Ver referencias actualizadas:
 
 ## Documentacion
 - `docs/README.md`
+- `docs/INVENTARIO_PROYECTO.md`
 - `docs/ARQUITECTURA.md`
 - `docs/FLUJO_EXAMEN.md`
 - `docs/FORMATO_PDF.md`
