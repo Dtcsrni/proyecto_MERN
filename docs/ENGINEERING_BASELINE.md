@@ -13,7 +13,7 @@ Commit de referencia: `dffa43f`.
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
 - Arquitectura backend: monolito modular por dominio (Ola 2 pendiente).
-- Frontend docente en particion incremental (Ola 1 parcial).
+- Frontend docente con cierre de Ola 1 en estado operativo.
 
 ## Corte de modularizacion docente (real)
 - `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 798 lineas.
@@ -22,8 +22,8 @@ Commit de referencia: `dffa43f`.
 - `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777 lineas.
 
 ## Riesgos tecnicos actuales
-1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`).
-2. Gate de cobertura bloqueado por deuda historica de frontend.
+1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`) aunque cumplen limite de linea.
+2. Rampa de cobertura frontend hacia objetivo 45 aun pendiente (gate actual en 39/40/31/37).
 3. Backend core critico aun monolitico (`OMR/PDF/Sync`) para Ola 2.
 4. Dependencia de disciplina documental para mantener trazabilidad multi-agente.
 
@@ -31,11 +31,16 @@ Commit de referencia: `dffa43f`.
 - `npm run lint`: verde.
 - `npm run typecheck`: verde.
 - `npm run test:frontend:ci`: verde.
-- `npm run test:coverage:ci`: bloqueado por coverage frontend (baseline real 2026-02-13):
+- `npm run test:coverage:ci`: verde (umbral vigente frontend 39/40/31/37).
+- coverage frontend real (2026-02-13):
   - lines: 39.20
   - functions: 40.28
   - statements: 37.21
   - branches: 31.40
+- `npm run test:backend:ci`: verde.
+- `npm run test:portal:ci`: verde.
+- `npm run perf:check`: verde.
+- `npm run pipeline:contract:check`: verde.
 
 ## QA preproduccion automatizada (nuevo)
 - Gates bloqueantes agregados:

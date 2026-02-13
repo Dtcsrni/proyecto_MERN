@@ -38,11 +38,12 @@ Commit de referencia: `dffa43f`.
 - Ola 0: implementada y operativa.
   - baseline perf activo (`docs/perf/baseline.json`)
   - gate `perf-check` integrado a contrato/workflow
-- Ola 1: parcial (bloqueante para `1.0-beta`).
+- Ola 1: completada (bloque estructural de frontend docente cerrado).
   - `AppDocente.tsx`: 798 lineas (cumple <800)
   - `SeccionEscaneo.tsx`: 798 lineas (cumple <800)
   - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
+  - sin referencias activas a `app_docente_legacy` o `docente_core`
 - Ola 2: pendiente (backend core)
   - `servicioOmr.ts`: 1854
   - `controladorGeneracionPdf.ts`: 1260
@@ -107,13 +108,17 @@ Commit de referencia: `dffa43f`.
   - `npm run lint`
   - `npm run typecheck`
   - `npm run test:frontend:ci`
-- Falla actual:
-  - `npm run test:coverage:ci` por branch coverage frontend (<31 en corridas previas)
-  - valores observados frontend:
-    - lines 39.20
-    - functions 40.28
-    - statements 37.21
-    - branches 31.40
+  - `npm run test:coverage:ci`
+  - `npm run test:backend:ci`
+  - `npm run test:portal:ci`
+  - `npm run perf:check`
+  - `npm run pipeline:contract:check`
+- Cobertura frontend observada:
+  - lines 39.20
+  - functions 40.28
+  - statements 37.21
+  - branches 31.40
+  - estado: pasa umbral vigente (39/40/31/37)
 
 ## 7) Seguridad y operacion
 - Gate estricto de entorno en CI:
@@ -133,12 +138,10 @@ Commit de referencia: `dffa43f`.
   - `lista-academica.manifest.json` con SHA-256 por archivo.
 
 ## 9) Brechas para `1.0-beta`
-1. Cerrar Ola 1 real:
-- `SeccionPlantillas.tsx` <=800
-- `SeccionBanco.tsx` <=350 objetivo PR2
-2. Recuperar `coverage-check` frontend a verde y continuar rampa hacia 45 en 4 metricas sin exclusiones artificiales.
-3. Ejecutar gates completos de salida de ola:
-- `lint`, `typecheck`, `test:*:ci`, `test:coverage:ci`, `perf:check`, `pipeline:contract:check`.
+1. Completar Ola 2 (backend OMR/PDF/Sync con objetivo p95).
+2. Completar Ola 3 (`api/v2` + migracion dual integral).
+3. Completar Ola 4 (hardening final + retiro de compatibilidad temporal).
+4. Continuar rampa de cobertura frontend hacia 45 en 4 metricas sin exclusiones artificiales.
 
 ## 10) Brechas para estable
 1. Completar Olas 2, 3 y 4.
