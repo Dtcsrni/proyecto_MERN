@@ -38,6 +38,7 @@ El pipeline `CI Checks` ejecuta gates bloqueantes y progresivos.
 
 Gate adicional bloqueante:
 - `flujo-docente-check`: valida flujo docente E2E (`parcial` + `global`) y exportacion de lista academica firmada.
+- `perf-check`: valida presupuesto p95/failures contra baseline (`docs/perf/baseline.json`).
 
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |

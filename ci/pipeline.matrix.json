@@ -58,6 +58,16 @@
       ]
     },
     {
+      "name": "perf-check",
+      "commands": [
+        "npm run perf:check"
+      ],
+      "artifacts": [
+        "reports/perf/latest.json",
+        "docs/perf/baseline.json"
+      ]
+    },
+    {
       "name": "build",
       "commands": [
         "npm run build"

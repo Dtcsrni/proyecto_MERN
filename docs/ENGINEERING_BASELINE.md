@@ -18,6 +18,17 @@ Fecha de baseline: 2026-02-13.
 3. Cobertura de pruebas en rampa progresiva hasta objetivo final por app.
 4. Dependencia de ejecución local para parte de validaciones operativas.
 
+## Baseline de rendimiento (Ola 0)
+- Fuente baseline: `docs/perf/baseline.json`
+- Captura de corrida actual: `reports/perf/latest.json` (artefacto CI)
+- Comandos:
+  - `npm run perf:collect`
+  - `npm run perf:baseline`
+  - `npm run perf:check`
+- Presupuesto inicial:
+  - Se calcula desde `p95` medido con factor de seguridad y margen fijo.
+  - Criterio de fallo: `p95` o `failures` por ruta por encima de presupuesto.
+
 ## Rampa de calidad (quality gates)
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |
