@@ -1,3 +1,9 @@
+/**
+ * AyudaFormulario
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import type { ReactNode } from 'react';
 import { Icono } from '../../ui/iconos';
 

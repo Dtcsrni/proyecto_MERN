@@ -1,3 +1,9 @@
+/**
+ * useBancoTemas
+ *
+ * Responsabilidad: Hook de orquestacion de estado/efectos para el feature docente.
+ * Limites: Mantener dependencia unidireccional: hooks -> services -> clienteApi.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { obtenerTemasBanco } from '../../../services/bancoApi';
 import { normalizarNombreTema, type TemaBanco } from '../../../SeccionBanco.helpers';

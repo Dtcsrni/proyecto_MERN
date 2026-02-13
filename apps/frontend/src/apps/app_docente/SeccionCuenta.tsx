@@ -1,3 +1,9 @@
+/**
+ * SeccionCuenta
+ *
+ * Responsabilidad: Seccion funcional del shell docente.
+ * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';

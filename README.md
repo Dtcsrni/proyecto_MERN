@@ -23,6 +23,7 @@ Estado actual del repositorio: 2026-02-13.
 - Guía para agentes IA: `AGENTS.md`
 - Instrucciones para asistentes IDE: `.github/copilot-instructions.md`
 - Trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`
+- Paquete de handoff IA automatico: `docs/handoff/README.md`
 
 Resumen del corte actual:
 - Ola 0: implementada.

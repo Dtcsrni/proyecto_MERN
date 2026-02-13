@@ -1,3 +1,9 @@
+/**
+ * servicioListaAcademica
+ *
+ * Responsabilidad: Servicio de dominio/aplicacion con reglas de negocio reutilizables.
+ * Limites: Mantener invariantes del dominio y errores controlados.
+ */
 import type { ListaAcademicaFila } from './tiposListaAcademica';
 
 type AlumnoFila = {

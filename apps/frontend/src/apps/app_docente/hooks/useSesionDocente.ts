@@ -1,3 +1,9 @@
+/**
+ * useSesionDocente
+ *
+ * Responsabilidad: Hook transversal del shell docente.
+ * Limites: Mantener estado derivado predecible y efectos idempotentes.
+ */
 import { useCallback, useEffect } from 'react';
 import { obtenerTokenDocente } from '../../../servicios_api/clienteApi';
 import { onSesionInvalidada } from '../../../servicios_api/clienteComun';

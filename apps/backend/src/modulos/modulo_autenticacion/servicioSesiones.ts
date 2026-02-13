@@ -1,3 +1,9 @@
+/**
+ * servicioSesiones
+ *
+ * Responsabilidad: Servicio de dominio/aplicacion con reglas de negocio reutilizables.
+ * Limites: Mantener invariantes del dominio y errores controlados.
+ */
 import crypto from 'node:crypto';
 import type { Request, Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';

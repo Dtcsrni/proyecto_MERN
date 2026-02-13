@@ -9,6 +9,7 @@ Commit de referencia: `dffa43f`.
 - Estado de calidad por gates (local + contrato CI).
 - Inventario exhaustivo de instrucciones para agentes IA y trazabilidad multi-sesion.
 - Inventario exhaustivo de piezas de codigo/config en `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
+- Paquete de handoff IA automatico por sesion en `docs/handoff/`.
 
 ## 2) Estructura actual del repositorio
 - Apps:

@@ -28,6 +28,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `INVENTARIO_PROYECTO.md`: inventario técnico integral (estado de olas, gates y brechas a `1.0-beta`/estable).
 - `INVENTARIO_CODIGO_EXHAUSTIVO.md`: inventario completo de piezas de codigo/config versionadas por area.
 - `IA_TRAZABILIDAD_AGENTES.md`: trazabilidad multi-sesion para continuidad entre agentes.
+- `handoff/README.md`: paquete de handoff IA automatico por sesion (plantilla + checklist ejecutable).
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`: indice de docs.

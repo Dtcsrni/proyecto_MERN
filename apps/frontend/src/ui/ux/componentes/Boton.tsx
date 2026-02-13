@@ -1,3 +1,9 @@
+/**
+ * Boton
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Spinner } from '../../iconos';
 

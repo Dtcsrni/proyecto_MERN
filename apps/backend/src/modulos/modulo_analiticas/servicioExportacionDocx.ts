@@ -1,3 +1,9 @@
+/**
+ * servicioExportacionDocx
+ *
+ * Responsabilidad: Servicio de dominio/aplicacion con reglas de negocio reutilizables.
+ * Limites: Mantener invariantes del dominio y errores controlados.
+ */
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
 import type { ListaAcademicaFila } from './tiposListaAcademica';
 

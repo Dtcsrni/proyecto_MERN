@@ -76,6 +76,9 @@ Resultado: `coverage-check` sigue bloqueando.
 | `AGENTS.md` | Gobernanza IA | Reglas obligatorias multi-agente | Activo |
 | `docs/IA_TRAZABILIDAD_AGENTES.md` | Estado IA | Snapshot, handoff y reglas de cierre | Activo |
 | `.github/copilot-instructions.md` | Asistente IDE | Convenciones de arquitectura/codigo | Activo |
+| `scripts/ia-handoff.mjs` | Automatizacion IA | Checklist ejecutable y reporte de handoff por sesion | Activo |
+| `scripts/ia-docblocks.mjs` | Automatizacion IA | Refuerzo de cabeceras autoexplicativas por archivo | Activo |
+| `docs/handoff/PLANTILLA_HANDOFF_IA.md` | Plantilla IA | Formato base obligatorio para cierre de sesion | Activo |
 | `ci/pipeline.contract.md` | Contrato CI | Etapas y criterios bloqueantes | Activo |
 | `ci/pipeline.matrix.json` | Contrato CI | Matriz de apps y comandos | Activo |
 | `.github/workflows/ci.yml` | Ejecucion CI | Implementacion del contrato de checks | Activo |
@@ -118,6 +121,8 @@ Resultado: `coverage-check` sigue bloqueando.
 - `docs/INVENTARIO_PROYECTO.md`
 - `docs/ENGINEERING_BASELINE.md`
 - `CHANGELOG.md`
+5. Para archivos nuevos sin cabecera contextual:
+- ejecutar `npm run ia:docblocks` y revisar manualmente cabeceras en modulos criticos.
 
 ## 4) Matriz de validacion para cerrar trabajo
 

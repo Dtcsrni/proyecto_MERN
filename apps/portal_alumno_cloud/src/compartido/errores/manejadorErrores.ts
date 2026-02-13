@@ -1,3 +1,9 @@
+/**
+ * manejadorErrores
+ *
+ * Responsabilidad: Infraestructura comun de errores y envelope consistente.
+ * Limites: Cambios impactan trazabilidad y contratos de error globales.
+ */
 import type { NextFunction, Request, Response } from 'express';
 import { logError } from '../../infraestructura/logging/logger';
 

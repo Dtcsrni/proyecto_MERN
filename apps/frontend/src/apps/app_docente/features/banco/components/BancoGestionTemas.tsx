@@ -1,3 +1,9 @@
+/**
+ * BancoGestionTemas
+ *
+ * Responsabilidad: Componente de UI del dominio docente (presentacion y eventos de vista).
+ * Limites: Evitar acoplar IO directo; preferir hooks/services del feature.
+ */
 import { Spinner } from '../../../../../ui/iconos';
 import { Boton } from '../../../../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../../../../ui/ux/componentes/InlineMensaje';

@@ -1,3 +1,9 @@
+/**
+ * utilidades
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { mensajeUsuarioDeErrorConSugerencia } from '../../servicios_api/clienteComun';
 import { obtenerSessionId } from '../../ui/ux/sesion';
 import { tipoMensajeInline } from './mensajeInline';

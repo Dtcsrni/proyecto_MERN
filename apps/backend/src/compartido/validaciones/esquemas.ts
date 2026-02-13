@@ -1,3 +1,9 @@
+/**
+ * esquemas
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Esquemas Zod reutilizables (contratos HTTP).
 import { z } from 'zod';
 

@@ -1,3 +1,9 @@
+/**
+ * SeccionAutenticacion
+ *
+ * Responsabilidad: Seccion funcional del shell docente.
+ * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
+ */
 import { useEffect, useRef, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { ErrorRemoto, accionToastSesionParaError } from '../../servicios_api/clienteComun';

@@ -1,3 +1,9 @@
+/**
+ * omrCore
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 export type Punto = { x: number; y: number };
 
 export type ParametrosBurbujaCore = {

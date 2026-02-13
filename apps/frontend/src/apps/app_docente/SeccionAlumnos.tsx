@@ -1,3 +1,9 @@
+/**
+ * SeccionAlumnos
+ *
+ * Responsabilidad: Seccion funcional del shell docente.
+ * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';

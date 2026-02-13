@@ -44,6 +44,9 @@ Si hay conflicto entre documentos, actualizar todos para alinear el estado real 
    - documentar causa exacta,
    - proponer/ejecutar correccion minima,
    - actualizar docs de estado.
+6. Para mantener archivos autoexplicativos:
+   - agregar/ajustar docblock de cabecera por archivo,
+   - usar `npm run ia:docblocks` como apoyo y revisar manualmente los modulos criticos.
 
 ## 2.1) Inventario exhaustivo de instrucciones IA
 1. El inventario oficial vive en:
@@ -73,6 +76,9 @@ Cada sesion debe dejar actualizado:
 4. Reporte de handoff generado por script:
    - `npm run ia:handoff:quick`
    - salida en `docs/handoff/sesiones/<YYYY-MM-DD>/`.
+5. Inventario de codigo regenerado:
+   - `npm run inventario:codigo`
+   - salida en `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
 
 ## 5) Estado de referencia (corte actual)
 Ver `docs/IA_TRAZABILIDAD_AGENTES.md` para snapshot operativo vigente.
