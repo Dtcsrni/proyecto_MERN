@@ -60,6 +60,7 @@
     "perf:collect": "tsx scripts/perf-collect.ts",
     "perf:baseline": "node scripts/perf-baseline.mjs",
     "perf:check": "npm run perf:collect && node scripts/perf-check.mjs",
+    "release:gate:prod-flow": "node scripts/release/gate-prod-flow.mjs",
     "pipeline:contract:check": "node -e \"const fs=require('fs');['ci/pipeline.contract.md','ci/pipeline.matrix.json'].forEach(p=>{if(!fs.existsSync(p)){throw new Error('Missing '+p)}});console.log('pipeline contract OK');\"",
     "test:ci": "npm run lint && npm run typecheck && npm run build && npm run docs:check && npm run diagramas:check && npm run diagramas:render:check && npm run diagramas:consistencia:check && npm run routes:check && npm run test:backend:ci && npm run test:portal:ci && npm run test:frontend:ci",
     "build": "npm run --workspaces --if-present build",
