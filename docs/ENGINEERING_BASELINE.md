@@ -37,6 +37,22 @@ Commit de referencia: `dffa43f`.
   - statements: 37.21
   - branches: 31.40
 
+## QA preproduccion automatizada (nuevo)
+- Gates bloqueantes agregados:
+  - `test:dataset-prodlike:ci`
+  - `test:e2e:docente-alumno:ci`
+  - `test:global-grade:ci`
+  - `test:pdf-print:ci`
+  - `test:ux-visual:ci`
+  - `test:qa:manifest`
+- Evidencias:
+  - `reports/qa/latest/dataset-prodlike.json`
+  - `reports/qa/latest/e2e-docente-alumno.json`
+  - `reports/qa/latest/global-grade.json`
+  - `reports/qa/latest/pdf-print.json`
+  - `reports/qa/latest/ux-visual.json`
+  - `reports/qa/latest/manifest.json`
+
 ## Baseline de rendimiento (Ola 0)
 - Fuente baseline: `docs/perf/baseline.json`
 - Captura de corrida: `reports/perf/latest.json` (artefacto CI)

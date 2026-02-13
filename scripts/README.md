@@ -38,6 +38,33 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - Salida:
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 
+## QA preproducción (dataset + e2e + PDF + UX)
+- Scripts:
+  - `testing/export-anon-fixture.mjs`
+  - `testing/validate-anon-fixture.mjs`
+  - `testing/import-anon-fixture.mjs`
+  - `testing/generar-qa-manifest.mjs`
+- Comandos:
+  - `npm run test:dataset-prodlike:ci`
+  - `npm run test:e2e:docente-alumno:ci`
+  - `npm run test:global-grade:ci`
+  - `npm run test:pdf-print:ci`
+  - `npm run test:ux-visual:ci`
+  - `npm run test:qa:manifest`
+- Salidas:
+  - `reports/qa/latest/*.json`
+
+## Preflight de producción para examen global
+- Script:
+  - `release/preflight-global-prod.mjs`
+- Comando:
+  - `npm run release:preflight:global -- --api-base=<https://api-dominio/api> --token=<jwt_docente> --periodo-id=<periodoId> [--modo=readonly|smoke] [--alumno-id=<alumnoId>]`
+- Uso:
+  - `readonly` (default): valida precondiciones sin mutar datos.
+  - `smoke`: genera 1 examen global y lo archiva para validar extremo a extremo.
+- Salida:
+  - `reports/qa/latest/preflight-global-prod.json`
+
 ## READMEs de carpetas (base)
 - Script: `generar-readmes-carpetas.mjs`
 - Comando:

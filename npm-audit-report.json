@@ -1,0 +1,191 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@chevrotain/cst-dts-gen": {
+      "name": "@chevrotain/cst-dts-gen",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@chevrotain/gast",
+        "lodash-es"
+      ],
+      "effects": [],
+      "range": "11.0.0 - 11.1.0",
+      "nodes": [
+        "node_modules/@chevrotain/cst-dts-gen"
+      ],
+      "fixAvailable": true
+    },
+    "@chevrotain/gast": {
+      "name": "@chevrotain/gast",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "lodash-es"
+      ],
+      "effects": [],
+      "range": "11.0.0 - 11.1.0",
+      "nodes": [
+        "node_modules/@chevrotain/gast"
+      ],
+      "fixAvailable": true
+    },
+    "@mermaid-js/mermaid-cli": {
+      "name": "@mermaid-js/mermaid-cli",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "mermaid"
+      ],
+      "effects": [],
+      "range": ">=11.1.1",
+      "nodes": [
+        "node_modules/@mermaid-js/mermaid-cli"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    },
+    "@mermaid-js/parser": {
+      "name": "@mermaid-js/parser",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "langium"
+      ],
+      "effects": [
+        "mermaid"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@mermaid-js/parser"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    },
+    "chevrotain": {
+      "name": "chevrotain",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@chevrotain/cst-dts-gen",
+        "@chevrotain/gast",
+        "lodash-es"
+      ],
+      "effects": [
+        "langium"
+      ],
+      "range": "11.0.0 - 11.1.0",
+      "nodes": [
+        "node_modules/chevrotain"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    },
+    "langium": {
+      "name": "langium",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "chevrotain"
+      ],
+      "effects": [
+        "@mermaid-js/parser"
+      ],
+      "range": "2.1.0 - 4.1.3",
+      "nodes": [
+        "node_modules/langium"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    },
+    "lodash-es": {
+      "name": "lodash-es",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1112453,
+          "name": "lodash-es",
+          "dependency": "lodash-es",
+          "title": "Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions",
+          "url": "https://github.com/advisories/GHSA-xxjr-mmjv-4gpg",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L"
+          },
+          "range": ">=4.0.0 <=4.17.22"
+        }
+      ],
+      "effects": [
+        "@chevrotain/cst-dts-gen",
+        "@chevrotain/gast",
+        "chevrotain"
+      ],
+      "range": "4.0.0 - 4.17.22",
+      "nodes": [
+        "node_modules/@chevrotain/cst-dts-gen/node_modules/lodash-es",
+        "node_modules/@chevrotain/gast/node_modules/lodash-es",
+        "node_modules/chevrotain/node_modules/lodash-es"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    },
+    "mermaid": {
+      "name": "mermaid",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@mermaid-js/parser"
+      ],
+      "effects": [
+        "@mermaid-js/mermaid-cli"
+      ],
+      "range": ">=11.0.0-alpha.1",
+      "nodes": [
+        "node_modules/mermaid"
+      ],
+      "fixAvailable": {
+        "name": "@mermaid-js/mermaid-cli",
+        "version": "10.9.1",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 8,
+      "high": 0,
+      "critical": 0,
+      "total": 8
+    },
+    "dependencies": {
+      "prod": 314,
+      "dev": 829,
+      "optional": 61,
+      "peer": 62,
+      "peerOptional": 0,
+      "total": 1143
+    }
+  }
+}

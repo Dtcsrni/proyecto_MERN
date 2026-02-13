@@ -53,6 +53,25 @@ jobs:
       - name: Etapa flujo-docente-check
         run: npm run test:flujo-docente:ci
 
+      - name: Etapa dataset-prodlike-check
+        run: npm run test:dataset-prodlike:ci
+
+      - name: Etapa docente-alumno-e2e-check
+        run: npm run test:e2e:docente-alumno:ci
+
+      - name: Etapa global-grade-check
+        run: npm run test:global-grade:ci
+
+      - name: Etapa pdf-print-check
+        run: |
+          npm run test:pdf-print:ci
+          npm run test:pdf-visual:ci
+
+      - name: Etapa ux-visual-check
+        run: |
+          npm run test:ux-visual:ci
+          npm run test:e2e:journeys:ci
+
       - name: Etapa coverage-check
         run: npm run test:coverage:ci
 
@@ -89,3 +108,14 @@ jobs:
         with:
           name: perf-report
           path: reports/perf/latest.json
+
+      - name: Consolidar manifiesto QA
+        if: always()
+        run: npm run test:qa:manifest
+
+      - name: Publicar artefactos QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-reports
+          path: reports/qa/latest

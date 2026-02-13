@@ -389,4 +389,14 @@ describe('validaciones de payload', () => {
 
     expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
   });
+
+  it('requiere periodoId en calificaciones-xlsx', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .get('/api/analiticas/calificaciones-xlsx')
+      .set({ Authorization: `Bearer ${token}` })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
+  });
 });

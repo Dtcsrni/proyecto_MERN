@@ -97,7 +97,9 @@ Commit de referencia: `dffa43f`.
   - `Package Images`: empaquetado Docker + `image-digests.txt`.
 - Stages bloqueantes activos en `CI Checks`:
   - `setup`, `contract-check`, `lint`, `typecheck`, `test`
-  - `flujo-docente-check`, `coverage-check`, `perf-check`
+  - `flujo-docente-check`, `dataset-prodlike-check`, `docente-alumno-e2e-check`
+  - `global-grade-check`, `pdf-print-check`, `ux-visual-check`
+  - `coverage-check`, `perf-check`, `qa-manifest`
   - `build`, `docs-check`, `security-scan`
 
 ## 6) Estado de gates (corte reciente)

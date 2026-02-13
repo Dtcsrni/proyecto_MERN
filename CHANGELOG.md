@@ -30,6 +30,23 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Nuevos módulos/hook para refactor docente:
   - `apps/frontend/src/apps/app_docente/features/banco/hooks/estimadoresBanco.ts`
   - `apps/frontend/src/apps/app_docente/features/plantillas/hooks/usePlantillasPreviewActions.ts`
+- Contratos y scripts QA preproduccion:
+  - `docs/QA_GATE_CRITERIA.md`
+  - `docs/fixtures/ANON_DATASET_CONTRACT.md`
+  - `scripts/testing/export-anon-fixture.mjs`
+  - `scripts/testing/validate-anon-fixture.mjs`
+  - `scripts/testing/import-anon-fixture.mjs`
+  - `scripts/testing/generar-qa-manifest.mjs`
+  - `apps/backend/src/compartido/tipos/qa.ts`
+- Nuevas pruebas bloqueantes:
+  - `apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
+  - `apps/backend/tests/calificacion.global.reglas.test.ts`
+  - `apps/backend/tests/integracion/calificacionGlobalContratoE2E.test.ts`
+  - `apps/backend/tests/integracion/pdfImpresionContrato.test.ts`
+  - `apps/frontend/tests/ux.visual.test.tsx`
+- Preflight operativo para generación de examen global en producción:
+  - `scripts/release/preflight-global-prod.mjs`
+  - `docs/OPERACION_EXAMEN_GLOBAL_PROD.md`
 
 ### Changed
 - Actualización integral de documentación raíz y técnica:
@@ -64,6 +81,24 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `npm run ia:handoff:full`
   - `npm run ia:docblocks`
   - `npm run docs:carpetas:generate`
+  - `npm run test:dataset-prodlike:ci`
+  - `npm run test:e2e:docente-alumno:ci`
+  - `npm run test:global-grade:ci`
+  - `npm run test:pdf-print:ci`
+  - `npm run test:ux-visual:ci`
+  - `npm run test:qa:manifest`
+  - `npm run release:preflight:global`
+- Contrato CI ampliado con stages bloqueantes:
+  - `dataset-prodlike-check`
+  - `docente-alumno-e2e-check`
+  - `global-grade-check`
+  - `pdf-print-check`
+  - `ux-visual-check`
+  - `qa-manifest`
+- Documentación operativa ampliada para validación previa de generación global por materia/curso:
+  - `docs/RUNBOOK_OPERACION.md`
+  - `scripts/README.md`
+  - `docs/README.md`
 
 ### Fixed
 - Selectores ambiguos en pruebas de refactor (`Plantillas` y `Banco`) que generaban fallos falsos negativos.

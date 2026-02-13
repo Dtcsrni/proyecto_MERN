@@ -1,0 +1,49 @@
+{
+  "version": "1",
+  "ejecutadoEn": "2026-02-13T14:37:07.314Z",
+  "estado": "ok",
+  "pasos": [
+    {
+      "paso": "flujo_docente_parcial",
+      "estado": "ok"
+    },
+    {
+      "paso": "flujo_docente_global",
+      "estado": "ok"
+    },
+    {
+      "paso": "codigo_acceso_generado",
+      "estado": "ok",
+      "requestId": "ac178d67-0d17-49c2-a54b-7661019c08d2"
+    },
+    {
+      "paso": "publicacion_portal",
+      "estado": "ok",
+      "requestId": "018a860c-b2e4-4c09-95a5-a2e92d17e9aa"
+    },
+    {
+      "paso": "ingreso_alumno_portal",
+      "estado": "ok",
+      "requestId": "33a25130-4992-46ad-a23b-1f7a772074e5"
+    },
+    {
+      "paso": "consulta_resultados_portal",
+      "estado": "ok"
+    },
+    {
+      "paso": "descarga_pdf_portal",
+      "estado": "ok"
+    },
+    {
+      "paso": "metricas_backend_y_portal",
+      "estado": "ok"
+    }
+  ],
+  "resumen": {
+    "periodoId": "698f37116aabdd4a72c36547",
+    "examenId": "698f37136aabdd4a72c3657a",
+    "folio": "5BAF0FC7",
+    "alumnoId": "698f37116aabdd4a72c36549",
+    "folioParcial": "9325D1F6"
+  }
+}

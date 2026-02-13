@@ -65,8 +65,9 @@ este documento se actualiza automáticamente al regenerar.
 - `OMR_VERT_STEP` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts)
 - `PASSWORD` (usado en: apps/backend/scripts/omr_calibrate.js, apps/backend/scripts/omr-validate-api.js)
 - `PORT` (usado en: apps/backend/src/configuracion.ts)
-- `PORTAL_ALUMNO_API_KEY` (usado en: apps/backend/src/configuracion.ts)
-- `PORTAL_ALUMNO_URL` (usado en: apps/backend/src/configuracion.ts)
+- `PORTAL_ALUMNO_API_KEY` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts)
+- `PORTAL_ALUMNO_URL` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts)
+- `PORTAL_API_KEY` (usado en: apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts)
 - `PUERTO_API` (usado en: apps/backend/src/configuracion.ts)
 - `RATE_LIMIT_CREDENCIALES_LIMIT` (usado en: apps/backend/src/configuracion.ts)
 - `RATE_LIMIT_LIMIT` (usado en: apps/backend/src/configuracion.ts, apps/backend/tests/rateLimit.test.ts, apps/backend/tests/setup.ts)
@@ -102,6 +103,11 @@ este documento se actualiza automáticamente al regenerar.
 - `VITE_PORTAL_BASE_URL` (usado en: apps/frontend/src/apps/app_alumno/AppAlumno.tsx, apps/frontend/src/servicios_api/clientePortal.ts)
 
 ## Scripts
+- `ANON_IMPORTED_JSON` (usado en: scripts/testing/import-anon-fixture.mjs)
+- `ANON_INPUT_GZ` (usado en: scripts/testing/import-anon-fixture.mjs, scripts/testing/validate-anon-fixture.mjs)
+- `ANON_OUTPUT_GZ` (usado en: scripts/testing/export-anon-fixture.mjs)
+- `ANON_REPORT_JSON` (usado en: scripts/testing/validate-anon-fixture.mjs)
+- `ANON_SOURCE_JSON` (usado en: scripts/testing/export-anon-fixture.mjs)
 - `API_HEALTHCHECK_INTERVAL_MS` (usado en: scripts/wait-api.mjs)
 - `API_HEALTHCHECK_PATH` (usado en: scripts/wait-api.mjs)
 - `API_HEALTHCHECK_STRICT` (usado en: scripts/wait-api.mjs)

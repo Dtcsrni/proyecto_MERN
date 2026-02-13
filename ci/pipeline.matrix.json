@@ -47,6 +47,54 @@
       ]
     },
     {
+      "name": "dataset-prodlike-check",
+      "commands": [
+        "npm run test:dataset-prodlike:ci"
+      ],
+      "artifacts": [
+        "tests/fixtures/prodlike/prodlike-anon.json.gz",
+        "reports/qa/latest/dataset-prodlike.json"
+      ]
+    },
+    {
+      "name": "docente-alumno-e2e-check",
+      "commands": [
+        "npm run test:e2e:docente-alumno:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/e2e-docente-alumno.json"
+      ]
+    },
+    {
+      "name": "global-grade-check",
+      "commands": [
+        "npm run test:global-grade:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/global-grade.json"
+      ]
+    },
+    {
+      "name": "pdf-print-check",
+      "commands": [
+        "npm run test:pdf-print:ci",
+        "npm run test:pdf-visual:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/pdf-print.json"
+      ]
+    },
+    {
+      "name": "ux-visual-check",
+      "commands": [
+        "npm run test:ux-visual:ci",
+        "npm run test:e2e:journeys:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/ux-visual.json"
+      ]
+    },
+    {
       "name": "coverage-check",
       "commands": [
         "npm run test:coverage:ci"
@@ -101,11 +149,21 @@
       ]
     },
     {
+      "name": "qa-manifest",
+      "commands": [
+        "npm run test:qa:manifest"
+      ],
+      "artifacts": [
+        "reports/qa/latest/manifest.json",
+        "reports/qa/latest/**"
+      ]
+    },
+    {
       "name": "package",
       "commands": [
         "docker build -f apps/backend/Dockerfile .",
         "docker build -f apps/frontend/Dockerfile .",
-        "docker build -f apps/portal_alumno_cloud/Dockerfile apps/portal_alumno_cloud"
+        "docker build -f apps/portal_alumno_cloud/Dockerfile ."
       ],
       "artifacts": [
         "image-digests.txt"

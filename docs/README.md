@@ -24,6 +24,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `DEVOPS_BASELINE.md`: baseline de operación/entrega y contrato CI/CD.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
+- `OPERACION_EXAMEN_GLOBAL_PROD.md`: preflight y checklist para habilitar generación global por materia/curso en producción.
 - `RELEASE_GATE_STABLE.md`: gate formal beta -> estable con validación humana en producción.
 - `INVENTARIO_PROYECTO.md`: inventario técnico integral (estado de olas, gates y brechas a `1.0-beta`/estable).
 - `INVENTARIO_CODIGO_EXHAUSTIVO.md`: inventario completo de piezas de codigo/config versionadas por area.
@@ -48,11 +49,17 @@ El pipeline `CI Checks` ejecuta gates bloqueantes y progresivos.
 
 Gate adicional bloqueante:
 - `flujo-docente-check`: valida flujo docente E2E (`parcial` + `global`) y exportacion de lista academica firmada.
+- `dataset-prodlike-check`: valida fixture anonimizado sin PII/token.
+- `docente-alumno-e2e-check`: valida cadena completa backend->portal->alumno.
+- `global-grade-check`: valida reglas y contrato de calificacion global.
+- `pdf-print-check`: valida contrato PDF de impresion (Carta y trazabilidad).
+- `ux-visual-check`: valida regresion visual de pantallas criticas.
 - `perf-check`: valida presupuesto p95/failures contra baseline (`docs/perf/baseline.json`).
 
 Estado de referencia del corte 2026-02-13:
 - `lint`, `typecheck`, `test:frontend:ci`: en verde.
 - `coverage-check`: con brecha abierta en frontend (detalle en `INVENTARIO_PROYECTO.md`).
+- Evidencias QA: `reports/qa/latest/*` y criterios en `QA_GATE_CRITERIA.md`.
 
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |
@@ -65,11 +72,13 @@ Endpoints backend:
 - `GET /api/analiticas/lista-academica-csv?periodoId=<id>`
 - `GET /api/analiticas/lista-academica-docx?periodoId=<id>`
 - `GET /api/analiticas/lista-academica-firma?periodoId=<id>`
+- `GET /api/analiticas/calificaciones-xlsx?periodoId=<id>` (formato contractual 1:1 basado en plantilla de producción)
 
 Archivos:
 - `lista-academica.csv`
 - `lista-academica.docx`
 - `lista-academica.manifest.json`
+- `docs/analiticas/CONTRATO_XLSX_PRODUCCION.md`
 
 Firma de integridad:
 - algoritmo `sha256`
