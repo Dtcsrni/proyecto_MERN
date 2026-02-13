@@ -35,6 +35,9 @@ jobs:
       - name: Etapa setup
         run: npm ci
 
+      - name: Preparar runtime sharp (linux-x64)
+        run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
+
       - name: Etapa contract-check
         run: npm run pipeline:contract:check
 
