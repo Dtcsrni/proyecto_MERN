@@ -90,8 +90,14 @@ jobs:
           npm run routes:check
 
       - name: Etapa security-scan
+        env:
+          NODE_ENV: production
+          STRICT_ENV_CHECK: "1"
+          MONGODB_URI: ${{ secrets.CI_MONGODB_URI || 'mongodb://127.0.0.1:27017/evaluapro_ci' }}
+          JWT_SECRETO: ${{ secrets.CI_JWT_SECRETO || 'evaluapro_ci_jwt_2026_strong_secret_value_987654321' }}
+          PORTAL_ALUMNO_API_KEY: ${{ secrets.CI_PORTAL_ALUMNO_API_KEY || 'evaluapro_ci_portal_api_key_2026' }}
         run: |
-          NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check
+          npm run security:env:check
           npm audit --audit-level=high --json > npm-audit-report.json
           npm run security:audit
 
