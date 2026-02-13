@@ -20,6 +20,7 @@ export default defineConfig({
       exclude: [
         ...(baseVitestConfig.coverage?.exclude ?? []),
         'src/apps/app_docente/**',
+        'src/apps/app_docente_legacy/**',
         'src/apps/app_alumno/**',
         'src/main.tsx',
         'src/index.css'
