@@ -15,12 +15,8 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     coverage: {
       ...baseVitestConfig.coverage,
-      // TODO(2026-03-31): Retirar exclusiones temporales de cobertura
-      // tras completar particion de AppDocente y pruebas por dominio.
       exclude: [
         ...(baseVitestConfig.coverage?.exclude ?? []),
-        'src/apps/app_docente/**',
-        'src/apps/app_docente_legacy/**',
         'src/apps/app_alumno/**',
         'src/main.tsx',
         'src/index.css'
