@@ -37,3 +37,17 @@ export const esquemaCalificarExamen = z.object({
   omrAnalisis: esquemaAnalisisOmr.optional(),
   soloPreview: z.boolean().optional()
 });
+
+export const esquemaResolverSolicitudRevision = z
+  .object({
+    estado: z.enum(['atendida', 'rechazada']),
+    respuestaDocente: z.string().trim().min(1).max(500).optional()
+  })
+  .strict();
+
+export const esquemaSincronizarSolicitudesRevision = z
+  .object({
+    desde: z.string().trim().datetime().optional(),
+    limite: z.number().int().min(1).max(200).optional()
+  })
+  .strict();

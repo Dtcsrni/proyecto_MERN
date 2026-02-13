@@ -15,6 +15,51 @@ function mmAPuntos(mm: number) {
   return mm * MM_A_PUNTOS;
 }
 
+function leerNumeroEnvSeguro(nombre: string, fallback: number, min?: number, max?: number) {
+  const raw = process.env[nombre];
+  const valor = Number.parseFloat(String(raw ?? '').trim());
+  if (!Number.isFinite(valor)) return fallback;
+  let actual = valor;
+  if (Number.isFinite(min as number)) actual = Math.max(min as number, actual);
+  if (Number.isFinite(max as number)) actual = Math.min(max as number, actual);
+  return actual;
+}
+
+type PerfilLayoutImpresion = {
+  // Grilla vertical para alinear elementos a una malla submilimetrica estable entre ejecuciones.
+  gridStepPt: number;
+  // Alturas de encabezado por pagina (en puntos, derivadas de mm).
+  headerHeightFirst: number;
+  headerHeightOther: number;
+  // Reserva inferior para pie y tolerancia de recorte de impresora.
+  bottomSafePt: number;
+  // Politica visual para ahorro de tinta.
+  usarRellenosDecorativos: boolean;
+  usarEtiquetaOmrSolida: boolean;
+};
+
+function resolverPerfilLayout(): PerfilLayoutImpresion {
+  const gridMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_GRID_MM', 0.5, 0.25, 2);
+  const headerFirstMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_FIRST_MM', 19, 12, 30);
+  const headerOtherMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_OTHER_MM', 0, 0, 20);
+  const bottomSafeMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_BOTTOM_SAFE_MM', 6, 3, 16);
+  const usarRellenosDecorativos =
+    String(process.env.EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS ?? '').trim() === '1' ||
+    String(process.env.EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS ?? '').toLowerCase() === 'true';
+  const usarEtiquetaOmrSolida =
+    String(process.env.EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA ?? '').trim() === '1' ||
+    String(process.env.EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA ?? '').toLowerCase() === 'true';
+
+  return {
+    gridStepPt: Math.max(0.25, mmAPuntos(gridMm)),
+    headerHeightFirst: mmAPuntos(headerFirstMm),
+    headerHeightOther: mmAPuntos(headerOtherMm),
+    bottomSafePt: Math.max(mmAPuntos(3), mmAPuntos(bottomSafeMm)),
+    usarRellenosDecorativos,
+    usarEtiquetaOmrSolida
+  };
+}
+
 type TemplateVersion = 1 | 2;
 
 type PerfilPlantillaOmr = {
@@ -615,10 +660,11 @@ export async function generarPdfExamen({
   const margen = mmAPuntos(margenMm);
   const paginasObjetivo = Number.isFinite(totalPaginas) ? Math.max(1, Math.floor(totalPaginas)) : 1;
   const perfilOmr = obtenerPerfilPlantilla(templateVersion);
+  const perfilLayout = resolverPerfilLayout();
 
-  const colorPrimario = rgb(0.07, 0.22, 0.42);
-  const colorGris = rgb(0.38, 0.38, 0.38);
-  const colorLinea = rgb(0.75, 0.79, 0.84);
+  const colorPrimario = rgb(0.1, 0.1, 0.1);
+  const colorGris = rgb(0.33, 0.33, 0.33);
+  const colorLinea = rgb(0.58, 0.6, 0.64);
 
   // Tipografías compactas (pero legibles) para encajar más preguntas.
   const sizeTitulo = 12.2;
@@ -678,7 +724,7 @@ export async function generarPdfExamen({
 
   const logos = { izquierda, derecha };
 
-  const GRID_STEP = 4;
+  const GRID_STEP = perfilLayout.gridStepPt;
   const snapToGrid = (y: number) => Math.floor(y / GRID_STEP) * GRID_STEP;
 
   const preguntasOrdenadas = ordenarPreguntas(preguntas, mapaVariante);
@@ -735,8 +781,8 @@ export async function generarPdfExamen({
   const maxWidthIndicaciones = Math.max(120, xDerechaTexto - (margen + 10));
   const indicacionesPendientes = mostrarInstrucciones && instrucciones.length > 0;
 
-  const headerHeightFirst = 72;
-  const headerHeightOther = 0;
+  const headerHeightFirst = perfilLayout.headerHeightFirst;
+  const headerHeightOther = perfilLayout.headerHeightOther;
 
   while (numeroPagina <= paginasObjetivo && (numeroPagina === 1 || indicePregunta < totalPreguntas)) {
     const page = pdfDoc.addPage([ANCHO_CARTA, ALTO_CARTA]);
@@ -767,10 +813,25 @@ export async function generarPdfExamen({
 
     // Encabezado institucional SOLO en la primera pagina.
     if (esPrimera) {
-      page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: rgb(0.97, 0.98, 0.99) });
-      page.drawLine({ start: { x: xCaja, y: yCaja }, end: { x: xCaja + wCaja, y: yCaja }, color: colorLinea, thickness: 1 });
-      // Barra superior moderna.
-      page.drawRectangle({ x: xCaja, y: yTop - 8, width: wCaja, height: 3, color: colorPrimario });
+      if (perfilLayout.usarRellenosDecorativos) {
+        page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: rgb(0.97, 0.98, 0.99) });
+      }
+      page.drawRectangle({
+        x: xCaja,
+        y: yCaja,
+        width: wCaja,
+        height: altoEncabezado,
+        borderWidth: 0.8,
+        borderColor: colorLinea,
+        color: rgb(1, 1, 1)
+      });
+      // Acento superior de bajo consumo: linea delgada en lugar de barra solida.
+      page.drawLine({
+        start: { x: xCaja, y: yTop - 6 },
+        end: { x: xCaja + wCaja, y: yTop - 6 },
+        color: colorLinea,
+        thickness: 0.8
+      });
     }
 
     // Marcas y QR (OMR/escaneo)
@@ -892,7 +953,7 @@ export async function generarPdfExamen({
     let cursorY = cursorYInicio;
     if (esPrimera) cursorY -= 0;
 
-  const alturaDisponibleMin = margen + 12;
+  const alturaDisponibleMin = margen + perfilLayout.bottomSafePt;
 
     const calcularAlturaPregunta = (pregunta: PreguntaBase, numero: number) => {
       const lineasEnunciado = envolverTextoMixto({
@@ -1014,8 +1075,22 @@ export async function generarPdfExamen({
         }
       }
 
-      page.drawRectangle({ x: xInd, y: yTopInd - hCaja, width: wInd, height: hCaja, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
-      page.drawRectangle({ x: xInd, y: yTopInd - 6, width: wInd, height: 3, color: colorPrimario });
+      page.drawRectangle({
+        x: xInd,
+        y: yTopInd - hCaja,
+        width: wInd,
+        height: hCaja,
+        borderWidth: 1,
+        borderColor: colorLinea,
+        color: rgb(1, 1, 1)
+      });
+      // Etiqueta con subrayado ligero para ahorrar tinta.
+      page.drawLine({
+        start: { x: xInd + 8, y: yTopInd - 18 },
+        end: { x: xInd + Math.min(wInd - 8, 92), y: yTopInd - 18 },
+        color: colorLinea,
+        thickness: 0.8
+      });
       page.drawText('Indicaciones', { x: xInd + 8, y: yTopInd - 16, size: 9, font: fuenteBold, color: colorPrimario });
 
       let yLinea = yTopInd - 26;
@@ -1166,14 +1241,33 @@ export async function generarPdfExamen({
       const hTag = perfilOmr.omrTagHeight;
       const wTag = perfilOmr.omrTagWidth;
       const yTag = top - hTag - 6;
-      page.drawRectangle({ x: xColRespuesta, y: yTag, width: wTag, height: hTag, color: colorPrimario });
-      page.drawText(`#${numero}`, {
-        x: xColRespuesta + 4,
-        y: yTag + 2.2,
-        size: perfilOmr.omrTagFontSize,
-        font: fuenteBold,
-        color: rgb(1, 1, 1)
-      });
+      if (perfilLayout.usarEtiquetaOmrSolida) {
+        page.drawRectangle({ x: xColRespuesta, y: yTag, width: wTag, height: hTag, color: colorPrimario });
+        page.drawText(`#${numero}`, {
+          x: xColRespuesta + 4,
+          y: yTag + 2.2,
+          size: perfilOmr.omrTagFontSize,
+          font: fuenteBold,
+          color: rgb(1, 1, 1)
+        });
+      } else {
+        page.drawRectangle({
+          x: xColRespuesta,
+          y: yTag,
+          width: wTag,
+          height: hTag,
+          borderWidth: 0.85,
+          borderColor: colorLinea,
+          color: rgb(1, 1, 1)
+        });
+        page.drawText(`#${numero}`, {
+          x: xColRespuesta + 4,
+          y: yTag + 2.2,
+          size: perfilOmr.omrTagFontSize,
+          font: fuenteBold,
+          color: colorPrimario
+        });
+      }
       const label = 'RESP';
       const labelSize = perfilOmr.omrLabelFontSize;
       const labelWidth = fuenteBold.widthOfTextAtSize(label, labelSize);
@@ -1274,6 +1368,14 @@ export async function generarPdfExamen({
     mapaOmr: {
       margenMm,
       templateVersion: perfilOmr.version,
+      perfilLayout: {
+        gridStepPt: perfilLayout.gridStepPt,
+        headerHeightFirst: perfilLayout.headerHeightFirst,
+        headerHeightOther: perfilLayout.headerHeightOther,
+        bottomSafePt: perfilLayout.bottomSafePt,
+        usarRellenosDecorativos: perfilLayout.usarRellenosDecorativos,
+        usarEtiquetaOmrSolida: perfilLayout.usarEtiquetaOmrSolida
+      },
       perfil: {
         qrSize: perfilOmr.qrSize,
         qrPadding: perfilOmr.qrPadding,

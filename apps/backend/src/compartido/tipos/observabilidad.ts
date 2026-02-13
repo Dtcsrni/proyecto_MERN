@@ -36,3 +36,20 @@ export type RespuestaReadiness = RespuestaSalud & {
     };
   };
 };
+
+export type MetricaEtapaOmr = {
+  etapa: 'deteccion' | 'scoring' | 'calidad' | 'qr' | 'debug';
+  duracionMs: number;
+  exito: boolean;
+  requestId?: string;
+};
+
+export type ResultadoPipelineOmr = {
+  requestId?: string;
+  exito: boolean;
+  etapas: Array<{
+    etapa: MetricaEtapaOmr['etapa'];
+    duracionMs: number;
+    exito: boolean;
+  }>;
+};

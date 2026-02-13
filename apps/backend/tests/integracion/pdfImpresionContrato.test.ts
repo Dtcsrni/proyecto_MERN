@@ -41,6 +41,10 @@ describe('contrato PDF impresion', () => {
       .expect(200);
     const examen = examenResp.body.examen;
     expect(examen?.mapaOmr?.paginas?.length ?? 0).toBeGreaterThan(0);
+    expect(Number(examen?.mapaOmr?.perfilLayout?.gridStepPt ?? 0)).toBeGreaterThan(0);
+    expect(Number(examen?.mapaOmr?.perfilLayout?.gridStepPt ?? 99)).toBeLessThanOrEqual(6);
+    expect(Number(examen?.mapaOmr?.perfilLayout?.bottomSafePt ?? 0)).toBeGreaterThanOrEqual(8);
+    expect(Number(examen?.mapaOmr?.perfilLayout?.headerHeightFirst ?? 0)).toBeGreaterThan(20);
     for (const pagina of examen.mapaOmr.paginas as Array<{ qr?: { texto?: string } }>) {
       expect(String(pagina?.qr?.texto ?? '')).toContain(escenario.folio);
     }

@@ -73,6 +73,8 @@ const omrImagenBase64MaxChars = parsearNumeroSeguro(process.env.OMR_IMAGEN_BASE6
   min: 1_000,
   max: 50_000_000
 });
+const featureOmrPipelineV2 =
+  /^(1|true|si|yes)$/i.test(String(process.env.FEATURE_OMR_PIPELINE_V2 || '').trim());
 
 export const configuracion = {
   puerto,
@@ -92,5 +94,6 @@ export const configuracion = {
   rateLimitLimit,
   rateLimitCredencialesLimit,
   rateLimitRefrescoLimit,
-  omrImagenBase64MaxChars
+  omrImagenBase64MaxChars,
+  featureOmrPipelineV2
 };

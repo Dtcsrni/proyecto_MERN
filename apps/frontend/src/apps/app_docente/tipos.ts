@@ -205,3 +205,18 @@ export type ExamenGeneradoClave = {
   };
   preguntasIds?: string[];
 };
+
+export type SolicitudRevisionAlumno = {
+  _id?: string;
+  externoId: string;
+  folio: string;
+  numeroPregunta: number;
+  comentario?: string;
+  estado: 'pendiente' | 'atendida' | 'rechazada';
+  solicitadoEn?: string;
+  atendidoEn?: string | null;
+  respuestaDocente?: string;
+  alumnoNombreCompleto?: string;
+  conformidadAlumno?: boolean;
+  conformidadActualizadaEn?: string | null;
+};

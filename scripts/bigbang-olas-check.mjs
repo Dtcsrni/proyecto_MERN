@@ -141,7 +141,7 @@ addCheck(
 // Siguiente ola (2) readiness
 // ---------------------------
 const ola2Targets = [
-  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts',
+  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts',
   'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts',
   'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts',
   'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts'

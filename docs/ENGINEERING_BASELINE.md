@@ -12,7 +12,7 @@ Commit de referencia: `dffa43f`.
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
-- Arquitectura backend: monolito modular por dominio (Ola 2 pendiente).
+- Arquitectura backend: Ola 2 iniciada en OMR con pipeline modular v2 detras de feature flag.
 - Frontend docente con cierre de Ola 1 en estado operativo.
 
 ## Corte de modularizacion docente (real)
@@ -24,7 +24,7 @@ Commit de referencia: `dffa43f`.
 ## Riesgos tecnicos actuales
 1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`) aunque cumplen limite de linea.
 2. Rampa de cobertura frontend hacia objetivo 45 aun pendiente (gate actual en 39/40/31/37).
-3. Backend core critico aun monolitico (`OMR/PDF/Sync`) para Ola 2.
+3. Backend core critico aun parcialmente monolitico (PDF/Sync pendientes de particion profunda).
 4. Dependencia de disciplina documental para mantener trazabilidad multi-agente.
 
 ## Validacion reciente (corte)
@@ -41,6 +41,56 @@ Commit de referencia: `dffa43f`.
 - `npm run test:portal:ci`: verde.
 - `npm run perf:check`: verde.
 - `npm run pipeline:contract:check`: verde.
+- `npm run bigbang:olas:strict`: verde.
+
+## Avance Ola 2A (OMR)
+- Se preservo el motor legado en `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`.
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada con flag canary:
+  - `FEATURE_OMR_PIPELINE_V2=0|1`
+- Nuevo pipeline modular (sin ruptura de contrato HTTP):
+  - `omr/qr/etapaQr.ts`
+  - `omr/deteccion/etapaDeteccion.ts`
+  - `omr/scoring/etapaScoring.ts`
+  - `omr/calidad/etapaCalidad.ts`
+  - `omr/debug/etapaDebug.ts`
+  - `omr/pipeline/ejecutorPipelineOmr.ts`
+  - `omr/types.ts`
+- Instrumentacion agregada en `/api/metrics`:
+  - `evaluapro_omr_stage_duration_ms`
+  - `evaluapro_omr_stage_errors_total`
+  - `evaluapro_omr_pipeline_total`
+  - `evaluapro_omr_pipeline_error_total`
+  - `evaluapro_omr_pipeline_duration_ms`
+- `scripts/perf-collect.ts` ampliado con rutas criticas de negocio en backend (modo no autenticado controlado).
+
+### Corte 2026-02-13 (iteracion actual)
+- Validacion de estado Big-Bang:
+  - `npm run bigbang:olas:check`: verde (`ola0`, `ola1`, `ola2-ready`).
+- Ola 2C (sincronizacion) avanzó con particion interna sin romper contrato HTTP:
+  - Nuevo modulo: `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`
+  - `controladorSincronizacion.ts` ahora delega utilidades criptograficas, parsing y LWW.
+  - Validacion local del dominio sync: `lint`, `typecheck`, `tests/sincronizacion.test.ts` en verde.
+- Refinamiento de generacion PDF para impresion:
+  - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`
+  - Nuevo perfil de layout parametrico por variables de entorno:
+    - `EXAMEN_LAYOUT_GRID_MM`
+    - `EXAMEN_LAYOUT_HEADER_FIRST_MM`
+    - `EXAMEN_LAYOUT_HEADER_OTHER_MM`
+    - `EXAMEN_LAYOUT_BOTTOM_SAFE_MM`
+    - `EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS`
+    - `EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA`
+  - Ajuste visual para ahorro de tinta:
+    - menos rellenos solidos
+    - bordes y lineas ligeras en encabezados/etiquetas
+    - mantenimiento de contrato Carta y trazabilidad QR/Folio.
+- Mejora de robustez OMR ante cambios de layout:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
+  - El perfil de deteccion ahora se ajusta con metrica real del `mapaOmr` (radio/caja/offset) por mediana.
+- Pruebas ejecutadas en backend (verde):
+  - `tests/integracion/pdfImpresionContrato.test.ts`
+  - `tests/omr.test.ts`
+  - `npm -C apps/backend run lint`
+  - `npm -C apps/backend run typecheck`
 
 ## QA preproduccion automatizada (nuevo)
 - Gates bloqueantes agregados:

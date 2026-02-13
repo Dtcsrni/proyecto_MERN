@@ -8,11 +8,13 @@
  */
 import type { Response } from 'express';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
+import { configuracion } from '../../configuracion';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { BancoPregunta } from '../modulo_banco_preguntas/modeloBancoPregunta';
 import { ExamenGenerado } from '../modulo_generacion_pdf/modeloExamenGenerado';
 import { ExamenPlantilla } from '../modulo_generacion_pdf/modeloExamenPlantilla';
 import { Calificacion } from './modeloCalificacion';
+import { SolicitudRevisionAlumno } from './modeloSolicitudRevisionAlumno';
 import { calcularCalificacion } from './servicioCalificacion';
 
 type RespuestaDetectada = {
@@ -209,6 +211,161 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   });
 
   await ExamenGenerado.updateOne({ _id: examenGeneradoId }, { estado: 'calificado' });
+  // Cierra solicitudes pendientes relacionadas cuando se recalifica el examen.
+  await SolicitudRevisionAlumno.updateMany(
+    { docenteId, examenGeneradoId, estado: 'pendiente' },
+    {
+      $set: {
+        estado: 'atendida',
+        atendidoEn: new Date(),
+        respuestaDocente: 'Solicitud atendida durante recalificacion'
+      }
+    }
+  ).catch(() => {
+    // Best-effort: una falla de sincronizacion de solicitudes no debe romper la calificacion.
+  });
 
   res.status(201).json({ calificacion });
+}
+
+export async function listarSolicitudesRevision(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const estado = String(req.query.estado ?? '').trim().toLowerCase();
+  const limite = Math.min(200, Math.max(1, Number(req.query.limite ?? 60) || 60));
+  const filtro: Record<string, unknown> = { docenteId };
+  if (estado) filtro.estado = estado;
+
+  const solicitudes = await SolicitudRevisionAlumno.find(filtro)
+    .sort({ solicitadoEn: -1, createdAt: -1 })
+    .limit(limite)
+    .lean();
+  res.json({ solicitudes });
+}
+
+export async function sincronizarSolicitudesRevision(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  if (!configuracion.portalAlumnoUrl || !configuracion.portalApiKey) {
+    throw new ErrorAplicacion('SYNC_SERVIDOR_NO_CONFIG', 'El servidor de sincronizacion no esta configurado', 503);
+  }
+
+  const desde = String((req.body as { desde?: unknown })?.desde ?? '').trim();
+  const limite = Math.min(200, Math.max(1, Number((req.body as { limite?: unknown })?.limite ?? 80) || 80));
+  const body: Record<string, unknown> = { docenteId, limite };
+  if (desde) body.desde = desde;
+
+  const respuesta = await fetch(`${configuracion.portalAlumnoUrl}/api/portal/sincronizacion-docente/solicitudes-revision/pull`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': configuracion.portalApiKey
+    },
+    body: JSON.stringify(body)
+  });
+
+  const payload = (await respuesta.json().catch(() => ({}))) as {
+    solicitudes?: Array<{
+      externoId?: string;
+      docenteId?: string;
+      periodoId?: string;
+      alumnoId?: string;
+      examenGeneradoId?: string;
+      folio?: string;
+      numeroPregunta?: number;
+      comentario?: string;
+      estado?: string;
+      solicitadoEn?: string;
+      atendidoEn?: string | null;
+      respuestaDocente?: string;
+      conformidadAlumno?: boolean;
+      conformidadActualizadaEn?: string | null;
+    }>;
+    error?: { mensaje?: string };
+  };
+
+  if (!respuesta.ok) {
+    throw new ErrorAplicacion('SYNC_PULL_FALLIDO', payload?.error?.mensaje || 'No se pudieron sincronizar solicitudes', 502);
+  }
+
+  const solicitudes = Array.isArray(payload.solicitudes) ? payload.solicitudes : [];
+  let aplicadas = 0;
+  for (const item of solicitudes) {
+    const externoId = String(item?.externoId ?? '').trim();
+    const folio = String(item?.folio ?? '').trim();
+    const numeroPregunta = Number(item?.numeroPregunta ?? 0);
+    if (!externoId || !folio || !Number.isInteger(numeroPregunta) || numeroPregunta <= 0) continue;
+    await SolicitudRevisionAlumno.updateOne(
+      { externoId },
+      {
+        $set: {
+          docenteId,
+          periodoId: item?.periodoId || null,
+          alumnoId: item?.alumnoId || null,
+          examenGeneradoId: item?.examenGeneradoId || null,
+          folio,
+          numeroPregunta,
+          comentario: String(item?.comentario ?? '').trim(),
+          estado: String(item?.estado ?? 'pendiente').trim().toLowerCase() || 'pendiente',
+          solicitadoEn: item?.solicitadoEn ? new Date(item.solicitadoEn) : new Date(),
+          atendidoEn: item?.atendidoEn ? new Date(item.atendidoEn) : null,
+          respuestaDocente: String(item?.respuestaDocente ?? '').trim() || null,
+          conformidadAlumno: Boolean(item?.conformidadAlumno),
+          conformidadActualizadaEn: item?.conformidadActualizadaEn ? new Date(item.conformidadActualizadaEn) : null,
+          origen: 'portal'
+        }
+      },
+      { upsert: true }
+    );
+    aplicadas += 1;
+  }
+
+  res.json({ mensaje: 'Solicitudes sincronizadas', recibidas: solicitudes.length, aplicadas });
+}
+
+export async function resolverSolicitudRevision(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const id = String(req.params.id ?? '').trim();
+  const estado = String((req.body as { estado?: unknown })?.estado ?? '').trim().toLowerCase();
+  const respuestaDocente = String((req.body as { respuestaDocente?: unknown })?.respuestaDocente ?? '').trim();
+
+  if (!id) {
+    throw new ErrorAplicacion('SOLICITUD_ID_INVALIDO', 'Identificador de solicitud invalido', 400);
+  }
+  if (estado !== 'atendida' && estado !== 'rechazada') {
+    throw new ErrorAplicacion('SOLICITUD_ESTADO_INVALIDO', 'Estado de solicitud invalido', 400);
+  }
+
+  const actualizada = await SolicitudRevisionAlumno.findOneAndUpdate(
+    { _id: id, docenteId },
+    {
+      $set: {
+        estado,
+        atendidoEn: new Date(),
+        respuestaDocente: respuestaDocente || (estado === 'atendida' ? 'Solicitud atendida' : 'Solicitud rechazada')
+      }
+    },
+    { new: true }
+  ).lean();
+
+  if (!actualizada) {
+    throw new ErrorAplicacion('SOLICITUD_NO_ENCONTRADA', 'Solicitud no encontrada', 404);
+  }
+
+  if (configuracion.portalAlumnoUrl && configuracion.portalApiKey) {
+    await fetch(`${configuracion.portalAlumnoUrl}/api/portal/sincronizacion-docente/solicitudes-revision/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': configuracion.portalApiKey
+      },
+      body: JSON.stringify({
+        externoId: actualizada.externoId,
+        estado,
+        respuestaDocente: actualizada.respuestaDocente
+      })
+    }).catch(() => {
+      // Best-effort: no bloquear resolucion local si el portal no responde.
+    });
+  }
+
+  res.json({ solicitud: actualizada });
 }

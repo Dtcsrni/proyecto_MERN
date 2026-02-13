@@ -59,11 +59,12 @@ export function crearClientePortal() {
   type RequestOptions = { timeoutMs?: number };
 
   async function enviar<T>(ruta: string, payload: unknown, opciones?: RequestOptions): Promise<T> {
+    const token = obtenerTokenAlumno();
     return fetchConManejoErrores<T>({
       fetcher: (signal) =>
         fetch(`${basePortal}${ruta}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify(payload),
           signal
         }),

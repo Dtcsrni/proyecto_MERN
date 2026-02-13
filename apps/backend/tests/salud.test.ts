@@ -59,6 +59,8 @@ describe('salud', () => {
     const res = await request(app).get('/api/metrics').expect(200);
     expect(String(res.headers['content-type'] || '')).toContain('text/plain');
     expect(String(res.text)).toContain('evaluapro_http_requests_total');
+    expect(String(res.text)).toContain('evaluapro_omr_stage_duration_ms');
+    expect(String(res.text)).toContain('evaluapro_omr_pipeline_total');
   });
 });
 

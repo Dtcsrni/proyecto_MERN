@@ -30,34 +30,26 @@ import { Sincronizacion } from './modeloSincronizacion';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { Docente } from '../modulo_autenticacion/modeloDocente';
 import { enviarCorreo } from '../../infraestructura/correo/servicioCorreo';
-import { createHash, randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 import { guardarPdfExamen } from '../../infraestructura/archivos/almacenLocal';
-
-const MAX_BASE64_CHARS = 60_000_000; // ~45MB binario aprox
-
-function generarCodigoSimple() {
-  // 8 hex chars (A-F0-9) en mayusculas: simple de dictar y transcribir.
-  return randomBytes(4).toString('hex').toUpperCase();
-}
-
-function comprimirBase64(buffer: Buffer) {
-  return gzipSync(buffer).toString('base64');
-}
-
-function sha256Hex(input: string) {
-  return createHash('sha256').update(input).digest('hex');
-}
-
-function sha256HexBuffer(buf: Buffer) {
-  return createHash('sha256').update(buf).digest('hex');
-}
-
-function normalizarCorreo(valor: unknown): string {
-  if (!valor) return '';
-  return String(valor).trim().toLowerCase();
-}
-
+import {
+  MAX_BASE64_CHARS,
+  comprimirBase64,
+  construirComparativaRespuestas,
+  crearErrorServidorSincronizacionNoConfigurado,
+  generarCodigoSimple,
+  normalizarCorreo,
+  normalizarErrorServidorSincronizacion,
+  obtenerCampo,
+  obtenerId,
+  obtenerIdTexto,
+  parsearFechaIso,
+  sha256Hex,
+  sha256HexBuffer,
+  upsertLwwPorUpdatedAt,
+  type ModelLike,
+  type PaqueteSincronizacionV1
+} from './sincronizacionInterna';
 async function obtenerCorreoDocente(docenteId: string): Promise<string> {
   const docente = await Docente.findById(docenteId).select('correo').lean();
   const correo = normalizarCorreo((docente as { correo?: unknown })?.correo);
@@ -66,216 +58,6 @@ async function obtenerCorreoDocente(docenteId: string): Promise<string> {
   }
   return correo;
 }
-
-type PaqueteSincronizacionV1 = {
-  schemaVersion: 1;
-  exportadoEn: string;
-  docenteId: string;
-  docenteCorreo?: string;
-  periodoId?: string;
-  desde?: string;
-  conteos: Record<string, number>;
-  periodos: unknown[];
-  alumnos: unknown[];
-  bancoPreguntas: unknown[];
-  plantillas: unknown[];
-  examenes: Array<Record<string, unknown>>;
-  entregas: unknown[];
-  calificaciones: unknown[];
-  banderas: unknown[];
-  pdfs: Array<{ examenGeneradoId: string; pdfComprimidoBase64: string; pdfSha256?: string }>;
-};
-
-type RegistroPlano = Record<string, unknown>;
-type ModelQueryLike = {
-  select: (fields: string) => ModelQueryLike;
-  lean: () => Promise<RegistroPlano | null>;
-};
-type ModelLike = {
-  findById: (id: unknown) => ModelQueryLike;
-  findOneAndUpdate: (filtro: RegistroPlano, update: RegistroPlano, options: RegistroPlano) => unknown;
-};
-
-function obtenerCampo(doc: unknown, campo: string): unknown {
-  if (!doc || typeof doc !== 'object') return undefined;
-  return (doc as RegistroPlano)[campo];
-}
-
-function obtenerId(doc: unknown): unknown {
-  return obtenerCampo(doc, '_id');
-}
-
-function obtenerIdTexto(doc: unknown): string {
-  return String(obtenerId(doc) ?? '').trim();
-}
-
-function aFecha(valor: unknown): Date | null {
-  if (!valor) return null;
-  if (valor instanceof Date) return valor;
-  if (typeof valor === 'number') {
-    const d = new Date(valor);
-    return Number.isFinite(d.getTime()) ? d : null;
-  }
-  if (typeof valor === 'string') {
-    const d = new Date(valor);
-    return Number.isFinite(d.getTime()) ? d : null;
-  }
-  return null;
-}
-
-async function upsertLwwPorUpdatedAt({
-  modelName,
-  Model,
-  docs
-}: {
-  modelName: string;
-  Model: ModelLike;
-  docs: Array<Record<string, unknown>>;
-}) {
-  let aplicados = 0;
-  let omitidos = 0;
-
-  for (const doc of docs) {
-    const id = obtenerCampo(doc, '_id');
-    if (!id) continue;
-
-    const incomingUpdatedAt = aFecha(obtenerCampo(doc, 'updatedAt') ?? obtenerCampo(doc, 'createdAt'));
-    const existente = await Model.findById(id).select('updatedAt').lean();
-    const existenteUpdatedAt = aFecha(existente ? obtenerCampo(existente, 'updatedAt') : null);
-    if (existenteUpdatedAt && (!incomingUpdatedAt || existenteUpdatedAt >= incomingUpdatedAt)) {
-      omitidos += 1;
-      continue;
-    }
-
-    await Model.findOneAndUpdate(
-      { _id: id },
-      doc,
-      {
-        upsert: true,
-        overwrite: true,
-        setDefaultsOnInsert: true
-      }
-    );
-    aplicados += 1;
-  }
-
-  return { modelName, aplicados, omitidos, recibidos: docs.length };
-}
-
-function parsearFechaIso(valor?: string): Date | null {
-  if (!valor) return null;
-  const fecha = new Date(valor);
-  return Number.isFinite(fecha.getTime()) ? fecha : null;
-}
-
-function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: number[]) {
-  const indiceCorrecto = opciones.findIndex((opcion) => opcion.esCorrecta);
-  if (indiceCorrecto < 0) return null;
-  const posicion = orden.findIndex((indice) => indice === indiceCorrecto);
-  if (posicion < 0) return null;
-  return String.fromCharCode(65 + posicion);
-}
-
-type RespuestaDetectadaSync = {
-  numeroPregunta: number;
-  opcion: string | null;
-  confianza?: number;
-};
-
-type ComparativaRespuestaSync = {
-  numeroPregunta: number;
-  correcta: string | null;
-  detectada: string | null;
-  coincide: boolean;
-  confianza?: number;
-};
-
-function construirComparativaRespuestas(
-  examen: Record<string, unknown> | undefined,
-  preguntasDb: Array<Record<string, unknown>>,
-  respuestasDetectadas: RespuestaDetectadaSync[]
-): ComparativaRespuestaSync[] {
-  if (!examen) return [];
-  const mapaVariante = (examen.mapaVariante ?? {}) as {
-    ordenPreguntas?: string[];
-    ordenOpcionesPorPregunta?: Record<string, number[]>;
-  };
-  const ordenPreguntas = Array.isArray(mapaVariante.ordenPreguntas)
-    ? mapaVariante.ordenPreguntas.map((item) => String(item))
-    : [];
-  if (!ordenPreguntas.length) return [];
-
-  const mapaPreguntas = new Map<string, Record<string, unknown>>(
-    preguntasDb.map((pregunta) => [String(pregunta._id), pregunta])
-  );
-  const respuestasPorNumero = new Map<number, RespuestaDetectadaSync>(
-    (Array.isArray(respuestasDetectadas) ? respuestasDetectadas : []).map((respuesta) => [
-      Number(respuesta.numeroPregunta),
-      {
-        numeroPregunta: Number(respuesta.numeroPregunta),
-        opcion: typeof respuesta.opcion === 'string' ? respuesta.opcion.toUpperCase() : null,
-        ...(typeof respuesta.confianza === 'number' ? { confianza: respuesta.confianza } : {})
-      }
-    ])
-  );
-
-  const comparativa: ComparativaRespuestaSync[] = [];
-  ordenPreguntas.forEach((idPregunta, idx) => {
-    const numeroPregunta = idx + 1;
-    const pregunta = mapaPreguntas.get(idPregunta);
-    const detectada = respuestasPorNumero.get(numeroPregunta);
-
-    let correcta: string | null = null;
-    if (pregunta) {
-      const versiones = Array.isArray(pregunta.versiones) ? (pregunta.versiones as Array<Record<string, unknown>>) : [];
-      const versionActual = Number(pregunta.versionActual ?? 0);
-      const version =
-        versiones.find((item) => Number(item.numeroVersion ?? 0) === versionActual) ??
-        versiones[0];
-      const opciones = Array.isArray(version?.opciones) ? (version!.opciones as Array<{ esCorrecta: boolean }>) : [];
-      const ordenOpcionesCrudo =
-        mapaVariante.ordenOpcionesPorPregunta && Array.isArray(mapaVariante.ordenOpcionesPorPregunta[idPregunta])
-          ? mapaVariante.ordenOpcionesPorPregunta[idPregunta]
-          : [0, 1, 2, 3, 4];
-      const ordenOpciones = ordenOpcionesCrudo
-        .map((valor) => Number(valor))
-        .filter((valor) => Number.isInteger(valor) && valor >= 0);
-      correcta = obtenerLetraCorrecta(opciones, ordenOpciones);
-    }
-
-    const opcionDetectada = detectada?.opcion ?? null;
-    comparativa.push({
-      numeroPregunta,
-      correcta,
-      detectada: opcionDetectada,
-      coincide: Boolean(correcta && opcionDetectada && correcta === opcionDetectada),
-      ...(typeof detectada?.confianza === 'number' ? { confianza: detectada.confianza } : {})
-    });
-  });
-
-  return comparativa;
-}
-
-function crearErrorServidorSincronizacionNoConfigurado(codigo: 'SYNC_SERVIDOR_NO_CONFIG' | 'PORTAL_NO_CONFIG') {
-  return new ErrorAplicacion(
-    codigo,
-    'Servidor de sincronizacion no configurado. Define PORTAL_ALUMNO_URL y PORTAL_ALUMNO_API_KEY.',
-    503
-  );
-}
-
-function normalizarErrorServidorSincronizacion(error: unknown) {
-  if (error instanceof ErrorAplicacion) return error;
-  return new ErrorAplicacion(
-    'SYNC_SERVIDOR_INALCANZABLE',
-    'No se pudo conectar al servidor de sincronizacion. Verifica PORTAL_ALUMNO_URL y que el portal este en linea.',
-    502,
-    {
-      causa: error instanceof Error ? error.message : String(error)
-    }
-  );
-}
-
 async function generarPaqueteSincronizacion({
   docenteId,
   docenteCorreo,
@@ -688,7 +470,7 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
   const calificacionesPayload = calificaciones.map((calificacion) => ({
     ...(() => {
       const respuestasDetectadas = Array.isArray(calificacion.respuestasDetectadas)
-        ? (calificacion.respuestasDetectadas as RespuestaDetectadaSync[])
+        ? (calificacion.respuestasDetectadas as Array<{ numeroPregunta?: unknown; opcion?: unknown; confianza?: unknown }>)
             .map((respuesta) => ({
               numeroPregunta: Number(respuesta?.numeroPregunta),
               opcion: typeof respuesta?.opcion === 'string' ? respuesta.opcion.toUpperCase() : null,

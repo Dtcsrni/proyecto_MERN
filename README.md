@@ -3,6 +3,7 @@
 Plataforma MERN para gestion de evaluaciones universitarias con generacion de examenes PDF, vinculacion por QR, analisis OMR, calificacion automatica asistida y sincronizacion local/cloud.
 
 Estado actual del repositorio: 2026-02-13.
+Version operativa actual: `0.2.0-beta.1`.
 
 ## Estado actual
 - Monorepo activo con 3 apps: `backend`, `frontend`, `portal_alumno_cloud`.

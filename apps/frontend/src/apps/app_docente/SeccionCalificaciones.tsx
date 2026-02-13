@@ -44,7 +44,8 @@ import type {
   ResultadoAnalisisOmr,
   ResultadoOmr,
   RevisionExamenOmr,
-  RevisionPaginaOmr
+  RevisionPaginaOmr,
+  SolicitudRevisionAlumno
 } from './tipos';
 import {
   combinarRespuestasOmrPaginas,
@@ -79,6 +80,9 @@ export function SeccionCalificaciones({
   resultadoParaCalificar,
   respuestasParaCalificar,
   onCalificar,
+  solicitudesRevision = [],
+  onSincronizarSolicitudesRevision = async () => ({}),
+  onResolverSolicitudRevision = async () => ({}),
   permisos,
   avisarSinPermiso
 }: {
@@ -129,6 +133,9 @@ export function SeccionCalificaciones({
       revisionConfirmada: boolean;
     };
   }) => Promise<unknown>;
+  solicitudesRevision?: SolicitudRevisionAlumno[];
+  onSincronizarSolicitudesRevision?: () => Promise<unknown>;
+  onResolverSolicitudRevision?: (id: string, estado: 'atendida' | 'rechazada', respuestaDocente?: string) => Promise<unknown>;
   permisos: PermisosUI;
   avisarSinPermiso: (mensaje: string) => void;
 }) {
@@ -141,6 +148,8 @@ export function SeccionCalificaciones({
     0
   );
   const examenesListos = revisionesSeguras.filter((examen) => examen.revisionConfirmada).length;
+  const solicitudesSeguras = Array.isArray(solicitudesRevision) ? solicitudesRevision : [];
+  const [respuestaPorSolicitudId, setRespuestaPorSolicitudId] = useState<Record<string, string>>({});
   return (
     <>
       <div className="panel">
@@ -193,6 +202,90 @@ export function SeccionCalificaciones({
             puedeCalificar={puedeCalificar}
             avisarSinPermiso={avisarSinPermiso}
           />
+          <section className="panel" style={{ marginTop: 12 }}>
+            <h3>
+              <Icono nombre="info" /> Solicitudes de revisión del alumno
+            </h3>
+            <div className="item-actions" style={{ marginBottom: 10 }}>
+              <button
+                type="button"
+                className="boton secundario"
+                onClick={() => {
+                  if (!puedeCalificar) {
+                    avisarSinPermiso('No tienes permiso para revisar solicitudes.');
+                    return;
+                  }
+                  void onSincronizarSolicitudesRevision();
+                }}
+              >
+                <Icono nombre="recargar" /> Sincronizar solicitudes
+              </button>
+            </div>
+            {solicitudesSeguras.length === 0 && <InlineMensaje tipo="info">Sin solicitudes pendientes de revisión.</InlineMensaje>}
+            <ul className="lista lista-items">
+              {solicitudesSeguras.map((solicitud) => (
+                <li key={solicitud._id ?? solicitud.externoId}>
+                  <div className="item-glass">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">
+                          Folio {solicitud.folio} · Pregunta {solicitud.numeroPregunta}
+                        </div>
+                        <div className="item-meta">
+                          <span className={`badge ${solicitud.estado === 'pendiente' ? 'warning' : solicitud.estado === 'atendida' ? 'ok' : 'error'}`}>
+                            {solicitud.estado}
+                          </span>
+                          {solicitud.comentario && <span>Comentario: {solicitud.comentario}</span>}
+                          {solicitud.conformidadAlumno && <span>Alumno en conformidad</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <textarea
+                      rows={2}
+                      style={{ width: '100%', minHeight: 56, marginTop: 8 }}
+                      placeholder="Respuesta para el alumno (opcional)"
+                      value={respuestaPorSolicitudId[solicitud.externoId] ?? ''}
+                      onChange={(event) =>
+                        setRespuestaPorSolicitudId((prev) => ({ ...prev, [solicitud.externoId]: event.target.value }))
+                      }
+                    />
+                    <div className="item-actions" style={{ marginTop: 8 }}>
+                      <button
+                        className="boton secundario"
+                        type="button"
+                        disabled={!solicitud._id}
+                        onClick={() => {
+                          if (!solicitud._id) return;
+                          void onResolverSolicitudRevision(
+                            solicitud._id,
+                            'atendida',
+                            respuestaPorSolicitudId[solicitud.externoId]
+                          );
+                        }}
+                      >
+                        <Icono nombre="ok" /> Marcar atendida
+                      </button>
+                      <button
+                        className="boton secundario"
+                        type="button"
+                        disabled={!solicitud._id}
+                        onClick={() => {
+                          if (!solicitud._id) return;
+                          void onResolverSolicitudRevision(
+                            solicitud._id,
+                            'rechazada',
+                            respuestaPorSolicitudId[solicitud.externoId]
+                          );
+                        }}
+                      >
+                        <Icono nombre="salir" /> Rechazar
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         </aside>
       </div>
     </>

@@ -1,66 +1,33 @@
 /**
  * SeccionSincronizacion
  *
- * Responsabilidad: Seccion funcional del shell docente.
- * Limites: Conservar UX y permisos; extraer logica compleja a hooks/components.
- */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/**
- * App docente: panel basico para banco, examenes, entrega y calificacion.
+ * Panel consolidado de estado, sincronizacion con portal y backups entre equipos.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { guardarTokenDocente, limpiarTokenDocente, obtenerTokenDocente } from '../../servicios_api/clienteApi';
-import { accionToastSesionParaError, mensajeUsuarioDeErrorConSugerencia, onSesionInvalidada } from '../../servicios_api/clienteComun';
-import { emitToast } from '../../ui/toast/toastBus';
-import { Icono, Spinner } from '../../ui/iconos';
+import { Icono } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
-import { TemaBoton } from '../../tema/TemaBoton';
-import { AyudaFormulario } from './AyudaFormulario';
 import { clienteApi } from './clienteApiDocente';
-import { SeccionAutenticacion } from './SeccionAutenticacion';
-import { SeccionAlumnos } from './SeccionAlumnos';
-import { SeccionBanco } from './SeccionBanco';
-import { SeccionCuenta } from './SeccionCuenta';
-import { QrAccesoMovil, SeccionEscaneo } from './SeccionEscaneo';
-import { SeccionPlantillas } from './SeccionPlantillas';
-import { SeccionPeriodos, SeccionPeriodosArchivados } from './SeccionPeriodos';
 import { SeccionPaqueteSincronizacion } from './SeccionPaqueteSincronizacion';
 import { SeccionSincronizacionEquipos } from './SeccionSincronizacionEquipos';
 import { SeccionPublicar } from './SeccionPublicar';
-import { registrarAccionDocente } from './telemetriaDocente';
-import type {
-  Alumno,
-  Docente,
-  EnviarConPermiso,
-  ExamenGeneradoClave,
-  Periodo,
-  PermisosUI,
-  Plantilla,
-  Pregunta,
-  PreviewCalificacion,
-  PreviewPlantilla,
-  RegistroSincronizacion,
-  RespuestaSyncPull,
-  RespuestaSyncPush,
-  ResultadoAnalisisOmr,
-  ResultadoOmr,
-  RevisionExamenOmr,
-  RevisionPaginaOmr
-} from './tipos';
-import {
-  combinarRespuestasOmrPaginas,
-  construirClaveCorrectaExamen,
-  consolidarResultadoOmrExamen,
-  esMensajeError,
-  etiquetaMateria,
-  mensajeDeError,
-  normalizarResultadoOmr,
-  obtenerSesionDocenteId,
-  obtenerVistaInicial,
-} from './utilidades';
+import type { Periodo, Plantilla, Pregunta, Alumno, RegistroSincronizacion, RespuestaSyncPull, RespuestaSyncPush } from './tipos';
+import { mensajeDeError } from './utilidades';
 
+function formatearFecha(valor?: string) {
+  if (!valor) return '-';
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString();
+}
 
+function normalizarEstado(estado?: string) {
+  const lower = String(estado || '').toLowerCase();
+  if (lower.includes('exitos')) return { clase: 'ok', texto: 'Exitosa' };
+  if (lower.includes('fall')) return { clase: 'error', texto: 'Fallida' };
+  if (lower.includes('pend')) return { clase: 'warn', texto: 'Pendiente' };
+  return { clase: 'info', texto: 'Sin dato' };
+}
 
 export function SeccionSincronizacion({
   periodos,
@@ -103,6 +70,7 @@ export function SeccionSincronizacion({
   const [sincronizaciones, setSincronizaciones] = useState<RegistroSincronizacion[]>([]);
   const [cargandoEstado, setCargandoEstado] = useState(false);
   const [errorEstado, setErrorEstado] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const montadoRef = useRef(true);
 
   const resumenDatos = useMemo(
@@ -116,41 +84,39 @@ export function SeccionSincronizacion({
     [periodos.length, periodosArchivados.length, alumnos.length, plantillas.length, preguntas.length]
   );
 
-  function formatearFecha(valor?: string) {
-    if (!valor) return '-';
-    const d = new Date(valor);
-    if (Number.isNaN(d.getTime())) return '-';
-    return d.toLocaleString();
-  }
-
-  function normalizarEstado(estado?: string) {
-    const lower = String(estado || '').toLowerCase();
-    if (lower.includes('exitos')) return { clase: 'ok', texto: 'Exitosa' };
-    if (lower.includes('fall')) return { clase: 'error', texto: 'Fallida' };
-    if (lower.includes('pend')) return { clase: 'warn', texto: 'Pendiente' };
-    return { clase: 'info', texto: 'Sin dato' };
-  }
-
-  const ordenarSincronizaciones = useCallback((lista: RegistroSincronizacion[]) => {
-    return [...lista].sort((a, b) => {
+  const ordenadas = useMemo(() => {
+    return [...sincronizaciones].sort((a, b) => {
       const fechaA = new Date(a.ejecutadoEn || a.createdAt || 0).getTime();
       const fechaB = new Date(b.ejecutadoEn || b.createdAt || 0).getTime();
       return fechaB - fechaA;
     });
-  }, []);
+  }, [sincronizaciones]);
 
-  const sincronizacionReciente = sincronizaciones[0];
+  const sincronizacionReciente = ordenadas[0];
+  const totalesEstado = useMemo(() => {
+    let exitosas = 0;
+    let fallidas = 0;
+    let pendientes = 0;
+    for (const item of ordenadas) {
+      const estado = normalizarEstado(item.estado).clase;
+      if (estado === 'ok') exitosas += 1;
+      else if (estado === 'error') fallidas += 1;
+      else if (estado === 'warn') pendientes += 1;
+    }
+    return { exitosas, fallidas, pendientes };
+  }, [ordenadas]);
+
   const fechaActualizacion = ultimaActualizacionDatos ? new Date(ultimaActualizacionDatos).toLocaleString() : '-';
 
   const refrescarEstado = useCallback(() => {
     setCargandoEstado(true);
     setErrorEstado('');
     clienteApi
-      .obtener<{ sincronizaciones?: RegistroSincronizacion[] }>('/sincronizaciones?limite=6')
+      .obtener<{ sincronizaciones?: RegistroSincronizacion[] }>('/sincronizaciones?limite=12')
       .then((payload) => {
         if (!montadoRef.current) return;
         const lista = Array.isArray(payload.sincronizaciones) ? payload.sincronizaciones : [];
-        setSincronizaciones(ordenarSincronizaciones(lista));
+        setSincronizaciones(lista);
       })
       .catch((error) => {
         if (!montadoRef.current) return;
@@ -161,19 +127,28 @@ export function SeccionSincronizacion({
         if (!montadoRef.current) return;
         setCargandoEstado(false);
       });
-  }, [ordenarSincronizaciones]);
+  }, []);
 
   useEffect(() => {
     montadoRef.current = true;
-    const timer = window.setTimeout(() => {
-      if (!montadoRef.current) return;
-      refrescarEstado();
+    // React lint: evita setState sincronico directo dentro del efecto.
+    const id = window.setTimeout(() => {
+      void refrescarEstado();
     }, 0);
     return () => {
+      window.clearTimeout(id);
       montadoRef.current = false;
-      window.clearTimeout(timer);
     };
   }, [refrescarEstado]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = window.setInterval(() => {
+      if (!montadoRef.current) return;
+      refrescarEstado();
+    }, 45_000);
+    return () => window.clearInterval(id);
+  }, [autoRefresh, refrescarEstado]);
 
   return (
     <div className="panel">
@@ -181,9 +156,7 @@ export function SeccionSincronizacion({
         <h2>
           <Icono nombre="publicar" /> Sincronización, backups y estado de datos
         </h2>
-        <p className="nota">
-          Esta pantalla concentra la sincronización con el portal y el flujo de backups/exportaciones entre equipos.
-        </p>
+        <p className="nota">Consolida sincronización con portal, paquetes entre computadoras y trazabilidad del estado operativo.</p>
         <div className="estado-datos-grid">
           <div className="item-glass estado-datos-card">
             <div className="estado-datos-header">
@@ -216,11 +189,13 @@ export function SeccionSincronizacion({
               </div>
             </div>
           </div>
+
           <div className="item-glass estado-datos-card">
             <div className="estado-datos-header">
               <div>
-                <div className="estado-datos-titulo">Ultima sincronización</div>
+                <div className="estado-datos-titulo">Estado de sincronización</div>
                 <div className="nota">
+                  Último evento:{' '}
                   {sincronizacionReciente ? formatearFecha(sincronizacionReciente.ejecutadoEn || sincronizacionReciente.createdAt) : 'Sin registros'}
                 </div>
               </div>
@@ -228,9 +203,25 @@ export function SeccionSincronizacion({
                 {normalizarEstado(sincronizacionReciente?.estado).texto}
               </span>
             </div>
+
+            <div className="estado-datos-cifras">
+              <div>
+                <div className="estado-datos-numero">{totalesEstado.exitosas}</div>
+                <div className="nota">Exitosas</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{totalesEstado.fallidas}</div>
+                <div className="nota">Fallidas</div>
+              </div>
+              <div>
+                <div className="estado-datos-numero">{totalesEstado.pendientes}</div>
+                <div className="nota">Pendientes</div>
+              </div>
+            </div>
+
             <div className="estado-datos-lista">
-              {(sincronizaciones.length ? sincronizaciones : [{} as RegistroSincronizacion]).slice(0, 4).map((item, idx) => {
-                if (!item || !item.estado) {
+              {(ordenadas.length ? ordenadas : [{} as RegistroSincronizacion]).slice(0, 5).map((item, idx) => {
+                if (!item?.estado) {
                   return (
                     <div key={`vacio-${idx}`} className="estado-datos-item">
                       <div className="nota">No hay historial disponible.</div>
@@ -242,56 +233,33 @@ export function SeccionSincronizacion({
                   <div key={item._id || `sync-${idx}`} className="estado-datos-item">
                     <span className={`estado-chip ${estado.clase}`}>{estado.texto}</span>
                     <div>
-                      <div className="estado-datos-item__titulo">{String(item.tipo || 'publicacion').toUpperCase()}</div>
+                      <div className="estado-datos-item__titulo">{String(item.tipo || 'sincronizacion').toUpperCase()}</div>
                       <div className="nota">{formatearFecha(item.ejecutadoEn || item.createdAt)}</div>
                     </div>
                   </div>
                 );
               })}
             </div>
+
             {errorEstado && <InlineMensaje tipo="warning">{errorEstado}</InlineMensaje>}
             <div className="acciones">
-              <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoEstado} onClick={() => refrescarEstado()}>
-                {cargandoEstado ? 'Actualizando.' : 'Actualizar estado'}
+              <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoEstado} onClick={refrescarEstado}>
+                {cargandoEstado ? 'Actualizando...' : 'Actualizar estado'}
               </Boton>
+              <label className="campo campo--checkbox" style={{ marginBottom: 0 }}>
+                <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
+                Auto-refresh 45s
+              </label>
             </div>
           </div>
         </div>
       </div>
+
       <div className="sincronizacion-grid">
         <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
-        <SeccionPaqueteSincronizacion
-          periodos={periodos}
-          docenteCorreo={docenteCorreo}
-          onExportar={onExportarPaquete}
-          onImportar={onImportarPaquete}
-        />
+        <SeccionPaqueteSincronizacion periodos={periodos} docenteCorreo={docenteCorreo} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
         <SeccionSincronizacionEquipos onPushServidor={onPushServidor} onPullServidor={onPullServidor} />
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

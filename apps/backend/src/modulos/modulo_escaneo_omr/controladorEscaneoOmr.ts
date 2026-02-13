@@ -57,13 +57,14 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   const qrLegacy = `EXAMEN:${String(examen.folio ?? '')}:P${pagina}`;
   const qrEsperado = [qrLegacy, `${qrLegacy}:TV${templateVersionDetectada}`];
   const margenMm = examen.mapaOmr?.margenMm ?? 10;
+  const requestId = (req as SolicitudDocente & { requestId?: string }).requestId;
   let resultado;
   try {
     resultado = await analizarOmr(imagenBase64 ?? '', mapaOmr, qrEsperado, margenMm, {
       folio: folioNormalizado,
       numeroPagina: pagina,
       templateVersionDetectada
-    });
+    }, requestId);
   } catch {
     throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'No se pudo procesar la imagen OMR', 400);
   }
