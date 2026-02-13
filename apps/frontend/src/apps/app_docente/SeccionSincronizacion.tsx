@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icono } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
+import { HelperPanel } from '../../ui/ux/componentes/HelperPanel';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 import { clienteApi } from './clienteApiDocente';
 import { SeccionPaqueteSincronizacion } from './SeccionPaqueteSincronizacion';
@@ -67,6 +68,11 @@ export function SeccionSincronizacion({
   onPushServidor: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<RespuestaSyncPush>;
   onPullServidor: (payload: { desde?: string; limite?: number }) => Promise<RespuestaSyncPull>;
 }) {
+  const periodosSeguros = Array.isArray(periodos) ? periodos : [];
+  const periodosArchivadosSeguros = Array.isArray(periodosArchivados) ? periodosArchivados : [];
+  const alumnosSeguros = Array.isArray(alumnos) ? alumnos : [];
+  const plantillasSeguras = Array.isArray(plantillas) ? plantillas : [];
+  const preguntasSeguras = Array.isArray(preguntas) ? preguntas : [];
   const [sincronizaciones, setSincronizaciones] = useState<RegistroSincronizacion[]>([]);
   const [cargandoEstado, setCargandoEstado] = useState(false);
   const [errorEstado, setErrorEstado] = useState('');
@@ -75,13 +81,19 @@ export function SeccionSincronizacion({
 
   const resumenDatos = useMemo(
     () => ({
-      materiasActivas: periodos.length,
-      materiasArchivadas: periodosArchivados.length,
-      alumnos: alumnos.length,
-      plantillas: plantillas.length,
-      banco: preguntas.length
+      materiasActivas: periodosSeguros.length,
+      materiasArchivadas: periodosArchivadosSeguros.length,
+      alumnos: alumnosSeguros.length,
+      plantillas: plantillasSeguras.length,
+      banco: preguntasSeguras.length
     }),
-    [periodos.length, periodosArchivados.length, alumnos.length, plantillas.length, preguntas.length]
+    [
+      periodosSeguros.length,
+      periodosArchivadosSeguros.length,
+      alumnosSeguros.length,
+      plantillasSeguras.length,
+      preguntasSeguras.length
+    ]
   );
 
   const ordenadas = useMemo(() => {
@@ -256,8 +268,19 @@ export function SeccionSincronizacion({
       </div>
 
       <div className="sincronizacion-grid">
-        <SeccionPublicar periodos={periodos} onPublicar={onPublicar} onCodigo={onCodigo} />
-        <SeccionPaqueteSincronizacion periodos={periodos} docenteCorreo={docenteCorreo} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
+        <HelperPanel
+          titulo="Sincronizacion segura entre computadoras"
+          descripcion="Sigue siempre el mismo orden para evitar duplicados y perdida de cambios."
+          pasos={[
+            '1) Actualiza estado antes de iniciar.',
+            '2) En equipo emisor: exporta o haz push.',
+            '3) En equipo receptor: importa o haz pull y valida conteos.',
+            '4) Revisa historial y resuelve conflictos antes de publicar.'
+          ]}
+          notas={<p className="nota">Si hay errores repetidos, detén la operación y revisa conectividad, reloj del sistema y permisos.</p>}
+        />
+        <SeccionPublicar periodos={periodosSeguros} onPublicar={onPublicar} onCodigo={onCodigo} />
+        <SeccionPaqueteSincronizacion periodos={periodosSeguros} docenteCorreo={docenteCorreo} onExportar={onExportarPaquete} onImportar={onImportarPaquete} />
         <SeccionSincronizacionEquipos onPushServidor={onPushServidor} onPullServidor={onPullServidor} />
       </div>
     </div>

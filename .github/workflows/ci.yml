@@ -55,6 +55,9 @@ jobs:
           npm run test:portal:ci
           npm run test:frontend:ci
 
+      - name: Etapa ux-quality-check
+        run: npm run test:ux-quality:ci
+
       - name: Etapa coverage-check
         run: npm run test:coverage:ci
 
@@ -140,6 +143,7 @@ jobs:
 
       - name: Etapa ux-visual-check
         run: |
+          npm run test:ux-quality:ci
           npm run test:ux-visual:ci
           npm run test:e2e:journeys:ci
 

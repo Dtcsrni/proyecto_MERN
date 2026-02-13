@@ -83,6 +83,105 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   });
 }
 
+export async function prevalidarLoteCapturas(req: SolicitudDocente, res: Response) {
+  const entradas = Array.isArray((req.body as { capturas?: unknown[] })?.capturas)
+    ? (((req.body as { capturas?: unknown[] }).capturas ?? []) as Array<{ imagenBase64?: string; nombreArchivo?: string }>)
+    : [];
+  const capturas = entradas.slice(0, 200);
+  const resultados: Array<{
+    indice: number;
+    nombreArchivo?: string;
+    legible: boolean;
+    calidad: number;
+    contraste: number;
+    resolucion: { ancho: number; alto: number };
+    qrDetectado: boolean;
+    sugerencias: string[];
+  }> = [];
+
+  for (let i = 0; i < capturas.length; i += 1) {
+    const item = capturas[i];
+    const sugerencias: string[] = [];
+    const nombreArchivo = String(item?.nombreArchivo ?? '').trim() || undefined;
+    const limpio = String(item?.imagenBase64 ?? '').replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+    if (!limpio) {
+      resultados.push({
+        indice: i,
+        nombreArchivo,
+        legible: false,
+        calidad: 0,
+        contraste: 0,
+        resolucion: { ancho: 0, alto: 0 },
+        qrDetectado: false,
+        sugerencias: ['Archivo vacío o dañado. Captura nuevamente la hoja completa.']
+      });
+      continue;
+    }
+    try {
+      const buffer = Buffer.from(limpio, 'base64');
+      const imagen = sharp(buffer).rotate();
+      const [meta, stats] = await Promise.all([imagen.metadata(), imagen.stats()]);
+      const ancho = Number(meta.width ?? 0);
+      const alto = Number(meta.height ?? 0);
+      const menor = Math.min(ancho, alto);
+      const mayor = Math.max(ancho, alto);
+      const contraste = Number(stats.channels?.[0]?.stdev ?? 0);
+      const calidadResolucion = menor >= 900 && mayor >= 1300 ? 1 : menor >= 720 && mayor >= 1024 ? 0.7 : 0.4;
+      const calidadContraste = Math.max(0, Math.min(1, contraste / 44));
+      const calidad = Number(((calidadResolucion * 0.58) + (calidadContraste * 0.42)).toFixed(4));
+
+      if (menor < 900) sugerencias.push('Acerca la cámara: el área útil de la hoja quedó pequeña.');
+      if (contraste < 14) sugerencias.push('Iluminación insuficiente: evita sombras y sube la luz ambiente.');
+      if (contraste > 95) sugerencias.push('Reflejo o sobreexposición detectada: evita flash directo.');
+
+      let qrDetectado = false;
+      try {
+        const qr = await leerQrDesdeImagen(String(item?.imagenBase64 ?? ''));
+        qrDetectado = Boolean(qr && /EXAMEN:/i.test(qr));
+      } catch {
+        qrDetectado = false;
+      }
+      if (!qrDetectado) sugerencias.push('No se detectó QR: recorta menos y captura la hoja completa.');
+
+      const legible = calidad >= 0.58 && qrDetectado;
+      if (!legible && sugerencias.length === 0) {
+        sugerencias.push('Captura no legible para OMR. Repite foto con mejor enfoque y encuadre.');
+      }
+      resultados.push({
+        indice: i,
+        nombreArchivo,
+        legible,
+        calidad,
+        contraste,
+        resolucion: { ancho, alto },
+        qrDetectado,
+        sugerencias
+      });
+    } catch {
+      resultados.push({
+        indice: i,
+        nombreArchivo,
+        legible: false,
+        calidad: 0,
+        contraste: 0,
+        resolucion: { ancho: 0, alto: 0 },
+        qrDetectado: false,
+        sugerencias: ['Formato no compatible o archivo corrupto. Usa JPG/PNG y recaptura.']
+      });
+    }
+  }
+
+  const legibles = resultados.filter((r) => r.legible).length;
+  const noLegibles = resultados.length - legibles;
+  res.json({
+    total: resultados.length,
+    legibles,
+    noLegibles,
+    porcentajeLegible: resultados.length > 0 ? Number(((legibles / resultados.length) * 100).toFixed(2)) : 0,
+    resultados
+  });
+}
+
 async function guardarImagenReferencia({
   base64,
   folio,

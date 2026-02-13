@@ -276,6 +276,9 @@ export async function sincronizarSolicitudesRevision(req: SolicitudDocente, res:
       solicitadoEn?: string;
       atendidoEn?: string | null;
       respuestaDocente?: string;
+      firmaDocente?: string;
+      firmadoEn?: string | null;
+      cerradoEn?: string | null;
       conformidadAlumno?: boolean;
       conformidadActualizadaEn?: string | null;
     }>;
@@ -293,6 +296,8 @@ export async function sincronizarSolicitudesRevision(req: SolicitudDocente, res:
     const folio = String(item?.folio ?? '').trim();
     const numeroPregunta = Number(item?.numeroPregunta ?? 0);
     if (!externoId || !folio || !Number.isInteger(numeroPregunta) || numeroPregunta <= 0) continue;
+    const comentario = String(item?.comentario ?? '').trim();
+    if (comentario.length < 12) continue;
     await SolicitudRevisionAlumno.updateOne(
       { externoId },
       {
@@ -303,11 +308,14 @@ export async function sincronizarSolicitudesRevision(req: SolicitudDocente, res:
           examenGeneradoId: item?.examenGeneradoId || null,
           folio,
           numeroPregunta,
-          comentario: String(item?.comentario ?? '').trim(),
+          comentario,
           estado: String(item?.estado ?? 'pendiente').trim().toLowerCase() || 'pendiente',
           solicitadoEn: item?.solicitadoEn ? new Date(item.solicitadoEn) : new Date(),
           atendidoEn: item?.atendidoEn ? new Date(item.atendidoEn) : null,
           respuestaDocente: String(item?.respuestaDocente ?? '').trim() || null,
+          firmaDocente: String((item as { firmaDocente?: unknown })?.firmaDocente ?? '').trim() || null,
+          firmadoEn: (item as { firmadoEn?: string | null })?.firmadoEn ? new Date(String((item as { firmadoEn?: unknown }).firmadoEn)) : null,
+          cerradoEn: (item as { cerradoEn?: string | null })?.cerradoEn ? new Date(String((item as { cerradoEn?: unknown }).cerradoEn)) : null,
           conformidadAlumno: Boolean(item?.conformidadAlumno),
           conformidadActualizadaEn: item?.conformidadActualizadaEn ? new Date(item.conformidadActualizadaEn) : null,
           origen: 'portal'
@@ -333,6 +341,13 @@ export async function resolverSolicitudRevision(req: SolicitudDocente, res: Resp
   if (estado !== 'atendida' && estado !== 'rechazada') {
     throw new ErrorAplicacion('SOLICITUD_ESTADO_INVALIDO', 'Estado de solicitud invalido', 400);
   }
+  if (respuestaDocente.length < 8) {
+    throw new ErrorAplicacion(
+      'RESPUESTA_DOCENTE_OBLIGATORIA',
+      'La respuesta docente es obligatoria (minimo 8 caracteres)',
+      400
+    );
+  }
 
   const actualizada = await SolicitudRevisionAlumno.findOneAndUpdate(
     { _id: id, docenteId },
@@ -340,7 +355,10 @@ export async function resolverSolicitudRevision(req: SolicitudDocente, res: Resp
       $set: {
         estado,
         atendidoEn: new Date(),
-        respuestaDocente: respuestaDocente || (estado === 'atendida' ? 'Solicitud atendida' : 'Solicitud rechazada')
+        respuestaDocente,
+        firmaDocente: `docente:${docenteId}`,
+        firmadoEn: estado === 'atendida' ? new Date() : null,
+        cerradoEn: estado === 'rechazada' ? new Date() : null
       }
     },
     { new: true }
@@ -360,7 +378,10 @@ export async function resolverSolicitudRevision(req: SolicitudDocente, res: Resp
       body: JSON.stringify({
         externoId: actualizada.externoId,
         estado,
-        respuestaDocente: actualizada.respuestaDocente
+        respuestaDocente: actualizada.respuestaDocente,
+        firmaDocente: actualizada.firmaDocente,
+        firmadoEn: actualizada.firmadoEn,
+        cerradoEn: actualizada.cerradoEn
       })
     }).catch(() => {
       // Best-effort: no bloquear resolucion local si el portal no responde.

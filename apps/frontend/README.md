@@ -19,6 +19,8 @@ Directo aquí:
 
 ## Pruebas
 - `npm --prefix apps/frontend run test`
+- Gate UX contractual (desde raiz): `npm run test:ux-quality:ci`
+- Regresion visual (desde raiz): `npm run test:ux-visual:ci`
 
 Docs recomendadas:
 - `../../docs/GUIA_FORMULARIOS.md`

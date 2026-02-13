@@ -20,6 +20,9 @@ const SolicitudRevisionAlumnoSchema = new Schema(
     solicitadoEn: { type: Date, required: true },
     atendidoEn: { type: Date },
     respuestaDocente: { type: String },
+    firmaDocente: { type: String },
+    firmadoEn: { type: Date },
+    cerradoEn: { type: Date },
     alumnoNombreCompleto: { type: String },
     conformidadAlumno: { type: Boolean, default: false },
     conformidadActualizadaEn: { type: Date },
@@ -33,4 +36,3 @@ SolicitudRevisionAlumnoSchema.index({ docenteId: 1, folio: 1, numeroPregunta: 1 
 
 export const SolicitudRevisionAlumno =
   models.SolicitudRevisionAlumno ?? model('SolicitudRevisionAlumno', SolicitudRevisionAlumnoSchema);
-

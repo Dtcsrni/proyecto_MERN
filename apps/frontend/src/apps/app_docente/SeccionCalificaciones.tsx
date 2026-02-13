@@ -237,13 +237,14 @@ export function SeccionCalificaciones({
                           </span>
                           {solicitud.comentario && <span>Comentario: {solicitud.comentario}</span>}
                           {solicitud.conformidadAlumno && <span>Alumno en conformidad</span>}
+                          {solicitud.firmaDocente && <span>Firma: {solicitud.firmaDocente}</span>}
                         </div>
                       </div>
                     </div>
                     <textarea
                       rows={2}
                       style={{ width: '100%', minHeight: 56, marginTop: 8 }}
-                      placeholder="Respuesta para el alumno (opcional)"
+                      placeholder="Respuesta obligatoria para el alumno (mínimo 8 caracteres)"
                       value={respuestaPorSolicitudId[solicitud.externoId] ?? ''}
                       onChange={(event) =>
                         setRespuestaPorSolicitudId((prev) => ({ ...prev, [solicitud.externoId]: event.target.value }))
@@ -253,7 +254,7 @@ export function SeccionCalificaciones({
                       <button
                         className="boton secundario"
                         type="button"
-                        disabled={!solicitud._id}
+                        disabled={!solicitud._id || String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8}
                         onClick={() => {
                           if (!solicitud._id) return;
                           void onResolverSolicitudRevision(
@@ -268,7 +269,7 @@ export function SeccionCalificaciones({
                       <button
                         className="boton secundario"
                         type="button"
-                        disabled={!solicitud._id}
+                        disabled={!solicitud._id || String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8}
                         onClick={() => {
                           if (!solicitud._id) return;
                           void onResolverSolicitudRevision(

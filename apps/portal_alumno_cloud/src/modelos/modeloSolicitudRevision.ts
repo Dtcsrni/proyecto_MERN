@@ -21,6 +21,9 @@ const SolicitudRevisionSchema = new Schema(
     solicitadoEn: { type: Date, required: true },
     atendidoEn: { type: Date },
     respuestaDocente: { type: String },
+    firmaDocente: { type: String },
+    firmadoEn: { type: Date },
+    cerradoEn: { type: Date },
     conformidadAlumno: { type: Boolean, default: false },
     conformidadActualizadaEn: { type: Date },
     origen: { type: String, default: 'portal' }

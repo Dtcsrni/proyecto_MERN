@@ -41,7 +41,7 @@ export const esquemaCalificarExamen = z.object({
 export const esquemaResolverSolicitudRevision = z
   .object({
     estado: z.enum(['atendida', 'rechazada']),
-    respuestaDocente: z.string().trim().min(1).max(500).optional()
+    respuestaDocente: z.string().trim().min(8).max(500)
   })
   .strict();
 

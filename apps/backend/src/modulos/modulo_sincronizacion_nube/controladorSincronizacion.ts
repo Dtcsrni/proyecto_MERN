@@ -15,6 +15,8 @@
  */
 import type { Response } from 'express';
 import { gunzipSync, gzipSync } from 'zlib';
+import path from 'node:path';
+import sharp from 'sharp';
 import { configuracion } from '../../configuracion';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 import { Alumno } from '../modulo_alumnos/modeloAlumno';
@@ -57,6 +59,71 @@ async function obtenerCorreoDocente(docenteId: string): Promise<string> {
     throw new ErrorAplicacion('DOCENTE_NO_ENCONTRADO', 'Docente no encontrado', 404);
   }
   return correo;
+}
+
+async function leerCapturasOmrParaPortal(folio: string): Promise<Array<{
+  numeroPagina: number;
+  formato: 'webp';
+  imagenBase64: string;
+  calidad?: number;
+  sugerencias?: string[];
+}>> {
+  const folioSeguro = String(folio || '').trim().toUpperCase();
+  if (!folioSeguro) return [];
+  const dir = path.resolve(process.cwd(), 'storage', 'omr_scans', folioSeguro);
+  let archivos: string[] = [];
+  try {
+    archivos = await fs.readdir(dir);
+  } catch {
+    return [];
+  }
+
+  const paginas = archivos
+    .map((nombre) => ({ nombre, match: /^P(\d+)\.(jpg|jpeg|png|webp)$/i.exec(nombre) }))
+    .filter((item) => item.match)
+    .map((item) => ({ nombre: item.nombre, numeroPagina: Number(item.match?.[1] ?? 0) }))
+    .filter((item) => Number.isInteger(item.numeroPagina) && item.numeroPagina > 0)
+    .sort((a, b) => a.numeroPagina - b.numeroPagina)
+    .slice(0, 12);
+
+  const resultado: Array<{
+    numeroPagina: number;
+    formato: 'webp';
+    imagenBase64: string;
+    calidad?: number;
+    sugerencias?: string[];
+  }> = [];
+
+  for (const pagina of paginas) {
+    try {
+      const abs = path.join(dir, pagina.nombre);
+      const input = await fs.readFile(abs);
+      const meta = await sharp(input).metadata();
+      const stats = await sharp(input).stats();
+      const contraste = Number(stats.channels?.[0]?.stdev ?? 0);
+      const dimensionMenor = Math.min(Number(meta.width ?? 0), Number(meta.height ?? 0));
+      const calidad = Math.max(0, Math.min(1, contraste / 48));
+      const sugerencias: string[] = [];
+      if (dimensionMenor < 900) sugerencias.push('Captura con baja resolucion: acerca la camara y mejora el enfoque.');
+      if (contraste < 16) sugerencias.push('Contraste bajo: mejora iluminacion sin reflejos.');
+      const webp = await sharp(input)
+        .rotate()
+        .resize({ width: 1100, withoutEnlargement: true })
+        .webp({ quality: 62 })
+        .toBuffer();
+      resultado.push({
+        numeroPagina: pagina.numeroPagina,
+        formato: 'webp',
+        imagenBase64: webp.toString('base64'),
+        calidad,
+        sugerencias
+      });
+    } catch {
+      // best-effort
+    }
+  }
+
+  return resultado;
 }
 async function generarPaqueteSincronizacion({
   docenteId,
@@ -425,6 +492,14 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
   const calificaciones = await Calificacion.find({ docenteId, periodoId }).lean();
   const banderas = await BanderaRevision.find({ docenteId }).lean();
   const examenes = await ExamenGenerado.find({ docenteId, periodoId }).lean();
+  const capturasOmrPorExamen = new Map<string, Awaited<ReturnType<typeof leerCapturasOmrParaPortal>>>();
+  for (const examen of examenes) {
+    const examenId = String((examen as unknown as { _id?: unknown })?._id ?? '').trim();
+    const folio = String((examen as unknown as { folio?: unknown })?.folio ?? '').trim();
+    if (!examenId || !folio) continue;
+    const capturas = await leerCapturasOmrParaPortal(folio);
+    if (capturas.length > 0) capturasOmrPorExamen.set(examenId, capturas);
+  }
   const examenesMap = new Map<string, Record<string, unknown>>(examenes.map((examen) => [String(examen._id), examen as Record<string, unknown>]));
   const preguntasIds = Array.from(
     new Set(
@@ -499,6 +574,7 @@ export async function publicarResultados(req: SolicitudDocente, res: Response) {
     calificacionGlobalTexto: calificacion.calificacionGlobalTexto,
     evaluacionContinuaTexto: calificacion.evaluacionContinuaTexto,
     proyectoTexto: calificacion.proyectoTexto,
+    omrCapturas: capturasOmrPorExamen.get(String(calificacion.examenGeneradoId)) ?? [],
     omrAuditoria:
       calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object'
         ? calificacion.omrAuditoria

@@ -23,6 +23,7 @@ const ResultadoAlumnoSchema = new Schema(
     proyectoTexto: { type: String },
     respuestasDetectadas: { type: [Schema.Types.Mixed], default: [] },
     comparativaRespuestas: { type: [Schema.Types.Mixed], default: [] },
+    omrCapturas: { type: [Schema.Types.Mixed], default: [] },
     omrAuditoria: { type: Schema.Types.Mixed },
     banderas: { type: [Schema.Types.Mixed], default: [] },
     pdfComprimidoBase64: { type: String },
