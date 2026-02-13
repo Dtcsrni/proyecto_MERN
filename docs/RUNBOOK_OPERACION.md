@@ -80,3 +80,39 @@ Portal:
 - `docs/release/evidencias/<version>/metrics_snapshot.txt`
 - `docs/release/evidencias/<version>/integridad_sha256.json`
 5. Si el resultado del manifiesto es `fallo`, bloquear promocion y ejecutar rollback/correccion.
+
+## 10. Validacion preproduccion automatizada (sin prueba humana)
+1. Ejecutar:
+- `npm run test:dataset-prodlike:ci`
+- `npm run test:e2e:docente-alumno:ci`
+- `npm run test:global-grade:ci`
+- `npm run test:pdf-print:ci`
+- `npm run test:ux-visual:ci`
+2. Consolidar evidencia:
+- `npm run test:qa:manifest`
+3. Verificar artefactos en `reports/qa/latest/`:
+- `dataset-prodlike.json`
+- `e2e-docente-alumno.json`
+- `global-grade.json`
+- `pdf-print.json`
+- `ux-visual.json`
+- `manifest.json`
+4. Regla Go/No-Go:
+- Todos los comandos y artefactos OK: `GO beta`.
+- Cualquier falla o artefacto faltante: `NO-GO`.
+
+## 11. Preflight operativo para generacion de examenes globales
+Objetivo: validar que una materia/curso en produccion tiene todas las precondiciones para generar examenes globales desde banco + plantillas.
+
+Comando recomendado (sin mutar datos):
+- `npm run release:preflight:global -- --api-base=<https://api-dominio/api> --token=<jwt_docente> --periodo-id=<periodoId> --modo=readonly`
+
+Smoke opcional (muta datos de forma controlada: genera 1 examen y lo archiva):
+- `npm run release:preflight:global -- --api-base=<https://api-dominio/api> --token=<jwt_docente> --periodo-id=<periodoId> --modo=smoke --alumno-id=<alumnoId>`
+
+Salida verificable:
+- `reports/qa/latest/preflight-global-prod.json`
+
+Regla Go/No-Go:
+- `GO`: estado `ok` y todos los checks en verde.
+- `NO-GO`: cualquier check en `fallo` (periodo, alumnos, banco, plantillas globales, previsualizacion o smoke).

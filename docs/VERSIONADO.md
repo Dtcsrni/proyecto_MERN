@@ -20,6 +20,12 @@ Debe pasar:
 - `npm run test:ci`
 - `npm run test:coverage:ci`
 - `npm run perf:check`
+- `npm run test:dataset-prodlike:ci`
+- `npm run test:e2e:docente-alumno:ci`
+- `npm run test:global-grade:ci`
+- `npm run test:pdf-print:ci`
+- `npm run test:ux-visual:ci`
+- `npm run test:qa:manifest`
 - `npm run test:portal`
 - `npm run test:frontend`
 - `npm run routes:check`
@@ -53,6 +59,12 @@ Debe pasar:
    - `npm run lint`
    - `npm run typecheck`
    - `npm run test:ci`
+   - `npm run test:dataset-prodlike:ci`
+   - `npm run test:e2e:docente-alumno:ci`
+   - `npm run test:global-grade:ci`
+   - `npm run test:pdf-print:ci`
+   - `npm run test:ux-visual:ci`
+   - `npm run test:qa:manifest`
    - `npm run build`
 2. Verificar pipeline contract:
    - `npm run pipeline:contract:check`

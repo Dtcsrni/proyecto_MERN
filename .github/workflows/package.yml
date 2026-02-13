@@ -26,7 +26,7 @@ jobs:
         run: |
           docker build -f apps/backend/Dockerfile -t evaluapro-backend:${{ github.sha }} .
           docker build -f apps/frontend/Dockerfile -t evaluapro-frontend:${{ github.sha }} .
-          docker build -f apps/portal_alumno_cloud/Dockerfile -t evaluapro-portal:${{ github.sha }} apps/portal_alumno_cloud
+          docker build -f apps/portal_alumno_cloud/Dockerfile -t evaluapro-portal:${{ github.sha }} .
 
       - name: Exportar IDs de imágenes
         run: |

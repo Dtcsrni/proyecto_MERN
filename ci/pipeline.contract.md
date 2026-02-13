@@ -9,12 +9,18 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 3. `typecheck`
 4. `test`
 5. `flujo-docente-check`
-6. `coverage-check`
-7. `perf-check`
-8. `build`
-9. `docs-check`
-10. `security-scan`
-11. `package`
+6. `dataset-prodlike-check`
+7. `docente-alumno-e2e-check`
+8. `global-grade-check`
+9. `pdf-print-check`
+10. `ux-visual-check`
+11. `coverage-check`
+12. `perf-check`
+13. `build`
+14. `docs-check`
+15. `security-scan`
+16. `qa-manifest`
+17. `package`
 
 ## Stage contract
 ### setup
@@ -43,6 +49,42 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 - Command: `npm run test:flujo-docente:ci`
 - Policy: blocking gate
 - Scope: end-to-end critical flow (`parcial` + `global`) including export of signed outputs
+
+### dataset-prodlike-check
+- Command: `npm run test:dataset-prodlike:ci`
+- Policy: blocking gate
+- Output: `reports/qa/latest/dataset-prodlike.json`
+- Failure criteria:
+  - PII detected in anonymized fixture
+  - token/secret-like strings found
+
+### docente-alumno-e2e-check
+- Command: `npm run test:e2e:docente-alumno:ci`
+- Policy: blocking gate
+- Scope: chained flow backend docente -> publish -> portal alumno
+- Output: `reports/qa/latest/e2e-docente-alumno.json`
+
+### global-grade-check
+- Command: `npm run test:global-grade:ci`
+- Policy: blocking gate
+- Scope: business rules + integration contract for `global`
+- Output: `reports/qa/latest/global-grade.json`
+
+### pdf-print-check
+- Commands:
+  - `npm run test:pdf-print:ci`
+  - `npm run test:pdf-visual:ci`
+- Policy: blocking gate
+- Scope: printable PDF contract (Carta, naming traceability, byte budgets)
+- Output: `reports/qa/latest/pdf-print.json`
+
+### ux-visual-check
+- Commands:
+  - `npm run test:ux-visual:ci`
+  - `npm run test:e2e:journeys:ci`
+- Policy: blocking gate
+- Scope: visual regression on critical docente/alumno screens
+- Output: `reports/qa/latest/ux-visual.json`
 
 ### coverage-check
 - Command: `npm run test:coverage:ci`
@@ -85,6 +127,11 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
   - `npm run security:audit`
 - Output: vulnerability report artifact (`npm-audit-report.json`) + env policy validation
 
+### qa-manifest
+- Command: `npm run test:qa:manifest`
+- Policy: non-optional evidence aggregation stage
+- Output: `reports/qa/latest/manifest.json`
+
 ### package
 - Build container images or archive artifacts for:
   - `apps/backend`
@@ -102,6 +149,7 @@ Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLa
 - test reports (if runner supports)
 - docs/diagram checks report (text)
 - performance report (`reports/perf/latest.json`)
+- QA evidence report (`reports/qa/latest/**`)
 
 ## Quality gates policy (strict progressive)
 - Week 1: setup + lint + typecheck + test + build

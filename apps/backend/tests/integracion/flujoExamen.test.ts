@@ -142,6 +142,12 @@ describe('flujo de examen', () => {
       .set(auth)
       .expect(200);
     expect(csvResp.text).toContain('matricula,nombre,grupo,parcial1,parcial2,global,final,banderas');
+
+    const xlsxResp = await request(app)
+      .get(`/api/analiticas/calificaciones-xlsx?periodoId=${periodoId}`)
+      .set(auth)
+      .expect(200);
+    expect(xlsxResp.header['content-type']).toContain('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(String(xlsxResp.header['content-disposition'] ?? '')).toContain('calificaciones-produccion.xlsx');
   });
 });
-

@@ -17,6 +17,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [INVENTARIO_CODIGO_EXHAUSTIVO.md](INVENTARIO_CODIGO_EXHAUSTIVO.md) — Inventario Exhaustivo de Codigo
 - [INVENTARIO_PROYECTO.md](INVENTARIO_PROYECTO.md) — Inventario Tecnico del Proyecto
 - [PRUEBAS.md](PRUEBAS.md) — Pruebas automatizadas
+- [QA_GATE_CRITERIA.md](QA_GATE_CRITERIA.md) — QA Gate Criteria (`1.0-beta`)
 - [README.md](README.md) — docs/
 - [RELEASE_GATE_STABLE.md](RELEASE_GATE_STABLE.md) — Gate de Promocion a Estable
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
