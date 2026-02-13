@@ -13,6 +13,11 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `docs/handoff/README.md`
 - Script de estandarizacion de cabeceras de contexto:
   - `scripts/ia-docblocks.mjs`
+- Documento explicativo de configuracion Mermaid:
+  - `docs/diagramas/mermaid.config.md`
+- Generador de READMEs por carpeta:
+  - `scripts/generar-readmes-carpetas.mjs`
+- READMEs base generados en carpetas objetivo de backend/frontend/portal/scripts/ops/diagramas.
 - Shell de UI docente extraído a `apps/frontend/src/apps/app_docente/ShellDocente.tsx`.
 - Guía de operación para agentes IA: `AGENTS.md`.
 - Documento de trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`.
@@ -43,6 +48,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `npm run ia:handoff:quick`
   - `npm run ia:handoff:full`
   - `npm run ia:docblocks`
+  - `npm run docs:carpetas:generate`
 
 ### Fixed
 - Selectores ambiguos en pruebas de refactor (`Plantillas` y `Banco`) que generaban fallos falsos negativos.
