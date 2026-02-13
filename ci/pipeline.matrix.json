@@ -116,5 +116,20 @@
     "apps/backend",
     "apps/frontend",
     "apps/portal_alumno_cloud"
+  ],
+  "post_release_gates": [
+    {
+      "name": "stable-gate-manual",
+      "commands": [
+        "npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json"
+      ],
+      "artifacts": [
+        "docs/release/evidencias/<version>/manifest.json",
+        "docs/release/evidencias/<version>/timeline.md",
+        "docs/release/evidencias/<version>/metrics_snapshot.txt",
+        "docs/release/evidencias/<version>/integridad_sha256.json"
+      ],
+      "blocking_for_stable": true
+    }
   ]
 }

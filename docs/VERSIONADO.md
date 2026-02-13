@@ -6,6 +6,7 @@ Se usa SemVer en raiz del monorepo.
 ## Estado actual
 - Version declarada actual: `0.1.0`.
 - Canal operativo: beta funcional (MVP extendido).
+- Politica objetivo: `1.0-beta` con cero fallos de gates; promoción a estable con gate humano en produccion.
 
 ## Definiciones
 - Alpha: cambios de alto movimiento con contratos inestables.
@@ -24,6 +25,8 @@ Debe pasar:
 - `npm run diagramas:check`
 - `npm run diagramas:render:check`
 - `npm run diagramas:consistencia:check`
+- 10 corridas CI consecutivas verdes.
+- Flujo docente humano activo en produccion con evidencia de integridad y metricas.
 
 ## Rampa de calidad asociada a releases
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
@@ -52,3 +55,7 @@ Debe pasar:
 2. Verificar pipeline contract:
    - `npm run pipeline:contract:check`
 3. Actualizar `CHANGELOG.md` y publicar versión SemVer.
+4. Ejecutar gate de estable:
+   - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
+5. Versionar evidencias en:
+   - `docs/release/evidencias/<version>/`

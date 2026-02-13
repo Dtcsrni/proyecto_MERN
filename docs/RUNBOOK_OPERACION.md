@@ -66,3 +66,17 @@ Portal:
 5. Puertos sugeridos:
 - Prometheus `9090`
 - Grafana `3002`
+
+## 9. Gate estable con docente humano en produccion
+1. Confirmar prerequisitos:
+- 10 corridas CI consecutivas verdes.
+- checklist de rollback listo.
+2. Ejecutar flujo humano completo con docente activo.
+3. Generar evidencia automatizada:
+- `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
+4. Verificar artefactos:
+- `docs/release/evidencias/<version>/manifest.json`
+- `docs/release/evidencias/<version>/timeline.md`
+- `docs/release/evidencias/<version>/metrics_snapshot.txt`
+- `docs/release/evidencias/<version>/integridad_sha256.json`
+5. Si el resultado del manifiesto es `fallo`, bloquear promocion y ejecutar rollback/correccion.

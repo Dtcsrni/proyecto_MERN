@@ -21,3 +21,4 @@ apps/**/coverage/
 apps/backend/storage/omr_scans/
 *.lcov
 reports/perf/
+docs/release/manual/prod-flow.json
