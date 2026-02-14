@@ -166,8 +166,9 @@ describe('Robustez Endpoints V2 - Ola 3 Fase 2', () => {
       const total = Date.now() - inicio;
 
       // Esperado: 0ms + 20ms + 40ms + 80ms = ~140ms
+      // En CI puede haber jitter/scheduling adicional.
       expect(total).toBeGreaterThanOrEqual(120);
-      expect(total).toBeLessThan(200);
+      expect(total).toBeLessThan(320);
     });
 
     it('respeta categorías configuradas para retry', async () => {

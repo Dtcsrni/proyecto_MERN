@@ -6,6 +6,7 @@
  */
 import { exportarMetricasAdopcion } from './metricsAdopcion';
 import { exportarEstadosCircuitBreaker } from '../robustez/circuitBreaker';
+import { exportarMetricasObjetivoCanary } from './rolloutCanary';
 
 const inicioDelProceso = Date.now();
 
@@ -192,6 +193,10 @@ export function exportarMetricasPrometheus(): string {
   // Agregar métrica de adopción canary
   lineas.push('');
   lineas.push(exportarMetricasAdopcion());
+
+  // Agregar objetivos actuales de rollout canary
+  lineas.push('');
+  lineas.push(exportarMetricasObjetivoCanary());
 
   // Agregar estados de circuit breaker
   lineas.push('');

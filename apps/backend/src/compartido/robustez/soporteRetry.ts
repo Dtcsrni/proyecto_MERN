@@ -148,16 +148,22 @@ export function normalizarError(err: unknown): ErrorRobusto {
 /**
  * Utilidad para esperar
  */
+function esperar(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Decorator para TypeScript - aplicar retry a métodos
  */
 export function Reintentar(configRetry?: Partial<ConfiguracionRetry>) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const metodoOriginal = descriptor.value;
+  return function (
+    target: { constructor: { name: string } },
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const metodoOriginal = descriptor.value as (...args: unknown[]) => Promise<unknown>;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const resultado = await conRetry(
         () => metodoOriginal.apply(this, args),
         `${target.constructor.name}.${propertyKey}`,

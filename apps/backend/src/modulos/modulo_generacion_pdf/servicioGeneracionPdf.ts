@@ -11,14 +11,10 @@
  */
 import { generarPdfExamen as generarPdfExamenLegacy } from './servicioGeneracionPdfLegacy';
 import { generarExamenIndividual } from './application/usecases/generarExamenIndividual';
+import { decidirVersionCanary } from '../../compartido/observabilidad/rolloutCanary';
 import type { MapaVariante, PreguntaBase } from './servicioVariantes';
 
 type TemplateVersion = 1 | 2;
-
-function leerFeatureFlagPdfV2(): boolean {
-  const valor = String(process.env.FEATURE_PDF_BUILDER_V2 ?? '0').trim();
-  return valor === '1' || valor.toLowerCase() === 'true';
-}
 
 /**
  * Fachada que selecciona entre motor legado y v2 segun feature flag.
@@ -54,7 +50,9 @@ export async function generarPdfExamen({
     logos?: { izquierdaPath?: string; derechaPath?: string };
   };
 }) {
-  const usarMotorV2 = leerFeatureFlagPdfV2();
+  const canaryHabilitado = process.env.FEATURE_PDF_BUILDER_V2 === '1';
+  const version = canaryHabilitado ? decidirVersionCanary('pdf', folio || titulo) : 'v1';
+  const usarMotorV2 = version === 'v2';
 
   if (usarMotorV2) {
     // Motor modular v2 (Ola 2B - en desarrollo)

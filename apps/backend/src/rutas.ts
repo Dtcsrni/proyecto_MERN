@@ -27,6 +27,7 @@ import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
 import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
 import { middlewareAdapterV1AV2 } from './compartido/observabilidad/middlewareVersionadoApi';
 import { middlewareAdopcionV1, middlewareAdopcionV2 } from './compartido/observabilidad/middlewareAdopcionCanary';
+import rutasCanaryRollout from './compartido/observabilidad/rutasCanaryRollout';
 
 export function crearRouterApi() {
   const router = Router();
@@ -54,6 +55,7 @@ export function crearRouterApi() {
   router.use('/sincronizaciones', rutasSincronizacionNube);
   router.use('/papelera', rutasPapelera);
   router.use('/admin', rutasAdminDocentes);
+  router.use('/canary-rollout', rutasCanaryRollout);
 
   return router;
 }

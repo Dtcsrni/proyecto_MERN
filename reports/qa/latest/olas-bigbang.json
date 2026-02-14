@@ -1,12 +1,13 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T05:58:41.279Z",
-  "strict": false,
+  "generatedAt": "2026-02-14T08:50:41.899Z",
+  "strict": true,
   "status": {
     "ola0Passed": true,
     "ola1Passed": true,
     "ola2Ready": true,
-    "strictPassed": null,
+    "ola3Ready": true,
+    "strictPassed": true,
     "previousWavesGuaranteed": true,
     "nextWaveReadyToExecute": true
   },
@@ -75,7 +76,7 @@
       "id": "ola2a.omr.segmented",
       "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 38",
+        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 41",
         "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400",
         "pipeline": "omr/pipeline exists: true"
       }
@@ -84,7 +85,7 @@
       "id": "ola2b.pdf.segmented",
       "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 88",
+        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 86",
         "legado": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts: 1402",
         "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
         "capas": [
@@ -136,9 +137,76 @@
       "id": "ola2.readiness.gates.available",
       "ok": true,
       "detail": "scripts de gates requeridos para ola 2 estan definidos"
+    },
+    {
+      "id": "ola3.foundation.rollout.module.exists",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/rolloutCanary.ts"
+    },
+    {
+      "id": "ola3.foundation.rollout.routes.exists",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts"
+    },
+    {
+      "id": "ola3.foundation.route.mounted",
+      "ok": true,
+      "detail": "apps/backend/src/rutas.ts monta /canary-rollout"
+    },
+    {
+      "id": "ola3.foundation.metrics.canary-target",
+      "ok": true,
+      "detail": "rolloutCanary.ts define evaluapro_canary_objetivo_v2_ratio"
+    },
+    {
+      "id": "ola3.foundation.scripts.present",
+      "ok": true,
+      "detail": "scripts canary:monitor:auto y canary:rollout:check presentes"
+    },
+    {
+      "id": "ola3.readiness.gates.available",
+      "ok": true,
+      "detail": "scripts de gates requeridos para ola 3 estan definidos"
     }
   ],
-  "strictResults": [],
+  "strictResults": [
+    {
+      "ok": true,
+      "command": "npm run lint"
+    },
+    {
+      "ok": true,
+      "command": "npm run typecheck"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:backend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:portal:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:frontend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:coverage:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run perf:check"
+    },
+    {
+      "ok": true,
+      "command": "npm run canary:rollout:check"
+    },
+    {
+      "ok": true,
+      "command": "npm run pipeline:contract:check"
+    }
+  ],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
@@ -146,7 +214,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
-      "lines": 38
+      "lines": 41
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",
@@ -158,7 +226,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts",
-      "lines": 88
+      "lines": 86
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",

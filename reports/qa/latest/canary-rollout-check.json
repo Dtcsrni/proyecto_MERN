@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-02-14T08:50:41.567Z",
+  "checks": [
+    {
+      "id": "exists:apps/backend/src/compartido/observabilidad/rolloutCanary.ts",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/rolloutCanary.ts"
+    },
+    {
+      "id": "exists:apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts"
+    },
+    {
+      "id": "exists:apps/backend/tests/canaryRollout.policy.test.ts",
+      "ok": true,
+      "detail": "apps/backend/tests/canaryRollout.policy.test.ts"
+    },
+    {
+      "id": "exists:scripts/canary-adoption-monitor.mjs",
+      "ok": true,
+      "detail": "scripts/canary-adoption-monitor.mjs"
+    },
+    {
+      "id": "script:canary:monitor",
+      "ok": true,
+      "detail": "node scripts/canary-adoption-monitor.mjs"
+    },
+    {
+      "id": "script:canary:monitor:auto",
+      "ok": true,
+      "detail": "node scripts/canary-adoption-monitor.mjs --auto"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node --check scripts/canary-adoption-monitor.mjs",
+      "ok": true,
+      "code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "npm -C apps/backend run test -- tests/canaryRollout.policy.test.ts",
+      "ok": true,
+      "code": 0,
+      "stdout": "> backend@0.2.0-beta.1 test\n> vitest run tests/canaryRollout.policy.test.ts\n\n\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mV:/Software/Generador_Examenes_Universitarios_MERN/sistema-evaluacion-universitaria/apps/backend\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/canaryRollout.policy.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m8 passed\u001b[39m\u001b[22m\u001b[90m (8)\u001b[39m\n\u001b[2m   Start at \u001b[22m 02:50:41\n\u001b[2m   Duration \u001b[22m 198ms\u001b[2m (transform 47ms, setup 45ms, import 18ms, tests 6ms, environment 0ms)\u001b[22m",
+      "stderr": ""
+    }
+  ],
+  "ok": true
+}
