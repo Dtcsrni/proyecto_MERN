@@ -3,6 +3,8 @@ import { obtenerVersionApp } from './versionInfo';
 
 type VersionInfoPayload = {
   app?: { name?: string; version?: string };
+  repositoryUrl?: string;
+  technologies?: Array<{ id?: string; label?: string; logoUrl?: string; website?: string }>;
   system?: {
     node?: string;
     platform?: string;
@@ -54,6 +56,8 @@ export function VersionInfoPage() {
   const developer = String(data?.developer?.nombre || import.meta.env.VITE_DEVELOPER_NAME || 'Equipo EvaluaPro');
   const rol = String(data?.developer?.rol || import.meta.env.VITE_DEVELOPER_ROLE || 'Desarrollo');
   const changelog = String(data?.changelog || 'Sin changelog disponible.');
+  const repositoryUrl = String(data?.repositoryUrl || 'https://github.com/Dtcsrni');
+  const technologies = Array.isArray(data?.technologies) ? data.technologies : [];
 
   return (
     <main className="version-page">
@@ -63,6 +67,9 @@ export function VersionInfoPage() {
         <p className="version-sub">
           <span className="version-pulse" /> {nombre} v{version}
         </p>
+        <a className="version-repo-link" href={repositoryUrl} target="_blank" rel="noreferrer noopener">
+          Repositorio del desarrollador
+        </a>
       </section>
 
       <section className="version-grid">
@@ -79,6 +86,32 @@ export function VersionInfoPage() {
           <p><strong>Rol:</strong> {rol}</p>
           <p><strong>Generado:</strong> {String(data?.system?.generatedAt || new Date().toISOString())}</p>
         </article>
+      </section>
+
+      <section className="version-card version-card-wide">
+        <h2>Tecnologías utilizadas</h2>
+        <div className="version-tech-grid">
+          {technologies.length
+            ? technologies.map((tech, idx) => {
+              const id = String(tech?.id || idx);
+              const label = String(tech?.label || tech?.id || 'Tecnología');
+              const logoUrl = String(tech?.logoUrl || '');
+              const website = String(tech?.website || '#');
+              return (
+                <a
+                  key={id}
+                  href={website}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="version-tech-item"
+                >
+                  <img src={logoUrl} alt={`${label} logo`} loading="lazy" className="version-tech-logo" />
+                  <span>{label}</span>
+                </a>
+              );
+            })
+            : <p className="version-error">Sin tecnologías registradas.</p>}
+        </div>
       </section>
 
       <section className="version-card version-card-wide">

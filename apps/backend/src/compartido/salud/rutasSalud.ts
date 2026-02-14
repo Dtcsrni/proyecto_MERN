@@ -31,6 +31,8 @@ function leerVersionInfo() {
   let appVersion = '0.0.0';
   let authorName = '';
   let changelog = '';
+  let repositoryUrl = '';
+  let technologies: Array<{ id: string; label: string; logoUrl: string; website: string }> = [];
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
     appName = String(pkg?.name || appName);
@@ -38,6 +40,23 @@ function leerVersionInfo() {
     authorName = typeof pkg?.author === 'string'
       ? String(pkg.author)
       : String(pkg?.author?.name || '');
+    repositoryUrl = String(pkg?.repository?.url || '').trim();
+  } catch {
+    // fallback
+  }
+  try {
+    const catalog = JSON.parse(fs.readFileSync(path.join(raiz, 'config', 'version-catalog.json'), 'utf8'));
+    repositoryUrl = String(catalog?.repositoryUrl || repositoryUrl || '').trim();
+    const rawTech = Array.isArray(catalog?.technologies) ? catalog.technologies : [];
+    technologies = rawTech.map((item: unknown) => {
+      const entry = item as Record<string, unknown>;
+      return {
+        id: String(entry.id || '').trim(),
+        label: String(entry.label || '').trim(),
+        logoUrl: String(entry.logoUrl || '').trim(),
+        website: String(entry.website || '').trim()
+      };
+    }).filter((item: { id: string; label: string; logoUrl: string; website: string }) => item.id && item.label && item.logoUrl);
   } catch {
     // fallback
   }
@@ -52,6 +71,8 @@ function leerVersionInfo() {
 
   return {
     app: { name: appName, version: appVersion },
+    repositoryUrl: repositoryUrl || 'https://github.com/Dtcsrni',
+    technologies,
     developer: {
       nombre: developerName || 'Equipo EvaluaPro',
       rol: developerRole || 'Desarrollo'

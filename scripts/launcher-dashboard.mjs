@@ -165,10 +165,11 @@ function readRootPackageInfo() {
     return {
       name: typeof parsed.name === 'string' ? parsed.name : '',
       version: typeof parsed.version === 'string' ? parsed.version : '',
-      authorName: String(authorName || '').trim()
+      authorName: String(authorName || '').trim(),
+      repositoryUrl: String(parsed?.repository?.url || '').trim()
     };
   } catch {
-    return { name: '', version: '', authorName: '' };
+    return { name: '', version: '', authorName: '', repositoryUrl: '' };
   }
 }
 
@@ -183,8 +184,31 @@ function readChangelogSnippet(maxChars = 24_000) {
   }
 }
 
+function readVersionCatalog() {
+  try {
+    const filePath = path.join(root, 'config', 'version-catalog.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    const repositoryUrl = String(parsed?.repositoryUrl || '').trim();
+    const technologies = Array.isArray(parsed?.technologies)
+      ? parsed.technologies
+        .map((item) => ({
+          id: String(item?.id || '').trim(),
+          label: String(item?.label || '').trim(),
+          logoUrl: String(item?.logoUrl || '').trim(),
+          website: String(item?.website || '').trim()
+        }))
+        .filter((item) => item.id && item.label && item.logoUrl)
+      : [];
+    return { repositoryUrl, technologies };
+  } catch {
+    return { repositoryUrl: '', technologies: [] };
+  }
+}
+
 function buildVersionInfoPayload(source = 'dashboard') {
   const pkg = readRootPackageInfo();
+  const catalog = readVersionCatalog();
   const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || pkg.authorName || 'Equipo EvaluaPro').trim();
   const developerRole = String(process.env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo').trim();
   const changelog = readChangelogSnippet();
@@ -195,6 +219,8 @@ function buildVersionInfoPayload(source = 'dashboard') {
       version: pkg.version || '0.0.0',
       dashboardMode: mode
     },
+    repositoryUrl: catalog.repositoryUrl || String(pkg.repositoryUrl || '').trim() || 'https://github.com/Dtcsrni',
+    technologies: catalog.technologies,
     developer: {
       nombre: developerName || 'Equipo EvaluaPro',
       rol: developerRole || 'Desarrollo'
@@ -312,6 +338,87 @@ function renderVersionInfoPage() {
       box-shadow:0 0 0 0 rgba(125,255,179,.8);
       animation:pulse 1.8s infinite;
     }
+    .actions {
+      margin-top:12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .repo-link {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(29,233,255,0.45);
+      background:rgba(29,233,255,0.1);
+      color:#d8f6ff;
+      text-decoration:none;
+      font-weight:700;
+      transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .repo-link:hover {
+      transform:translateY(-2px);
+      box-shadow:0 14px 30px rgba(29,233,255,0.22);
+      border-color:rgba(29,233,255,0.72);
+    }
+    .tech-grid {
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    }
+    .tech-item {
+      border:1px solid rgba(149,168,204,0.28);
+      background:rgba(8,14,30,0.86);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:inherit;
+      position:relative;
+      overflow:hidden;
+      animation:techFloat 4.2s ease-in-out infinite;
+      animation-delay:var(--delay, 0s);
+      transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .tech-item::after {
+      content:"";
+      position:absolute;
+      inset:-150% auto auto -40%;
+      width:50%;
+      height:300%;
+      transform:rotate(20deg);
+      background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.16), rgba(255,255,255,0));
+      pointer-events:none;
+      animation:scan 2.8s linear infinite;
+    }
+    .tech-item:hover {
+      transform:translateY(-2px);
+      border-color:rgba(29,233,255,0.68);
+      box-shadow:0 18px 34px rgba(29,233,255,0.14);
+    }
+    .tech-logo {
+      width:28px;
+      height:28px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 6px rgba(29,233,255,0.26));
+      flex-shrink:0;
+    }
+    .tech-name {
+      font-weight:700;
+      color:#d6e8ff;
+    }
+    @keyframes techFloat {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-3px); }
+    }
+    @keyframes scan {
+      0% { left:-65%; }
+      100% { left:130%; }
+    }
     @keyframes pulse {
       0% { box-shadow:0 0 0 0 rgba(125,255,179,.65);}
       70% { box-shadow:0 0 0 13px rgba(125,255,179,0);}
@@ -325,11 +432,22 @@ function renderVersionInfoPage() {
       <h1 class="title">EvaluaPro · Version Center</h1>
       <p class="sub">Detalles de versión, sistema, desarrollador y changelog en tiempo real.</p>
       <span class="badge"><span class="pulse"></span><span id="badge-version">Cargando versión...</span></span>
+      <div class="actions">
+        <a id="repo-link" class="repo-link" href="https://github.com/Dtcsrni" target="_blank" rel="noreferrer noopener">Repositorio del desarrollador</a>
+      </div>
     </section>
     <section class="grid" id="info-grid"></section>
+    <section class="card">
+      <div class="k">Tecnologías utilizadas</div>
+      <div class="tech-grid" id="tech-grid"></div>
+    </section>
     <pre class="changelog" id="changelog">Cargando changelog...</pre>
   </main>
   <script>
+    function esc(value) {
+      return String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+    }
+
     async function loadInfo() {
       try {
         const res = await fetch('/api/version-info', { cache: 'no-store' });
@@ -337,7 +455,10 @@ function renderVersionInfoPage() {
         const grid = document.getElementById('info-grid');
         const badge = document.getElementById('badge-version');
         const changelog = document.getElementById('changelog');
+        const techGrid = document.getElementById('tech-grid');
+        const repoLink = document.getElementById('repo-link');
         badge.textContent = String((data && data.app && data.app.name) || 'evaluapro') + ' v' + String((data && data.app && data.app.version) || '0.0.0');
+        if (repoLink && data?.repositoryUrl) repoLink.href = String(data.repositoryUrl);
         const cards = [
           ['Sistema', 'Node', String(data?.system?.node || '-')],
           ['Sistema', 'Plataforma', String(data?.system?.platform || '-') + ' / ' + String(data?.system?.arch || '-')],
@@ -349,8 +470,18 @@ function renderVersionInfoPage() {
           ['Versionado', 'Source', String(data?.source || '-')]
         ];
         grid.innerHTML = cards.map(([sec,key,val]) => (
-          '<article class="card"><div class="k">' + sec + ' · ' + key + '</div><div class="v">' + val.replaceAll('<','&lt;').replaceAll('>','&gt;') + '</div></article>'
+          '<article class="card"><div class="k">' + esc(sec) + ' · ' + esc(key) + '</div><div class="v">' + esc(val) + '</div></article>'
         )).join('');
+        const techs = Array.isArray(data?.technologies) ? data.technologies : [];
+        if (techGrid) {
+          techGrid.innerHTML = techs.map((tech, idx) => {
+            const delay = ((idx % 5) * 0.22).toFixed(2);
+            const href = esc(tech?.website || '#');
+            const logo = esc(tech?.logoUrl || '');
+            const label = esc(tech?.label || tech?.id || 'Tecnología');
+            return '<a class="tech-item" style="--delay:' + delay + 's" href="' + href + '" target="_blank" rel="noreferrer noopener"><img class="tech-logo" src="' + logo + '" alt="' + label + ' logo" loading="lazy"/><span class="tech-name">' + label + '</span></a>';
+          }).join('') || '<div class="v">Sin tecnologías registradas.</div>';
+        }
         changelog.textContent = String(data?.changelog || 'Sin changelog disponible.');
       } catch (error) {
         const msg = 'No se pudo cargar version-info: ' + (error && error.message ? error.message : 'error');
