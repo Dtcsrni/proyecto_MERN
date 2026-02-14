@@ -16,6 +16,22 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
 - Prueba de contrato/paridad v2:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+- Ola 2C Sync: nueva arquitectura interna por capas:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/shared/tiposSync.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/repositoriosSync.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/portalSyncClient.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/omrCapturas.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/erroresSincronizacion.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/paqueteSincronizacion.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/listarSincronizaciones.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/generarCodigoAcceso.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/publicarResultados.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/exportarPaquete.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/importarPaquete.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/enviarPaqueteServidor.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/traerPaquetesServidor.ts`
+- Prueba de contrato minima para behavior lock Sync:
+  - `apps/backend/tests/sincronizacion.contrato.test.ts`
 
 ### Changed
 - `apps/backend/src/rutas.ts` monta:
@@ -35,6 +51,9 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Ola 2C (sincronizacion) avanzó con particion interna sin romper API:
   - Nuevo archivo `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`.
   - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` delega hashing, parsing, LWW y errores de conectividad.
+- Ola 2C (sincronizacion) profundizada:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` ahora es fachada HTTP delgada (79 lineas) delegando en `application/usecases/*`.
+  - Se mantiene contrato HTTP sin cambios en rutas, permisos ni validaciones.
 - Correccion LWW en importacion de paquetes para preservar `updatedAt` del paquete al aplicar `upsert`.
 - Pruebas de sincronizacion reforzadas y validadas:
   - `apps/backend/tests/sincronizacion.test.ts`

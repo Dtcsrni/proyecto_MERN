@@ -51,9 +51,13 @@ Commit de referencia: `15f7d35`.
   - PDF:
     - `controladorGeneracionPdf.ts`: 1389
     - `servicioGeneracionPdf.ts`: 1396
-  - Sincronizacion (Ola 2C en progreso):
-    - `controladorSincronizacion.ts`: 885
-    - `sincronizacionInterna.ts`: modulo extraido para utilidades, hashing y LWW
+  - Sincronizacion (Ola 2C en progreso, particion interna avanzada):
+    - `controladorSincronizacion.ts`: 79 (fachada HTTP)
+    - `domain/paqueteSincronizacion.ts`: ensamblado/procesado de paquetes y guardrails
+    - `infra/repositoriosSync.ts`: auditoria + cursores/fechas de sync
+    - `infra/portalSyncClient.ts`: cliente HTTP unificado hacia portal
+    - `infra/omrCapturas.ts`: extraccion de capturas OMR para publicacion
+    - `application/usecases/*`: orquestacion por endpoint sin cambiar contrato HTTP
 - Ola 3: iniciada en OMR/PDF (bootstrap `api/v2` + metricas de migracion dual)
 - Ola 4: pendiente (hardening final + retiro de compatibilidad temporal)
 
@@ -150,7 +154,7 @@ Commit de referencia: `15f7d35`.
 1. Completar Ola 2:
 - OMR 2A: continuar particion interna del motor legado por etapas reales (no solo orquestacion).
 - PDF 2B: separar controller/use-case/domain/infra.
-- Sync 2C: separar controlador por casos de uso y politicas.
+- Sync 2C: continuar separacion de politicas y contratos internos (controlador ya segmentado).
 2. Completar Ola 3 (`api/v2` + migracion dual integral):
 - Ya existe bootstrap inicial para `OMR/PDF` y contadores de fallback/v2 writes; falta expandir al resto de dominios breaking.
 3. Completar Ola 4 (hardening final + retiro de compatibilidad temporal).

@@ -72,12 +72,12 @@ Commit de referencia: `15f7d35`.
   - `evaluapro_omr_pipeline_duration_ms`
 - `scripts/perf-collect.ts` ampliado con rutas criticas de negocio en backend (modo no autenticado controlado).
 
-### Corte 2026-02-13 (iteracion actual)
+### Corte 2026-02-13 (iteracion previa)
 - Validacion de estado Big-Bang:
   - `npm run bigbang:olas:check`: verde (`ola0`, `ola1`, `ola2-ready`).
-- Ola 2C (sincronizacion) avanzó con particion interna sin romper contrato HTTP:
+- Ola 2C (sincronizacion) inicio con particion interna base:
   - Nuevo modulo: `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`
-  - `controladorSincronizacion.ts` ahora delega utilidades criptograficas, parsing y LWW.
+  - `controladorSincronizacion.ts` delega utilidades criptograficas, parsing y LWW.
   - Validacion local del dominio sync: `lint`, `typecheck`, `tests/sincronizacion.test.ts` en verde.
 - Refinamiento de generacion PDF para impresion:
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`
@@ -112,6 +112,22 @@ Commit de referencia: `15f7d35`.
   - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
 - Prueba de contrato/paridad v2 agregada:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+- Ola 2C (sincronizacion) profundizada con arquitectura por capas sin romper API:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` reducido a fachada HTTP (79 lineas).
+  - Nuevas capas internas:
+    - `application/usecases/*`
+    - `domain/paqueteSincronizacion.ts`
+    - `infra/repositoriosSync.ts`
+    - `infra/portalSyncClient.ts`
+    - `infra/omrCapturas.ts`
+    - `shared/tiposSync.ts`
+  - Contrato de comportamiento sync fijado con:
+    - `apps/backend/tests/sincronizacion.contrato.test.ts`
+  - Validaciones ejecutadas en verde:
+    - `npm -C apps/backend run lint`
+    - `npm -C apps/backend run typecheck`
+    - `npm -C apps/backend run test -- tests/sincronizacion.test.ts tests/sincronizacion.contrato.test.ts`
+    - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
 
 ## QA preproduccion automatizada (nuevo)
 - Gates bloqueantes agregados:

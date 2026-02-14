@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T00:34:19.149Z",
-  "strict": true,
+  "generatedAt": "2026-02-14T00:51:32.292Z",
+  "strict": false,
   "status": {
     "ola0Passed": true,
     "ola1Passed": true,
-    "ola2Ready": true,
-    "strictPassed": true,
+    "ola2Ready": false,
+    "strictPassed": null,
     "previousWavesGuaranteed": true,
-    "nextWaveReadyToExecute": true
+    "nextWaveReadyToExecute": false
   },
   "checks": [
     {
@@ -73,12 +73,12 @@
     },
     {
       "id": "ola2.pending.monoliths.detected",
-      "ok": true,
+      "ok": false,
       "detail": [
         "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 2024",
         "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
         "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 1396",
-        "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 961"
+        "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 80"
       ]
     },
     {
@@ -87,40 +87,7 @@
       "detail": "scripts de gates requeridos para ola 2 estan definidos"
     }
   ],
-  "strictResults": [
-    {
-      "ok": true,
-      "command": "npm run lint"
-    },
-    {
-      "ok": true,
-      "command": "npm run typecheck"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:backend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:portal:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:frontend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:coverage:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run perf:check"
-    },
-    {
-      "ok": true,
-      "command": "npm run pipeline:contract:check"
-    }
-  ],
+  "strictResults": [],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
@@ -136,7 +103,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",
-      "lines": 961
+      "lines": 80
     }
   ]
 }
