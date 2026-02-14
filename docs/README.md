@@ -26,6 +26,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
 - `OPERACION_EXAMEN_GLOBAL_PROD.md`: preflight y checklist para habilitar generación global por materia/curso en producción.
+- `RELEASE_BIGBANG_1_0_BETA.md`: gate operativo para cierre de `1.0-beta` (olas + QA bloqueante).
 - `RELEASE_GATE_STABLE.md`: gate formal beta -> estable con validación humana en producción.
 - `INVENTARIO_PROYECTO.md`: inventario técnico integral (estado de olas, gates y brechas a `1.0-beta`/estable).
 - `INVENTARIO_CODIGO_EXHAUSTIVO.md`: inventario completo de piezas de codigo/config versionadas por area.

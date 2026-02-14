@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "gate": "ux-visual",
+  "command": "npm -C apps/frontend run test -- --reporter=verbose tests/ux.visual.test.tsx",
+  "ok": true,
+  "exitCode": 0,
+  "signal": null,
+  "startedAt": "2026-02-14T09:21:35.786Z",
+  "finishedAt": "2026-02-14T09:21:37.969Z",
+  "durationMs": 2183
+}

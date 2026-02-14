@@ -35,13 +35,25 @@ async function main() {
   for (const file of artefactos) {
     items.push(await getInfo(file));
   }
+  const faltantes = items.filter((item) => !item.existe).map((item) => item.archivo);
   const payload = {
     version: '1',
     generadoEn: new Date().toISOString(),
-    artefactos: items
+    artefactos: items,
+    resumen: {
+      total: items.length,
+      presentes: items.length - faltantes.length,
+      faltantes: faltantes.length,
+      estado: faltantes.length === 0 ? 'ok' : 'missing-artifacts'
+    }
   };
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  if (faltantes.length > 0) {
+    process.stderr.write(`[qa-manifest] ERROR missing artifacts (${faltantes.length}): ${faltantes.join(', ')}\n`);
+    process.stderr.write(`[qa-manifest] Manifest generated -> ${outPath}\n`);
+    process.exit(1);
+  }
   process.stdout.write(`[qa-manifest] OK -> ${outPath}\n`);
 }
 
