@@ -231,6 +231,106 @@ Commit de referencia: TBD (sesion Ola 2B PDF).
   - `reports/qa/latest/ux-visual.json`
   - `reports/qa/latest/manifest.json`
 
+## Avance Ola 3 (API v2 + Métricas de Adopción Canary)
+
+### Corte 2026-02-14 (fortalecimiento API v2 y adopción canary)
+- Sistema de métricas de adopción canary implementado:
+  - Nuevo módulo: `apps/backend/src/compartido/observabilidad/metricsAdopcion.ts`
+    - Función `registrarAdopcion()` rastrea v1 vs v2 por módulo y endpoint
+    - Función `calcularPorcentajeAdopcion()` calcula % dinámico con estado canario
+    - Estados: `iniciando`, `canario`, `madurando`, `completado`
+    - Función `detallesAdopcionPorEndpoint()` top 20 endpoints por adopción
+    - Función `exportarEstadoCanary()` estado resumido para dashboard
+  - Middleware de adopción: `apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts`
+    - `middlewareAdopcionV1()` rastrea solicitudes a v1
+    - `middlewareAdopcionV2()` rastrea solicitudes a v2
+    - Montados en rutas principales:
+      - `/api/examenes` (v1) → módulo `pdf`
+      - `/api/v2/examenes` (v2) → módulo `pdf`
+      - `/api/omr` (v1) → módulo `omr`
+      - `/api/v2/omr` (v2) → módulo `omr`
+  - Métricas Prometheus agregadas:
+    - `evaluapro_adopcion_v2_porcentaje{modulo="..."}` gauge con porcentaje
+    - `evaluapro_adopcion_v1_total{modulo="..."}` counter total v1
+    - `evaluapro_adopcion_v2_total{modulo="..."}` counter total v2
+- Dashboard de canary rollout:
+  - Nuevo script: `scripts/canary-adoption-monitor.mjs`
+    - Monitorea adopción en tiempo real
+    - Muestra estado del canario por módulo
+    - Porcentaje de adopción v2 global
+    - Recomendaciones de escalado automáticas
+    - Uso: `npm run canary:monitor`
+- Tests de adopción canary:
+  - Nuevo archivo: `apps/backend/tests/integracion/canaryAdopcionMonitor.test.ts`
+  - 6 tests validando:
+    - Rastreo de v1 en `/api/examenes` y `/api/omr`
+    - Rastreo de v2 en `/api/v2/examenes` y `/api/v2/omr`
+    - Cálculo correcto de porcentajes
+    - Formato Prometheus válido
+    - Distinción de adopción por módulo
+    - Consistencia de contadores en múltiples solicitudes
+  - Todos los tests pasan (✅ 6/6)
+
+### Corte 2026-02-14 (Ola 3 Fase 2 - Endpoints Robustos)
+- Sistema de error handling robusto completado:
+  - Nuevo módulo: `apps/backend/src/compartido/robustez/tiposRobustez.ts`
+    - Tipos para ErrorRobusto, ConfiguracionRetry, ConfiguracionCircuitBreaker
+    - Enumerado ErrorCategoria con 10 categorías (validación, timeout, indisponible, etc)
+    - Interfaces para ResultadoOperacion, MetricasRobustez
+  - Manejador de errores: `apps/backend/src/compartido/robustez/manejadorErrores.ts`
+    - `ErrorOperacional` clase extendiendo Error con categorización
+    - `procesarErrorZod()` convierte errores Zod en ErrorOperacional
+    - Middleware global `middlewareManejadorErroresRobusto` con auditoría
+    - Middleware `middlewareContextoRobustez` para trace ID
+  - Sistema de retry: `apps/backend/src/compartido/robustez/soporteRetry.ts`
+    - `conRetry()` ejecuta con reintentos automáticos
+    - Backoff exponencial con jitter configurable
+    - Categorización de errores reintentables vs no-reintentables
+    - Decorator `@Reintentar()` para decorar métodos
+  - Circuit breaker: `apps/backend/src/compartido/robustez/circuitBreaker.ts`
+    - Clase `CircuitBreaker` con 3 estados (cerrado, abierto, semiluza)
+    - Métricas: intento totales, exitosos, fallidos, percentiles p95/p99
+    - Recuperación automática con timeout configurable
+    - `obtenerCircuitBreaker()` registry de CB por módulo
+  - Validaciones Zod mejoradas: `apps/backend/src/compartido/validaciones/validacionesV2.ts`
+    - `esquemaBase64Imagen` valida tamaño mínimo de imagen
+    - `esquemaFolio` valida formato con regex (mayúsculas, números, guiones)
+    - `esquemaAnalizarOmrV2`, `esquemaAnalizarOmrLoteV2`, `esquemaPrevalidarLoteOmrV2` para OMR
+    - `esquemaCrearPlantillaV2`, `esquemaGenerarExamenV2`, `esquemaGenerarExamenesLoteV2` para PDF
+    - `esquemaPaginacion` reutilizable en listados
+  - Utilitarios de controlador: `apps/backend/src/compartido/robustez/utilitariosControlador.ts`
+    - `wrapControladorRobusto()` aplica CB + retry + error handling
+    - `validarPayloadRobusto()`, `validarQueryRobusto()` middlewares de validación
+    - `respuestaExitosa()`, `respuestaError()` respuestas estandarizadas
+- Suite de tests de robustez completada:
+  - Nuevo archivo: `apps/backend/tests/robustez.test.ts`
+  - 20 tests validando:
+    - Categorización y reintentabilidad de errores (4 tests)
+    - Sistema de retry con backoff exponencial (5 tests)
+    - Circuit breaker con estados y recuperación (6 tests)
+    - Validaciones Zod mejoradas (4 tests)
+    - Integración retry + circuit breaker (1 test)
+  - Todos los tests pasan (✅ 20/20)
+- Integración en aplicación principal:
+  - `app.ts` actualizado con middlewares de robustez
+  - `middlewareContextoRobustez` añadido temprano en cadena
+  - `middlewareManejadorErroresRobusto` manejador global de errores
+  - Métricas extendidas en `/api/metrics`:
+    - `evaluapro_circuit_breaker_status{nombre="..."}` estado actual (0=cerrado, 1=abierto, 2=semiluza)
+    - `evaluapro_circuit_breaker_metrics{nombre, tipo}` contadores por CB
+- Próximas fases de Ola 3:
+  - **Fase 1 (completada):** ✅ Sistema de adopción canary validado, métricas activas
+  - **Fase 2 (completada):** ✅ Endpoints v2 robustos (error handling, retry, circuit breaker, validaciones)
+  - **Fase 3:** Orchestración de rollout (activación gradual de feature flags basada en métricas)
+  - **Fase 4:** Dashboard web de adopción (visualización real-time de canario)
+  - **Fase 5:** Rollback automático (detener canario si métricas empeoran)
+- Validacion completa Ola 3 - Fase 1 + 2 (verde):
+  - `npm run lint`: ✅ 0 errors
+  - `npm -C apps/backend run typecheck`: ✅
+  - `npm -C apps/backend run test -- tests/robustez.test.ts`: ✅ (20/20 tests pass)
+  - `npm -C apps/backend run test -- tests/integracion/canaryAdopcionMonitor.test.ts`: ✅ (6/6 tests pass)
+  - Estado sistema: **PRODUCTION-READY** para Fase 1 y Fase 2
+
 ## Baseline de rendimiento (Ola 0)
 - Fuente baseline: `docs/perf/baseline.json`
 - Captura de corrida: `reports/perf/latest.json` (artefacto CI)

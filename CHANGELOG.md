@@ -120,14 +120,39 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - Tests de paridad v1/v2: `apps/backend/tests/pdf.paridad.test.ts` (8 tests)
   - Documentacion completa en README.md del modulo.
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
-- Validacion del sprint Big Bang ejecutada en verde:
-  - `npm -C apps/backend run lint`
-  - `npm -C apps/backend run typecheck`
-  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts`
-  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
-  - `npm run bigbang:olas:check`
-  - `npm run bigbang:olas:strict`
-  - `npm run pipeline:contract:check`
+- Ola 3 (API v2 + métricas de adopción canary rollout):
+  - Sistema de métricas de adopción: `apps/backend/src/compartido/observabilidad/metricsAdopcion.ts`
+    - Rastreo de adopción v1 vs v2 por módulo y endpoint
+    - Cálculo dinámico de porcentaje con estados: iniciando, canario, madurando, completado
+    - Exportación de detalles top 20 endpoints por adopción
+  - Middleware de rastreo: `apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts`
+    - `middlewareAdopcionV1()` y `middlewareAdopcionV2()` para rastrear solicitudes
+    - Montado en rutas: `/api/examenes`, `/api/v2/examenes`, `/api/omr`, `/api/v2/omr`
+  - Dashboard de canary rollout: `scripts/canary-adoption-monitor.mjs`
+    - Monitoreo en tiempo real de adopción
+    - Cálculo de recomendaciones de escalado automático
+    - Uso: `npm run canary:monitor`
+  - Tests de adopción canary: `apps/backend/tests/integracion/canaryAdopcionMonitor.test.ts` (6 tests)
+    - Validación de rastreo v1 y v2
+    - Validación de cálculo de porcentajes
+    - Validación de formato Prometheus
+    - Validación de distinción por módulo
+    - Validación de consistencia de contadores
+  - Métricas Prometheus agregadas a `/api/metrics`:
+    - `evaluapro_adopcion_v2_porcentaje{modulo="..."}` gauge porcentaje
+    - `evaluapro_adopcion_v1_total{modulo="..."}` counter requisiciones v1
+    - `evaluapro_adopcion_v2_total{modulo="..."}` counter requisiciones v2
+  - Todos los tests de adopción pasan (✅ 6/6)
+  - Sistema completamente integrado en pipeline CI/CD
+- Validacion del sprint Big Bang + Ola 3 ejecutada en verde:
+  - `npm -C apps/backend run lint` ✅
+  - `npm -C apps/backend run typecheck` ✅
+  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts` ✅
+  - `npm -C apps/backend run test -- tests/integracion/canaryAdopcionMonitor.test.ts` ✅ (6/6)
+  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts` ✅
+  - `npm run bigbang:olas:check` ✅
+  - `npm run bigbang:olas:strict` ✅
+  - `npm run pipeline:contract:check` ✅
 - Arranque prod local endurecido para primera estable distribuible:
   - Nuevo script `portal:prod` en `package.json` usando `scripts/start-portal-prod.mjs`:
     - build condicional de portal si falta `dist/index.js`
