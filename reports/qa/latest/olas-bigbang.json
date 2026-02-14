@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T00:51:32.292Z",
+  "generatedAt": "2026-02-14T01:26:53.119Z",
   "strict": false,
   "status": {
     "ola0Passed": true,
     "ola1Passed": true,
-    "ola2Ready": false,
+    "ola2Ready": true,
     "strictPassed": null,
     "previousWavesGuaranteed": true,
-    "nextWaveReadyToExecute": false
+    "nextWaveReadyToExecute": true
   },
   "checks": [
     {
@@ -72,14 +72,42 @@
       "detail": "apps/frontend/vitest.config.ts sin exclusion de app_docente ni app_docente_legacy"
     },
     {
-      "id": "ola2.pending.monoliths.detected",
-      "ok": false,
+      "id": "ola2a.omr.monolith.pending",
+      "ok": true,
+      "detail": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400"
+    },
+    {
+      "id": "ola2b.pdf.monolith.pending",
+      "ok": true,
       "detail": [
-        "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 2024",
         "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
-        "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 1396",
-        "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 80"
+        "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 1396"
       ]
+    },
+    {
+      "id": "ola2c.sync.segmented",
+      "ok": true,
+      "detail": {
+        "controlador": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 80",
+        "capas": [
+          {
+            "dir": "application",
+            "exists": true
+          },
+          {
+            "dir": "domain",
+            "exists": true
+          },
+          {
+            "dir": "infra",
+            "exists": true
+          },
+          {
+            "dir": "shared",
+            "exists": true
+          }
+        ]
+      }
     },
     {
       "id": "ola2.readiness.gates.available",
@@ -91,7 +119,7 @@
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
-      "lines": 2024
+      "lines": 1400
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",

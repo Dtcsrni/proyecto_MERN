@@ -746,7 +746,10 @@ function requestDockerAutostart(reason = 'startup') {
 
     dockerAutostart.stack.state = 'starting';
     logSystem(`Iniciando stack Docker (${mode})...`, 'system');
-    if (!isRunning(mode)) startTask(mode, commands[mode]);
+    if (!isRunning(mode)) {
+      const command = getCommand(mode);
+      if (command) startTask(mode, command);
+    }
   })()
     .catch((err) => {
       setDockerAutostart({ state: 'error', ready: false, version: '', lastError: err?.message || 'Error iniciando Docker' });
@@ -1043,17 +1046,27 @@ function noiseSnapshot() {
 }
 
 // Known commands exposed via the dashboard.
-const commands = {
+const baseCommands = {
   dev: 'npm run dev',
   'dev-frontend': 'npm run dev:frontend',
   'dev-backend': 'npm run dev:backend',
   // En dashboard, PROD debe levantar el stack rapidamente (sin correr verify/tests).
   prod: 'npm run stack:prod',
-  portal: 'npm run dev:portal',
+  'portal-dev': 'npm run dev:portal',
+  'portal-prod': 'npm run portal:prod',
   status: 'npm run status',
   'docker-ps': 'docker ps',
   'docker-down': 'docker compose down'
 };
+
+function getCommand(taskName) {
+  const task = String(taskName || '').trim();
+  if (!task) return null;
+  if (task === 'portal') {
+    return mode === 'prod' ? baseCommands['portal-prod'] : baseCommands['portal-dev'];
+  }
+  return baseCommands[task] ?? null;
+}
 
 function isRunning(name) {
   const entry = processes.get(name);
@@ -1087,7 +1100,7 @@ function stackDisplayString(runningList = [], compose = null) {
 }
 
 function restartTask(name, delayMs = 700) {
-  const command = commands[name];
+  const command = getCommand(name);
   if (!command) {
     logSystem(`[${name}] reinicio solicitado pero no existe comando`, 'warn');
     return;
@@ -1592,9 +1605,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathName === '/api/start') {
     const body = await readBody(req);
     const task = String(body.task || '').trim();
-    const command = commands[task];
+    const command = getCommand(task);
     if (!command) return sendJson(res, 400, { error: 'Tarea desconocida' });
     pushEvent('api', 'dashboard', 'info', 'POST /api/start', { task });
+    if (task === 'portal' && mode === 'prod') {
+      logSystem('Portal prod build en curso/inicio solicitado.', 'system');
+    }
     startTask(task, command);
     return sendJson(res, 200, { ok: true });
   }
@@ -1628,7 +1644,7 @@ const server = http.createServer(async (req, res) => {
       const toRestart = candidates.filter((name) => running.includes(name));
       if (toRestart.length === 0) {
         const preferido = mode === 'prod' ? 'prod' : 'dev';
-        const comando = commands[preferido];
+        const comando = getCommand(preferido);
         if (comando) {
           startTask(preferido, comando);
           return sendJson(res, 200, { ok: true, restarted: [], started: [preferido] });
@@ -1638,7 +1654,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, restarted: toRestart });
     }
 
-    if (!commands[task]) return sendJson(res, 400, { error: 'Tarea desconocida' });
+    if (!getCommand(task)) return sendJson(res, 400, { error: 'Tarea desconocida' });
     restartTask(task);
     return sendJson(res, 200, { ok: true, restarted: [task] });
   }
@@ -1646,9 +1662,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathName === '/api/run') {
     const body = await readBody(req);
     const task = String(body.task || '').trim();
-    const command = commands[task];
+    const command = getCommand(task);
     if (!command) return sendJson(res, 400, { error: 'Comando desconocido' });
     pushEvent('api', 'dashboard', 'info', 'POST /api/run', { task });
+    if (task === 'portal' && mode === 'prod') {
+      logSystem('Portal prod build en curso/inicio solicitado.', 'system');
+    }
     startTask(task, command);
     return sendJson(res, 200, { ok: true });
   }

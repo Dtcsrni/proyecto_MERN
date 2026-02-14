@@ -290,7 +290,11 @@ function New-Shortcut([string]$name, [string]$mode, [string]$iconPath) {
   # Solo 2 accesos directos: Dev y Prod. Ambos lanzan el ícono en bandeja.
   $shortcut.Arguments = "//nologo `"scripts\launcher-tray-hidden.vbs`" $mode 4519"
   $shortcut.WorkingDirectory = $root
-  $shortcut.Description = "Bandeja (tray) $name"
+  if ($mode -eq 'prod') {
+    $shortcut.Description = "Bandeja (tray) $name - stack prod + portal prod"
+  } else {
+    $shortcut.Description = "Bandeja (tray) $name - modo desarrollo"
+  }
   # Nota: algunos entornos de Explorer muestran icono en blanco si no se especifica índice.
   $shortcut.IconLocation = "$iconPath,0"
   $shortcut.Save()

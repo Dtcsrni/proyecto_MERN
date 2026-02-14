@@ -22,9 +22,10 @@ Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, 
 
 ### Backend core (lineas por archivo critico)
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`: fachada v2 con canary + legado en `servicioOmrLegacy.ts`.
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`: 1400 (corte intermedio Ola 2A).
 - `apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts`: 1389
 - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`: 1396
-- `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 79 (fachada HTTP tras particion interna)
+- `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 80 (fachada HTTP tras particion interna)
 
 ### Cobertura frontend actual (gate W1 recalibrado = 39/40/31/37)
 - lines: 39.20
@@ -152,8 +153,15 @@ Salida automatica por sesion:
 
 ## 6) Siguiente objetivo recomendado (segun estado actual)
 1. Continuar Ola 2:
-- OMR 2A: profundizar separacion del motor legado por etapas reales.
+- OMR 2A: profundizar separacion del motor legado por etapas reales (actualmente 1400 lineas con modulo `infra/imagenProcesamientoLegacy.ts` extraido).
 - PDF 2B: separar controller/use-case/domain/infra.
 - Sync 2C: consolidar politicas internas restantes tras la fachada + use cases.
 2. Continuar rampa de cobertura frontend hacia 45 sin exclusiones.
 3. Completar Ola 3 de migracion dual (v1/v2) para dominios breaking pendientes.
+
+## 7) Corte Sprint Big Bang (2026-02-14)
+- Gate `bigbang:olas:strict` alineado con estado real:
+  - checks por dominio en `scripts/bigbang-olas-check.mjs` (`ola2a`, `ola2b`, `ola2c`).
+  - reporte coherente en `reports/qa/latest/olas-bigbang.json`.
+- Ola 3 minima OMR validada por contrato:
+  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts` verifica paridad v1/v2 y metricas de fallback/writes.

@@ -62,17 +62,60 @@ npm run dev:frontend
 npm run dev:portal
 ```
 
+## Modo estable local (prod)
+Flujo recomendado para operacion local estable (sin watch):
+
+1. Verificar release local:
+```bash
+npm run verify:prod
+```
+
+2. Levantar stack prod:
+```bash
+npm run stack:prod
+```
+
+3. Levantar portal prod (build condicional + start compilado):
+```bash
+npm run portal:prod
+```
+
+4. Alternativa con acceso directo (Windows):
+- `EvaluaPro - Prod` desde `accesos-directos/` (tray + dashboard).
+- Si faltan servicios, inicia automaticamente stack prod y portal.
+
+## Distribuible estable (Windows MSI/WiX)
+- Responsable de distribucion: `I.S.C. Erick Renato Vega Ceron`.
+- Politica: todo distribuible debe pasar checks de estabilidad antes de empaquetar MSI.
+- Build de instalador:
+```powershell
+npm run msi:build
+```
+- Resultado:
+  - `dist/installer/EvaluaPro.msi`
+  - `dist/installer/EvaluaPro-Setup.exe`
+- Actualizacion:
+  - si ya existe una version instalada, el instalador aplica upgrade in-place.
+- Autoconfiguracion:
+  - accesos directos Dev/Prod
+  - arranque de stack + portal desde acceso directo Prod cuando faltan
+- Requisitos no autoconfigurables (el instalador los valida y bloquea si faltan):
+  - Node.js 24+
+  - Docker Desktop
+
 ## Scripts clave
 - Desarrollo:
   - `npm run dev`
   - `npm run dev:backend`
   - `npm run dev:frontend`
   - `npm run dev:portal`
+  - `npm run portal:prod`
 - Operacion:
   - `npm run stack:dev`
   - `npm run stack:prod`
   - `npm run status`
   - `npm run reset:local`
+  - `npm run msi:build`
 - Calidad:
   - `npm run test`
   - `npm run test:portal`
