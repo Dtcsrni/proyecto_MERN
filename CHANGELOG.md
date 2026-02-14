@@ -5,6 +5,13 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Reparación operativa desde Dashboard (pestaña Configuración):
+  - endpoints en `scripts/launcher-dashboard.mjs`:
+    - `GET /api/repair/status`
+    - `POST /api/repair/run`
+    - `GET /api/repair/progress`
+  - UI de diagnóstico/progreso en `scripts/dashboard.html`.
+  - motor no destructivo (build portal si falta, recreación de accesos, recuperación stack/portal, post-check de salud).
 - Dual perf gate de negocio autenticado:
   - `scripts/perf-collect-business.ts`
   - `scripts/perf-check-business.mjs`
@@ -115,6 +122,9 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - politica de upgrade in-place mantenida para instalaciones existentes.
   - `scripts/build-msi.ps1` ahora ejecuta checks obligatorios de estabilidad antes de empaquetar.
   - progreso de build MSI con barra por fase real (checks + build MSI + bundle).
+  - accesos directos auto-generados en instalacion/actualizacion:
+    - menu inicio siempre
+    - escritorio por defecto habilitado (`InstallDesktopShortcuts=1`, configurable)
 
 ## [0.2.0-beta.1] - 2026-02-13
 

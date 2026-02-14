@@ -6,6 +6,11 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - UI: `dashboard.html`
 - SW: `dashboard-sw.js`
 - Launcher: `launcher-dashboard.mjs`
+- Reparacion desde Configuracion:
+  - diagnostico: `GET /api/repair/status`
+  - iniciar reparacion: `POST /api/repair/run`
+  - progreso: `GET /api/repair/progress`
+  - alcance v1 no destructivo: build portal si falta, recrear accesos directos y recuperar stack/portal.
 
 ## Accesos directos / bandeja
 - Generación de accesos: `create-shortcuts.ps1`

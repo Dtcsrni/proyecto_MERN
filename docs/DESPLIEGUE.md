@@ -95,6 +95,8 @@ Prerequisitos de instalacion:
 Autoconfiguracion durante uso:
 - shortcuts Dev/Prod instalados automaticamente.
 - acceso directo Prod intenta iniciar stack+portal si no estan activos.
+- instalacion/actualizacion crea accesos directos automaticamente.
+- escritorio habilitado por defecto (`InstallDesktopShortcuts=1`).
 
 No autoconfigurable por instalador:
 - instalacion de Node.js/Docker Desktop.

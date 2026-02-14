@@ -17,6 +17,22 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
   const envDir = path.resolve(__dirname, '..', '..');
   const env = loadEnv(mode, envDir, '');
+  let appVersion = '0.0.0';
+  let appName = 'evaluapro';
+  let developerName = '';
+  try {
+    const pkgRaw = fs.readFileSync(path.join(envDir, 'package.json'), 'utf8');
+    const pkg = JSON.parse(pkgRaw);
+    appVersion = String(pkg?.version || appVersion);
+    appName = String(pkg?.name || appName);
+    developerName = typeof pkg?.author === 'string'
+      ? String(pkg.author)
+      : String(pkg?.author?.name || '');
+  } catch {
+    // fallback values
+  }
+  const developerNameResolved = String(env.EVALUAPRO_DEVELOPER_NAME || developerName || 'Equipo EvaluaPro');
+  const developerRoleResolved = String(env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo');
   const flagHttps = String(env.VITE_HTTPS || '').trim();
   const usarHttps = /^(1|true|si|yes)$/i.test(flagHttps);
 
@@ -44,6 +60,12 @@ export default defineConfig(({ mode }) => {
     // En monorepos, centralizamos variables en el `.env` del root.
     // Esto permite que `VITE_*` se tome del mismo archivo que usa docker compose.
     envDir,
+    define: {
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+      'import.meta.env.VITE_APP_NAME': JSON.stringify(appName),
+      'import.meta.env.VITE_DEVELOPER_NAME': JSON.stringify(developerNameResolved),
+      'import.meta.env.VITE_DEVELOPER_ROLE': JSON.stringify(developerRoleResolved)
+    },
     server: {
       host: true,
       port: 5173,

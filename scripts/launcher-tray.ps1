@@ -405,7 +405,7 @@ if (-not $createdNew) {
   $openPort = $Port
   $lockPort = Read-LockPort
   if ($lockPort) { $openPort = $lockPort }
-  try { Start-Process ("http://127.0.0.1:$openPort/") | Out-Null } catch {}
+  Open-UrlInNewWindow ("http://127.0.0.1:$openPort/")
   return
 }
 
@@ -417,6 +417,36 @@ function Get-NodePath {
 
 function Get-ApiBase {
   return "http://127.0.0.1:$script:Port"
+}
+
+function Get-BrowserExecutable {
+  $candidates = @(
+    (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:ProgramFiles(x86) 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
+    (Join-Path $env:ProgramFiles(x86) 'Google\Chrome\Application\chrome.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Google\Chrome\Application\chrome.exe')
+  )
+
+  foreach ($exe in $candidates) {
+    if ([string]::IsNullOrWhiteSpace($exe)) { continue }
+    if (Test-Path $exe) { return $exe }
+  }
+  return $null
+}
+
+function Open-UrlInNewWindow([string]$url) {
+  try {
+    $browser = Get-BrowserExecutable
+    if ($browser) {
+      Start-Process -FilePath $browser -ArgumentList @('--new-window', $url) | Out-Null
+      return
+    }
+  } catch {
+    # fallback
+  }
+  try { Start-Process $url | Out-Null } catch {}
 }
 
 function Format-ApiException([object]$err) {
@@ -794,11 +824,11 @@ $miExit = $menu.Items.Add('Salir')
 $notify.ContextMenuStrip = $menu
 
 $miOpen.add_Click({
-  Start-Process ((Get-ApiBase) + '/') | Out-Null
+  Open-UrlInNewWindow ((Get-ApiBase) + '/')
 })
 
 $notify.add_DoubleClick({
-  Start-Process ((Get-ApiBase) + '/') | Out-Null
+  Open-UrlInNewWindow ((Get-ApiBase) + '/')
 })
 
 $miStartDev.add_Click({ Invoke-PostJsonOrNull '/api/start' @{ task = 'dev' } | Out-Null })
@@ -969,7 +999,7 @@ if (-not $NoOpen) {
   } while (-not $st -and (Get-Date) -lt $deadline)
 
   if ($st) {
-    Start-Process ((Get-ApiBase) + '/') | Out-Null
+    Open-UrlInNewWindow ((Get-ApiBase) + '/')
   }
 }
 

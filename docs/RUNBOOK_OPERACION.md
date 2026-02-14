@@ -31,6 +31,21 @@ Portal:
 - backend: `GET /api/salud/live`
 - portal: `GET /api/portal/salud/live`
 
+### Reparar instalacion desde Dashboard
+1. Abrir pestaña `Configuración`.
+2. Ejecutar `Diagnosticar ahora`.
+3. Si aparece `Requiere reparación`, ejecutar `Reparar instalación`.
+4. Revisar progreso por pasos y la sección `Acciones manuales`.
+5. Confirmar salud final:
+- `GET /api/salud/live`
+- `GET /api/portal/salud/live`
+
+Alcance de la reparación v1:
+- no destructiva (no borra datos ni volúmenes),
+- recompila portal si falta `dist/index.js`,
+- recrea accesos directos,
+- reinicia/recupera stack y portal.
+
 ### Instalador (MSI/WiX) - experiencia esperada
 - textos de instalacion con indicaciones de prerrequisitos.
 - barra de progreso real por fase (checks previos + compilacion MSI + bundle EXE) al generar distribuible.

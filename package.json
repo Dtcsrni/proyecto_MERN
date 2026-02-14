@@ -2,6 +2,9 @@
   "name": "evaluapro",
   "description": "Plataforma MERN para evaluación universitaria: generación de exámenes en PDF, vinculación por QR, calificación asistida (OMR) y operación local con Docker + dashboard.",
   "version": "0.2.0-beta.1",
+  "author": {
+    "name": "I.S.C. Erick Renato Vega Ceron"
+  },
   "private": true,
   "repository": {
     "type": "git",
@@ -45,6 +48,7 @@
     "test:portal:ci": "node scripts/retry.mjs --name portal --attempts 3 --delay-ms 750 --command \"npm -C apps/portal_alumno_cloud run test\"",
     "test:frontend": "npm -C apps/frontend run test",
     "test:frontend:ci": "node scripts/retry.mjs --name frontend --attempts 5 --delay-ms 900 --command \"npm -C apps/frontend run test -- --pool=forks --reporter=verbose\" --fallback-command \"npm -C apps/frontend run test -- --pool=threads --reporter=verbose\"",
+    "test:dashboard:repair": "node --test scripts/tests/dashboard-repair.test.mjs",
     "test:flujo-docente:ci": "npm -C apps/backend run test -- --reporter=verbose tests/integracion/flujoDocenteParcialE2E.test.ts tests/integracion/flujoDocenteGlobalE2E.test.ts",
     "test:e2e:docente-alumno:ci": "npm -C apps/backend run test -- --reporter=verbose tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts",
     "test:global-grade:ci": "npm -C apps/backend run test -- --reporter=verbose tests/calificacion.global.reglas.test.ts tests/integracion/calificacionGlobalContratoE2E.test.ts",

@@ -4,11 +4,70 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 import QRCode from 'qrcode';
 import type { RespuestaLiveness, RespuestaReadiness, RespuestaSalud } from '../tipos/observabilidad';
 import { exportarMetricasPrometheus } from '../observabilidad/metrics';
 
 const router = Router();
+
+function buscarRaizRepo(inicio: string) {
+  let actual = inicio;
+  for (let i = 0; i < 10; i += 1) {
+    const hasPkg = fs.existsSync(path.join(actual, 'package.json'));
+    const hasChangelog = fs.existsSync(path.join(actual, 'CHANGELOG.md'));
+    if (hasPkg && hasChangelog) return actual;
+    const next = path.dirname(actual);
+    if (next === actual) break;
+    actual = next;
+  }
+  return path.resolve(inicio, '../../../../..');
+}
+
+function leerVersionInfo() {
+  const raiz = buscarRaizRepo(process.cwd());
+  let appName = 'evaluapro';
+  let appVersion = '0.0.0';
+  let authorName = '';
+  let changelog = '';
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
+    appName = String(pkg?.name || appName);
+    appVersion = String(pkg?.version || appVersion);
+    authorName = typeof pkg?.author === 'string'
+      ? String(pkg.author)
+      : String(pkg?.author?.name || '');
+  } catch {
+    // fallback
+  }
+  try {
+    changelog = fs.readFileSync(path.join(raiz, 'CHANGELOG.md'), 'utf8').slice(0, 24_000);
+  } catch {
+    changelog = '';
+  }
+
+  const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || authorName || 'Equipo EvaluaPro').trim();
+  const developerRole = String(process.env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo').trim();
+
+  return {
+    app: { name: appName, version: appVersion },
+    developer: {
+      nombre: developerName || 'Equipo EvaluaPro',
+      rol: developerRole || 'Desarrollo'
+    },
+    system: {
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      hostname: os.hostname(),
+      env: process.env.NODE_ENV ?? 'development',
+      uptimeSec: Math.floor(process.uptime()),
+      generatedAt: new Date().toISOString()
+    },
+    changelog
+  };
+}
 
 router.get('/', (_req, res) => {
   const estado = mongoose.connection.readyState; // 0,1,2,3
@@ -54,6 +113,10 @@ router.get('/metrics', (_req, res) => {
   const payload = `${exportarMetricasPrometheus()}\n\n# HELP evaluapro_db_ready_state Estado de conexión MongoDB (0-3)\n# TYPE evaluapro_db_ready_state gauge\nevaluapro_db_ready_state ${estadoDb}\n`;
   res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
   res.send(payload);
+});
+
+router.get('/version-info', (_req, res) => {
+  res.json(leerVersionInfo());
 });
 
 function esIpPrivada(ip: string) {
