@@ -63,6 +63,7 @@ Estado de referencia del corte 2026-02-13:
 - `lint`, `typecheck`, `test:frontend:ci`: en verde.
 - `coverage-check`: con brecha abierta en frontend (detalle en `INVENTARIO_PROYECTO.md`).
 - Evidencias QA: `reports/qa/latest/*` y criterios en `QA_GATE_CRITERIA.md`.
+- Operacion Big-Bang beta: usar `npm run bigbang:beta:quick` para validacion diaria y `npm run bigbang:beta:check` en pre-release (incluye `bigbang:olas:strict`).
 
 | Semana | Cobertura backend | Cobertura frontend | Cobertura portal | Reglas ESLint complejidad |
 | --- | --- | --- | --- | --- |

@@ -7,11 +7,11 @@ Estandarizar una salida de `1.0-beta` con gates bloqueantes, evidencia QA comple
 - `segmentada`: la ola tiene desacople tecnico inicial y gates parciales.
 - `completada`: migracion funcional integral cerrada + retiro/encapsulado final de legado + evidencia QA en verde.
 
-## Gate operativo unico
+## Gate operativo diario (rapido)
 Ejecutar:
 
 ```bash
-npm run bigbang:beta:check
+npm run bigbang:beta:quick
 ```
 
 Este comando ejecuta en secuencia:
@@ -21,7 +21,17 @@ Este comando ejecuta en secuencia:
 4. `test:pdf-print:ci`
 5. `test:ux-visual:ci`
 6. `test:qa:manifest` (falla si falta cualquier evidencia en `reports/qa/latest`)
-7. `bigbang:olas:strict`
+
+## Gate pre-release (completo)
+Ejecutar:
+
+```bash
+npm run bigbang:beta:check
+```
+
+Este comando ejecuta en secuencia:
+1. todo el gate rapido (`bigbang:beta:quick`)
+2. `bigbang:olas:strict`
 
 ## Evidencias obligatorias en latest
 - `reports/qa/latest/dataset-prodlike.json`

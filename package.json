@@ -59,6 +59,7 @@
     "test:e2e:journeys:ci": "npm run test:ux-visual:ci",
     "test:dataset-prodlike:ci": "node scripts/testing/export-anon-fixture.mjs && node scripts/testing/validate-anon-fixture.mjs && node scripts/testing/import-anon-fixture.mjs",
     "test:qa:manifest": "node scripts/testing/generar-qa-manifest.mjs",
+    "bigbang:beta:quick": "npm-run-all -s test:dataset-prodlike:ci test:e2e:docente-alumno:ci test:global-grade:ci test:pdf-print:ci test:ux-visual:ci test:qa:manifest",
     "bigbang:beta:check": "npm-run-all -s test:dataset-prodlike:ci test:e2e:docente-alumno:ci test:global-grade:ci test:pdf-print:ci test:ux-visual:ci test:qa:manifest bigbang:olas:strict",
     "test:coverage:ci": "npm -C apps/backend run test:coverage && npm -C apps/portal_alumno_cloud run test:coverage && npm -C apps/frontend run test:coverage",
     "docs:generate": "node scripts/docs.mjs --write",
