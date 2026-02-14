@@ -1,7 +1,7 @@
 # Trazabilidad IA del Proyecto
 
-Fecha de corte: 2026-02-13  
-Commit de referencia: `dffa43f`
+Fecha de corte: 2026-02-14  
+Commit de referencia: `15f7d35`
 
 Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, reglas unificadas y evidencia reproducible.
 
@@ -9,30 +9,30 @@ Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, 
 
 ### Estado de olas Big-Bang hacia `1.0-beta`
 - Ola 0: implementada.
-- Ola 1: parcial.
-- Ola 2: pendiente.
-- Ola 3: pendiente.
+- Ola 1: completada.
+- Ola 2: activa.
+- Ola 3: iniciada (bootstrap API v2 en OMR/PDF).
 - Ola 4: pendiente.
 
 ### Frontend docente (lineas por archivo critico)
-- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 757
-- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 783
-- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 964
-- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 807
+- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 798
+- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 798
+- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 763
+- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777
 
-### Backend core pendiente (lineas por archivo critico)
-- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`: 1854
-- `apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts`: 1260
-- `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`: 1158
-- `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 989
+### Backend core (lineas por archivo critico)
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`: fachada v2 con canary + legado en `servicioOmrLegacy.ts`.
+- `apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts`: 1389
+- `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`: 1396
+- `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 79 (fachada HTTP tras particion interna)
 
 ### Cobertura frontend actual (gate W1 recalibrado = 39/40/31/37)
-- lines: 24.83
-- functions: 26.32
-- statements: 23.44
-- branches: 21.16
+- lines: 39.20
+- functions: 40.28
+- statements: 37.21
+- branches: 31.40
 
-Resultado: `coverage-check` sigue bloqueando.
+Resultado: `coverage-check` en verde con umbral vigente.
 
 ## 2) Inventario exhaustivo de instrucciones para agentes IA
 
@@ -151,8 +151,9 @@ Salida automatica por sesion:
 - `docs/handoff/sesiones/<YYYY-MM-DD>/<sesion>.md`
 
 ## 6) Siguiente objetivo recomendado (segun estado actual)
-1. Cerrar Ola 1:
-- bajar `SeccionBanco.tsx` a <=350,
-- bajar `SeccionPlantillas.tsx` a <=800.
-2. Subir cobertura frontend hacia 45 sin exclusiones.
-3. Solo despues avanzar a Ola 2 (backend core/performance).
+1. Continuar Ola 2:
+- OMR 2A: profundizar separacion del motor legado por etapas reales.
+- PDF 2B: separar controller/use-case/domain/infra.
+- Sync 2C: consolidar politicas internas restantes tras la fachada + use cases.
+2. Continuar rampa de cobertura frontend hacia 45 sin exclusiones.
+3. Completar Ola 3 de migracion dual (v1/v2) para dominios breaking pendientes.
