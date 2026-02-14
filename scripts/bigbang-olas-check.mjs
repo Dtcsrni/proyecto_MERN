@@ -140,7 +140,10 @@ addCheck(
 // ---------------------------
 // Siguiente ola (2) readiness
 // ---------------------------
-const ola2OmmrTarget = { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts') };
+const ola2OmrTargets = [
+  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts') },
+  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts') }
+];
 const ola2PdfTargets = [
   { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts') },
   { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts') },
@@ -148,7 +151,22 @@ const ola2PdfTargets = [
 ];
 const ola2SyncTarget = { filePath: 'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts', lines: lineCount('apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts') };
 
-addCheck('ola2a.omr.monolith.pending', ola2OmmrTarget.lines > 800, `${ola2OmmrTarget.filePath}: ${ola2OmmrTarget.lines}`);
+// Ola 2A: OMR segmentado si fachada <100 lineas, legado preservado y pipeline v2 presente
+const omrFachada = ola2OmrTargets.find((t) => t.filePath.endsWith('servicioOmr.ts'));
+const omrLegado = ola2OmrTargets.find((t) => t.filePath.endsWith('servicioOmrLegacy.ts'));
+const omrFachadaCompacta = omrFachada && omrFachada.lines < 100;
+const omrLegadoPreservado = omrLegado && omrLegado.lines > 800;
+const omrPipelinePresente = exists('apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline');
+
+addCheck(
+  'ola2a.omr.segmented',
+  omrFachadaCompacta && omrLegadoPreservado && omrPipelinePresente,
+  {
+    fachada: omrFachada ? `${omrFachada.filePath}: ${omrFachada.lines}` : 'no encontrada',
+    legado: omrLegado ? `${omrLegado.filePath}: ${omrLegado.lines}` : 'no encontrado',
+    pipeline: `omr/pipeline exists: ${omrPipelinePresente}`
+  }
+);
 
 // Ola 2B: PDF segmentado si fachada <100 lineas, legado preservado y estructura de capas presente
 const pdfFachada = ola2PdfTargets.find((t) => t.filePath.endsWith('servicioGeneracionPdf.ts'));
@@ -243,7 +261,7 @@ const report = {
   },
   checks,
   strictResults,
-  ola2Targets: [ola2OmmrTarget, ...ola2PdfTargets, ola2SyncTarget]
+  ola2Targets: [...ola2OmrTargets, ...ola2PdfTargets, ola2SyncTarget]
 };
 
 const outDir = ensureReportDir();
