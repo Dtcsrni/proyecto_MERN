@@ -126,8 +126,11 @@ Commit de referencia: TBD (sesion Ola 2B PDF).
   - **Ola 2C (Sync):** ✅ Segmentada (delegación use cases)
 - Validacion completa post-reconocimiento:
   - `npm run bigbang:olas:check`: verde (ola0 OK, ola1 OK, ola2-ready OK)
-  - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)
-
+  - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)- Tests de paridad v1/v2 implementados:
+  - `apps/backend/tests/omr.paridad.test.ts`: 5 tests validando equivalencia OMR legacy vs pipeline v2
+  - `apps/backend/tests/pdf.paridad.test.ts`: 8 tests validando equivalencia PDF legacy vs DDD v2
+  - Gate de calidad para habilitar feature flags en produccion
+  - Todos los tests pasan (13/13) validando paridad funcional
 ### Corte 2026-02-13 (iteracion previa)
 - Validacion de estado Big-Bang:
   - `npm run bigbang:olas:check`: verde (`ola0`, `ola1`, `ola2-ready`).
