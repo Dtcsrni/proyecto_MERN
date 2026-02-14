@@ -107,6 +107,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
     - Pipeline v2 modular: `omr/pipeline/ejecutorPipelineOmr.ts`
   - Arquitectura ya implementada previamente con feature flag `FEATURE_OMR_PIPELINE_V2`
   - Pipeline v2 con etapas modulares: qr, deteccion, scoring, calidad, debug
+  - Tests de paridad v1/v2: `apps/backend/tests/omr.paridad.test.ts` (5 tests)
   - Estado confirmado: todas las gates OK (ola0, ola1, ola2-ready, strict-gates)
 - Ola 2B PDF: fachada con feature flag para canary deployment:
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
@@ -116,6 +117,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - Domain entities: `ExamenPdf`, `LayoutExamen` (value objects).
   - Infrastructure: `ConfiguracionLayoutEnv` (parser), `PdfKitRenderer` (stub).
   - Use case: `generarExamenIndividual` (delega a legacy en bootstrap).
+  - Tests de paridad v1/v2: `apps/backend/tests/pdf.paridad.test.ts` (8 tests)
   - Documentacion completa en README.md del modulo.
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
 - Validacion del sprint Big Bang ejecutada en verde:
