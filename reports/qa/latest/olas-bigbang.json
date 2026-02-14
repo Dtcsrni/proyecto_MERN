@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T01:26:53.119Z",
-  "strict": false,
+  "generatedAt": "2026-02-14T02:22:12.111Z",
+  "strict": true,
   "status": {
     "ola0Passed": true,
     "ola1Passed": true,
     "ola2Ready": true,
-    "strictPassed": null,
+    "strictPassed": true,
     "previousWavesGuaranteed": true,
     "nextWaveReadyToExecute": true
   },
@@ -115,7 +115,40 @@
       "detail": "scripts de gates requeridos para ola 2 estan definidos"
     }
   ],
-  "strictResults": [],
+  "strictResults": [
+    {
+      "ok": true,
+      "command": "npm run lint"
+    },
+    {
+      "ok": true,
+      "command": "npm run typecheck"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:backend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:portal:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:frontend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:coverage:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run perf:check"
+    },
+    {
+      "ok": true,
+      "command": "npm run pipeline:contract:check"
+    }
+  ],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
