@@ -174,7 +174,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 
 ### qa-manifest
 - Command: `npm run test:qa:manifest`
-- Policy: non-optional evidence aggregation stage
+- Policy: blocking evidence gate (fails if required QA artifacts are missing)
 - Output: `reports/qa/latest/manifest.json`
 
 ### package

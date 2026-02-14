@@ -44,7 +44,7 @@ Commit de referencia: `15f7d35`.
   - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
-- Ola 2: activa (backend core) - TODAS las sub-olas segmentadas
+- Ola 2: activa (backend core) - sub-olas segmentadas tecnicamente, cierre funcional total pendiente
   - OMR (Ola 2A): ✅ segmentada (reconocida formalmente 2026-02-14)
     - `servicioOmr.ts`: fachada compacta 31 lineas (feature flag `FEATURE_OMR_PIPELINE_V2`)
     - `servicioOmrLegacy.ts`: motor legado preservado 1319 lineas
@@ -170,6 +170,8 @@ Commit de referencia: `15f7d35`.
   - `lista-academica.manifest.json` con SHA-256 por archivo.
 
 ## 9) Brechas para `1.0-beta`
+Nota de criterio: en este inventario, "segmentada" != "completada". Una ola se considera completada cuando cierra migracion funcional integral y retiro/encapsulado final de legado segun gate definido.
+
 1. Completar Ola 2:
 - OMR 2A: continuar particion interna del motor legado (corte actual: 1400 lineas, pendiente bajar <800 final).
 - PDF 2B: separar controller/use-case/domain/infra.
