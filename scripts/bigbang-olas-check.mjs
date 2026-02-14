@@ -222,6 +222,50 @@ addCheck(
 );
 
 // ---------------------------
+// Ola 3 readiness
+// ---------------------------
+addCheck(
+  'ola3.foundation.rollout.module.exists',
+  exists('apps/backend/src/compartido/observabilidad/rolloutCanary.ts'),
+  'apps/backend/src/compartido/observabilidad/rolloutCanary.ts'
+);
+
+addCheck(
+  'ola3.foundation.rollout.routes.exists',
+  exists('apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts'),
+  'apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts'
+);
+
+addCheck(
+  'ola3.foundation.route.mounted',
+  hasText('apps/backend/src/rutas.ts', "router.use('/canary-rollout', rutasCanaryRollout)"),
+  "apps/backend/src/rutas.ts monta /canary-rollout"
+);
+
+addCheck(
+  'ola3.foundation.metrics.canary-target',
+  hasText(
+    'apps/backend/src/compartido/observabilidad/rolloutCanary.ts',
+    'evaluapro_canary_objetivo_v2_ratio'
+  ),
+  'rolloutCanary.ts define evaluapro_canary_objetivo_v2_ratio'
+);
+
+addCheck(
+  'ola3.foundation.scripts.present',
+  ['canary:monitor:auto', 'canary:rollout:check'].every((s) => read('package.json').includes(`"${s}"`)),
+  'scripts canary:monitor:auto y canary:rollout:check presentes'
+);
+
+addCheck(
+  'ola3.readiness.gates.available',
+  ['canary:monitor', 'canary:monitor:auto', 'canary:rollout:check'].every((s) =>
+    read('package.json').includes(`"${s}"`)
+  ),
+  'scripts de gates requeridos para ola 3 estan definidos'
+);
+
+// ---------------------------
 // Strict gate execution
 // ---------------------------
 const strictCommands = [
@@ -232,6 +276,7 @@ const strictCommands = [
   'npm run test:frontend:ci',
   'npm run test:coverage:ci',
   'npm run perf:check',
+  'npm run canary:rollout:check',
   'npm run pipeline:contract:check'
 ];
 
@@ -245,6 +290,7 @@ if (strict) {
 const ola0Passed = checks.filter((c) => c.id.startsWith('ola0.')).every((c) => c.ok);
 const ola1Passed = checks.filter((c) => c.id.startsWith('ola1.')).every((c) => c.ok);
 const ola2Ready = checks.filter((c) => c.id.startsWith('ola2.')).every((c) => c.ok);
+const ola3Ready = checks.filter((c) => c.id.startsWith('ola3.')).every((c) => c.ok);
 const strictPassed = strict ? strictResults.every((r) => r.ok) : null;
 
 const report = {
@@ -255,9 +301,11 @@ const report = {
     ola0Passed,
     ola1Passed,
     ola2Ready,
+    ola3Ready,
     strictPassed,
     previousWavesGuaranteed: ola0Passed && ola1Passed && (strict ? strictPassed : true),
-    nextWaveReadyToExecute: ola2Ready && ola0Passed && ola1Passed && (strict ? strictPassed : true)
+    nextWaveReadyToExecute:
+      ola2Ready && ola3Ready && ola0Passed && ola1Passed && (strict ? strictPassed : true)
   },
   checks,
   strictResults,
@@ -272,8 +320,9 @@ const icon = (ok) => (ok ? 'OK' : 'FAIL');
 console.log(`[olas] ola0: ${icon(ola0Passed)}`);
 console.log(`[olas] ola1: ${icon(ola1Passed)}`);
 console.log(`[olas] ola2-ready: ${icon(ola2Ready)}`);
+console.log(`[olas] ola3-ready: ${icon(ola3Ready)}`);
 if (strict) console.log(`[olas] strict-gates: ${icon(Boolean(strictPassed))}`);
 console.log(`[olas] reporte: ${path.relative(root, outPath).replaceAll('\\', '/')}`);
 
-const finalOk = ola0Passed && ola1Passed && ola2Ready && (strict ? strictPassed : true);
+const finalOk = ola0Passed && ola1Passed && ola2Ready && ola3Ready && (strict ? strictPassed : true);
 process.exit(finalOk ? 0 : 1);

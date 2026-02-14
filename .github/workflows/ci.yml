@@ -153,6 +153,9 @@ jobs:
       - name: Etapa perf-business-check
         run: npm run perf:check:business
 
+      - name: Etapa canary-rollout-check
+        run: npm run canary:rollout:check
+
       - name: Etapa bigbang-olas-strict-check
         run: npm run bigbang:olas:strict
 

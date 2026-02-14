@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ErrorCategoria, ErrorRobusto } from './tiposRobustez';
+import { ErrorAplicacion } from '../errores/errorAplicacion';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -24,6 +25,7 @@ export class ErrorOperacional extends Error implements Omit<ErrorRobusto, 'name'
   duracionMs: number;
   traceId?: string;
 
+  // eslint-disable-next-line max-params
   constructor(
     message: string,
     categoria?: ErrorCategoria,
@@ -73,68 +75,32 @@ export function middlewareManejadorErroresRobusto(
   err: unknown,
   req: Request,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _next: NextFunction
+  next: NextFunction
 ) {
+  if (err instanceof ErrorAplicacion) {
+    next(err);
+    return;
+  }
+
+  if (!(err instanceof ErrorOperacional) && !(err instanceof ZodError)) {
+    next(err);
+    return;
+  }
+
   const traceId = req.headers['x-trace-id'] as string || `trace-${Date.now()}`;
   const tiempoInicio = req['tiempoInicio'] || Date.now();
   const duracionMs = Date.now() - tiempoInicio;
 
-  let errorOperacional: ErrorRobusto | undefined;
-
-  if (err instanceof ErrorOperacional) {
-    errorOperacional = err;
-  } else if (err instanceof ZodError) {
-    errorOperacional = procesarErrorZod(err, traceId);
-  } else if (err instanceof Error) {
-    // Categorizar errores conocidos de Node.js
-    if (err.name === 'TimeoutError') {
-      errorOperacional = new ErrorOperacional(
-        err.message || 'Timeout en operación',
-        ErrorCategoria.TIMEOUT,
-        504,
-        err.stack || '',
-        true,
-        duracionMs,
-        traceId
-      );
-    } else if (err.message.includes('ECONNREFUSED') || err.message.includes('ENOTFOUND')) {
-      errorOperacional = new ErrorOperacional(
-        'Servicio no disponible',
-        ErrorCategoria.INDISPONIBLE,
-        503,
-        err.message,
-        true,
-        duracionMs,
-        traceId
-      );
-    } else {
-      errorOperacional = new ErrorOperacional(
-        err.message || 'Error interno del servidor',
-        ErrorCategoria.INTERNO,
-        500,
-        err.stack || '',
-        false,
-        duracionMs,
-        traceId
-      );
-    }
-  } else {
-    errorOperacional = new ErrorOperacional(
-      'Error desconocido',
-      ErrorCategoria.INTERNO,
-      500,
-      JSON.stringify(err),
-      false,
-      duracionMs,
-      traceId
-    );
-  }
+  const errorOperacional: ErrorRobusto = err instanceof ErrorOperacional
+    ? err
+    : procesarErrorZod(err, traceId);
 
   errorOperacional.traceId = traceId;
   errorOperacional.duracionMs = duracionMs;
 
   // Registrar en logs con estructura
+  const usuarioRequest = (req as Request & { usuario?: { id?: string } }).usuario;
+
   console.error('[ERROR_ROBUSTO]', {
     traceId,
     categoria: errorOperacional.categoria,
@@ -144,7 +110,7 @@ export function middlewareManejadorErroresRobusto(
     duracionMs: errorOperacional.duracionMs,
     ruta: req.path,
     metodo: req.method,
-    usuario: (req as any).usuario?.id || 'anonimo',
+    usuario: usuarioRequest?.id || 'anonimo',
     auditoria: errorOperacional.auditoria
   });
 

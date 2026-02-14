@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { z, type ZodIssue } from 'zod';
 import { ErrorOperacional } from '../../compartido/robustez/manejadorErrores';
 import { ErrorCategoria } from '../../compartido/robustez/tiposRobustez';
 import { conRetry } from '../../compartido/robustez/soporteRetry';
@@ -53,13 +54,13 @@ export function wrapControladorRobusto(
 /**
  * Validador de payload con conversión de errores Zod
  */
-export function validarPayloadRobusto(schema: Parameters<typeof z.object>[0]) {
+export function validarPayloadRobusto(schema: z.ZodTypeAny) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const resultado = schema.safeParse(req.body);
 
       if (!resultado.success) {
-        const problemas = resultado.error.issues.map((issue: any) => ({
+        const problemas = resultado.error.issues.map((issue: ZodIssue) => ({
           campo: issue.path.join('.'),
           tipo: issue.code,
           mensaje: issue.message
@@ -85,13 +86,13 @@ export function validarPayloadRobusto(schema: Parameters<typeof z.object>[0]) {
 /**
  * Validador de parámetros de query
  */
-export function validarQueryRobusto(schema: Parameters<typeof z.object>[0]) {
+export function validarQueryRobusto(schema: z.ZodTypeAny) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const resultado = schema.safeParse(req.query);
 
       if (!resultado.success) {
-        const problemas = resultado.error.issues.map((issue: any) => ({
+        const problemas = resultado.error.issues.map((issue: ZodIssue) => ({
           campo: issue.path.join('.'),
           tipo: issue.code,
           mensaje: issue.message
@@ -106,7 +107,7 @@ export function validarQueryRobusto(schema: Parameters<typeof z.object>[0]) {
         );
       }
 
-      req.query = resultado.data as any;
+      req.query = resultado.data as Request['query'];
       next();
     } catch (err) {
       next(err);

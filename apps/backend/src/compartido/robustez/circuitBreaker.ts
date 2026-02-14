@@ -71,7 +71,7 @@ export class CircuitBreaker {
       this.registrarExito(Date.now() - tiempoInicio);
       return resultado;
     } catch (err) {
-      this.registrarFallo(err);
+      this.registrarFallo();
       throw err;
     }
   }
@@ -103,7 +103,7 @@ export class CircuitBreaker {
   /**
    * Registra un fallo
    */
-  private registrarFallo(_err: unknown): void {
+  private registrarFallo(): void {
     this.metricas.intentosFallidos++;
     this.conteoPuertoMs++;
 

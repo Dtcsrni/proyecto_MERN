@@ -23,6 +23,7 @@
       "ux-visual-check",
       "perf-check",
       "perf-business-check",
+      "canary-rollout-check",
       "bigbang-olas-strict-check",
       "qa-manifest"
     ],
@@ -162,6 +163,15 @@
       "artifacts": [
         "reports/perf/business.latest.json",
         "docs/perf/baseline.business.json"
+      ]
+    },
+    {
+      "name": "canary-rollout-check",
+      "commands": [
+        "npm run canary:rollout:check"
+      ],
+      "artifacts": [
+        "reports/qa/latest/canary-rollout-check.json"
       ]
     },
     {

@@ -27,8 +27,9 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 7. `ux-visual-check`
 8. `perf-check`
 9. `perf-business-check`
-10. `bigbang-olas-strict-check`
-11. `qa-manifest`
+10. `canary-rollout-check`
+11. `bigbang-olas-strict-check`
+12. `qa-manifest`
 
 ### Profile `package`
 1. `package`
@@ -136,6 +137,12 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 - Failure criteria:
   - any authenticated business route with `p95` over budget
   - any measured business route with failures above budget
+
+### canary-rollout-check
+- Command: `npm run canary:rollout:check`
+- Policy: blocking gate
+- Scope: valida fundamento técnico de rollout canary y consistencia entre monitor, política y pruebas
+- Output: `reports/qa/latest/canary-rollout-check.json`
 
 ### bigbang-olas-strict-check
 - Command: `npm run bigbang:olas:strict`
