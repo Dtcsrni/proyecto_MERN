@@ -26,6 +26,7 @@ import rutasAdminDocentes from './modulos/modulo_admin_docentes/rutasAdminDocent
 import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
 import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
 import { middlewareAdapterV1AV2 } from './compartido/observabilidad/middlewareVersionadoApi';
+import { middlewareAdopcionV1, middlewareAdopcionV2 } from './compartido/observabilidad/middlewareAdopcionCanary';
 
 export function crearRouterApi() {
   const router = Router();
@@ -43,11 +44,11 @@ export function crearRouterApi() {
   router.use('/alumnos', rutasAlumnos);
   router.use('/periodos', rutasPeriodos);
   router.use('/banco-preguntas', rutasBancoPreguntas);
-  router.use('/examenes', middlewareAdapterV1AV2(), rutasGeneracionPdf);
+  router.use('/examenes', middlewareAdapterV1AV2(), middlewareAdopcionV1('pdf'), rutasGeneracionPdf);
   router.use('/entregas', rutasVinculacionEntrega);
-  router.use('/omr', middlewareAdapterV1AV2(), rutasEscaneoOmr);
-  router.use('/v2/examenes', rutasGeneracionPdfV2);
-  router.use('/v2/omr', rutasEscaneoOmrV2);
+  router.use('/omr', middlewareAdapterV1AV2(), middlewareAdopcionV1('omr'), rutasEscaneoOmr);
+  router.use('/v2/examenes', middlewareAdopcionV2('pdf'), rutasGeneracionPdfV2);
+  router.use('/v2/omr', middlewareAdopcionV2('omr'), rutasEscaneoOmrV2);
   router.use('/calificaciones', rutasCalificaciones);
   router.use('/analiticas', rutasAnaliticas);
   router.use('/sincronizaciones', rutasSincronizacionNube);

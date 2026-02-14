@@ -4,6 +4,9 @@
  * Responsabilidad: Punto comun de metricas/logs/correlacion para operacion.
  * Limites: Evitar romper nombres de metricas o formato de log en produccion.
  */
+import { exportarMetricasAdopcion } from './metricsAdopcion';
+import { exportarEstadosCircuitBreaker } from '../robustez/circuitBreaker';
+
 const inicioDelProceso = Date.now();
 
 type ClaveSolicitud = `${string}|${string}|${number}`;
@@ -185,5 +188,39 @@ export function exportarMetricasPrometheus(): string {
   lineas.push('# HELP evaluapro_schema_v2_writes_total Total de escrituras procesadas en handlers v2');
   lineas.push('# TYPE evaluapro_schema_v2_writes_total counter');
   lineas.push(`evaluapro_schema_v2_writes_total ${esquemaVersionadoTotales.v2Writes}`);
+
+  // Agregar métrica de adopción canary
+  lineas.push('');
+  lineas.push(exportarMetricasAdopcion());
+
+  // Agregar estados de circuit breaker
+  lineas.push('');
+  lineas.push('# HELP evaluapro_circuit_breaker_status Estado actual de circuit breakers (0=cerrado, 1=abierto, 2=semiluza)');
+  lineas.push('# TYPE evaluapro_circuit_breaker_status gauge');
+  const estadosCb = exportarEstadosCircuitBreaker();
+  for (const [nombre, estado] of Object.entries(estadosCb)) {
+    const estadoNumerico = estado.estado === 'cerrado' ? 0 : estado.estado === 'abierto' ? 1 : 2;
+    lineas.push(`evaluapro_circuit_breaker_status{nombre="${nombre}"} ${estadoNumerico}`);
+  }
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_circuit_breaker_metrics Métricas de circuit breaker (intentos, éxitos, fallos)');
+  lineas.push('# TYPE evaluapro_circuit_breaker_metrics counter');
+  for (const [nombre, estado] of Object.entries(estadosCb)) {
+    const { metricas } = estado;
+    lineas.push(
+      `evaluapro_circuit_breaker_metrics{nombre="${nombre}",tipo="intentos_totales"} ${metricas.intentosTotales}`
+    );
+    lineas.push(
+      `evaluapro_circuit_breaker_metrics{nombre="${nombre}",tipo="intentos_exitosos"} ${metricas.intentosExitosos}`
+    );
+    lineas.push(
+      `evaluapro_circuit_breaker_metrics{nombre="${nombre}",tipo="intentos_fallidos"} ${metricas.intentosFallidos}`
+    );
+    lineas.push(
+      `evaluapro_circuit_breaker_metrics{nombre="${nombre}",tipo="rechazos_cb"} ${metricas.erroresCircuitBreaker}`
+    );
+  }
+
   return lineas.join('\n');
 }
