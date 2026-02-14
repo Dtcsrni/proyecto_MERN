@@ -15,14 +15,17 @@ import rutasAlumnos from './modulos/modulo_alumnos/rutasAlumnos';
 import rutasPeriodos from './modulos/modulo_alumnos/rutasPeriodos';
 import rutasBancoPreguntas from './modulos/modulo_banco_preguntas/rutasBancoPreguntas';
 import rutasGeneracionPdf from './modulos/modulo_generacion_pdf/rutasGeneracionPdf';
+import rutasGeneracionPdfV2 from './modulos/modulo_generacion_pdf/rutasGeneracionPdfV2';
 import rutasVinculacionEntrega from './modulos/modulo_vinculacion_entrega/rutasVinculacionEntrega';
 import rutasEscaneoOmr from './modulos/modulo_escaneo_omr/rutasEscaneoOmr';
+import rutasEscaneoOmrV2 from './modulos/modulo_escaneo_omr/rutasEscaneoOmrV2';
 import rutasCalificaciones from './modulos/modulo_calificacion/rutasCalificaciones';
 import rutasAnaliticas from './modulos/modulo_analiticas/rutasAnaliticas';
 import rutasSincronizacionNube from './modulos/modulo_sincronizacion_nube/rutasSincronizacionNube';
 import rutasAdminDocentes from './modulos/modulo_admin_docentes/rutasAdminDocentes';
 import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
 import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
+import { middlewareAdapterV1AV2 } from './compartido/observabilidad/middlewareVersionadoApi';
 
 export function crearRouterApi() {
   const router = Router();
@@ -40,9 +43,11 @@ export function crearRouterApi() {
   router.use('/alumnos', rutasAlumnos);
   router.use('/periodos', rutasPeriodos);
   router.use('/banco-preguntas', rutasBancoPreguntas);
-  router.use('/examenes', rutasGeneracionPdf);
+  router.use('/examenes', middlewareAdapterV1AV2(), rutasGeneracionPdf);
   router.use('/entregas', rutasVinculacionEntrega);
-  router.use('/omr', rutasEscaneoOmr);
+  router.use('/omr', middlewareAdapterV1AV2(), rutasEscaneoOmr);
+  router.use('/v2/examenes', rutasGeneracionPdfV2);
+  router.use('/v2/omr', rutasEscaneoOmrV2);
   router.use('/calificaciones', rutasCalificaciones);
   router.use('/analiticas', rutasAnaliticas);
   router.use('/sincronizaciones', rutasSincronizacionNube);

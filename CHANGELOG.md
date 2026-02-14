@@ -4,7 +4,34 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 
 ## [Unreleased]
 
+### Added
+- Dual perf gate de negocio autenticado:
+  - `scripts/perf-collect-business.ts`
+  - `scripts/perf-check-business.mjs`
+  - `docs/perf/baseline.business.json`
+- Bootstrap API v2 para dominios iniciales:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/rutasEscaneoOmrV2.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
+- Middleware de observabilidad de transicion v1/v2:
+  - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
+- Prueba de contrato/paridad v2:
+  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+
 ### Changed
+- `apps/backend/src/rutas.ts` monta:
+  - adapters v1 instrumentados en `/api/examenes` y `/api/omr`
+  - rutas nuevas `/api/v2/examenes` y `/api/v2/omr`
+- `apps/backend/src/compartido/observabilidad/metrics.ts` agrega contadores:
+  - `evaluapro_schema_fallback_reads_total`
+  - `evaluapro_schema_v2_writes_total`
+- `package.json` agrega scripts:
+  - `perf:collect:business`
+  - `perf:baseline:business`
+  - `perf:check:business`
+- CI/contrato pipeline incorpora etapa bloqueante `perf-business-check`:
+  - `.github/workflows/ci.yml`
+  - `ci/pipeline.contract.md`
+  - `ci/pipeline.matrix.json`
 - Ola 2C (sincronizacion) avanzó con particion interna sin romper API:
   - Nuevo archivo `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`.
   - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` delega hashing, parsing, LWW y errores de conectividad.

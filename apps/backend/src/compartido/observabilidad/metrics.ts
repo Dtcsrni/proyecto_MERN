@@ -19,6 +19,10 @@ const exportacionesListaTotales = {
 const etapasOmrDuracionMs = new Map<string, number>();
 const etapasOmrTotales = new Map<string, number>();
 const pipelineOmrTotales = { total: 0, errores: 0, duracionAcumuladaMs: 0 };
+const esquemaVersionadoTotales = {
+  fallbackReads: 0,
+  v2Writes: 0
+};
 
 const cubetasMs = [25, 50, 100, 250, 500, 1000, 2500, 5000];
 const histogramaDuracion = new Map<number, number>();
@@ -81,6 +85,14 @@ export function registrarOmrPipeline(exito: boolean, duracionMs: number, request
   if (!exito && requestId) {
     void requestId;
   }
+}
+
+export function registrarSchemaFallbackRead() {
+  esquemaVersionadoTotales.fallbackReads += 1;
+}
+
+export function registrarSchemaV2Write() {
+  esquemaVersionadoTotales.v2Writes += 1;
 }
 
 export function exportarMetricasPrometheus(): string {
@@ -163,5 +175,15 @@ export function exportarMetricasPrometheus(): string {
   const promedioPipeline =
     pipelineOmrTotales.total > 0 ? pipelineOmrTotales.duracionAcumuladaMs / pipelineOmrTotales.total : 0;
   lineas.push(`evaluapro_omr_pipeline_duration_ms ${Number(promedioPipeline.toFixed(2))}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_schema_fallback_reads_total Total de lecturas por adaptador v1 durante migracion dual');
+  lineas.push('# TYPE evaluapro_schema_fallback_reads_total counter');
+  lineas.push(`evaluapro_schema_fallback_reads_total ${esquemaVersionadoTotales.fallbackReads}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_schema_v2_writes_total Total de escrituras procesadas en handlers v2');
+  lineas.push('# TYPE evaluapro_schema_v2_writes_total counter');
+  lineas.push(`evaluapro_schema_v2_writes_total ${esquemaVersionadoTotales.v2Writes}`);
   return lineas.join('\n');
 }
