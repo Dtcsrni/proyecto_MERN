@@ -2465,6 +2465,27 @@ p {
   font-weight: 700;
 }
 
+.version-repo-link {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.52);
+  color: #d8f4ff;
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.12);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.version-repo-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.82);
+}
+
 .version-pulse {
   width: 11px;
   height: 11px;
@@ -2509,6 +2530,69 @@ p {
   padding-bottom: 1.2rem;
 }
 
+.version-tech-grid {
+  margin-top: 0.65rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.version-tech-item {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  background: rgba(6, 10, 22, 0.9);
+  color: #d8e6ff;
+  text-decoration: none;
+  padding: 0.55rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  position: relative;
+  overflow: hidden;
+  animation: versionTechFloat 4s ease-in-out infinite;
+}
+
+.version-tech-item::after {
+  content: '';
+  position: absolute;
+  top: -120%;
+  left: -70%;
+  width: 45%;
+  height: 260%;
+  transform: rotate(20deg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+  animation: versionTechScan 2.7s linear infinite;
+}
+
+.version-tech-item:hover {
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 16px 28px rgba(56, 189, 248, 0.18);
+}
+
+.version-tech-item:nth-child(5n + 1) { animation-delay: 0s; }
+.version-tech-item:nth-child(5n + 2) { animation-delay: 0.2s; }
+.version-tech-item:nth-child(5n + 3) { animation-delay: 0.4s; }
+.version-tech-item:nth-child(5n + 4) { animation-delay: 0.6s; }
+.version-tech-item:nth-child(5n + 5) { animation-delay: 0.8s; }
+
+.version-tech-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.26));
+}
+
+@keyframes versionTechFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes versionTechScan {
+  0% { left: -70%; }
+  100% { left: 130%; }
+}
+
 .version-changelog {
   margin: 0.6rem 0 0;
   min-height: 360px;
@@ -2527,4 +2611,18 @@ p {
 .version-error {
   margin: 0.2rem 0 0;
   color: #fecaca;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .version-tech-item,
+  .version-tech-item::after,
+  .version-pulse,
+  .chip-version {
+    animation: none !important;
+  }
+
+  .version-repo-link,
+  .version-tech-item {
+    transition: none !important;
+  }
 }
