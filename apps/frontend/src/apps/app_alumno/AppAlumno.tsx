@@ -16,6 +16,7 @@ import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
 import { HelperPanel } from '../../ui/ux/componentes/HelperPanel';
 import { obtenerSessionId } from '../../ui/ux/sesion';
 import { TemaBoton } from '../../tema/TemaBoton';
+import { abrirVentanaVersion, obtenerVersionApp } from '../../ui/version/versionInfo';
 import {
   accionCerrarSesion,
   accionToastSesionParaError,
@@ -60,6 +61,7 @@ type Resultado = {
 };
 
 export function AppAlumno() {
+  const version = obtenerVersionApp();
   const [codigo, setCodigo] = useState('');
   const [matricula, setMatricula] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -303,6 +305,14 @@ export function AppAlumno() {
           <Icono nombre="alumno" /> Portal Alumno
         </p>
         <div className="cabecera__acciones">
+          <button
+            type="button"
+            className="chip chip-version"
+            title="Abrir información de versión"
+            onClick={() => abrirVentanaVersion('alumno')}
+          >
+            v{version}
+          </button>
           <TemaBoton />
           {token && (
             <button className="boton secundario" type="button" onClick={cerrarSesion}>

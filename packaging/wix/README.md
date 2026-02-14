@@ -33,6 +33,11 @@ Artefactos esperados:
   - `launcher-tray-hidden.vbs prod 4519`
 - El acceso directo **Dev** ejecuta:
   - `launcher-tray-hidden.vbs dev 4519`
+- Instalacion/actualizacion:
+  - genera automaticamente accesos directos de menu inicio.
+  - por defecto tambien genera accesos directos en escritorio (`InstallDesktopShortcuts=1`).
+  - se puede desactivar por linea de comandos:
+    - `EvaluaPro-Setup.exe InstallDesktopShortcuts=0`
 - El instalador aplica upgrade in-place si detecta una version previa.
 - El instalador valida prerequisitos no autoconfigurables:
   - Node.js 24+

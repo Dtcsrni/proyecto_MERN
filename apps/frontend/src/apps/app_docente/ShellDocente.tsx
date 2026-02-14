@@ -9,6 +9,7 @@ import { Icono } from '../../ui/iconos';
 import { TemaBoton } from '../../tema/TemaBoton';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
+import { abrirVentanaVersion, obtenerVersionApp } from '../../ui/version/versionInfo';
 import type { Docente } from './tipos';
 
 export function ShellDocente({
@@ -20,6 +21,7 @@ export function ShellDocente({
   onCerrarSesion: () => void;
   children: ReactNode;
 }) {
+  const version = obtenerVersionApp();
   return (
     <section className="card anim-entrada">
       <div className="cabecera">
@@ -30,6 +32,14 @@ export function ShellDocente({
           <h1>Banco y Examenes</h1>
         </div>
         <div className="cabecera__acciones">
+          <button
+            type="button"
+            className="chip chip-version"
+            title="Abrir información de versión"
+            onClick={() => abrirVentanaVersion('docente')}
+          >
+            v{version}
+          </button>
           <TemaBoton />
           {docente && (
             <Boton variante="secundario" type="button" icono={<Icono nombre="salir" />} onClick={onCerrarSesion}>
