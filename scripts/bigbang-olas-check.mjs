@@ -142,17 +142,37 @@ addCheck(
 // ---------------------------
 const ola2OmmrTarget = { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts') };
 const ola2PdfTargets = [
-  'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts',
-  'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts'
-].map((filePath) => ({ filePath, lines: lineCount(filePath) }));
+  { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts') },
+  { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts') },
+  { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts') }
+];
 const ola2SyncTarget = { filePath: 'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts', lines: lineCount('apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts') };
 
 addCheck('ola2a.omr.monolith.pending', ola2OmmrTarget.lines > 800, `${ola2OmmrTarget.filePath}: ${ola2OmmrTarget.lines}`);
-addCheck(
-  'ola2b.pdf.monolith.pending',
-  ola2PdfTargets.every((t) => t.lines > 800),
-  ola2PdfTargets.map((t) => `${t.filePath}: ${t.lines}`)
+
+// Ola 2B: PDF segmentado si fachada <100 lineas, legado preservado y estructura de capas presente
+const pdfFachada = ola2PdfTargets.find((t) => t.filePath.endsWith('servicioGeneracionPdf.ts'));
+const pdfLegado = ola2PdfTargets.find((t) => t.filePath.endsWith('servicioGeneracionPdfLegacy.ts'));
+const fachadaCompacta = pdfFachada && pdfFachada.lines < 100;
+const legadoPreservado = pdfLegado && pdfLegado.lines > 800;
+const capasPdfPresentes = ['application/usecases', 'domain', 'infra', 'shared'].every((dir) =>
+  exists(`apps/backend/src/modulos/modulo_generacion_pdf/${dir}`)
 );
+
+addCheck(
+  'ola2b.pdf.segmented',
+  fachadaCompacta && legadoPreservado && capasPdfPresentes,
+  {
+    fachada: pdfFachada ? `${pdfFachada.filePath}: ${pdfFachada.lines}` : 'no encontrada',
+    legado: pdfLegado ? `${pdfLegado.filePath}: ${pdfLegado.lines}` : 'no encontrado',
+    controller: `${ola2PdfTargets[0].filePath}: ${ola2PdfTargets[0].lines}`,
+    capas: ['application/usecases', 'domain', 'infra', 'shared'].map((dir) => ({
+      dir,
+      exists: exists(`apps/backend/src/modulos/modulo_generacion_pdf/${dir}`)
+    }))
+  }
+);
+
 addCheck(
   'ola2c.sync.segmented',
   ola2SyncTarget.lines <= 450 &&

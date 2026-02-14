@@ -23,6 +23,14 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
 - Prueba de contrato/paridad v2:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+- Ola 2B PDF: nueva arquitectura DDD/Clean Architecture con feature flag:
+  - `apps/backend/src/modulos/modulo_generacion_pdf/shared/tiposPdf.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/infra/configuracionLayoutEnv.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/domain/examenPdf.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/domain/layoutExamen.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/application/usecases/generarExamenIndividual.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts` (preservation)
 - Ola 2C Sync: nueva arquitectura interna por capas:
   - `apps/backend/src/modulos/modulo_sincronizacion_nube/shared/tiposSync.ts`
   - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/repositoriosSync.ts`
@@ -90,8 +98,17 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Gate BigBang alineado por dominio en `scripts/bigbang-olas-check.mjs`:
   - reemplazo de `ola2.pending.monoliths.detected` por:
     - `ola2a.omr.monolith.pending`
-    - `ola2b.pdf.monolith.pending`
+    - `ola2b.pdf.segmented` (actualizado desde monolith.pending)
     - `ola2c.sync.segmented`
+- Ola 2B PDF: fachada con feature flag para canary deployment:
+  - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
+  - Legacy preservado en `servicioGeneracionPdfLegacy.ts` (1396 lineas).
+  - Variable de entorno `FEATURE_PDF_BUILDER_V2` (default: 0).
+  - Estructura DDD implementada: application/domain/infra/shared layers.
+  - Domain entities: `ExamenPdf`, `LayoutExamen` (value objects).
+  - Infrastructure: `ConfiguracionLayoutEnv` (parser), `PdfKitRenderer` (stub).
+  - Use case: `generarExamenIndividual` (delega a legacy en bootstrap).
+  - Documentacion completa en README.md del modulo.
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
 - Validacion del sprint Big Bang ejecutada en verde:
   - `npm -C apps/backend run lint`
