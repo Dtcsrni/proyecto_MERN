@@ -62,5 +62,31 @@ describe('salud', () => {
     expect(String(res.text)).toContain('evaluapro_omr_stage_duration_ms');
     expect(String(res.text)).toContain('evaluapro_omr_pipeline_total');
   });
+
+  it('expone version-info con repositorio y tecnologías', async () => {
+    const app = crearApp();
+    const res = await request(app).get('/api/salud/version-info').expect(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        app: expect.objectContaining({
+          name: expect.any(String),
+          version: expect.any(String)
+        }),
+        repositoryUrl: expect.any(String),
+        technologies: expect.any(Array)
+      })
+    );
+    expect(String(res.body.repositoryUrl)).toContain('github.com');
+    expect(Array.isArray(res.body.technologies)).toBe(true);
+    if (res.body.technologies.length > 0) {
+      expect(res.body.technologies[0]).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          label: expect.any(String),
+          logoUrl: expect.any(String)
+        })
+      );
+    }
+  });
 });
 
