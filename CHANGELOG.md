@@ -32,6 +32,19 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/traerPaquetesServidor.ts`
 - Prueba de contrato minima para behavior lock Sync:
   - `apps/backend/tests/sincronizacion.contrato.test.ts`
+- Extraccion interna OMR (Ola 2A, corte intermedio):
+  - `apps/backend/src/modulos/modulo_escaneo_omr/infra/imagenProcesamientoLegacy.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/application/README.md`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/domain/README.md`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/infra/README.md`
+- Estructura de empaquetado MSI/WiX para estable local en Windows:
+  - `packaging/wix/Product.wxs`
+  - `packaging/wix/Bundle.wxs`
+  - `packaging/wix/Fragments/AppFiles.wxs`
+  - `packaging/wix/Fragments/Shortcuts.wxs`
+  - `packaging/wix/Fragments/Cleanup.wxs`
+  - `packaging/wix/README.md`
+  - `scripts/build-msi.ps1`
 
 ### Changed
 - `apps/backend/src/rutas.ts` monta:
@@ -67,6 +80,41 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `apps/frontend/src/apps/app_docente/SeccionSincronizacion.tsx` usa `HelperPanel` con flujo recomendado.
 - Nueva guía de criterios verificables GUI/UX:
   - `docs/UX_QUALITY_CRITERIA.md`.
+- Gate BigBang alineado por dominio en `scripts/bigbang-olas-check.mjs`:
+  - reemplazo de `ola2.pending.monoliths.detected` por:
+    - `ola2a.omr.monolith.pending`
+    - `ola2b.pdf.monolith.pending`
+    - `ola2c.sync.segmented`
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
+- Validacion del sprint Big Bang ejecutada en verde:
+  - `npm -C apps/backend run lint`
+  - `npm -C apps/backend run typecheck`
+  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts`
+  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
+  - `npm run bigbang:olas:check`
+  - `npm run bigbang:olas:strict`
+  - `npm run pipeline:contract:check`
+- Arranque prod local endurecido para primera estable distribuible:
+  - Nuevo script `portal:prod` en `package.json` usando `scripts/start-portal-prod.mjs`:
+    - build condicional de portal si falta `dist/index.js`
+    - inicio en modo compilado (sin watch)
+  - `scripts/launcher-dashboard.mjs` ahora resuelve `portal` por modo:
+    - dev -> `dev:portal`
+    - prod -> `portal:prod`
+  - Endpoints `/api/start`, `/api/run`, `/api/restart` usan resolucion dinamica por modo.
+  - `scripts/launcher-tray.ps1` asegura autostart idempotente:
+    - stack prod/dev si falta
+    - portal si falta
+  - `scripts/create-shortcuts.ps1` alinea descripcion de accesos Dev/Prod.
+- Instalador estable reforzado con criterios de release:
+  - metadatos de desarrollador en MSI/Bundle:
+    - `I.S.C. Erick Renato Vega Ceron`
+  - prerequisitos no autoconfigurables validados por instalador:
+    - Node.js 24+
+    - Docker Desktop
+  - politica de upgrade in-place mantenida para instalaciones existentes.
+  - `scripts/build-msi.ps1` ahora ejecuta checks obligatorios de estabilidad antes de empaquetar.
+  - progreso de build MSI con barra por fase real (checks + build MSI + bundle).
 
 ## [0.2.0-beta.1] - 2026-02-13
 

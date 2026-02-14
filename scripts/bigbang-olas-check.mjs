@@ -140,17 +140,32 @@ addCheck(
 // ---------------------------
 // Siguiente ola (2) readiness
 // ---------------------------
-const ola2Targets = [
-  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts',
+const ola2OmmrTarget = { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts') };
+const ola2PdfTargets = [
   'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts',
-  'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts',
-  'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts'
+  'apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts'
 ].map((filePath) => ({ filePath, lines: lineCount(filePath) }));
+const ola2SyncTarget = { filePath: 'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts', lines: lineCount('apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts') };
 
+addCheck('ola2a.omr.monolith.pending', ola2OmmrTarget.lines > 800, `${ola2OmmrTarget.filePath}: ${ola2OmmrTarget.lines}`);
 addCheck(
-  'ola2.pending.monoliths.detected',
-  ola2Targets.every((t) => t.lines > 800),
-  ola2Targets.map((t) => `${t.filePath}: ${t.lines}`)
+  'ola2b.pdf.monolith.pending',
+  ola2PdfTargets.every((t) => t.lines > 800),
+  ola2PdfTargets.map((t) => `${t.filePath}: ${t.lines}`)
+);
+addCheck(
+  'ola2c.sync.segmented',
+  ola2SyncTarget.lines <= 450 &&
+    ['application', 'domain', 'infra', 'shared'].every((dir) =>
+      exists(`apps/backend/src/modulos/modulo_sincronizacion_nube/${dir}`)
+    ),
+  {
+    controlador: `${ola2SyncTarget.filePath}: ${ola2SyncTarget.lines}`,
+    capas: ['application', 'domain', 'infra', 'shared'].map((dir) => ({
+      dir,
+      exists: exists(`apps/backend/src/modulos/modulo_sincronizacion_nube/${dir}`)
+    }))
+  }
 );
 
 addCheck(
@@ -208,7 +223,7 @@ const report = {
   },
   checks,
   strictResults,
-  ola2Targets
+  ola2Targets: [ola2OmmrTarget, ...ola2PdfTargets, ola2SyncTarget]
 };
 
 const outDir = ensureReportDir();

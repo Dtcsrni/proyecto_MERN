@@ -560,11 +560,30 @@ function Ensure-StackOnLaunch {
   if (-not $status) { return }
 
   $running = Get-RunningTasksFromStatus $status
-  if (Test-AnyStackTasksRunning $running) { return }
-  if (Test-AnyStackRunning) { return }
+  $stackRunning = (Test-AnyStackTasksRunning $running) -or (Test-AnyStackRunning)
+  if (-not $stackRunning) {
+    Log("Stack detenido. Solicitando inicio ($desired).")
+    Invoke-PostJsonOrNull '/api/start' @{ task = $desired } | Out-Null
+    Start-Sleep -Milliseconds 400
+    $status = Wait-ForStatus 3500
+    if (-not $status) { return }
+    $running = Get-RunningTasksFromStatus $status
+  }
 
-  Log("Stack detenido. Solicitando inicio ($desired).")
-  Invoke-PostJsonOrNull '/api/start' @{ task = $desired } | Out-Null
+  $portalRunning = $running -contains 'portal'
+  if (-not $portalRunning) {
+    $health = Get-JsonOrNull '/api/health'
+    try {
+      if ($health -and $health.services -and $health.services.apiPortal -and $health.services.apiPortal.ok -eq $true) {
+        $portalRunning = $true
+      }
+    } catch {}
+  }
+
+  if (-not $portalRunning) {
+    Log('Portal detenido. Solicitando inicio (portal).')
+    Invoke-PostJsonOrNull '/api/start' @{ task = 'portal' } | Out-Null
+  }
 }
 
 function Start-DashboardIfNeeded {

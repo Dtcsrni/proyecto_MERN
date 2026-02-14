@@ -31,7 +31,7 @@ Commit de referencia: `15f7d35`.
 ## Riesgos tecnicos actuales
 1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`) aunque cumplen limite de linea.
 2. Rampa de cobertura frontend hacia objetivo 45 aun pendiente (gate actual en 39/40/31/37).
-3. Backend core critico aun parcialmente monolitico (PDF/Sync pendientes de particion profunda).
+3. Backend core critico aun parcialmente monolitico (PDF pendiente y OMR en corte intermedio).
 4. Dependencia de disciplina documental para mantener trazabilidad multi-agente.
 
 ## Validacion reciente (corte)
@@ -113,7 +113,7 @@ Commit de referencia: `15f7d35`.
 - Prueba de contrato/paridad v2 agregada:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
 - Ola 2C (sincronizacion) profundizada con arquitectura por capas sin romper API:
-  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` reducido a fachada HTTP (79 lineas).
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` reducido a fachada HTTP (80 lineas).
   - Nuevas capas internas:
     - `application/usecases/*`
     - `domain/paqueteSincronizacion.ts`
@@ -128,6 +128,33 @@ Commit de referencia: `15f7d35`.
     - `npm -C apps/backend run typecheck`
     - `npm -C apps/backend run test -- tests/sincronizacion.test.ts tests/sincronizacion.contrato.test.ts`
     - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
+
+### Corte 2026-02-14 (sprint Big Bang: Gate + Ola 2A OMR + Ola 3 minima)
+- Gate BigBang alineado con estado real por dominio:
+  - `scripts/bigbang-olas-check.mjs` reemplaza check rigido por:
+    - `ola2a.omr.monolith.pending`
+    - `ola2b.pdf.monolith.pending`
+    - `ola2c.sync.segmented`
+  - `reports/qa/latest/olas-bigbang.json` refleja estado coherente sin falso negativo de Sync 2C.
+- Ola 2A OMR con particion interna real:
+  - nuevo modulo `apps/backend/src/modulos/modulo_escaneo_omr/infra/imagenProcesamientoLegacy.ts`
+  - `servicioOmrLegacy.ts` delega QR/transformacion/deteccion de burbujas al modulo `infra`.
+  - estructura interna presente para iteraciones siguientes:
+    - `apps/backend/src/modulos/modulo_escaneo_omr/application/`
+    - `apps/backend/src/modulos/modulo_escaneo_omr/domain/`
+    - `apps/backend/src/modulos/modulo_escaneo_omr/infra/`
+  - meta tecnica del sprint cumplida: `servicioOmrLegacy.ts` = 1400 lineas.
+- Ola 3 minima OMR validada:
+  - paridad v1/v2 y metricas de transicion validadas en:
+    - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+- Validacion completa del sprint (verde):
+  - `npm -C apps/backend run lint`
+  - `npm -C apps/backend run typecheck`
+  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts`
+  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
+  - `npm run bigbang:olas:check`
+  - `npm run bigbang:olas:strict`
+  - `npm run pipeline:contract:check`
 
 ## QA preproduccion automatizada (nuevo)
 - Gates bloqueantes agregados:

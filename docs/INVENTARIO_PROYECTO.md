@@ -45,14 +45,16 @@ Commit de referencia: `15f7d35`.
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
 - Ola 2: activa (backend core)
-  - OMR: en curso (Ola 2A iniciada con pipeline modular + flag canary)
+  - OMR: en curso (Ola 2A con particion interna real + flag canary)
     - `servicioOmr.ts`: fachada v2 (feature flag)
-    - `servicioOmrLegacy.ts`: motor legado (monolito)
+    - `servicioOmrLegacy.ts`: motor legado reducido a 1400 lineas (corte de sprint)
+    - `infra/imagenProcesamientoLegacy.ts`: extraccion de QR/transformacion/deteccion de burbujas
+    - `application/`, `domain/`, `infra/`: estructura interna activa para siguientes cortes
   - PDF:
     - `controladorGeneracionPdf.ts`: 1389
     - `servicioGeneracionPdf.ts`: 1396
   - Sincronizacion (Ola 2C en progreso, particion interna avanzada):
-    - `controladorSincronizacion.ts`: 79 (fachada HTTP)
+    - `controladorSincronizacion.ts`: 80 (fachada HTTP)
     - `domain/paqueteSincronizacion.ts`: ensamblado/procesado de paquetes y guardrails
     - `infra/repositoriosSync.ts`: auditoria + cursores/fechas de sync
     - `infra/portalSyncClient.ts`: cliente HTTP unificado hacia portal
@@ -125,6 +127,9 @@ Commit de referencia: `15f7d35`.
   - `npm run perf:check:business`
   - `npm run pipeline:contract:check`
   - `npm run bigbang:olas:strict`
+  - `npm run bigbang:olas:check`
+  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts`
+  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
   - `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts`
 - Cobertura frontend observada:
   - lines 39.20
@@ -152,7 +157,7 @@ Commit de referencia: `15f7d35`.
 
 ## 9) Brechas para `1.0-beta`
 1. Completar Ola 2:
-- OMR 2A: continuar particion interna del motor legado por etapas reales (no solo orquestacion).
+- OMR 2A: continuar particion interna del motor legado (corte actual: 1400 lineas, pendiente bajar <800 final).
 - PDF 2B: separar controller/use-case/domain/infra.
 - Sync 2C: continuar separacion de politicas y contratos internos (controlador ya segmentado).
 2. Completar Ola 3 (`api/v2` + migracion dual integral):

@@ -19,6 +19,25 @@ Portal:
 3. Comprobar readiness:
 - Si `ready` da 503, validar conectividad MongoDB.
 
+### Arranque estable local (Windows)
+1. Ejecutar acceso directo:
+- `EvaluaPro - Prod`
+2. Comportamiento esperado:
+- inicia dashboard/tray
+- si stack prod no esta activo, ejecuta `stack:prod`
+- si portal no esta activo, ejecuta `portal:prod`
+- si la app ya estaba instalada, upgrade in-place conservando atajos operativos
+3. Verificacion:
+- backend: `GET /api/salud/live`
+- portal: `GET /api/portal/salud/live`
+
+### Instalador (MSI/WiX) - experiencia esperada
+- textos de instalacion con indicaciones de prerrequisitos.
+- barra de progreso real por fase (checks previos + compilacion MSI + bundle EXE) al generar distribuible.
+- validacion de prerequisitos no autoconfigurables:
+  - Node.js 24+
+  - Docker Desktop
+
 ## 3. Síntoma: incremento de errores 5xx
 1. Revisar métrica de errores y latencia p95.
 2. Filtrar logs por `level=error` y `requestId`.
@@ -37,6 +56,16 @@ Portal:
 3. Crear alumno.
 4. Generar examen.
 5. Flujo de publicación/sincronización básico.
+
+## 5.1 Smoke prod local (stack + portal)
+1. `GET /api/salud/live` -> 200
+2. `GET /api/portal/salud/live` -> 200
+3. `GET /api/metrics` -> 200
+4. `GET /api/portal/metrics` -> 200
+
+Si falla portal:
+- ejecutar `npm run portal:prod`
+- revisar logs de dashboard/tray para build/start de portal.
 
 ## 6. Escalamiento
 - Si hay degradación sostenida (`ready` inestable + errores altos), activar rollback al último release estable.
