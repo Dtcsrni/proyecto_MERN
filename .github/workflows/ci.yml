@@ -150,6 +150,9 @@ jobs:
       - name: Etapa perf-check
         run: npm run perf:check
 
+      - name: Etapa perf-business-check
+        run: npm run perf:check:business
+
       - name: Etapa bigbang-olas-strict-check
         run: npm run bigbang:olas:strict
 
@@ -158,7 +161,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: perf-report
-          path: reports/perf/latest.json
+          path: |
+            reports/perf/latest.json
+            reports/perf/business.latest.json
 
       - name: Consolidar manifiesto QA
         if: always()

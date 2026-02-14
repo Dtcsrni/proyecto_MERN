@@ -1,7 +1,7 @@
 # Engineering Baseline
 
-Fecha de baseline: 2026-02-13.
-Commit de referencia: `dffa43f`.
+Fecha de baseline: 2026-02-14.
+Commit de referencia: `15f7d35`.
 
 ## Estado actual
 - Monorepo NPM workspaces:
@@ -13,6 +13,13 @@ Commit de referencia: `dffa43f`.
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
 - Arquitectura backend: Ola 2 iniciada en OMR con pipeline modular v2 detras de feature flag.
+- API v2 bootstrap activo para OMR/PDF:
+  - `/api/v2/omr/*`
+  - `/api/v2/examenes/*`
+  - adapters explicitos v1->v2 instrumentados en rutas v1 (`/api/omr`, `/api/examenes`).
+- Gate dual de performance activo:
+  - rapido PR: `npm run perf:check`
+  - negocio autenticado: `npm run perf:check:business`
 - Frontend docente con cierre de Ola 1 en estado operativo.
 
 ## Corte de modularizacion docente (real)
@@ -40,8 +47,10 @@ Commit de referencia: `dffa43f`.
 - `npm run test:backend:ci`: verde.
 - `npm run test:portal:ci`: verde.
 - `npm run perf:check`: verde.
+- `npm run perf:check:business`: verde.
 - `npm run pipeline:contract:check`: verde.
 - `npm run bigbang:olas:strict`: verde.
+- `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts`: verde.
 
 ## Avance Ola 2A (OMR)
 - Se preservo el motor legado en `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`.
@@ -91,6 +100,18 @@ Commit de referencia: `dffa43f`.
   - `tests/omr.test.ts`
   - `npm -C apps/backend run lint`
   - `npm -C apps/backend run typecheck`
+
+### Corte 2026-02-14 (iteracion actual)
+- Observabilidad de migracion dual agregada en metricas Prometheus:
+  - `evaluapro_schema_fallback_reads_total`
+  - `evaluapro_schema_v2_writes_total`
+- Middleware de versionado agregado:
+  - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
+- Rutas v2 iniciales activas:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/rutasEscaneoOmrV2.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
+- Prueba de contrato/paridad v2 agregada:
+  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
 
 ## QA preproduccion automatizada (nuevo)
 - Gates bloqueantes agregados:

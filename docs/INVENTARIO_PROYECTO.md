@@ -1,7 +1,7 @@
 # Inventario Tecnico del Proyecto
 
-Fecha de corte: 2026-02-13.
-Commit de referencia: `dffa43f`.
+Fecha de corte: 2026-02-14.
+Commit de referencia: `15f7d35`.
 
 ## 1) Alcance del inventario
 - Monorepo completo (`apps/*`, `ci/*`, `.github/workflows/*`, `docs/*`, `scripts/*`, `ops/*`).
@@ -44,7 +44,7 @@ Commit de referencia: `dffa43f`.
   - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
-- Ola 2: pendiente (backend core)
+- Ola 2: activa (backend core)
   - OMR: en curso (Ola 2A iniciada con pipeline modular + flag canary)
     - `servicioOmr.ts`: fachada v2 (feature flag)
     - `servicioOmrLegacy.ts`: motor legado (monolito)
@@ -54,7 +54,7 @@ Commit de referencia: `dffa43f`.
   - Sincronizacion (Ola 2C en progreso):
     - `controladorSincronizacion.ts`: 885
     - `sincronizacionInterna.ts`: modulo extraido para utilidades, hashing y LWW
-- Ola 3: pendiente (`api/v2` + migracion dual completa)
+- Ola 3: iniciada en OMR/PDF (bootstrap `api/v2` + metricas de migracion dual)
 - Ola 4: pendiente (hardening final + retiro de compatibilidad temporal)
 
 ## 4) Inventario exhaustivo de instrucciones para agentes IA
@@ -106,6 +106,7 @@ Commit de referencia: `dffa43f`.
   - `flujo-docente-check`, `dataset-prodlike-check`, `docente-alumno-e2e-check`
   - `global-grade-check`, `pdf-print-check`, `ux-visual-check`
   - `coverage-check`, `perf-check`, `qa-manifest`
+  - `perf-business-check`
   - `build`, `docs-check`, `security-scan`
 
 ## 6) Estado de gates (corte reciente)
@@ -117,8 +118,10 @@ Commit de referencia: `dffa43f`.
   - `npm run test:backend:ci`
   - `npm run test:portal:ci`
   - `npm run perf:check`
+  - `npm run perf:check:business`
   - `npm run pipeline:contract:check`
   - `npm run bigbang:olas:strict`
+  - `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts`
 - Cobertura frontend observada:
   - lines 39.20
   - functions 40.28
@@ -148,7 +151,8 @@ Commit de referencia: `dffa43f`.
 - OMR 2A: continuar particion interna del motor legado por etapas reales (no solo orquestacion).
 - PDF 2B: separar controller/use-case/domain/infra.
 - Sync 2C: separar controlador por casos de uso y politicas.
-2. Completar Ola 3 (`api/v2` + migracion dual integral).
+2. Completar Ola 3 (`api/v2` + migracion dual integral):
+- Ya existe bootstrap inicial para `OMR/PDF` y contadores de fallback/v2 writes; falta expandir al resto de dominios breaking.
 3. Completar Ola 4 (hardening final + retiro de compatibilidad temporal).
 4. Continuar rampa de cobertura frontend hacia 45 en 4 metricas sin exclusiones artificiales.
 

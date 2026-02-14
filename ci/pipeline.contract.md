@@ -26,8 +26,9 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 6. `pdf-print-check`
 7. `ux-visual-check`
 8. `perf-check`
-9. `bigbang-olas-strict-check`
-10. `qa-manifest`
+9. `perf-business-check`
+10. `bigbang-olas-strict-check`
+11. `qa-manifest`
 
 ### Profile `package`
 1. `package`
@@ -124,6 +125,17 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 - Failure criteria:
   - any route with `p95` over budget
   - any measured route with failures above budget
+
+### perf-business-check
+- Command: `npm run perf:check:business`
+- Policy: blocking gate for `main` and `release/*` (can run optional in nightly)
+- Inputs:
+  - `docs/perf/baseline.business.json`
+- Outputs:
+  - `reports/perf/business.latest.json`
+- Failure criteria:
+  - any authenticated business route with `p95` over budget
+  - any measured business route with failures above budget
 
 ### bigbang-olas-strict-check
 - Command: `npm run bigbang:olas:strict`

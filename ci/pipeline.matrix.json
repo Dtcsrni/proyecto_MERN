@@ -22,6 +22,7 @@
       "pdf-print-check",
       "ux-visual-check",
       "perf-check",
+      "perf-business-check",
       "bigbang-olas-strict-check",
       "qa-manifest"
     ],
@@ -151,6 +152,16 @@
       "artifacts": [
         "reports/perf/latest.json",
         "docs/perf/baseline.json"
+      ]
+    },
+    {
+      "name": "perf-business-check",
+      "commands": [
+        "npm run perf:check:business"
+      ],
+      "artifacts": [
+        "reports/perf/business.latest.json",
+        "docs/perf/baseline.business.json"
       ]
     },
     {
