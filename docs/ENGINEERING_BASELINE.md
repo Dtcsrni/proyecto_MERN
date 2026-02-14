@@ -1,7 +1,7 @@
 # Engineering Baseline
 
 Fecha de baseline: 2026-02-14.
-Commit de referencia: `15f7d35`.
+Commit de referencia: TBD (sesion Ola 2B PDF).
 
 ## Estado actual
 - Monorepo NPM workspaces:
@@ -12,7 +12,7 @@ Commit de referencia: `15f7d35`.
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
-- Arquitectura backend: Ola 2 iniciada en OMR con pipeline modular v2 detras de feature flag.
+- Arquitectura backend: Ola 2 avanzada con segmentacion modular en OMR, PDF y Sync.
 - API v2 bootstrap activo para OMR/PDF:
   - `/api/v2/omr/*`
   - `/api/v2/examenes/*`
@@ -31,7 +31,7 @@ Commit de referencia: `15f7d35`.
 ## Riesgos tecnicos actuales
 1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`) aunque cumplen limite de linea.
 2. Rampa de cobertura frontend hacia objetivo 45 aun pendiente (gate actual en 39/40/31/37).
-3. Backend core critico aun parcialmente monolitico (PDF pendiente y OMR en corte intermedio).
+3. Backend core: Ola 2B (PDF) iniciada con estructura de capas, motor v2 pendiente de implementacion completa.
 4. Dependencia de disciplina documental para mantener trazabilidad multi-agente.
 
 ## Validacion reciente (corte)
@@ -49,8 +49,9 @@ Commit de referencia: `15f7d35`.
 - `npm run perf:check`: verde.
 - `npm run perf:check:business`: verde.
 - `npm run pipeline:contract:check`: verde.
-- `npm run bigbang:olas:strict`: verde.
+- `npm run bigbang:olas:strict`: verde (2026-02-14 post Ola 2B inicio).
 - `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts`: verde.
+- `npm -C apps/backend run test -- tests/integracion/pdfImpresionContrato.test.ts`: verde (2026-02-14 post refactor).
 
 ## Avance Ola 2A (OMR)
 - Se preservo el motor legado en `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`.
@@ -71,6 +72,35 @@ Commit de referencia: `15f7d35`.
   - `evaluapro_omr_pipeline_error_total`
   - `evaluapro_omr_pipeline_duration_ms`
 - `scripts/perf-collect.ts` ampliado con rutas criticas de negocio en backend (modo no autenticado controlado).
+
+### Corte 2026-02-14 (sprint Big Bang: Ola 2B PDF inicio)
+- Gate BigBang alineado con estado real para Ola 2B:
+  - `scripts/bigbang-olas-check.mjs` actualizado con check `ola2b.pdf.segmented`:
+    - Valida fachada <100 lineas
+    - Valida legado preservado >800 lineas
+    - Valida estructura de capas DDD presente
+  - `reports/qa/latest/olas-bigbang.json` refleja estado coherente de las 3 olas.
+- Ola 2B PDF con bootstrap de arquitectura modular:
+  - Motor legado preservado: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts` (1396 lineas)
+  - Fachada con feature flag: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` (60 lineas)
+  - Feature flag: `FEATURE_PDF_BUILDER_V2=0|1` (por defecto 0, usa legado)
+  - Estructura de capas creada:
+    - `application/usecases/generarExamenIndividual.ts` (stub con delegacion a legado)
+    - `domain/examenPdf.ts` (entidad con validaciones)
+    - `domain/layoutExamen.ts` (value objects para perfiles OMR v1/v2)
+    - `infra/configuracionLayoutEnv.ts` (parsing de vars `EXAMEN_LAYOUT_*`)
+    - `infra/pdfKitRenderer.ts` (stub para rendering completo)
+    - `shared/tiposPdf.ts` (tipos, DTOs, constantes compartidas)
+  - Rutas API v2 ya existentes: `rutasGeneracionPdfV2.ts` (con middleware de observabilidad)
+  - Contrato HTTP sin ruptura: delegacion a legado mantiene comportamiento identico
+  - Meta tecnica del sprint cumplida: estructura lista para iteracion siguiente
+- Validacion completa del sprint (verde):
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm -C apps/backend run test -- tests/integracion/pdfImpresionContrato.test.ts`
+  - `npm run bigbang:olas:check`
+  - `npm run bigbang:olas:strict`
+  - `npm run pipeline:contract:check`
 
 ### Corte 2026-02-13 (iteracion previa)
 - Validacion de estado Big-Bang:

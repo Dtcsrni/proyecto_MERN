@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T02:22:12.111Z",
+  "generatedAt": "2026-02-14T02:50:58.405Z",
   "strict": true,
   "status": {
     "ola0Passed": true,
@@ -77,12 +77,31 @@
       "detail": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400"
     },
     {
-      "id": "ola2b.pdf.monolith.pending",
+      "id": "ola2b.pdf.segmented",
       "ok": true,
-      "detail": [
-        "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
-        "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 1396"
-      ]
+      "detail": {
+        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 88",
+        "legado": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts: 1402",
+        "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
+        "capas": [
+          {
+            "dir": "application/usecases",
+            "exists": true
+          },
+          {
+            "dir": "domain",
+            "exists": true
+          },
+          {
+            "dir": "infra",
+            "exists": true
+          },
+          {
+            "dir": "shared",
+            "exists": true
+          }
+        ]
+      }
     },
     {
       "id": "ola2c.sync.segmented",
@@ -159,8 +178,12 @@
       "lines": 1389
     },
     {
+      "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts",
+      "lines": 1402
+    },
+    {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts",
-      "lines": 1396
+      "lines": 88
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",
