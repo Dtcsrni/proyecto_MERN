@@ -65,6 +65,9 @@ Ejecutar en este orden:
 6. `npm run test:portal:ci`
 7. `npm run perf:check`
 8. `npm run pipeline:contract:check`
+9. Si el alcance toca Olas Big Bang:
+   - `npm run bigbang:olas:check`
+   - `npm run bigbang:olas:strict`
 
 Si por alcance no aplica alguno, dejar justificacion explicita en el reporte de sesion.
 
