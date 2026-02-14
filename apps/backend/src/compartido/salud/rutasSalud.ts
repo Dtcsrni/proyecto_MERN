@@ -11,6 +11,62 @@ import type { RespuestaLiveness, RespuestaReadiness, RespuestaSalud } from '../t
 import { exportarMetricasPrometheus } from '../observabilidad/metrics';
 
 const router = Router();
+type TecnologiaVersion = { id: string; label: string; logoUrl: string; website: string };
+
+function leerPackageMetadata(raiz: string) {
+  let appName = 'evaluapro';
+  let appVersion = '0.0.0';
+  let authorName = '';
+  let repositoryUrl = '';
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
+    appName = String(pkg?.name || appName);
+    appVersion = String(pkg?.version || appVersion);
+    authorName = typeof pkg?.author === 'string'
+      ? String(pkg.author)
+      : String(pkg?.author?.name || '');
+    repositoryUrl = String(pkg?.repository?.url || '').trim();
+  } catch {
+    // fallback
+  }
+  return { appName, appVersion, authorName, repositoryUrl };
+}
+
+function mapTecnologias(raw: unknown[]): TecnologiaVersion[] {
+  return raw
+    .map((item: unknown) => {
+      const entry = item as Record<string, unknown>;
+      return {
+        id: String(entry.id || '').trim(),
+        label: String(entry.label || '').trim(),
+        logoUrl: String(entry.logoUrl || '').trim(),
+        website: String(entry.website || '').trim()
+      };
+    })
+    .filter((item: TecnologiaVersion) => item.id && item.label && item.logoUrl);
+}
+
+function leerCatalogoVersion(raiz: string, fallbackRepositoryUrl: string) {
+  let repositoryUrl = fallbackRepositoryUrl;
+  let technologies: TecnologiaVersion[] = [];
+  try {
+    const catalog = JSON.parse(fs.readFileSync(path.join(raiz, 'config', 'version-catalog.json'), 'utf8'));
+    repositoryUrl = String(catalog?.repositoryUrl || repositoryUrl || '').trim();
+    const rawTech = Array.isArray(catalog?.technologies) ? catalog.technologies : [];
+    technologies = mapTecnologias(rawTech as unknown[]);
+  } catch {
+    // fallback
+  }
+  return { repositoryUrl, technologies };
+}
+
+function leerChangelog(raiz: string) {
+  try {
+    return fs.readFileSync(path.join(raiz, 'CHANGELOG.md'), 'utf8').slice(0, 24_000);
+  } catch {
+    return '';
+  }
+}
 
 function buscarRaizRepo(inicio: string) {
   let actual = inicio;
@@ -27,52 +83,17 @@ function buscarRaizRepo(inicio: string) {
 
 function leerVersionInfo() {
   const raiz = buscarRaizRepo(process.cwd());
-  let appName = 'evaluapro';
-  let appVersion = '0.0.0';
-  let authorName = '';
-  let changelog = '';
-  let repositoryUrl = '';
-  let technologies: Array<{ id: string; label: string; logoUrl: string; website: string }> = [];
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
-    appName = String(pkg?.name || appName);
-    appVersion = String(pkg?.version || appVersion);
-    authorName = typeof pkg?.author === 'string'
-      ? String(pkg.author)
-      : String(pkg?.author?.name || '');
-    repositoryUrl = String(pkg?.repository?.url || '').trim();
-  } catch {
-    // fallback
-  }
-  try {
-    const catalog = JSON.parse(fs.readFileSync(path.join(raiz, 'config', 'version-catalog.json'), 'utf8'));
-    repositoryUrl = String(catalog?.repositoryUrl || repositoryUrl || '').trim();
-    const rawTech = Array.isArray(catalog?.technologies) ? catalog.technologies : [];
-    technologies = rawTech.map((item: unknown) => {
-      const entry = item as Record<string, unknown>;
-      return {
-        id: String(entry.id || '').trim(),
-        label: String(entry.label || '').trim(),
-        logoUrl: String(entry.logoUrl || '').trim(),
-        website: String(entry.website || '').trim()
-      };
-    }).filter((item: { id: string; label: string; logoUrl: string; website: string }) => item.id && item.label && item.logoUrl);
-  } catch {
-    // fallback
-  }
-  try {
-    changelog = fs.readFileSync(path.join(raiz, 'CHANGELOG.md'), 'utf8').slice(0, 24_000);
-  } catch {
-    changelog = '';
-  }
+  const pkg = leerPackageMetadata(raiz);
+  const catalogo = leerCatalogoVersion(raiz, pkg.repositoryUrl);
+  const changelog = leerChangelog(raiz);
 
-  const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || authorName || 'Equipo EvaluaPro').trim();
+  const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || pkg.authorName || 'Equipo EvaluaPro').trim();
   const developerRole = String(process.env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo').trim();
 
   return {
-    app: { name: appName, version: appVersion },
-    repositoryUrl: repositoryUrl || 'https://github.com/Dtcsrni',
-    technologies,
+    app: { name: pkg.appName, version: pkg.appVersion },
+    repositoryUrl: catalogo.repositoryUrl || 'https://github.com/Dtcsrni',
+    technologies: catalogo.technologies,
     developer: {
       nombre: developerName || 'Equipo EvaluaPro',
       rol: developerRole || 'Desarrollo'

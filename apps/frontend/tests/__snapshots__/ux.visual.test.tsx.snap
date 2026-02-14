@@ -39,6 +39,13 @@ exports[`UX visual regression > alumno sin token mantiene layout de acceso 1`] =
         class="cabecera__acciones"
       >
         <button
+          class="chip chip-version"
+          title="Abrir información de versión"
+          type="button"
+        >
+          v0.0.0
+        </button>
+        <button
           aria-label="Tema: Oscuro"
           class="boton secundario boton--tema"
           title="Cambiar tema (Auto / Claro / Oscuro)"
@@ -435,6 +442,13 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
       <div
         class="cabecera__acciones"
       >
+        <button
+          class="chip chip-version"
+          title="Abrir información de versión"
+          type="button"
+        >
+          v0.0.0
+        </button>
         <button
           aria-label="Tema: Oscuro"
           class="boton secundario boton--tema"
