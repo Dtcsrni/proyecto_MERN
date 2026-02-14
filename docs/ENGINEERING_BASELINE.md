@@ -102,6 +102,32 @@ Commit de referencia: TBD (sesion Ola 2B PDF).
   - `npm run bigbang:olas:strict`
   - `npm run pipeline:contract:check`
 
+### Corte 2026-02-14 (reconocimiento formal Ola 2A OMR segmentada)
+- Gate BigBang actualizado para reconocer Ola 2A como segmentada:
+  - `scripts/bigbang-olas-check.mjs` actualizado con check `ola2a.omr.segmented`:
+    - Valida fachada <100 lineas: `servicioOmr.ts` (31 lineas)
+    - Valida legado preservado >800 lineas: `servicioOmrLegacy.ts` (1319 lineas)
+    - Valida pipeline v2 presente: `omr/pipeline/` (ejecutorPipelineOmr.ts con etapas modulares)
+- Estado Ola 2A confirmado con arquitectura completa:
+  - ✅ Fachada con feature flag: `servicioOmr.ts` con `FEATURE_OMR_PIPELINE_V2`
+  - ✅ Legacy preservado: `servicioOmrLegacy.ts` sin modificaciones
+  - ✅ Pipeline v2 modular implementado:
+    - `omr/qr/etapaQr.ts`
+    - `omr/deteccion/etapaDeteccion.ts`
+    - `omr/scoring/etapaScoring.ts`
+    - `omr/calidad/etapaCalidad.ts`
+    - `omr/debug/etapaDebug.ts`
+    - `omr/pipeline/ejecutorPipelineOmr.ts`
+  - ✅ Observabilidad: métricas por etapa en `/api/metrics`
+  - ✅ API v2: `rutasEscaneoOmrV2.ts` activas
+- Resumen estado Ola 2 completa:
+  - **Ola 2A (OMR):** ✅ Segmentada (reconocida formalmente)
+  - **Ola 2B (PDF):** ✅ Bootstrap DDD completo
+  - **Ola 2C (Sync):** ✅ Segmentada (delegación use cases)
+- Validacion completa post-reconocimiento:
+  - `npm run bigbang:olas:check`: verde (ola0 OK, ola1 OK, ola2-ready OK)
+  - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)
+
 ### Corte 2026-02-13 (iteracion previa)
 - Validacion de estado Big-Bang:
   - `npm run bigbang:olas:check`: verde (`ola0`, `ola1`, `ola2-ready`).

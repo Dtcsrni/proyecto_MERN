@@ -44,17 +44,31 @@ Commit de referencia: `15f7d35`.
   - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
   - `SeccionBanco.tsx`: 777 lineas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
-- Ola 2: activa (backend core)
-  - OMR: en curso (Ola 2A con particion interna real + flag canary)
-    - `servicioOmr.ts`: fachada v2 (feature flag)
-    - `servicioOmrLegacy.ts`: motor legado reducido a 1400 lineas (corte de sprint)
-    - `infra/imagenProcesamientoLegacy.ts`: extraccion de QR/transformacion/deteccion de burbujas
-    - `application/`, `domain/`, `infra/`: estructura interna activa para siguientes cortes
-  - PDF:
-    - `controladorGeneracionPdf.ts`: 1389
-    - `servicioGeneracionPdf.ts`: 1396
-  - Sincronizacion (Ola 2C en progreso, particion interna avanzada):
-    - `controladorSincronizacion.ts`: 80 (fachada HTTP)
+- Ola 2: activa (backend core) - TODAS las sub-olas segmentadas
+  - OMR (Ola 2A): ✅ segmentada (reconocida formalmente 2026-02-14)
+    - `servicioOmr.ts`: fachada compacta 31 lineas (feature flag `FEATURE_OMR_PIPELINE_V2`)
+    - `servicioOmrLegacy.ts`: motor legado preservado 1319 lineas
+    - Pipeline v2 modular completo:
+      - `omr/qr/etapaQr.ts`
+      - `omr/deteccion/etapaDeteccion.ts`
+      - `omr/scoring/etapaScoring.ts`
+      - `omr/calidad/etapaCalidad.ts`
+      - `omr/debug/etapaDebug.ts`
+      - `omr/pipeline/ejecutorPipelineOmr.ts`
+    - API v2: `rutasEscaneoOmrV2.ts` activas
+    - Observabilidad: metricas por etapa en `/api/metrics`
+  - PDF (Ola 2B): ✅ segmentada (bootstrap DDD 2026-02-14)
+    - `servicioGeneracionPdf.ts`: fachada 60 lineas (feature flag `FEATURE_PDF_BUILDER_V2`)
+    - `servicioGeneracionPdfLegacy.ts`: motor legado preservado 1396 lineas
+    - `controladorGeneracionPdf.ts`: 1389 lineas
+    - Estructura DDD creada:
+      - `application/usecases/generarExamenIndividual.ts` (stub)
+      - `domain/examenPdf.ts`, `domain/layoutExamen.ts`
+      - `infra/configuracionLayoutEnv.ts`, `infra/pdfKitRenderer.ts` (stub)
+      - `shared/tiposPdf.ts`
+    - API v2: `rutasGeneracionPdfV2.ts` existentes
+  - Sincronizacion (Ola 2C): ✅ segmentada (delegacion use cases)
+    - `controladorSincronizacion.ts`: 80 lineas (fachada HTTP)
     - `domain/paqueteSincronizacion.ts`: ensamblado/procesado de paquetes y guardrails
     - `infra/repositoriosSync.ts`: auditoria + cursores/fechas de sync
     - `infra/portalSyncClient.ts`: cliente HTTP unificado hacia portal

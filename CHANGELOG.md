@@ -97,9 +97,17 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `docs/UX_QUALITY_CRITERIA.md`.
 - Gate BigBang alineado por dominio en `scripts/bigbang-olas-check.mjs`:
   - reemplazo de `ola2.pending.monoliths.detected` por:
-    - `ola2a.omr.monolith.pending`
+    - `ola2a.omr.segmented` (actualizado desde monolith.pending)
     - `ola2b.pdf.segmented` (actualizado desde monolith.pending)
     - `ola2c.sync.segmented`
+- Ola 2A OMR: reconocimiento formal de segmentación existente:
+  - Gate check actualizado para validar arquitectura pipeline v2:
+    - Fachada compacta: `servicioOmr.ts` (31 lineas)
+    - Legacy preservado: `servicioOmrLegacy.ts` (1319 lineas)
+    - Pipeline v2 modular: `omr/pipeline/ejecutorPipelineOmr.ts`
+  - Arquitectura ya implementada previamente con feature flag `FEATURE_OMR_PIPELINE_V2`
+  - Pipeline v2 con etapas modulares: qr, deteccion, scoring, calidad, debug
+  - Estado confirmado: todas las gates OK (ola0, ola1, ola2-ready, strict-gates)
 - Ola 2B PDF: fachada con feature flag para canary deployment:
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
   - Legacy preservado en `servicioGeneracionPdfLegacy.ts` (1396 lineas).

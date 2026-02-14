@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T02:50:58.405Z",
-  "strict": true,
+  "generatedAt": "2026-02-14T02:58:04.728Z",
+  "strict": false,
   "status": {
     "ola0Passed": true,
     "ola1Passed": true,
     "ola2Ready": true,
-    "strictPassed": true,
+    "strictPassed": null,
     "previousWavesGuaranteed": true,
     "nextWaveReadyToExecute": true
   },
@@ -72,9 +72,13 @@
       "detail": "apps/frontend/vitest.config.ts sin exclusion de app_docente ni app_docente_legacy"
     },
     {
-      "id": "ola2a.omr.monolith.pending",
+      "id": "ola2a.omr.segmented",
       "ok": true,
-      "detail": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400"
+      "detail": {
+        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 38",
+        "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400",
+        "pipeline": "omr/pipeline exists: true"
+      }
     },
     {
       "id": "ola2b.pdf.segmented",
@@ -134,44 +138,15 @@
       "detail": "scripts de gates requeridos para ola 2 estan definidos"
     }
   ],
-  "strictResults": [
-    {
-      "ok": true,
-      "command": "npm run lint"
-    },
-    {
-      "ok": true,
-      "command": "npm run typecheck"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:backend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:portal:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:frontend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:coverage:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run perf:check"
-    },
-    {
-      "ok": true,
-      "command": "npm run pipeline:contract:check"
-    }
-  ],
+  "strictResults": [],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
       "lines": 1400
+    },
+    {
+      "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
+      "lines": 38
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",
