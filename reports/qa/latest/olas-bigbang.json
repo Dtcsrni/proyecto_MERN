@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-15T20:37:00.879Z",
+  "generatedAt": "2026-02-15T23:38:56.465Z",
   "strict": false,
   "completion": true,
   "model": {
@@ -11,7 +11,7 @@
     "ola0Passed": true,
     "ola1Passed": true,
     "ola2Ready": true,
-    "ola2Completed": false,
+    "ola2Completed": true,
     "ola3Ready": true,
     "strictPassed": null,
     "previousWavesGuaranteed": true,
@@ -82,7 +82,7 @@
       "id": "ola2a.omr.segmented",
       "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 41",
+        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 33",
         "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400",
         "pipeline": "omr/pipeline exists: true"
       }
@@ -91,7 +91,7 @@
       "id": "ola2b.pdf.segmented",
       "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 86",
+        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 56",
         "legado": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts: 1402",
         "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
         "capas": [
@@ -150,7 +150,7 @@
       "detail": {
         "criterio": "referencias a servicioOmrLegacy solo en fachada/adaptadores permitidos",
         "refsEncontradas": [
-          "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts:3:import { analizarOmr as analizarOmrLegacy, leerQrDesdeImagen as leerQrDesdeImagenLegacy, type ResultadoOmr } from './servicioOmrLegacy';",
+          "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts:2:import { analizarOmr as analizarOmrLegacy, leerQrDesdeImagen as leerQrDesdeImagenLegacy, type ResultadoOmr } from './servicioOmrLegacy';",
           "apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts:2:import { analizarOmr as analizarOmrLegacy, type ResultadoOmr } from '../../servicioOmrLegacy';",
           "apps/backend/src/modulos/modulo_escaneo_omr/omr/qr/etapaQr.ts:2:import { leerQrDesdeImagen as leerQrDesdeImagenLegacy } from '../../servicioOmrLegacy';",
           "apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts:1:import type { ResultadoOmr } from '../../servicioOmrLegacy';"
@@ -160,7 +160,7 @@
     },
     {
       "id": "ola2a.completion.no.v1.fallback",
-      "ok": false,
+      "ok": true,
       "detail": "servicioOmr.ts sin branch explicito de fallback v1"
     },
     {
@@ -168,21 +168,23 @@
       "ok": true,
       "detail": {
         "criterio": "referencias a servicioGeneracionPdfLegacy solo en fachada/use case puente",
-        "refsEncontradas": [
-          "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts:12:import { generarPdfExamen as generarPdfExamenLegacy } from './servicioGeneracionPdfLegacy';",
-          "apps/backend/src/modulos/modulo_generacion_pdf/application/usecases/generarExamenIndividual.ts:13:import { generarPdfExamen as generarPdfExamenLegacy } from '../../servicioGeneracionPdfLegacy';"
-        ],
+        "refsEncontradas": [],
         "refsFueraDeAllowlist": []
       }
     },
     {
       "id": "ola2b.completion.no.v1.fallback",
-      "ok": false,
+      "ok": true,
       "detail": "servicioGeneracionPdf.ts sin fallback explicito al motor legado"
     },
     {
+      "id": "ola2b.completion.bridge.no.legacy.delegation",
+      "ok": true,
+      "detail": "use case puente PDF sin delegacion directa a servicio legado"
+    },
+    {
       "id": "ola2b.completion.renderer.stub.removed",
-      "ok": false,
+      "ok": true,
       "detail": "infra/pdfKitRenderer.ts sin marcador TODO de stub"
     },
     {
@@ -239,7 +241,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
-      "lines": 41
+      "lines": 33
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",
@@ -251,7 +253,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts",
-      "lines": 86
+      "lines": 56
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",

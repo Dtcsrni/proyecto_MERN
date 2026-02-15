@@ -338,6 +338,15 @@ addCheck(
 );
 
 addCheck(
+  'ola2b.completion.bridge.no.legacy.delegation',
+  !hasText(
+    'apps/backend/src/modulos/modulo_generacion_pdf/application/usecases/generarExamenIndividual.ts',
+    'generarPdfExamenLegacy'
+  ),
+  'use case puente PDF sin delegacion directa a servicio legado'
+);
+
+addCheck(
   'ola2b.completion.renderer.stub.removed',
   !hasText('apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts', 'TODO'),
   'infra/pdfKitRenderer.ts sin marcador TODO de stub'
