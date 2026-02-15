@@ -7,6 +7,10 @@ Estandarizar una salida de `1.0-beta` con gates bloqueantes, evidencia QA comple
 - `segmentada`: la ola tiene desacople tecnico inicial y gates parciales.
 - `completada`: migracion funcional integral cerrada + retiro/encapsulado final de legado + evidencia QA en verde.
 
+## Politica de gates para beta
+- Cierre beta exige `core` + `extended` operativo.
+- `canary-rollout-check` debe existir como evidencia en `latest`, pero su bloqueo formal aplica en estable.
+
 ## Gate operativo diario (rapido)
 Ejecutar:
 
@@ -33,6 +37,21 @@ Este comando ejecuta en secuencia:
 1. todo el gate rapido (`bigbang:beta:quick`)
 2. `bigbang:olas:strict`
 
+## Verificacion de completitud de ola (retiro/encapsulado)
+Ejecutar:
+
+```bash
+npm run bigbang:olas:completion
+```
+
+Opcional (con strict gates):
+
+```bash
+npm run bigbang:olas:completion:strict
+```
+
+Estos comandos distinguen `readiness` tecnico de `completion` funcional y fallan si persisten fallbacks v1/legado fuera de encapsulado permitido.
+
 ## Evidencias obligatorias en latest
 - `reports/qa/latest/dataset-prodlike.json`
 - `reports/qa/latest/e2e-docente-alumno.json`
@@ -41,6 +60,7 @@ Este comando ejecuta en secuencia:
 - `reports/qa/latest/ux-visual.json`
 - `reports/qa/latest/manifest.json`
 - `reports/qa/latest/olas-bigbang.json`
+- `reports/qa/latest/canary-rollout-check.json` (evidencia requerida para transición a estable)
 
 ## Criterio Go/No-Go para beta
 - **Go**: todos los comandos del gate operativo en verde, sin bypass manual, y artefactos presentes/consistentes.

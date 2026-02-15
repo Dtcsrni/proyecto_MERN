@@ -126,6 +126,7 @@ Commit de referencia: `15f7d35`.
   - `flujo-docente-check`, `dataset-prodlike-check`, `docente-alumno-e2e-check`
   - `global-grade-check`, `pdf-print-check`, `ux-visual-check`
   - `coverage-check`, `perf-check`, `qa-manifest`
+  - `canary-rollout-check`, `bigbang-olas-strict-check`
   - `perf-business-check`
   - `build`, `docs-check`, `security-scan`
 

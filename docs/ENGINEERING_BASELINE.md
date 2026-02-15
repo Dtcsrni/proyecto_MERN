@@ -1,7 +1,7 @@
 # Engineering Baseline
 
 Fecha de baseline: 2026-02-14.
-Commit de referencia: TBD (sesion Ola 2B PDF).
+Commit de referencia: `15f7d35`.
 
 ## Estado actual
 - Monorepo NPM workspaces:

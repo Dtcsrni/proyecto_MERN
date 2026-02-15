@@ -27,7 +27,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 7. `ux-visual-check`
 8. `perf-check`
 9. `perf-business-check`
-10. `canary-rollout-check`
+10. `canary-rollout-check` (advisory for beta closure; blocking for stable promotion)
 11. `bigbang-olas-strict-check`
 12. `qa-manifest`
 
@@ -140,7 +140,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 
 ### canary-rollout-check
 - Command: `npm run canary:rollout:check`
-- Policy: blocking gate
+- Policy: advisory in beta closure, blocking in stable promotion gate
 - Scope: valida fundamento técnico de rollout canary y consistencia entre monitor, política y pruebas
 - Output: `reports/qa/latest/canary-rollout-check.json`
 
