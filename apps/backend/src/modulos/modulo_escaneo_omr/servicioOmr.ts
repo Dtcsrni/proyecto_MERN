@@ -1,4 +1,3 @@
-import { decidirVersionCanary } from '../../compartido/observabilidad/rolloutCanary';
 import { ejecutarPipelineOmr } from './omr/pipeline/ejecutorPipelineOmr';
 import { analizarOmr as analizarOmrLegacy, leerQrDesdeImagen as leerQrDesdeImagenLegacy, type ResultadoOmr } from './servicioOmrLegacy';
 
@@ -20,13 +19,6 @@ export async function analizarOmr(
   debugInfo?: DebugInfoOmr,
   requestId?: string
 ): Promise<ResultadoOmr> {
-  const semillaCanary = requestId || String(qrEsperado || '') || String(Date.now());
-  const version = decidirVersionCanary('omr', semillaCanary);
-
-  if (version === 'v1') {
-    return analizarOmrLegacy(imagenBase64, mapaPagina, qrEsperado, margenMm, debugInfo);
-  }
-
   const pipeline = await ejecutarPipelineOmr({
     imagenBase64,
     mapaPagina,

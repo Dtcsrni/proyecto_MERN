@@ -52,6 +52,8 @@ npm run bigbang:olas:completion:strict
 
 Estos comandos distinguen `readiness` tecnico de `completion` funcional y fallan si persisten fallbacks v1/legado fuera de encapsulado permitido.
 
+Incluyen validacion explicita de que el use case puente PDF no delega de forma directa al servicio legado.
+
 ## Evidencias obligatorias en latest
 - `reports/qa/latest/dataset-prodlike.json`
 - `reports/qa/latest/e2e-docente-alumno.json`
