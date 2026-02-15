@@ -8,9 +8,10 @@ Se promueve a estable solo si se cumplen todos:
 
 1. 10 corridas CI consecutivas en verde.
 2. Gating de calidad beta completo en verde (`lint`, `typecheck`, `tests`, `coverage`, `perf`, `security`, `docs`, `routes`, `pipeline contract`).
-3. Flujo docente humano en produccion completado sin fallos criticos.
-4. Evidencia versionada en `docs/release/evidencias/<version>/`.
-5. Checklist de rollback readiness validado.
+3. `canary-rollout-check` en verde y evidencia `reports/qa/latest/canary-rollout-check.json` presente.
+4. Flujo docente humano en produccion completado sin fallos criticos.
+5. Evidencia versionada en `docs/release/evidencias/<version>/`.
+6. Checklist de rollback readiness validado.
 
 Si falla cualquier punto: **No-Go**.
 

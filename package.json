@@ -77,6 +77,8 @@
     "inventario:codigo": "node scripts/inventario-codigo.mjs",
     "bigbang:olas:check": "node scripts/bigbang-olas-check.mjs",
     "bigbang:olas:strict": "node scripts/bigbang-olas-check.mjs --strict",
+    "bigbang:olas:completion": "node scripts/bigbang-olas-check.mjs --completion",
+    "bigbang:olas:completion:strict": "node scripts/bigbang-olas-check.mjs --strict --completion",
     "perf:collect": "tsx scripts/perf-collect.ts",
     "perf:collect:business": "tsx scripts/perf-collect-business.ts",
     "perf:baseline": "node scripts/perf-baseline.mjs",
