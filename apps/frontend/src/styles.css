@@ -1684,16 +1684,59 @@ p {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   gap: 1rem;
   align-items: start;
+  position: relative;
+  isolation: isolate;
 }
 
 .calificaciones-layout__main,
 .calificaciones-layout__aside {
   min-width: 0;
+  position: relative;
+}
+
+.calificaciones-layout__main {
+  z-index: 1;
 }
 
 .calificaciones-layout__aside {
-  position: sticky;
-  top: 5.2rem;
+  position: static;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  z-index: 2;
+}
+
+.calificaciones-layout__aside > .panel {
+  background: var(--superficieSolida);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 0.9rem;
+  box-shadow: var(--sombraSuave);
+  overflow: hidden;
+}
+
+.calificaciones-layout .resultado,
+.calificaciones-layout .subpanel,
+.calificaciones-layout .item-glass {
+  background: var(--superficieSolida);
+}
+
+.calificaciones-layout .item-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.calificaciones-layout .campo input,
+.calificaciones-layout .campo textarea,
+.calificaciones-layout .campo select {
+  background: var(--superficieSolida);
+}
+
+.calificaciones-layout .item-title,
+.calificaciones-layout .item-sub,
+.calificaciones-layout .item-meta {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (max-width: 1100px) {
@@ -1703,6 +1746,13 @@ p {
 
   .calificaciones-layout__aside {
     position: static;
+  }
+}
+
+@media (min-width: 1400px) {
+  .calificaciones-layout__aside {
+    position: sticky;
+    top: 5.2rem;
   }
 }
 
@@ -1846,6 +1896,12 @@ p {
 .calif-grade-card {
   display: grid;
   gap: 0.75rem;
+  overflow: hidden;
+}
+
+.calif-grade-card .item-sub {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .calif-grade-grid {
