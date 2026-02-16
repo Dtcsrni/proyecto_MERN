@@ -12,6 +12,9 @@ Commit de referencia: `15f7d35`.
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
+- Enforcement TDD incorporado en CI:
+  - `test:coverage:diff` (umbral 90% sobre lineas modificadas)
+  - `test:coverage:exclusions:debt` (deuda temporal con owner y vencimiento)
 - Arquitectura backend: Ola 2 avanzada con segmentacion modular en OMR, PDF y Sync.
 - API v2 bootstrap activo para OMR/PDF:
   - `/api/v2/omr/*`

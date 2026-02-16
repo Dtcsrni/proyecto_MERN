@@ -65,6 +65,18 @@ jobs:
       - name: Etapa coverage-check
         run: npm run test:coverage:ci
 
+      - name: Etapa tdd-debt-check
+        run: npm run test:coverage:exclusions:debt
+
+      - name: Preparar base para diff coverage (PR)
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Etapa diff-coverage-check
+        env:
+          DIFF_COVERAGE_MIN: "90"
+        run: npm run test:coverage:diff
+
       - name: Etapa build
         run: npm run build
 

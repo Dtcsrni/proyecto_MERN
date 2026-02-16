@@ -20,12 +20,21 @@ Fecha de baseline: 2026-02-13.
   - `npm run typecheck`
   - `npm run build`
   - `npm run test:ci`
+  - `npm run test:coverage:exclusions:debt`
+  - `npm run test:coverage:diff`
 - Contrato agnóstico de pipeline:
   - `ci/pipeline.contract.md`
   - `ci/pipeline.matrix.json`
 - Workflows separados por responsabilidad:
   - `.github/workflows/ci.yml` (`CI Checks`): quality gates bloqueantes.
   - `.github/workflows/package.yml` (`Package Images`): empaquetado Docker + `image-digests.txt`.
+
+## Enforcements TDD activos
+- Diff coverage bloqueante en CI (`DIFF_COVERAGE_MIN=90`).
+- Registro de deuda temporal de exclusiones de coverage:
+  - `docs/tdd-exclusions-debt.json`
+- Verificador bloqueante de deuda vencida:
+  - `npm run test:coverage:exclusions:debt`
 
 ## Seguridad de configuración
 - Local: `.env` y `.env.example`.
