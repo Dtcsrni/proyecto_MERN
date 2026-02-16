@@ -66,6 +66,7 @@ export function SeccionCalificar({
   respuestasDetectadas,
   claveCorrectaPorNumero,
   ordenPreguntasClave,
+  contextoManual,
   onCalificar,
   puedeCalificar,
   avisarSinPermiso
@@ -77,6 +78,7 @@ export function SeccionCalificar({
   respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
   claveCorrectaPorNumero: Record<number, string>;
   ordenPreguntasClave: number[];
+  contextoManual?: string | null;
   onCalificar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -105,6 +107,9 @@ export function SeccionCalificar({
   const [proyecto, setProyecto] = useState(0);
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [respuestasManuales, setRespuestasManuales] = useState<
+    Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>
+  >([]);
 
   const respuestasSeguras = useMemo(
     () => (Array.isArray(respuestasDetectadas) ? respuestasDetectadas : []),
@@ -129,6 +134,53 @@ export function SeccionCalificar({
       .filter((numero) => Number.isFinite(numero));
     return Array.from(new Set([...desdeClave, ...desdeRespuestas])).sort((a, b) => a - b);
   }, [claveCorrectaPorNumero, ordenPreguntasClave, respuestasSeguras]);
+
+  useEffect(() => {
+    const porNumero = new Map<number, { numeroPregunta: number; opcion: string | null; confianza: number }>();
+    for (const item of respuestasSeguras) {
+      const numero = Number(item?.numeroPregunta);
+      if (!Number.isFinite(numero) || numero <= 0) continue;
+      porNumero.set(numero, {
+        numeroPregunta: numero,
+        opcion: typeof item?.opcion === 'string' && item.opcion ? item.opcion : null,
+        confianza: Number.isFinite(Number(item?.confianza)) ? Number(item?.confianza) : 0
+      });
+    }
+
+    const base = ordenPreguntas.length > 0
+      ? ordenPreguntas.map((numero) => porNumero.get(numero) ?? { numeroPregunta: numero, opcion: null, confianza: 0 })
+      : Array.from(porNumero.values()).sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+
+    setRespuestasManuales(base);
+  }, [examenId, ordenPreguntas, respuestasSeguras]);
+
+  const respuestasTrabajo = useMemo(
+    () => (Array.isArray(respuestasManuales) ? respuestasManuales : []),
+    [respuestasManuales]
+  );
+
+  const respuestasTrabajoPorNumero = useMemo(
+    () => new Map(respuestasTrabajo.map((item) => [item.numeroPregunta, item])),
+    [respuestasTrabajo]
+  );
+
+  function actualizarRespuestaManual(numeroPregunta: number, opcion: string | null) {
+    const numero = Number(numeroPregunta);
+    if (!Number.isFinite(numero) || numero <= 0) return;
+    setRespuestasManuales((prev) => {
+      const siguiente = [...prev];
+      const indice = siguiente.findIndex((item) => item.numeroPregunta === numero);
+      const normalizada = opcion ? String(opcion).trim().toUpperCase() : null;
+      if (indice >= 0) {
+        siguiente[indice] = { ...siguiente[indice], opcion: normalizada };
+      } else {
+        siguiente.push({ numeroPregunta: numero, opcion: normalizada, confianza: 0 });
+      }
+      siguiente.sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+      return siguiente;
+    });
+  }
+
   const resumenDinamico = useMemo(() => {
     if (ordenPreguntas.length === 0) {
       return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
@@ -137,14 +189,14 @@ export function SeccionCalificar({
     let contestadas = 0;
     for (const numero of ordenPreguntas) {
       const correcta = claveCorrectaPorNumero[numero] ?? null;
-      const opcion = respuestasPorNumero.get(numero)?.opcion ?? null;
+      const opcion = respuestasTrabajoPorNumero.get(numero)?.opcion ?? null;
       if (opcion) contestadas += 1;
       if (correcta && opcion && correcta === opcion) aciertos += 1;
     }
     const total = ordenPreguntas.length;
     const notaSobre5 = Number(((aciertos / Math.max(1, total)) * 5).toFixed(2));
     return { total, aciertos, contestadas, notaSobre5 };
-  }, [claveCorrectaPorNumero, ordenPreguntas, respuestasPorNumero]);
+  }, [claveCorrectaPorNumero, ordenPreguntas, respuestasTrabajoPorNumero]);
 
   const requiereRevisionConfirmacion = Boolean(
     resultadoOmr && resultadoOmr.estadoAnalisis !== 'ok' && !revisionOmrConfirmada
@@ -172,7 +224,7 @@ export function SeccionCalificar({
         bonoSolicitado: bono,
         evaluacionContinua,
         proyecto,
-        respuestasDetectadas,
+        respuestasDetectadas: respuestasTrabajo,
         omrAnalisis: resultadoOmr
           ? {
               estadoAnalisis: resultadoOmr.estadoAnalisis,
@@ -211,6 +263,7 @@ export function SeccionCalificar({
       </h2>
       <div className="item-sub">Examen: {examenId ?? 'Sin examen'}</div>
       <div className="item-sub">Alumno: {alumnoId ?? 'Sin alumno'}</div>
+      {contextoManual && <InlineMensaje tipo="info">{contextoManual}</InlineMensaje>}
       <div className="item-meta">
         <span>Respuestas listas: {respuestasSeguras.length}</span>
         <span>
@@ -234,6 +287,48 @@ export function SeccionCalificar({
       {bloqueoPorCalidad && (
         <InlineMensaje tipo="error">Calificación bloqueada: el análisis OMR fue rechazado por calidad.</InlineMensaje>
       )}
+      <div className="subpanel">
+        <h3>Calificación manual por pregunta</h3>
+        {ordenPreguntas.length === 0 ? (
+          <InlineMensaje tipo="warning">No se detectó una clave de preguntas para este examen.</InlineMensaje>
+        ) : (
+          <ul className="lista lista-items">
+            {ordenPreguntas.map((numero) => {
+              const respuestaActual = respuestasTrabajoPorNumero.get(numero)?.opcion ?? null;
+              const correcta = claveCorrectaPorNumero[numero] ?? null;
+              const coincide = Boolean(correcta && respuestaActual && correcta === respuestaActual);
+              return (
+                <li key={numero}>
+                  <div className="item-glass">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">Pregunta {numero}</div>
+                        <div className="item-sub">Correcta: {correcta ?? '-'}</div>
+                      </div>
+                      <div className="item-actions">
+                        <select
+                          value={respuestaActual ?? ''}
+                          onChange={(event) => actualizarRespuestaManual(numero, event.target.value || null)}
+                          disabled={bloqueoCalificar}
+                          aria-label={`Respuesta pregunta ${numero}`}
+                        >
+                          <option value="">Sin respuesta</option>
+                          <option value="A">A</option>
+                          <option value="B">B</option>
+                          <option value="C">C</option>
+                          <option value="D">D</option>
+                          <option value="E">E</option>
+                        </select>
+                        <span className={`badge ${coincide ? 'ok' : 'warning'}`}>{coincide ? 'Acierto' : 'Revisar'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
       <div className="calif-grade-grid">
         <label className="campo">
           Bono (max 0.5)

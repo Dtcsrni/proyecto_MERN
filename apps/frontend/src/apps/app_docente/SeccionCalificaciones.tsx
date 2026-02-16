@@ -139,6 +139,16 @@ export function SeccionCalificaciones({
   permisos: PermisosUI;
   avisarSinPermiso: (mensaje: string) => void;
 }) {
+  type ExamenEntregado = {
+    _id: string;
+    folio: string;
+    alumnoId?: string | null;
+    estado?: string;
+    periodoId?: string;
+    generadoEn?: string;
+    entregadoEn?: string;
+  };
+
   const puedeAnalizar = permisos.omr.analizar;
   const puedeCalificar = permisos.calificaciones.calificar;
   const revisionesSeguras = Array.isArray(revisionesOmr) ? revisionesOmr : [];
@@ -150,6 +160,121 @@ export function SeccionCalificaciones({
   const examenesListos = revisionesSeguras.filter((examen) => examen.revisionConfirmada).length;
   const solicitudesSeguras = Array.isArray(solicitudesRevision) ? solicitudesRevision : [];
   const [respuestaPorSolicitudId, setRespuestaPorSolicitudId] = useState<Record<string, string>>({});
+  const [alumnoManualId, setAlumnoManualId] = useState('');
+  const [examenesManual, setExamenesManual] = useState<ExamenEntregado[]>([]);
+  const [filtroFolioManual, setFiltroFolioManual] = useState('');
+  const [examenManualId, setExamenManualId] = useState('');
+  const [cargandoExamenesManual, setCargandoExamenesManual] = useState(false);
+  const [manualMensaje, setManualMensaje] = useState('');
+  const [manualContexto, setManualContexto] = useState<{
+    examenId: string;
+    alumnoId: string;
+    folio: string;
+    claveCorrectaPorNumero: Record<number, string>;
+    ordenPreguntas: number[];
+    respuestasDetectadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+  } | null>(null);
+
+  function seleccionarAlumnoManual(valor: string) {
+    setAlumnoManualId(valor);
+    setCargandoExamenesManual(Boolean(valor));
+    setExamenesManual([]);
+    setFiltroFolioManual('');
+    setExamenManualId('');
+    setManualMensaje('');
+    setManualContexto(null);
+  }
+
+  const examenesManualFiltrados = useMemo(() => {
+    const filtro = String(filtroFolioManual ?? '').trim().toUpperCase();
+    if (!filtro) return examenesManual;
+    return examenesManual.filter((examen) => String(examen?.folio ?? '').toUpperCase().includes(filtro));
+  }, [examenesManual, filtroFolioManual]);
+
+  useEffect(() => {
+    if (!alumnoManualId) return;
+    let cancelado = false;
+    void clienteApi
+      .obtener<{ examenes?: ExamenEntregado[] }>(
+        `/examenes/generados?alumnoId=${encodeURIComponent(alumnoManualId)}&limite=200`
+      )
+      .then((payload) => {
+        if (cancelado) return;
+        const lista = Array.isArray(payload?.examenes) ? payload.examenes : [];
+        const entregados = lista.filter((item) => {
+          const estado = String(item?.estado ?? '').toLowerCase();
+          return estado === 'entregado' || estado === 'calificado';
+        });
+        entregados.sort((a, b) => {
+          const aTime = a.entregadoEn ? new Date(a.entregadoEn).getTime() : 0;
+          const bTime = b.entregadoEn ? new Date(b.entregadoEn).getTime() : 0;
+          return bTime - aTime;
+        });
+        setExamenesManual(entregados);
+        setExamenManualId((prev) => (entregados.some((item) => item._id === prev) ? prev : ''));
+        if (entregados.length === 0) {
+          setManualMensaje('No hay exámenes entregados para el alumno seleccionado.');
+        }
+      })
+      .catch((error) => {
+        if (cancelado) return;
+        setExamenesManual([]);
+        setExamenManualId('');
+        setManualMensaje(mensajeDeError(error, 'No se pudo cargar la lista de exámenes entregados'));
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoExamenesManual(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [alumnoManualId]);
+
+  async function activarManualDesdeEntregado() {
+    if (!examenManualId) {
+      setManualMensaje('Selecciona un examen entregado.');
+      return;
+    }
+    const examenSeleccionado = examenesManual.find((item) => item._id === examenManualId);
+    if (!examenSeleccionado) {
+      setManualMensaje('No se encontró el examen seleccionado.');
+      return;
+    }
+    try {
+      setManualMensaje('');
+      const detalle = await clienteApi.obtener<{ examen?: ExamenGeneradoClave & { _id?: string; alumnoId?: string | null; folio?: string; periodoId?: string } }>(
+        `/examenes/generados/folio/${encodeURIComponent(examenSeleccionado.folio)}`
+      );
+      const examenDetalle = detalle?.examen;
+      if (!examenDetalle) {
+        setManualMensaje('No se pudo cargar el detalle del examen.');
+        return;
+      }
+
+      const periodoId = String((examenDetalle as { periodoId?: unknown })?.periodoId ?? '').trim();
+      const banco = await clienteApi.obtener<{ preguntas: Pregunta[] }>(
+        `/banco-preguntas${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`
+      );
+      const clave = construirClaveCorrectaExamen(examenDetalle, Array.isArray(banco?.preguntas) ? banco.preguntas : []);
+      if (clave.ordenPreguntas.length === 0) {
+        setManualMensaje('No se pudo construir la clave del examen para calificación manual.');
+        return;
+      }
+
+      setManualContexto({
+        examenId: String(examenDetalle._id ?? examenSeleccionado._id),
+        alumnoId: String(examenDetalle.alumnoId ?? examenSeleccionado.alumnoId ?? alumnoManualId),
+        folio: String(examenDetalle.folio ?? examenSeleccionado.folio),
+        claveCorrectaPorNumero: clave.claveCorrectaPorNumero,
+        ordenPreguntas: clave.ordenPreguntas,
+        respuestasDetectadas: clave.ordenPreguntas.map((numeroPregunta) => ({ numeroPregunta, opcion: null, confianza: 0 }))
+      });
+      setManualMensaje('Modo manual activado para el examen seleccionado.');
+    } catch (error) {
+      setManualMensaje(mensajeDeError(error, 'No se pudo activar la calificación manual'));
+    }
+  }
+
   return (
     <>
       <div className="panel">
@@ -190,14 +315,90 @@ export function SeccionCalificaciones({
           />
         </div>
         <aside className="calificaciones-layout__aside" aria-label="Panel de calificación">
+          <section className="panel">
+            <h3>
+              <Icono nombre="alumno" /> Selección manual por entregado
+            </h3>
+            <p className="nota">Selecciona alumno y examen entregado para calificar manualmente cada pregunta.</p>
+            <label className="campo">
+              Alumno
+              <select value={alumnoManualId} onChange={(event) => seleccionarAlumnoManual(event.target.value)}>
+                <option value="">Selecciona</option>
+                {alumnos.map((alumno) => (
+                  <option key={alumno._id} value={alumno._id}>
+                    {alumno.matricula} - {alumno.nombreCompleto}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="campo">
+              Buscar folio
+              <input
+                value={filtroFolioManual}
+                onChange={(event) => setFiltroFolioManual(event.target.value)}
+                placeholder="Ej. FOLIO-000123"
+                disabled={!alumnoManualId || cargandoExamenesManual || examenesManual.length === 0}
+              />
+            </label>
+            <label className="campo">
+              Examen entregado
+              <select
+                value={examenManualId}
+                onChange={(event) => setExamenManualId(event.target.value)}
+                disabled={!alumnoManualId || cargandoExamenesManual}
+              >
+                <option value="">Selecciona</option>
+                {examenesManualFiltrados.map((examen) => (
+                  <option key={examen._id} value={examen._id}>
+                    {examen.folio} · {String(examen.estado ?? 'entregado')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {filtroFolioManual && examenesManualFiltrados.length === 0 && (
+              <InlineMensaje tipo="info">No hay exámenes que coincidan con el folio buscado.</InlineMensaje>
+            )}
+            <div className="item-actions">
+              <Boton
+                type="button"
+                variante="secundario"
+                disabled={!alumnoManualId || !examenManualId || cargandoExamenesManual || !puedeCalificar}
+                onClick={() => {
+                  if (!puedeCalificar) {
+                    avisarSinPermiso('No tienes permiso para calificar manualmente.');
+                    return;
+                  }
+                  void activarManualDesdeEntregado();
+                }}
+              >
+                {cargandoExamenesManual ? 'Cargando…' : 'Usar examen para calificación manual'}
+              </Boton>
+              {manualContexto && (
+                <Boton
+                  type="button"
+                  variante="secundario"
+                  onClick={() => {
+                    setManualContexto(null);
+                    setManualMensaje('Modo manual desactivado.');
+                  }}
+                >
+                  Limpiar selección manual
+                </Boton>
+              )}
+            </div>
+            {manualMensaje && (
+              <InlineMensaje tipo={esMensajeError(manualMensaje) ? 'error' : 'info'}>{manualMensaje}</InlineMensaje>
+            )}
+          </section>
           <SeccionCalificar
-            examenId={examenId}
-            alumnoId={alumnoId}
-            resultadoOmr={resultadoParaCalificar}
-            revisionOmrConfirmada={revisionOmrConfirmada}
-            respuestasDetectadas={respuestasParaCalificar}
-            claveCorrectaPorNumero={claveCorrectaPorNumero}
-            ordenPreguntasClave={ordenPreguntasClave}
+            examenId={manualContexto?.examenId ?? examenId}
+            alumnoId={manualContexto?.alumnoId ?? alumnoId}
+            resultadoOmr={manualContexto ? null : resultadoParaCalificar}
+            revisionOmrConfirmada={manualContexto ? true : revisionOmrConfirmada}
+            respuestasDetectadas={manualContexto?.respuestasDetectadas ?? respuestasParaCalificar}
+            claveCorrectaPorNumero={manualContexto?.claveCorrectaPorNumero ?? claveCorrectaPorNumero}
+            ordenPreguntasClave={manualContexto?.ordenPreguntas ?? ordenPreguntasClave}
+            contextoManual={manualContexto ? `Modo manual activo · Folio ${manualContexto.folio}` : null}
             onCalificar={onCalificar}
             puedeCalificar={puedeCalificar}
             avisarSinPermiso={avisarSinPermiso}
