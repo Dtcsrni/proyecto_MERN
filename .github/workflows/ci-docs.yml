@@ -1,0 +1,80 @@
+name: CI Docs Module
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "docs/**"
+      - "ci/pipeline.contract.md"
+      - "ci/pipeline.matrix.json"
+      - "scripts/docs.mjs"
+      - "scripts/diagramas.mjs"
+      - "scripts/diagramas-render-linux.mjs"
+      - "scripts/diagramas-consistencia.mjs"
+      - "scripts/routes-check.mjs"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - "docs/**"
+      - "ci/pipeline.contract.md"
+      - "ci/pipeline.matrix.json"
+      - "scripts/docs.mjs"
+      - "scripts/diagramas.mjs"
+      - "scripts/diagramas-render-linux.mjs"
+      - "scripts/diagramas-consistencia.mjs"
+      - "scripts/routes-check.mjs"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs_module:
+    name: Docs Module
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/portal_alumno_cloud/package-lock.json
+
+      - name: Etapa setup
+        run: npm ci
+
+      - name: Etapa contract-check
+        run: npm run pipeline:contract:check
+
+      - name: Etapa docs-check
+        run: npm run docs:check
+
+      - name: Etapa diagramas-check
+        run: npm run diagramas:check
+
+      - name: Etapa diagramas-render-linux-check
+        run: npm run diagramas:render:linux:check
+
+      - name: Etapa diagramas-consistencia-check
+        run: npm run diagramas:consistencia:check
+
+      - name: Etapa routes-check
+        run: npm run routes:check
