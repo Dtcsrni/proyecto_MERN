@@ -20,6 +20,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [PRUEBAS.md](PRUEBAS.md) — Pruebas automatizadas
 - [QA_GATE_CRITERIA.md](QA_GATE_CRITERIA.md) — QA Gate Criteria (`1.0-beta`)
 - [README.md](README.md) — docs/
+- [RELEASE_BIGBANG_1_0_BETA.md](RELEASE_BIGBANG_1_0_BETA.md) — Cierre Big-Bang `1.0-beta`
 - [RELEASE_GATE_STABLE.md](RELEASE_GATE_STABLE.md) — Gate de Promocion a Estable
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
 - [RUNBOOK_OPERACION.md](RUNBOOK_OPERACION.md) — Runbook Operación (Local + Cloud mínimo)
