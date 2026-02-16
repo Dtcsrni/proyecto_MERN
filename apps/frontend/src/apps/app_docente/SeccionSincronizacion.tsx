@@ -270,7 +270,7 @@ export function SeccionSincronizacion({
               <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoEstado} onClick={refrescarEstado}>
                 {cargandoEstado ? 'Actualizando...' : 'Actualizar estado'}
               </Boton>
-              <label className="campo campo--checkbox" style={{ marginBottom: 0 }}>
+              <label className="campo campo--checkbox sincronizacion-auto-refresh">
                 <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
                 Auto-refresh 45s
               </label>
