@@ -28,7 +28,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [RUNBOOK_OPERACION.md](RUNBOOK_OPERACION.md) — Runbook Operación (Local + Cloud mínimo)
 - [SEGURIDAD.md](SEGURIDAD.md) — Seguridad
 - [SEGURIDAD_OPERATIVA.md](SEGURIDAD_OPERATIVA.md) — Checklist de Seguridad Operativa
-- [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronizacion entre computadoras (paquete)
+- [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronizacion entre computadoras (paquete y servidor)
 - [UX_QUALITY_CRITERIA.md](UX_QUALITY_CRITERIA.md) — Criterios UX de Calidad (Gate Verificable)
 - [VERSIONADO.md](VERSIONADO.md) — Versionado
 - [AUTO_ENV.md](AUTO_ENV.md) — Variables de entorno (auto-generado)
