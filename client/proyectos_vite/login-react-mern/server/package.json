@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec tsx src/servidor.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "tsx src/servidor.ts"
+    "start": "tsx src/servidor.ts",
+    "test": "node --test tests/smoke.test.mjs"
   },
   "keywords": [],
   "author": "",

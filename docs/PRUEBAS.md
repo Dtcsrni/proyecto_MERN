@@ -26,6 +26,8 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
   - seguridad por API key y middleware
 - Frontend (`apps/frontend/tests`):
   - smoke y comportamiento de cliente
+- Subproyectos Vite legacy (`client/proyectos_vite/**`):
+  - smoke estructural por proyecto (entrypoints + scripts minimos)
 
 ## Flujos criticos cubiertos
 - Flujo de examen end-to-end backend.
@@ -43,6 +45,7 @@ npm run test:ci
 npm run test:flujo-docente:ci
 npm run test:coverage:ci
 npm run test:tdd:enforcement:ci
+npm run test:client:proyectos:ci
 npm run perf:check
 npm run security:env:check
 npm run security:audit
@@ -75,6 +78,10 @@ npm -C apps/frontend run test
 - Smoke legacy client:
 ```bash
 npm run test:client:smoke
+```
+- Smoke subproyectos Vite legacy:
+```bash
+npm run test:client:proyectos:ci
 ```
 - Suite integrada raiz:
 ```bash
