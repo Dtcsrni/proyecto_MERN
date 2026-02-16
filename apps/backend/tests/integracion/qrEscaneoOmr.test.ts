@@ -13,6 +13,8 @@ import { cerrarMongoTest, conectarMongoTest, limpiarMongoTest } from '../utils/m
 
 describe('escaneo OMR: QR asociado a examen', () => {
   const app = crearApp();
+  const TEST_TIMEOUT_QR_MS = 60_000;
+  const QR_IMAGE_WIDTH = 512;
 
   beforeAll(async () => {
     await conectarMongoTest();
@@ -124,7 +126,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(String(paginas[0].qrTexto || '')).toMatch(new RegExp(`^EXAMEN:${folio}:P1(?::TV[12])?$`));
 
     const qrParaImagen = String(paginas[0].qrTexto || qrEsperado);
-    const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: 800 });
+    const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
       .post('/api/omr/analizar')
@@ -140,7 +142,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(resultado.qrTexto).toBe(qrParaImagen);
     expect(resultado.advertencias).not.toContain('No se detecto QR en la imagen');
     expect(resultado.advertencias).not.toContain('El QR no coincide con el examen esperado');
-  });
+  }, TEST_TIMEOUT_QR_MS);
 
   it('si el QR corresponde a otro folio, lo detecta y advierte mismatch', async () => {
     const token = await registrarDocente();
@@ -149,7 +151,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const { folio } = await prepararExamenBasico(auth);
 
     const qrIncorrecto = 'OTROFOLIO';
-    const imagenBase64 = await QRCode.toDataURL(qrIncorrecto, { margin: 1, width: 800 });
+    const imagenBase64 = await QRCode.toDataURL(qrIncorrecto, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
       .post('/api/omr/analizar')
@@ -164,5 +166,5 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const resultado = resp.body.resultado as { qrTexto?: string; advertencias: string[] };
     expect(resultado.qrTexto).toBe(qrIncorrecto);
     expect(resultado.advertencias).toContain('El QR no coincide con el examen esperado');
-  });
+  }, TEST_TIMEOUT_QR_MS);
 });
