@@ -23,6 +23,11 @@ Para mantener `docs/diagramas/rendered/**` en sync con las fuentes Mermaid:
 
 - Renderizar SVG: `npm run diagramas:render`
 - Verificar SVG en CI: `npm run diagramas:render:check`
+- Renderizar con entorno Linux (igual que CI): `npm run diagramas:render:linux`
+- Verificar con entorno Linux (igual que CI): `npm run diagramas:render:linux:check`
+
+Recomendación operativa: en Windows, antes de push/release usa `diagramas:render:linux`
+para evitar diferencias de SVG por plataforma (fuentes/Chromium) respecto a GitHub Actions.
 
 Si tu entorno no puede ejecutar Chromium/Puppeteer (raro, pero puede pasar en CI),
 puedes desactivar temporalmente el check con `DIAGRAMAS_RENDER_CHECK=0`.
