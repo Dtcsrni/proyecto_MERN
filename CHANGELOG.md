@@ -5,6 +5,10 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Documentacion formal de requisitos verificables (RF/RNF) con matriz de trazabilidad (requisito -> evidencia -> gate) en:
+  - `docs/ENGINEERING_BASELINE.md` (seccion "Requisitos verificables").
+- Roadmap separado de cierre de brechas de requisitos beta -> estable:
+  - `docs/ROADMAP_REQUISITOS.md`.
 - Reparación operativa desde Dashboard (pestaña Configuración):
   - endpoints en `scripts/launcher-dashboard.mjs`:
     - `GET /api/repair/status`
@@ -62,6 +66,12 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
+- Navegacion y trazabilidad documental actualizadas para incluir requisitos/roadmap:
+  - `docs/README.md`
+  - `docs/INVENTARIO_PROYECTO.md`
+  - `docs/AUTO_DOCS_INDEX.md`
+- Evidencia QA regenerada para reflejar estado actual de artefactos:
+  - `reports/qa/latest/manifest.json`
 - CI modular por dominio activado con workflows independientes:
   - `.github/workflows/ci-backend.yml`
   - `.github/workflows/ci-frontend.yml`
