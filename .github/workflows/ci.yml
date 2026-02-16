@@ -60,6 +60,7 @@ jobs:
           npm run test:portal:ci
           npm run test:frontend:ci
           npm run test:client:smoke:ci
+          npm run test:client:proyectos:ci
 
       - name: Etapa ux-quality-check
         run: npm run test:ux-quality:ci

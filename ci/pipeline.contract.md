@@ -57,6 +57,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
   - `npm run test:portal:ci`
   - `npm run test:frontend:ci`
   - `npm run test:client:smoke:ci`
+  - `npm run test:client:proyectos:ci`
 - Flaky policy: retries only for explicitly retriable jobs/scripts
 
 ### ux-quality-check

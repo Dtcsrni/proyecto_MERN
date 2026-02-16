@@ -60,7 +60,8 @@
         "npm run test:backend:ci",
         "npm run test:portal:ci",
         "npm run test:frontend:ci",
-        "npm run test:client:smoke:ci"
+        "npm run test:client:smoke:ci",
+        "npm run test:client:proyectos:ci"
       ],
       "artifacts": [
         "test-report-backend.txt",
