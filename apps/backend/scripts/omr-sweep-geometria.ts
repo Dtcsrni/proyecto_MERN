@@ -4,7 +4,7 @@ import { evaluateProfile, type EvalProfileSummary } from './omr-eval-profile';
 
 type Summary = {
   profile: string;
-  mode: 'legacy' | 'v2';
+  mode: 'v2';
   dataset: string;
   totalReactivos: number;
   detectadasV2: number;
@@ -24,7 +24,7 @@ function parseArgs(argv: string[]) {
   const args = argv.slice(2);
   const options = {
     dataset: '../../omr_samples',
-    mode: 'legacy' as 'legacy' | 'v2',
+    mode: 'v2' as const,
     out: '../../reports/qa/latest/omr_sweep_geometria.json'
   };
 
@@ -36,7 +36,7 @@ function parseArgs(argv: string[]) {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && (next === 'legacy' || next === 'v2')) {
+    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
       options.mode = next;
       i += 1;
       continue;
@@ -97,7 +97,7 @@ function perfilesGeometria(): Profile[] {
   ];
 }
 
-async function runProfile(profile: Profile, dataset: string, mode: 'legacy' | 'v2'): Promise<Summary> {
+async function runProfile(profile: Profile, dataset: string, mode: 'v2'): Promise<Summary> {
   const oldEnv = {
     OMR_PROFILE_NAME: process.env.OMR_PROFILE_NAME,
     OMR_ALIGN_RANGE: process.env.OMR_ALIGN_RANGE,

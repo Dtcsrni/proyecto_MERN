@@ -23,6 +23,9 @@ Este documento resume la estructura vigente del repositorio.
   - autenticacion, alumnos, banco, generacion_pdf,
   - vinculacion_entrega, escaneo_omr, calificacion,
   - analiticas, sincronizacion_nube, admin_docentes, papelera
+- Estado OMR vigente:
+  - endpoint operativo: `/api/v2/omr/*`
+  - ruta `/api/omr/*` retirada del runtime
 - `src/infraestructura/*`: base de datos, archivos, seguridad, logging, correo
 - `src/compartido/*`: errores, validaciones, utilidades
 - `tests/*`: unitarias, contrato e integracion

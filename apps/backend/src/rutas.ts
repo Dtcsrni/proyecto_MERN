@@ -17,7 +17,6 @@ import rutasBancoPreguntas from './modulos/modulo_banco_preguntas/rutasBancoPreg
 import rutasGeneracionPdf from './modulos/modulo_generacion_pdf/rutasGeneracionPdf';
 import rutasGeneracionPdfV2 from './modulos/modulo_generacion_pdf/rutasGeneracionPdfV2';
 import rutasVinculacionEntrega from './modulos/modulo_vinculacion_entrega/rutasVinculacionEntrega';
-import rutasEscaneoOmr from './modulos/modulo_escaneo_omr/rutasEscaneoOmr';
 import rutasEscaneoOmrV2 from './modulos/modulo_escaneo_omr/rutasEscaneoOmrV2';
 import rutasCalificaciones from './modulos/modulo_calificacion/rutasCalificaciones';
 import rutasAnaliticas from './modulos/modulo_analiticas/rutasAnaliticas';
@@ -47,7 +46,6 @@ export function crearRouterApi() {
   router.use('/banco-preguntas', rutasBancoPreguntas);
   router.use('/examenes', middlewareAdapterV1AV2(), middlewareAdopcionV1('pdf'), rutasGeneracionPdf);
   router.use('/entregas', rutasVinculacionEntrega);
-  router.use('/omr', middlewareAdapterV1AV2(), middlewareAdopcionV1('omr'), rutasEscaneoOmr);
   router.use('/v2/examenes', middlewareAdopcionV2('pdf'), rutasGeneracionPdfV2);
   router.use('/v2/omr', middlewareAdopcionV2('omr'), rutasEscaneoOmrV2);
   router.use('/calificaciones', rutasCalificaciones);

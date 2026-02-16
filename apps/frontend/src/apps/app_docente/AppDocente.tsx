@@ -392,6 +392,19 @@ export function AppDocente() {
     },
     [examenIdOmr]
   );
+  const limpiarColaEscaneosOmr = useCallback(() => {
+    const habiaElementos = revisionesOmr.length > 0 || Boolean(resultadoOmr);
+    setRevisionesOmr([]);
+    setResultadoOmr(null);
+    setRespuestasEditadas([]);
+    setRevisionOmrConfirmada(false);
+    setExamenIdOmr(null);
+    setExamenAlumnoId(null);
+    setPaginaOmrActiva(null);
+    if (habiaElementos) {
+      emitToast({ level: 'info', title: 'Escaneo OMR', message: 'Cola de escaneos limpiada', durationMs: 2600 });
+    }
+  }, [revisionesOmr.length, resultadoOmr]);
   const contenido = docente ? (
     <div className="panel">
       <nav
@@ -557,7 +570,7 @@ export function AppDocente() {
               avisarSinPermiso('No tienes permiso para analizar OMR.');
               throw new Error('SIN_PERMISO');
             }
-            const respuesta = await clienteApi.enviar<ResultadoAnalisisOmr>('/omr/analizar', {
+            const respuesta = await clienteApi.enviar<ResultadoAnalisisOmr>('/v2/omr/analizar', {
               folio,
               numeroPagina,
               imagenBase64
@@ -702,6 +715,7 @@ export function AppDocente() {
             setSolicitudesRevision(Array.isArray(respuesta.solicitudes) ? respuesta.solicitudes : []);
             return respuesta;
           }}
+          onLimpiarColaEscaneos={limpiarColaEscaneosOmr}
         />
       )}
       {vista === 'publicar' && (

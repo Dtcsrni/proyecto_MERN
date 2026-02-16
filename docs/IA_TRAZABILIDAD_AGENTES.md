@@ -1,6 +1,6 @@
 # Trazabilidad IA del Proyecto
 
-Fecha de corte: 2026-02-14  
+Fecha de corte: 2026-02-16  
 Commit de referencia: `15f7d35`
 
 Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, reglas unificadas y evidencia reproducible.
@@ -21,8 +21,8 @@ Objetivo: garantizar continuidad entre agentes/sesiones con estado verificable, 
 - `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777
 
 ### Backend core (lineas por archivo critico)
-- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`: fachada v2 con canary + legado en `servicioOmrLegacy.ts`.
-- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`: 1400 (corte intermedio Ola 2A).
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`: fachada v2-only (sin fallback runtime a v1).
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts`: motor operativo OMR (pipeline modular).
 - `apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts`: 1389
 - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`: 1396
 - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts`: 80 (fachada HTTP tras particion interna)

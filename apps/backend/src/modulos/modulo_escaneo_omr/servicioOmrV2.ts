@@ -128,8 +128,10 @@ const OMR_MIN_HYBRID_CONF = Number.parseFloat(process.env.OMR_MIN_HYBRID_CONF ||
 const OMR_QUALITY_WARN_MIN = Number.parseFloat(process.env.OMR_QUALITY_WARN_MIN || '-1');
 const OMR_QUALITY_REJECT_MIN = Number.parseFloat(process.env.OMR_QUALITY_REJECT_MIN || '0.65');
 const OMR_QUALITY_REVIEW_MIN = Number.parseFloat(process.env.OMR_QUALITY_REVIEW_MIN || '0.8');
-const OMR_AUTO_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.75');
-const OMR_AUTO_AMBIGUAS_MAX = Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.1');
+const OMR_AUTO_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.82');
+const OMR_AUTO_AMBIGUAS_MAX = Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.06');
+const OMR_AUTO_DETECCION_MIN = Number.parseFloat(process.env.OMR_AUTO_DETECCION_MIN || '0.85');
+const OMR_RESPUESTA_CONF_MIN = Number.parseFloat(process.env.OMR_RESPUESTA_CONF_MIN || '0.78');
 const OMR_AUTO_RESCUE_QUALITY_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_QUALITY_MIN || '0.58');
 const OMR_AUTO_RESCUE_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_CONF_MIN || '0.84');
 const OMR_AUTO_RESCUE_AMBIG_MAX = Number.parseFloat(process.env.OMR_AUTO_RESCUE_AMBIG_MAX || '0.04');
@@ -377,11 +379,13 @@ function resolverEstadoAnalisis(args: {
   confianzaMedia: number;
   ratioAmbiguas: number;
   totalRespuestas: number;
+  respuestasContestadas: number;
 }) {
-  const { calidadPagina, confianzaMedia, ratioAmbiguas, totalRespuestas } = args;
+  const { calidadPagina, confianzaMedia, ratioAmbiguas, totalRespuestas, respuestasContestadas } = args;
   const motivos: string[] = [];
   const advertencias: string[] = [];
   const puedeRechazarPorCalidad = totalRespuestas >= 3;
+  const deteccionRatio = totalRespuestas > 0 ? respuestasContestadas / totalRespuestas : 0;
   const rescateAltaPrecision =
     calidadPagina >= OMR_AUTO_RESCUE_QUALITY_MIN &&
     confianzaMedia >= OMR_AUTO_RESCUE_CONF_MIN &&
@@ -424,7 +428,15 @@ function resolverEstadoAnalisis(args: {
       if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
         motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
       }
+      if (deteccionRatio < OMR_AUTO_DETECCION_MIN) {
+        motivos.push(`Cobertura de detección baja (${(deteccionRatio * 100).toFixed(1)}%)`);
+      }
     }
+  }
+
+  if (estado === 'ok' && deteccionRatio < OMR_AUTO_DETECCION_MIN && !rescateAltaPrecision) {
+    estado = 'requiere_revision';
+    motivos.push(`Cobertura de detección insuficiente (${(deteccionRatio * 100).toFixed(1)}%)`);
   }
 
   return { estado, motivos, advertencias, anularRespuestas };
@@ -1257,6 +1269,7 @@ export async function analizarOmr(
   const patches: PatchRegistro[] = [];
   let sumaConfianza = 0;
   let preguntasAmbiguas = 0;
+  let respuestasContestadas = 0;
   let reprojectionErrorAcumulado = 0;
   let reprojectionErrorConteo = 0;
   const debug: DebugOmr | null = OMR_DEBUG
@@ -1349,20 +1362,23 @@ export async function analizarOmr(
       },
       detectarOpcion
     });
+    const opcionDetectada = metricas.suficiente && metricas.confianza >= OMR_RESPUESTA_CONF_MIN ? metricas.mejorOpcion : null;
     respuestasDetectadas.push({
       numeroPregunta: pregunta.numeroPregunta,
-      opcion: metricas.suficiente ? metricas.mejorOpcion : null,
+      opcion: opcionDetectada,
       confianza: metricas.confianza
     });
     sumaConfianza += metricas.confianza;
-    if (metricas.dobleMarcada || !metricas.suficiente) {
+    if (opcionDetectada) respuestasContestadas += 1;
+    if (metricas.dobleMarcada || !metricas.suficiente || metricas.confianza < OMR_RESPUESTA_CONF_MIN) {
       preguntasAmbiguas += 1;
       if (metricas.dobleMarcada) {
         motivosRevision.push(`P${pregunta.numeroPregunta}: multiple marca / ambiguedad`);
+      } else if (metricas.suficiente && metricas.confianza < OMR_RESPUESTA_CONF_MIN) {
+        motivosRevision.push(`P${pregunta.numeroPregunta}: confianza baja (${metricas.confianza.toFixed(2)})`);
       }
     }
 
-    const opcionDetectada = metricas.suficiente ? metricas.mejorOpcion : null;
     for (const s of resultado.scores) {
       patches.push({
         numeroPregunta: pregunta.numeroPregunta,
@@ -1478,7 +1494,8 @@ export async function analizarOmr(
     calidadPagina,
     confianzaMedia,
     ratioAmbiguas,
-    totalRespuestas: respuestasDetectadas.length
+    totalRespuestas: respuestasDetectadas.length,
+    respuestasContestadas
   });
   const estadoAnalisis: ResultadoOmr['estadoAnalisis'] = decisionEstado.estado;
   if (decisionEstado.anularRespuestas) {

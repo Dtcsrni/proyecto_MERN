@@ -8,36 +8,48 @@ Commit de referencia: `15f7d35`.
   - `apps/backend`
   - `apps/frontend`
   - `apps/portal_alumno_cloud`
-- Inventario completo de piezas de codigo/config versionadas:
+- Inventario completo de piezas de código/config versionadas:
   - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
 - Scripts de calidad centralizados en root:
   - lint, typecheck, build, test, docs-check, diagram checks, routes-check.
 - Enforcement TDD incorporado en CI:
-  - `test:coverage:diff` (umbral 90% sobre lineas modificadas)
+  - `test:coverage:diff` (umbral 90% sobre líneas modificadas)
   - `test:coverage:exclusions:debt` (deuda temporal con owner y vencimiento)
-- Arquitectura backend: Ola 2 avanzada con segmentacion modular en OMR, PDF y Sync.
-- API v2 bootstrap activo para OMR/PDF:
+- Arquitectura backend: Ola 2 avanzada con segmentación modular en OMR, PDF y Sync.
+- API v2 activa para OMR/PDF:
   - `/api/v2/omr/*`
   - `/api/v2/examenes/*`
-  - adapters explicitos v1->v2 instrumentados en rutas v1 (`/api/omr`, `/api/examenes`).
+  - adaptación v1->v2 instrumentada en rutas v1 de exámenes (`/api/examenes`).
+  - OMR opera en modo v2-only (sin ruta `/api/omr/*` ni fallback runtime a legacy).
 - Gate dual de performance activo:
-  - rapido PR: `npm run perf:check`
+  - rápido PR: `npm run perf:check`
   - negocio autenticado: `npm run perf:check:business`
 - Frontend docente con cierre de Ola 1 en estado operativo.
 
-## Corte de modularizacion docente (real)
-- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 798 lineas.
-- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 798 lineas.
-- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 763 lineas.
-- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777 lineas.
+## Actualización 2026-02-16 (estado vigente OMR)
+- OMR backend en modo v2-only:
+  - fachada: `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`
+  - motor operativo: `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts`
+  - endpoint vigente: `/api/v2/omr/analizar`
+- Retirado del runtime:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
+  - ruta `/api/omr/*`
+  - fallback explícito OMR v1 en fachada.
+- Nota: las secciones de cortes 2026-02-13 y 2026-02-14 se mantienen como registro histórico de migración.
 
-## Riesgos tecnicos actuales
-1. Complejidad residual en modulos UI grandes (`Plantillas` y `Banco`) aunque cumplen limite de linea.
+## Corte de modularización docente (real)
+- `apps/frontend/src/apps/app_docente/AppDocente.tsx`: 798 líneas.
+- `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`: 798 líneas.
+- `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`: 763 líneas.
+- `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`: 777 líneas.
+
+## Riesgos técnicos actuales
+1. Complejidad residual en módulos UI grandes (`Plantillas` y `Banco`) aunque cumplen límite de línea.
 2. Rampa de cobertura frontend hacia objetivo 45 aun pendiente (gate actual en 39/40/31/37).
-3. Backend core: Ola 2B (PDF) iniciada con estructura de capas, motor v2 pendiente de implementacion completa.
+3. Backend core: Ola 2B (PDF) iniciada con estructura de capas, motor v2 pendiente de implementación completa.
 4. Dependencia de disciplina documental para mantener trazabilidad multi-agente.
 
-## Validacion reciente (corte)
+## Validación reciente (corte)
 - `npm run lint`: verde.
 - `npm run typecheck`: verde.
 - `npm run test:frontend:ci`: verde.
@@ -56,9 +68,10 @@ Commit de referencia: `15f7d35`.
 - `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts`: verde.
 - `npm -C apps/backend run test -- tests/integracion/pdfImpresionContrato.test.ts`: verde (2026-02-14 post refactor).
 
-## Avance Ola 2A (OMR)
-- Se preservo el motor legado en `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`.
-- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada con flag canary:
+## Avance Ola 2A (OMR) [histórico]
+- Nota: este bloque describe estado de transición (no vigente) y se conserva solo por trazabilidad histórica.
+- Se preservó el motor legado en `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` (histórico).
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada con flag canary (histórico):
   - `FEATURE_OMR_PIPELINE_V2=0|1`
 - Nuevo pipeline modular (sin ruptura de contrato HTTP):
   - `omr/qr/etapaQr.ts`
@@ -68,36 +81,36 @@ Commit de referencia: `15f7d35`.
   - `omr/debug/etapaDebug.ts`
   - `omr/pipeline/ejecutorPipelineOmr.ts`
   - `omr/types.ts`
-- Instrumentacion agregada en `/api/metrics`:
+- Instrumentación agregada en `/api/metrics`:
   - `evaluapro_omr_stage_duration_ms`
   - `evaluapro_omr_stage_errors_total`
   - `evaluapro_omr_pipeline_total`
   - `evaluapro_omr_pipeline_error_total`
   - `evaluapro_omr_pipeline_duration_ms`
-- `scripts/perf-collect.ts` ampliado con rutas criticas de negocio en backend (modo no autenticado controlado).
+- `scripts/perf-collect.ts` ampliado con rutas críticas de negocio en backend (modo no autenticado controlado).
 
-### Corte 2026-02-14 (sprint Big Bang: Ola 2B PDF inicio)
+### Corte 2026-02-14 (sprint Big Bang: Ola 2B PDF inicio) [histórico]
 - Gate BigBang alineado con estado real para Ola 2B:
   - `scripts/bigbang-olas-check.mjs` actualizado con check `ola2b.pdf.segmented`:
-    - Valida fachada <100 lineas
-    - Valida legado preservado >800 lineas
+    - Valida fachada <100 líneas
+    - Valida legado preservado >800 líneas
     - Valida estructura de capas DDD presente
   - `reports/qa/latest/olas-bigbang.json` refleja estado coherente de las 3 olas.
 - Ola 2B PDF con bootstrap de arquitectura modular:
-  - Motor legado preservado: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts` (1396 lineas)
-  - Fachada con feature flag: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` (60 lineas)
+  - Motor legado preservado: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts` (1396 líneas)
+  - Fachada con feature flag: `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` (60 líneas)
   - Feature flag: `FEATURE_PDF_BUILDER_V2=0|1` (por defecto 0, usa legado)
   - Estructura de capas creada:
-    - `application/usecases/generarExamenIndividual.ts` (stub con delegacion a legado)
+    - `application/usecases/generarExamenIndividual.ts` (stub con delegación a legado)
     - `domain/examenPdf.ts` (entidad con validaciones)
     - `domain/layoutExamen.ts` (value objects para perfiles OMR v1/v2)
     - `infra/configuracionLayoutEnv.ts` (parsing de vars `EXAMEN_LAYOUT_*`)
     - `infra/pdfKitRenderer.ts` (stub para rendering completo)
     - `shared/tiposPdf.ts` (tipos, DTOs, constantes compartidas)
   - Rutas API v2 ya existentes: `rutasGeneracionPdfV2.ts` (con middleware de observabilidad)
-  - Contrato HTTP sin ruptura: delegacion a legado mantiene comportamiento identico
-  - Meta tecnica del sprint cumplida: estructura lista para iteracion siguiente
-- Validacion completa del sprint (verde):
+  - Contrato HTTP sin ruptura: delegación a legado mantiene comportamiento idéntico
+  - Meta técnica del sprint cumplida: estructura lista para iteración siguiente
+- Validación completa del sprint (verde):
   - `npm run lint`
   - `npm run typecheck`
   - `npm -C apps/backend run test -- tests/integracion/pdfImpresionContrato.test.ts`
@@ -105,15 +118,15 @@ Commit de referencia: `15f7d35`.
   - `npm run bigbang:olas:strict`
   - `npm run pipeline:contract:check`
 
-### Corte 2026-02-14 (reconocimiento formal Ola 2A OMR segmentada)
+### Corte 2026-02-14 (reconocimiento formal Ola 2A OMR segmentada) [histórico]
 - Gate BigBang actualizado para reconocer Ola 2A como segmentada:
   - `scripts/bigbang-olas-check.mjs` actualizado con check `ola2a.omr.segmented`:
-    - Valida fachada <100 lineas: `servicioOmr.ts` (31 lineas)
-    - Valida legado preservado >800 lineas: `servicioOmrLegacy.ts` (1319 lineas)
+    - Valida fachada <100 líneas: `servicioOmr.ts` (31 líneas)
+    - Valida legado preservado >800 líneas: `servicioOmrLegacy.ts` (1319 líneas, histórico)
     - Valida pipeline v2 presente: `omr/pipeline/` (ejecutorPipelineOmr.ts con etapas modulares)
 - Estado Ola 2A confirmado con arquitectura completa:
-  - ✅ Fachada con feature flag: `servicioOmr.ts` con `FEATURE_OMR_PIPELINE_V2`
-  - ✅ Legacy preservado: `servicioOmrLegacy.ts` sin modificaciones
+  - ✅ Fachada con feature flag: `servicioOmr.ts` con `FEATURE_OMR_PIPELINE_V2` (histórico)
+  - ✅ Legacy preservado: `servicioOmrLegacy.ts` sin modificaciones (histórico)
   - ✅ Pipeline v2 modular implementado:
     - `omr/qr/etapaQr.ts`
     - `omr/deteccion/etapaDeteccion.ts`
@@ -127,23 +140,24 @@ Commit de referencia: `15f7d35`.
   - **Ola 2A (OMR):** ✅ Segmentada (reconocida formalmente)
   - **Ola 2B (PDF):** ✅ Bootstrap DDD completo
   - **Ola 2C (Sync):** ✅ Segmentada (delegación use cases)
-- Validacion completa post-reconocimiento:
+- Validación completa post-reconocimiento:
   - `npm run bigbang:olas:check`: verde (ola0 OK, ola1 OK, ola2-ready OK)
-  - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)- Tests de paridad v1/v2 implementados:
+  - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)
+- Tests de paridad v1/v2 implementados (histórico):
   - `apps/backend/tests/omr.paridad.test.ts`: 5 tests validando equivalencia OMR legacy vs pipeline v2
   - `apps/backend/tests/pdf.paridad.test.ts`: 8 tests validando equivalencia PDF legacy vs DDD v2
-  - Gate de calidad para habilitar feature flags en produccion
+  - Gate de calidad para habilitar feature flags en producción
   - Todos los tests pasan (13/13) validando paridad funcional
-### Corte 2026-02-13 (iteracion previa)
-- Validacion de estado Big-Bang:
+### Corte 2026-02-13 (iteración previa) [histórico]
+- Validación de estado Big-Bang:
   - `npm run bigbang:olas:check`: verde (`ola0`, `ola1`, `ola2-ready`).
-- Ola 2C (sincronizacion) inicio con particion interna base:
-  - Nuevo modulo: `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`
-  - `controladorSincronizacion.ts` delega utilidades criptograficas, parsing y LWW.
-  - Validacion local del dominio sync: `lint`, `typecheck`, `tests/sincronizacion.test.ts` en verde.
-- Refinamiento de generacion PDF para impresion:
+- Ola 2C (sincronización) inicio con partición interna base:
+  - Nuevo módulo: `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`
+  - `controladorSincronizacion.ts` delega utilidades criptográficas, parsing y LWW.
+  - Validación local del dominio sync: `lint`, `typecheck`, `tests/sincronizacion.test.ts` en verde.
+- Refinamiento de generación PDF para impresión:
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts`
-  - Nuevo perfil de layout parametrico por variables de entorno:
+  - Nuevo perfil de layout paramétrico por variables de entorno:
     - `EXAMEN_LAYOUT_GRID_MM`
     - `EXAMEN_LAYOUT_HEADER_FIRST_MM`
     - `EXAMEN_LAYOUT_HEADER_OTHER_MM`
@@ -151,20 +165,20 @@ Commit de referencia: `15f7d35`.
     - `EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS`
     - `EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA`
   - Ajuste visual para ahorro de tinta:
-    - menos rellenos solidos
-    - bordes y lineas ligeras en encabezados/etiquetas
+    - menos rellenos sólidos
+    - bordes y líneas ligeras en encabezados/etiquetas
     - mantenimiento de contrato Carta y trazabilidad QR/Folio.
-- Mejora de robustez OMR ante cambios de layout:
-  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
-  - El perfil de deteccion ahora se ajusta con metrica real del `mapaOmr` (radio/caja/offset) por mediana.
+- Mejora de robustez OMR ante cambios de layout (histórico):
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` (histórico)
+  - El perfil de detección ahora se ajusta con métrica real del `mapaOmr` (radio/caja/offset) por mediana.
 - Pruebas ejecutadas en backend (verde):
   - `tests/integracion/pdfImpresionContrato.test.ts`
   - `tests/omr.test.ts`
   - `npm -C apps/backend run lint`
   - `npm -C apps/backend run typecheck`
 
-### Corte 2026-02-14 (iteracion actual)
-- Observabilidad de migracion dual agregada en metricas Prometheus:
+### Corte 2026-02-14 (iteración actual) [histórico]
+- Observabilidad de migración dual agregada en métricas Prometheus:
   - `evaluapro_schema_fallback_reads_total`
   - `evaluapro_schema_v2_writes_total`
 - Middleware de versionado agregado:
@@ -174,8 +188,8 @@ Commit de referencia: `15f7d35`.
   - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
 - Prueba de contrato/paridad v2 agregada:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
-- Ola 2C (sincronizacion) profundizada con arquitectura por capas sin romper API:
-  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` reducido a fachada HTTP (80 lineas).
+- Ola 2C (sincronización) profundizada con arquitectura por capas sin romper API:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` reducido a fachada HTTP (80 líneas).
   - Nuevas capas internas:
     - `application/usecases/*`
     - `domain/paqueteSincronizacion.ts`
@@ -191,25 +205,25 @@ Commit de referencia: `15f7d35`.
     - `npm -C apps/backend run test -- tests/sincronizacion.test.ts tests/sincronizacion.contrato.test.ts`
     - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
 
-### Corte 2026-02-14 (sprint Big Bang: Gate + Ola 2A OMR + Ola 3 minima)
+### Corte 2026-02-14 (sprint Big Bang: Gate + Ola 2A OMR + Ola 3 mínima) [histórico]
 - Gate BigBang alineado con estado real por dominio:
   - `scripts/bigbang-olas-check.mjs` reemplaza check rigido por:
     - `ola2a.omr.monolith.pending`
     - `ola2b.pdf.monolith.pending`
     - `ola2c.sync.segmented`
   - `reports/qa/latest/olas-bigbang.json` refleja estado coherente sin falso negativo de Sync 2C.
-- Ola 2A OMR con particion interna real:
-  - nuevo modulo `apps/backend/src/modulos/modulo_escaneo_omr/infra/imagenProcesamientoLegacy.ts`
-  - `servicioOmrLegacy.ts` delega QR/transformacion/deteccion de burbujas al modulo `infra`.
+- Ola 2A OMR con partición interna real (histórico):
+  - nuevo módulo `apps/backend/src/modulos/modulo_escaneo_omr/infra/imagenProcesamientoLegacy.ts`
+  - `servicioOmrLegacy.ts` delega QR/transformación/detección de burbujas al modulo `infra` (histórico).
   - estructura interna presente para iteraciones siguientes:
     - `apps/backend/src/modulos/modulo_escaneo_omr/application/`
     - `apps/backend/src/modulos/modulo_escaneo_omr/domain/`
     - `apps/backend/src/modulos/modulo_escaneo_omr/infra/`
-  - meta tecnica del sprint cumplida: `servicioOmrLegacy.ts` = 1400 lineas.
-- Ola 3 minima OMR validada:
-  - paridad v1/v2 y metricas de transicion validadas en:
+  - meta técnica del sprint cumplida: `servicioOmrLegacy.ts` = 1400 líneas (histórico).
+- Ola 3 mínima OMR validada:
+  - paridad v1/v2 y métricas de transición validadas en:
     - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
-- Validacion completa del sprint (verde):
+- Validación completa del sprint (verde):
   - `npm -C apps/backend run lint`
   - `npm -C apps/backend run typecheck`
   - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts`
@@ -218,7 +232,7 @@ Commit de referencia: `15f7d35`.
   - `npm run bigbang:olas:strict`
   - `npm run pipeline:contract:check`
 
-## QA preproduccion automatizada (nuevo)
+## QA preproducción automatizada (nuevo)
 - Gates bloqueantes agregados:
   - `test:dataset-prodlike:ci`
   - `test:e2e:docente-alumno:ci`
@@ -327,7 +341,7 @@ Commit de referencia: `15f7d35`.
   - **Fase 3:** Orchestración de rollout (activación gradual de feature flags basada en métricas)
   - **Fase 4:** Dashboard web de adopción (visualización real-time de canario)
   - **Fase 5:** Rollback automático (detener canario si métricas empeoran)
-- Validacion completa Ola 3 - Fase 1 + 2 (verde):
+- Validación completa Ola 3 - Fase 1 + 2 (verde):
   - `npm run lint`: ✅ 0 errors
   - `npm -C apps/backend run typecheck`: ✅
   - `npm -C apps/backend run test -- tests/robustez.test.ts`: ✅ (20/20 tests pass)
@@ -354,21 +368,21 @@ Commit de referencia: `15f7d35`.
 0. El ciclo de desarrollo oficial (incluyendo fase de requisitos obligatoria) se documenta en:
 - `docs/CICLO_DESARROLLO.md`
 
-1. No merge sin checks minimos verdes:
+1. No merge sin checks mínimos verdes:
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test:backend:ci`
 - `npm run test:portal:ci`
 - `npm run test:frontend:ci`
 - `npm run build`
-2. Convencion de commits:
+2. Convención de commits:
 - `feat:`
 - `fix:`
 - `refactor:`
 - `docs:`
 - `chore:`
-3. Todo cambio de rutas/permisos/OMR/sincronizacion debe incluir test o actualizacion de test.
-4. Toda sesion agente debe actualizar trazabilidad en:
+3. Todo cambio de rutas/permisos/OMR/sincronización debe incluir test o actualización de test.
+4. Toda sesión agente debe actualizar trazabilidad en:
 - `docs/INVENTARIO_PROYECTO.md`
 - `docs/ENGINEERING_BASELINE.md`
 - `CHANGELOG.md`
@@ -382,16 +396,16 @@ Commit de referencia: `15f7d35`.
 ## Requisitos verificables (corte 2026-02-15)
 
 ### Reglas de verificabilidad
-- Todo requisito documentado en esta seccion debe tener evidencia ejecutable en al menos uno de estos tipos:
+- Todo requisito documentado en esta sección debe tener evidencia ejecutable en al menos uno de estos tipos:
   - prueba automatizada (`apps/*/tests/**/*.test.*`)
   - endpoint/ruta montada en backend o portal
   - artefacto de gate en `reports/qa/latest/*.json`
   - artefacto de performance en `reports/perf/*.json`
 - Estado permitido por requisito:
   - `cumple`: existe evidencia reciente y consistente
-  - `parcial`: existe implementacion, pero falta evidencia contractual del gate definido
+  - `parcial`: existe implementación, pero falta evidencia contractual del gate definido
   - `pendiente`: sin evidencia verificable suficiente
-- Para evitar deriva documental, cada requisito referencia al menos una evidencia primaria y un comando/gate de validacion.
+- Para evitar deriva documental, cada requisito referencia al menos una evidencia primaria y un comando/gate de validación.
 
 ### Matriz de trazabilidad de requisitos
 

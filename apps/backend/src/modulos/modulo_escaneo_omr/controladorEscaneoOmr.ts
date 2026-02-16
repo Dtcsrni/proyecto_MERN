@@ -6,13 +6,19 @@
  * - Se valida que exista el mapa OMR para la pagina solicitada.
  */
 import type { Response } from 'express';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import sharp from 'sharp';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { ExamenGenerado } from '../modulo_generacion_pdf/modeloExamenGenerado';
+import { ExamenPlantilla } from '../modulo_generacion_pdf/modeloExamenPlantilla';
+import { Periodo } from '../modulo_alumnos/modeloPeriodo';
+import { EscaneoOmrArchivado } from './modeloEscaneoOmrArchivado';
 import { analizarOmr, leerQrDesdeImagen } from './servicioOmr';
+
+const comprimirGzip = promisify(gzip);
 
 /**
  * Analiza una imagen escaneada (base64) contra el mapa OMR del examen.
@@ -68,10 +74,14 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   } catch {
     throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'No se pudo procesar la imagen OMR', 400);
   }
-  await guardarImagenReferencia({
+  await archivarEscaneoOmrExitoso({
     base64: imagenBase64 ?? '',
     folio: folioNormalizado,
-    numeroPagina: pagina
+    numeroPagina: pagina,
+    docenteId,
+    examen,
+    estadoAnalisis: resultado?.estadoAnalisis,
+    templateVersionDetectada
   });
   res.json({
     resultado,
@@ -182,29 +192,87 @@ export async function prevalidarLoteCapturas(req: SolicitudDocente, res: Respons
   });
 }
 
-async function guardarImagenReferencia({
+function extraerBase64Imagen(base64: string): { mimeType: string; contenido: string } {
+  const limpio = String(base64 || '').trim();
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/i.exec(limpio);
+  if (match) {
+    return {
+      mimeType: String(match[1] || 'image/jpeg').toLowerCase(),
+      contenido: String(match[2] || '').replace(/\s+/g, '')
+    };
+  }
+  return {
+    mimeType: 'image/jpeg',
+    contenido: limpio.replace(/\s+/g, '')
+  };
+}
+
+async function archivarEscaneoOmrExitoso({
   base64,
   folio,
-  numeroPagina
+  numeroPagina,
+  docenteId,
+  examen,
+  estadoAnalisis,
+  templateVersionDetectada
 }: {
   base64: string;
   folio: string;
   numeroPagina: number;
+  docenteId: string;
+  examen: {
+    _id: unknown;
+    alumnoId?: unknown;
+    periodoId?: unknown;
+    plantillaId?: unknown;
+  };
+  estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision' | string;
+  templateVersionDetectada: 1 | 2;
 }) {
-  const limpio = String(base64 || '').replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-  if (!limpio) return;
-  const buffer = Buffer.from(limpio, 'base64');
-  const dirBase = path.resolve(process.cwd(), 'storage', 'omr_scans', folio);
-  await fs.mkdir(dirBase, { recursive: true });
-  const salida = path.join(dirBase, `P${numeroPagina}.jpg`);
-  const yaExiste = await fs
-    .access(salida)
-    .then(() => true)
-    .catch(() => false);
-  if (yaExiste) return;
-  await sharp(buffer)
-    .rotate()
-    .resize({ width: 1400, withoutEnlargement: true })
-    .jpeg({ quality: 45, mozjpeg: true })
-    .toFile(salida);
+  if (estadoAnalisis !== 'ok') return;
+  const { mimeType, contenido } = extraerBase64Imagen(base64);
+  if (!contenido) return;
+
+  const original = Buffer.from(contenido, 'base64');
+  if (!original.length) return;
+  const comprimido = await comprimirGzip(original, { level: 9 });
+  const sha256Original = createHash('sha256').update(original).digest('hex');
+
+  const [periodo, plantilla] = await Promise.all([
+    examen.periodoId ? Periodo.findById(examen.periodoId).select({ nombre: 1 }).lean() : Promise.resolve(null),
+    examen.plantillaId ? ExamenPlantilla.findById(examen.plantillaId).select({ titulo: 1, temas: 1 }).lean() : Promise.resolve(null)
+  ]);
+  const materia = String(
+    periodo?.nombre ??
+      (Array.isArray(plantilla?.temas) && plantilla.temas.length > 0 ? plantilla.temas.join(' · ') : plantilla?.titulo ?? '')
+  ).trim();
+
+  await EscaneoOmrArchivado.findOneAndUpdate(
+    {
+      examenGeneradoId: examen._id,
+      numeroPagina
+    },
+    {
+      docenteId,
+      alumnoId: examen.alumnoId ?? null,
+      periodoId: examen.periodoId ?? null,
+      plantillaId: examen.plantillaId ?? null,
+      examenGeneradoId: examen._id,
+      folio,
+      numeroPagina,
+      materia: materia || undefined,
+      mimeType,
+      algoritmoCompresion: 'gzip',
+      tamanoOriginalBytes: original.length,
+      tamanoComprimidoBytes: comprimido.length,
+      sha256Original,
+      templateVersionDetectada,
+      estadoAnalisis: 'ok',
+      payloadComprimido: comprimido
+    },
+    {
+      upsert: true,
+      setDefaultsOnInsert: true
+    }
+  );
 }

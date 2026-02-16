@@ -46,7 +46,7 @@ const rutas: DefRuta[] = [
   { service: 'backend', route: '/api/metrics', method: 'GET', expectedStatus: 200 },
   // Endpoints criticos de negocio medidos en modo no autenticado para monitorear no-regresion de middleware/ruteo.
   { service: 'backend', route: '/api/examenes/generados', method: 'GET', expectedStatus: 401 },
-  { service: 'backend', route: '/api/omr/analizar', method: 'POST', expectedStatus: 401, body: {} },
+  { service: 'backend', route: '/api/v2/omr/analizar', method: 'POST', expectedStatus: 401, body: {} },
   { service: 'backend', route: '/api/sincronizaciones/pull', method: 'POST', expectedStatus: 401, body: {} },
   { service: 'backend', route: '/api/analiticas/lista-academica-csv?periodoId=PERF', method: 'GET', expectedStatus: 401 },
   { service: 'portal', route: '/api/portal/salud/live', method: 'GET', expectedStatus: 200 },

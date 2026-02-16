@@ -97,11 +97,13 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const calidadPagina = Number(analisisOmr?.calidadPagina ?? 1);
   const confianzaPromedioPagina = Number(analisisOmr?.confianzaPromedioPagina ?? 1);
   const ratioAmbiguas = Number(analisisOmr?.ratioAmbiguas ?? 0);
+  const totalPreguntasEsperadas = Array.isArray(ordenPreguntas) ? ordenPreguntas.length : 0;
+  const coberturaDeteccion = totalPreguntasEsperadas > 0 ? respuestas.length / totalPreguntasEsperadas : 0;
   const rescateAltaPrecision =
     calidadPagina >= 0.58 && confianzaPromedioPagina >= 0.84 && ratioAmbiguas <= 0.04;
   const autoCalificableOmr =
     analisisOmr?.estadoAnalisis === 'ok' &&
-    ((calidadPagina >= 0.8 && confianzaPromedioPagina >= 0.75 && ratioAmbiguas <= 0.1) || rescateAltaPrecision);
+    ((calidadPagina >= 0.82 && confianzaPromedioPagina >= 0.82 && ratioAmbiguas <= 0.06 && coberturaDeteccion >= 0.85) || rescateAltaPrecision);
 
   if (!soloPreview && analisisOmr && !revisionConfirmada && !autoCalificableOmr) {
     throw new ErrorAplicacion(

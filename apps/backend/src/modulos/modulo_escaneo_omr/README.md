@@ -28,10 +28,10 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - `npm run dev:omr:geo-tight` inicia backend local con `geo_tight_search`.
 - `npm run dev:omr:actual` inicia backend local con perfil base.
 
-## Canary OMR v1/v2
-- La fachada `servicioOmr.ts` decide versión por solicitud con `decidirVersionCanary('omr', semilla)` usando `FEATURE_OMR_PIPELINE_V2`.
-- Si decide `v1`, ejecuta `servicioOmrLegacy`.
-- Si decide `v2`, ejecuta pipeline modular; si falla, hace fallback inmediato a legacy.
+## Runtime OMR v2-only
+- La fachada `servicioOmr.ts` ejecuta el pipeline OMR v2 de forma nominal.
+- El motor operativo se mantiene en `servicioOmrV2.ts` y módulos `omr/*`.
+- No existe fallback runtime a `servicioOmrLegacy`.
 - Registra adopción en `metricsAdopcion` para endpoint `/modulo_escaneo_omr/analizarOmr`.
 
 ## Nota

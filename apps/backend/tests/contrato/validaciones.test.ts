@@ -240,7 +240,7 @@ describe('validaciones de payload', () => {
   it('rechaza analizar OMR sin folio', async () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set({ Authorization: `Bearer ${token}` })
       .send({ imagenBase64: 'x'.repeat(20) })
       .expect(400);

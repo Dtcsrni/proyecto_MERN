@@ -1,34 +1,20 @@
 /**
- * servicioOmr.canary.test
+ * servicioOmr.v2.test
  *
- * Cobertura de canary/fallback para la fachada OMR.
+ * Cobertura de fachada OMR v2-only.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockEjecutarPipelineOmr,
-  mockAnalizarOmrLegacy,
-  mockDecidirVersionCanary,
   mockRegistrarAdopcion
 } = vi.hoisted(() => ({
   mockEjecutarPipelineOmr: vi.fn(),
-  mockAnalizarOmrLegacy: vi.fn(),
-  mockDecidirVersionCanary: vi.fn(),
   mockRegistrarAdopcion: vi.fn()
 }));
 
 vi.mock('../src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr', () => ({
   ejecutarPipelineOmr: mockEjecutarPipelineOmr
-}));
-
-vi.mock('../src/modulos/modulo_escaneo_omr/servicioOmrLegacy', () => ({
-  analizarOmr: mockAnalizarOmrLegacy,
-  leerQrDesdeImagen: vi.fn(),
-  ResultadoOmr: undefined
-}));
-
-vi.mock('../src/compartido/observabilidad/rolloutCanary', () => ({
-  decidirVersionCanary: mockDecidirVersionCanary
 }));
 
 vi.mock('../src/compartido/observabilidad/metricsAdopcion', () => ({
@@ -37,7 +23,7 @@ vi.mock('../src/compartido/observabilidad/metricsAdopcion', () => ({
 
 import { analizarOmr } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
 
-describe('servicioOmr (canary)', () => {
+describe('servicioOmr (v2-only)', () => {
   const argsBase = {
     imagenBase64: 'data:image/png;base64,AAAA',
     mapaPagina: { numeroPagina: 1, preguntas: [] } as never,
@@ -47,7 +33,7 @@ describe('servicioOmr (canary)', () => {
     requestId: 'req-omr-1'
   };
 
-  const legacyResult = {
+  const resultadoOmr = {
     respuestasDetectadas: [],
     advertencias: [],
     calidadPagina: 0.7,
@@ -62,35 +48,14 @@ describe('servicioOmr (canary)', () => {
     vi.clearAllMocks();
   });
 
-  it('usa legacy cuando canary decide v1', async () => {
-    mockDecidirVersionCanary.mockReturnValue('v1');
-    mockAnalizarOmrLegacy.mockResolvedValue(legacyResult);
-
-    const resultado = await analizarOmr(
-      argsBase.imagenBase64,
-      argsBase.mapaPagina,
-      argsBase.qrEsperado,
-      argsBase.margenMm,
-      argsBase.debugInfo,
-      argsBase.requestId
-    );
-
-    expect(mockDecidirVersionCanary).toHaveBeenCalledWith('omr', expect.any(String));
-    expect(mockAnalizarOmrLegacy).toHaveBeenCalledTimes(1);
-    expect(mockEjecutarPipelineOmr).not.toHaveBeenCalled();
-    expect(mockRegistrarAdopcion).toHaveBeenCalledWith('omr', '/modulo_escaneo_omr/analizarOmr', 'v1');
-    expect(resultado).toBe(legacyResult);
-  });
-
-  it('usa v2 cuando canary decide v2 y el pipeline responde', async () => {
+  it('usa pipeline v2 y retorna resultado', async () => {
     const pipelineResult = {
       requestId: 'req-omr-1',
       exito: true,
-      resultado: { ...legacyResult, templateVersionDetectada: 2 },
+      resultado: { ...resultadoOmr, templateVersionDetectada: 2 },
       etapas: []
     };
 
-    mockDecidirVersionCanary.mockReturnValue('v2');
     mockEjecutarPipelineOmr.mockResolvedValue(pipelineResult);
 
     const resultado = await analizarOmr(
@@ -103,28 +68,23 @@ describe('servicioOmr (canary)', () => {
     );
 
     expect(mockEjecutarPipelineOmr).toHaveBeenCalledTimes(1);
-    expect(mockAnalizarOmrLegacy).not.toHaveBeenCalled();
     expect(mockRegistrarAdopcion).toHaveBeenCalledWith('omr', '/modulo_escaneo_omr/analizarOmr', 'v2');
     expect(resultado).toEqual(pipelineResult.resultado);
   });
 
-  it('hace fallback a legacy cuando v2 falla', async () => {
-    mockDecidirVersionCanary.mockReturnValue('v2');
+  it('propaga error cuando pipeline v2 falla', async () => {
     mockEjecutarPipelineOmr.mockRejectedValue(new Error('pipeline failed'));
-    mockAnalizarOmrLegacy.mockResolvedValue(legacyResult);
 
-    const resultado = await analizarOmr(
+    await expect(analizarOmr(
       argsBase.imagenBase64,
       argsBase.mapaPagina,
       argsBase.qrEsperado,
       argsBase.margenMm,
       argsBase.debugInfo,
       argsBase.requestId
-    );
+    )).rejects.toThrow('pipeline failed');
 
     expect(mockEjecutarPipelineOmr).toHaveBeenCalledTimes(1);
-    expect(mockAnalizarOmrLegacy).toHaveBeenCalledTimes(1);
-    expect(mockRegistrarAdopcion).toHaveBeenCalledWith('omr', '/modulo_escaneo_omr/analizarOmr', 'v1');
-    expect(resultado).toBe(legacyResult);
+    expect(mockRegistrarAdopcion).not.toHaveBeenCalledWith('omr', '/modulo_escaneo_omr/analizarOmr', 'v1');
   });
 });

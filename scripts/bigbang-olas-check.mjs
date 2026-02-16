@@ -204,8 +204,8 @@ addCheck(
 // Siguiente ola (2) readiness
 // ---------------------------
 const ola2OmrTargets = [
-  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts') },
-  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts') }
+  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts') },
+  { filePath: 'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts', lines: lineCount('apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts') }
 ];
 const ola2PdfTargets = [
   { filePath: 'apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts', lines: lineCount('apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts') },
@@ -214,19 +214,19 @@ const ola2PdfTargets = [
 ];
 const ola2SyncTarget = { filePath: 'apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts', lines: lineCount('apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts') };
 
-// Ola 2A: OMR segmentado si fachada <100 lineas, legado preservado y pipeline v2 presente
+// Ola 2A: OMR segmentado si fachada <100 lineas, motor v2 presente y pipeline modular activo
 const omrFachada = ola2OmrTargets.find((t) => t.filePath.endsWith('servicioOmr.ts'));
-const omrLegado = ola2OmrTargets.find((t) => t.filePath.endsWith('servicioOmrLegacy.ts'));
+const omrMotorV2 = ola2OmrTargets.find((t) => t.filePath.endsWith('servicioOmrV2.ts'));
 const omrFachadaCompacta = omrFachada && omrFachada.lines < 100;
-const omrLegadoPreservado = omrLegado && omrLegado.lines > 800;
+const omrMotorV2Presente = Boolean(omrMotorV2 && omrMotorV2.lines > 0);
 const omrPipelinePresente = exists('apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline');
 
 addCheck(
   'ola2a.omr.segmented',
-  omrFachadaCompacta && omrLegadoPreservado && omrPipelinePresente,
+  omrFachadaCompacta && omrMotorV2Presente && omrPipelinePresente,
   {
     fachada: omrFachada ? `${omrFachada.filePath}: ${omrFachada.lines}` : 'no encontrada',
-    legado: omrLegado ? `${omrLegado.filePath}: ${omrLegado.lines}` : 'no encontrado',
+    motorV2: omrMotorV2 ? `${omrMotorV2.filePath}: ${omrMotorV2.lines}` : 'no encontrado',
     pipeline: `omr/pipeline exists: ${omrPipelinePresente}`
   }
 );
@@ -290,21 +290,10 @@ addCheck(
 const omrLegacyRefLines = filterImportLikeRefLines(
   filterRuntimeRefLines(grepRefs(['servicioOmrLegacy'], 'apps/backend/src/modulos/modulo_escaneo_omr'))
 );
-const omrAllowedLegacyRefs = [
-  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts',
-  'apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts',
-  'apps/backend/src/modulos/modulo_escaneo_omr/omr/qr/etapaQr.ts',
-  'apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts',
-  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts'
-];
-const omrLegacyEncapsulation = evaluateAllowlist(omrLegacyRefLines, omrAllowedLegacyRefs, [
-  'apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts'
-]);
-
-addCheck('ola2a.completion.legacy.encapsulated', omrLegacyEncapsulation.ok, {
-  criterio: 'referencias a servicioOmrLegacy solo en fachada/adaptadores permitidos',
+addCheck('ola2a.completion.no.legacy.refs', omrLegacyRefLines.length === 0, {
+  criterio: 'cero referencias runtime import-like a servicioOmrLegacy',
   refsEncontradas: omrLegacyRefLines,
-  refsFueraDeAllowlist: omrLegacyEncapsulation.unexpected
+  refsFueraDeAllowlist: omrLegacyRefLines
 });
 
 addCheck(
