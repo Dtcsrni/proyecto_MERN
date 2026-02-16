@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "generadoEn": "2026-02-16T00:43:48.605Z",
+  "generadoEn": "2026-02-16T05:52:57.791Z",
   "artefactos": [
     {
       "archivo": "reports/qa/latest/dataset-prodlike.json",
@@ -11,8 +11,8 @@
     {
       "archivo": "reports/qa/latest/e2e-docente-alumno.json",
       "existe": true,
-      "bytes": 340,
-      "actualizadoEn": "2026-02-16T00:43:38.151Z"
+      "bytes": 351,
+      "actualizadoEn": "2026-02-16T02:29:40.245Z"
     },
     {
       "archivo": "reports/qa/latest/global-grade.json",

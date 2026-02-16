@@ -5,6 +5,7 @@ No editar a mano: los cambios se pisan al regenerar.
 
 - [ARQUITECTURA.md](ARQUITECTURA.md) — Arquitectura
 - [ARQUITECTURA_C4.md](ARQUITECTURA_C4.md) — Arquitectura C4
+- [CICLO_DESARROLLO.md](CICLO_DESARROLLO.md) — Ciclo de desarrollo
 - [DESPLIEGUE.md](DESPLIEGUE.md) — Despliegue
 - [DEVOPS_BASELINE.md](DEVOPS_BASELINE.md) — DevOps Baseline
 - [DIAGRAMAS.md](DIAGRAMAS.md) — Diagramas
@@ -22,6 +23,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [README.md](README.md) — docs/
 - [RELEASE_BIGBANG_1_0_BETA.md](RELEASE_BIGBANG_1_0_BETA.md) — Cierre Big-Bang `1.0-beta`
 - [RELEASE_GATE_STABLE.md](RELEASE_GATE_STABLE.md) — Gate de Promocion a Estable
+- [ROADMAP_REQUISITOS.md](ROADMAP_REQUISITOS.md) — Roadmap de Requisitos Verificables
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
 - [RUNBOOK_OPERACION.md](RUNBOOK_OPERACION.md) — Runbook Operación (Local + Cloud mínimo)
 - [SEGURIDAD.md](SEGURIDAD.md) — Seguridad

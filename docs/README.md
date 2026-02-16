@@ -23,6 +23,8 @@ Ultima actualizacion integral: 2026-02-13.
 - `VERSIONADO.md`: politica de version y release.
 - `CICLO_DESARROLLO.md`: ciclo oficial de desarrollo (incluye fase de requisitos obligatoria).
 - `ENGINEERING_BASELINE.md`: baseline de ingeniería y reglas de gobernanza técnica.
+- `ENGINEERING_BASELINE.md` (seccion "Requisitos verificables"): matriz RF/RNF con criterios de aceptación y evidencia trazable.
+- `ROADMAP_REQUISITOS.md`: roadmap de cierre de brechas de requisitos (beta -> estable).
 - `DEVOPS_BASELINE.md`: baseline de operación/entrega y contrato CI/CD.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
 - `RUNBOOK_OPERACION.md`: troubleshooting y operación diaria.
