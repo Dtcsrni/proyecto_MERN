@@ -91,6 +91,9 @@ const OMR_QUALITY_REJECT_MIN = Number.parseFloat(process.env.OMR_QUALITY_REJECT_
 const OMR_QUALITY_REVIEW_MIN = Number.parseFloat(process.env.OMR_QUALITY_REVIEW_MIN || '0.8');
 const OMR_AUTO_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.75');
 const OMR_AUTO_AMBIGUAS_MAX = Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.1');
+const OMR_AUTO_RESCUE_QUALITY_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_QUALITY_MIN || '0.58');
+const OMR_AUTO_RESCUE_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_CONF_MIN || '0.84');
+const OMR_AUTO_RESCUE_AMBIG_MAX = Number.parseFloat(process.env.OMR_AUTO_RESCUE_AMBIG_MAX || '0.04');
 const OMR_EXPORT_PATCHES = String(process.env.OMR_EXPORT_PATCHES || '').toLowerCase() === 'true' || process.env.OMR_EXPORT_PATCHES === '1';
 const OMR_PATCH_DIR = process.env.OMR_PATCH_DIR || path.resolve(process.cwd(), 'storage', 'omr_patches');
 const OMR_PATCH_SIZE = Math.max(24, Number.parseInt(process.env.OMR_PATCH_SIZE || '56', 10));
@@ -340,6 +343,10 @@ function resolverEstadoAnalisis(args: {
   const motivos: string[] = [];
   const advertencias: string[] = [];
   const puedeRechazarPorCalidad = totalRespuestas >= 3;
+  const rescateAltaPrecision =
+    calidadPagina >= OMR_AUTO_RESCUE_QUALITY_MIN &&
+    confianzaMedia >= OMR_AUTO_RESCUE_CONF_MIN &&
+    ratioAmbiguas <= OMR_AUTO_RESCUE_AMBIG_MAX;
   let estado: ResultadoOmr['estadoAnalisis'] = 'ok';
   let anularRespuestas = false;
 
@@ -362,15 +369,22 @@ function resolverEstadoAnalisis(args: {
     confianzaMedia < OMR_AUTO_CONF_MIN ||
     ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX
   ) {
-    estado = 'requiere_revision';
-    if (calidadPagina < OMR_QUALITY_REVIEW_MIN) {
-      motivos.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
-    }
-    if (confianzaMedia < OMR_AUTO_CONF_MIN) {
-      motivos.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
-    }
-    if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
-      motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
+    if (rescateAltaPrecision) {
+      estado = 'ok';
+      advertencias.push(
+        `Calidad baja compensada por senal OMR fuerte (confianza ${confianzaMedia.toFixed(2)}, ambiguas ${(ratioAmbiguas * 100).toFixed(1)}%)`
+      );
+    } else {
+      estado = 'requiere_revision';
+      if (calidadPagina < OMR_QUALITY_REVIEW_MIN) {
+        motivos.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
+      }
+      if (confianzaMedia < OMR_AUTO_CONF_MIN) {
+        motivos.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
+      }
+      if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
+        motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
+      }
     }
   }
 
@@ -467,6 +481,55 @@ function construirGrayColorimetrico(
   };
 }
 
+function percentilGray(gray: Uint8ClampedArray, q: number) {
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < gray.length; i += 1) hist[gray[i]] += 1;
+  const total = gray.length;
+  const objetivo = Math.max(1, Math.round(total * q));
+  let acumulado = 0;
+  for (let i = 0; i < 256; i += 1) {
+    acumulado += hist[i];
+    if (acumulado >= objetivo) return i;
+  }
+  return 255;
+}
+
+function realzarGrayParaFotoDificil(gray: Uint8ClampedArray, width: number, height: number) {
+  if (gray.length === 0) return gray;
+  const pLow = percentilGray(gray, 0.03);
+  const pHigh = percentilGray(gray, 0.97);
+  const rango = Math.max(24, pHigh - pLow);
+  const estirada = new Uint8ClampedArray(gray.length);
+
+  for (let i = 0; i < gray.length; i += 1) {
+    const norm = (gray[i] - pLow) / rango;
+    const clamped = Math.max(0, Math.min(1, norm));
+    const gamma = Math.pow(clamped, 0.92);
+    estirada[i] = Math.max(0, Math.min(255, Math.round(gamma * 255)));
+  }
+
+  if (width < 3 || height < 3) return estirada;
+
+  const salida = new Uint8ClampedArray(estirada.length);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const idx = y * width + x;
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+        salida[idx] = estirada[idx];
+        continue;
+      }
+
+      const c = estirada[idx];
+      const avg4 =
+        (estirada[idx - 1] + estirada[idx + 1] + estirada[idx - width] + estirada[idx + width]) / 4;
+      const unsharp = c + (c - avg4) * 0.75;
+      salida[idx] = Math.max(0, Math.min(255, Math.round(unsharp)));
+    }
+  }
+
+  return salida;
+}
+
 async function exportarPatchesOmr(
   rgba: Uint8ClampedArray,
   width: number,
@@ -545,6 +608,19 @@ async function decodificarImagen(base64: string) {
     for (let i = 0; i < gray.length; i += 1) {
       gray[i] = Math.round(grayDefault[i] * (1 - mezclaColor) + colorimetrico.gray[i] * mezclaColor);
     }
+  }
+
+  const metricasPrevias = calcularMetricasImagen(gray, w, h);
+  const contrasteGlobal = Math.abs(percentilGray(gray, 0.9) - percentilGray(gray, 0.1));
+  const requiereRescate = metricasPrevias.blurVar < 110 || contrasteGlobal < 52;
+  if (requiereRescate) {
+    const realzada = realzarGrayParaFotoDificil(gray, w, h);
+    const mezcla = Math.max(0.35, Math.min(0.8, contrasteGlobal < 42 ? 0.72 : 0.5));
+    const combinada = new Uint8ClampedArray(gray.length);
+    for (let i = 0; i < gray.length; i += 1) {
+      combinada[i] = Math.round(gray[i] * (1 - mezcla) + realzada[i] * mezcla);
+    }
+    gray = combinada;
   }
 
   const integral = calcularIntegral(gray, w, h);
