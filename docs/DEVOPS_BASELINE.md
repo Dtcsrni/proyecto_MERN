@@ -39,6 +39,21 @@ Fecha de baseline: 2026-02-13.
 - Los modulos no exitosos reportan fallo localizado y los modulos sanos siguen entregando señal en verde.
 - `CI Checks` se mantiene como señal integradora global para release gating.
 
+## Proteccion de rama main (Ruleset activo)
+- Ruleset: `main-v1b-minimo` (target `branch`, enforcement `active`).
+- Alcance: `refs/heads/main`.
+- Reglas vigentes:
+  - bloqueo de borrado de rama (`deletion`),
+  - bloqueo de force-push (`non_fast_forward`),
+  - pull request obligatorio con 1 aprobacion minima,
+  - descarte de approvals stale al recibir nuevos commits,
+  - resolucion obligatoria de conversaciones,
+  - branch actualizado obligatoriamente antes de merge (`strict required status checks policy`).
+- Status check requerido para merge en `main`:
+  - `Verificaciones Core (PR bloqueante)` (workflow integrador `CI Checks`).
+- Criterio operativo:
+  - los workflows modulares con filtros por `paths` no se marcan como required para evitar bloqueos por checks no disparados.
+
 ## Fallback y resiliencia
 - Fallback de pipeline: aislamiento por workflow (degradacion por dominio, no falla sistémica de toda la malla).
 - Hardening de dependencias nativas en backend module:
