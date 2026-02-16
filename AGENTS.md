@@ -61,10 +61,11 @@ Ejecutar en este orden:
 2. `npm run typecheck`
 3. `npm run test:frontend:ci`
 4. `npm run test:coverage:ci`
-5. `npm run test:backend:ci`
-6. `npm run test:portal:ci`
-7. `npm run perf:check`
-8. `npm run pipeline:contract:check`
+5. `npm run test:tdd:enforcement:ci`
+6. `npm run test:backend:ci`
+7. `npm run test:portal:ci`
+8. `npm run perf:check`
+9. `npm run pipeline:contract:check`
 9. Si el alcance toca Olas Big Bang:
    - `npm run bigbang:olas:check`
    - `npm run bigbang:olas:strict`

@@ -9,6 +9,7 @@
       "test",
       "ux-quality-check",
       "coverage-check",
+      "tdd-enforcement-check",
       "build",
       "docs-check",
       "security-scan"
@@ -58,7 +59,8 @@
       "commands": [
         "npm run test:backend:ci",
         "npm run test:portal:ci",
-        "npm run test:frontend:ci"
+        "npm run test:frontend:ci",
+        "npm run test:client:smoke:ci"
       ],
       "artifacts": [
         "test-report-backend.txt",
@@ -143,6 +145,16 @@
         "apps/backend/coverage/**",
         "apps/frontend/coverage/**",
         "apps/portal_alumno_cloud/coverage/**"
+      ]
+    },
+    {
+      "name": "tdd-enforcement-check",
+      "commands": [
+        "npm run test:coverage:exclusions:debt",
+        "npm run test:coverage:diff"
+      ],
+      "artifacts": [
+        "docs/tdd-exclusions-debt.json"
       ]
     },
     {

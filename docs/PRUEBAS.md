@@ -3,6 +3,16 @@
 ## Objetivo
 Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cambio.
 
+## Politica TDD (obligatoria)
+- Todo cambio funcional debe incluir prueba nueva o ajuste de regresion en el mismo PR.
+- Se exige cobertura en lineas modificadas (`diff coverage`) con umbral minimo `90%`.
+- Las exclusiones de cobertura solo se aceptan como deuda temporal con:
+  - owner asignado,
+  - fecha de expiracion,
+  - razon tecnica,
+  - registro en `docs/tdd-exclusions-debt.json`.
+- El gate `test:coverage:exclusions:debt` falla si una deuda temporal vence.
+
 ## Capas de prueba
 - Backend (`apps/backend/tests`):
   - unitarias
@@ -32,6 +42,7 @@ Se considera candidato estable cuando pasan:
 npm run test:ci
 npm run test:flujo-docente:ci
 npm run test:coverage:ci
+npm run test:tdd:enforcement:ci
 npm run perf:check
 npm run security:env:check
 npm run security:audit
@@ -60,6 +71,10 @@ npm -C apps/portal_alumno_cloud run test
 - Frontend:
 ```bash
 npm -C apps/frontend run test
+```
+- Smoke legacy client:
+```bash
+npm run test:client:smoke
 ```
 - Suite integrada raiz:
 ```bash

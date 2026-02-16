@@ -16,6 +16,8 @@ Perfil operativo exigido para cierre beta: `core` + `extended` con excepción de
 8. `npm run perf:check`
 9. `npm run perf:check:business`
 10. `npm run bigbang:olas:strict`
+12. `npm run test:coverage:exclusions:debt`
+13. `npm run test:coverage:diff`
 
 ## Evidencias obligatorias (`latest`)
 - `reports/qa/latest/dataset-prodlike.json`
@@ -33,6 +35,8 @@ Perfil operativo exigido para cierre beta: `core` + `extended` con excepción de
 - Todos los comandos anteriores en verde.
 - Sin bypass manual de jobs en CI.
 - Artefactos de evidencia presentes y consistentes con la corrida.
+- `diff coverage` >= 90% en lineas modificadas de `apps/*/src`.
+- Sin deuda de exclusiones de cobertura vencida.
 
 ## Criterios de rechazo
 - Cualquier hallazgo de PII/token en dataset anonimizado.

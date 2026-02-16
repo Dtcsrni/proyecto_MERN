@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "description": "Registro de deuda temporal de exclusiones de cobertura con owner y fecha de expiración.",
+  "entries": [
+    {
+      "id": "backend-banco-preguntas",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/modulos/modulo_banco_preguntas/**",
+      "owner": "@backend-core",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Cobertura de regresión incompleta durante refactor por capas."
+    },
+    {
+      "id": "backend-pdf",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/modulos/modulo_generacion_pdf/**",
+      "owner": "@backend-pdf",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Migración progresiva v1/v2 con paridad en curso."
+    },
+    {
+      "id": "backend-sync",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/modulos/modulo_sincronizacion_nube/**",
+      "owner": "@backend-sync",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Recomposición de casos de integración por dominio."
+    },
+    {
+      "id": "backend-papelera",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/modulos/modulo_papelera/**",
+      "owner": "@backend-core",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Falta suite de regresión de rutas auxiliares."
+    },
+    {
+      "id": "backend-vinculacion",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/modulos/modulo_vinculacion_entrega/**",
+      "owner": "@backend-core",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Pruebas de frontera pendientes de consolidar."
+    },
+    {
+      "id": "backend-salud-rutas",
+      "file": "apps/backend/vitest.config.ts",
+      "pattern": "src/compartido/salud/rutasSalud.ts",
+      "owner": "@backend-platform",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Cobertura indirecta existente; falta validación unitaria directa."
+    },
+    {
+      "id": "frontend-app-alumno",
+      "file": "apps/frontend/vitest.config.ts",
+      "pattern": "src/apps/app_alumno/**",
+      "owner": "@frontend-core",
+      "dueDate": "2026-03-31",
+      "status": "temporary",
+      "reason": "Se requiere ampliar pruebas de comportamiento del flujo alumno."
+    }
+  ]
+}

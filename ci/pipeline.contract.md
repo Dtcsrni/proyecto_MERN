@@ -13,9 +13,10 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 4. `test`
 5. `ux-quality-check`
 6. `coverage-check`
-7. `build`
-8. `docs-check`
-9. `security-scan`
+7. `tdd-enforcement-check`
+8. `build`
+9. `docs-check`
+10. `security-scan`
 
 ### Profile `extended` (blocking for `main`, `release/*`, `schedule`, or manual dispatch)
 1. `setup`
@@ -55,6 +56,7 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
   - `npm run test:backend:ci`
   - `npm run test:portal:ci`
   - `npm run test:frontend:ci`
+  - `npm run test:client:smoke:ci`
 - Flaky policy: retries only for explicitly retriable jobs/scripts
 
 ### ux-quality-check
@@ -115,6 +117,17 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
   - Week 2: backend 62, frontend 52, portal 58
   - Week 3: backend 70, frontend 60, portal 65
 - Output: coverage report per workspace (`coverage/**`)
+
+### tdd-enforcement-check
+- Commands:
+  - `npm run test:coverage:exclusions:debt`
+  - `npm run test:coverage:diff`
+- Policy: blocking gate
+- Scope:
+  - valida que exclusiones temporales de cobertura tengan owner y fecha de expiracion vigente
+  - exige cobertura minima en lineas modificadas (`diff coverage`)
+- Default diff threshold:
+  - `DIFF_COVERAGE_MIN=90`
 
 ### perf-check
 - Command: `npm run perf:check`
