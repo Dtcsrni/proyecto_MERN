@@ -62,6 +62,17 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
+- CI modular por dominio activado con workflows independientes:
+  - `.github/workflows/ci-backend.yml`
+  - `.github/workflows/ci-frontend.yml`
+  - `.github/workflows/ci-portal.yml`
+  - `.github/workflows/ci-docs.yml`
+- Filtros `paths` ajustados para autovalidar los workflows modulares cuando cambia su propio YAML.
+- Hardening de `CI Backend Module` para runtime nativo `sharp` en Linux:
+  - instalacion explicita `npm install --no-save --include=optional --os=linux --cpu=x64 sharp` antes de pruebas.
+- Evidencia de aislamiento CI:
+  - fallo puntual en backend module no bloquea ejecucion exitosa de frontend/portal/docs/package/autogen-docs.
+
 - `apps/backend/src/rutas.ts` monta:
   - adapters v1 instrumentados en `/api/examenes` y `/api/omr`
   - rutas nuevas `/api/v2/examenes` y `/api/v2/omr`

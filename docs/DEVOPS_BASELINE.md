@@ -28,6 +28,21 @@ Fecha de baseline: 2026-02-13.
 - Workflows separados por responsabilidad:
   - `.github/workflows/ci.yml` (`CI Checks`): quality gates bloqueantes.
   - `.github/workflows/package.yml` (`Package Images`): empaquetado Docker + `image-digests.txt`.
+  - `.github/workflows/autogen-docs.yml` (`Auto-Generate Docs`): autogeneracion y versionado de docs/diagramas.
+  - `.github/workflows/ci-backend.yml` (`CI Backend Module`): pipeline aislado de backend.
+  - `.github/workflows/ci-frontend.yml` (`CI Frontend Module`): pipeline aislado de frontend + smoke legacy.
+  - `.github/workflows/ci-portal.yml` (`CI Portal Module`): pipeline aislado de portal alumno cloud.
+  - `.github/workflows/ci-docs.yml` (`CI Docs Module`): pipeline aislado de docs/diagramas/rutas.
+
+## Aislamiento operativo CI (modular)
+- Un fallo en un modulo no cancela la ejecucion de los demas workflows modulares.
+- Los modulos no exitosos reportan fallo localizado y los modulos sanos siguen entregando señal en verde.
+- `CI Checks` se mantiene como señal integradora global para release gating.
+
+## Fallback y resiliencia
+- Fallback de pipeline: aislamiento por workflow (degradacion por dominio, no falla sistémica de toda la malla).
+- Hardening de dependencias nativas en backend module:
+  - instalacion explicita de `sharp` linux-x64 antes de pruebas para evitar errores de runtime nativo en runners Linux.
 
 ## Enforcements TDD activos
 - Diff coverage bloqueante en CI (`DIFF_COVERAGE_MIN=90`).
