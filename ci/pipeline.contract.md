@@ -35,6 +35,20 @@ The pipeline is intentionally split into two mandatory profiles to optimize feed
 ### Profile `package`
 1. `package`
 
+## Modular execution (independent workflows)
+The CI implementation can execute domain-isolated workflows in parallel, without cancelling sibling domains when one fails.
+
+Recommended module workflows:
+- `CI Backend Module` -> backend lint/typecheck/test/coverage/tdd/build
+- `CI Frontend Module` -> frontend lint/typecheck/test/ux/coverage + legacy smoke
+- `CI Portal Module` -> portal lint/typecheck/test/coverage/tdd/build
+- `CI Docs Module` -> contract/docs/diagrams/routes checks
+
+Policy:
+- A module failure must fail that module workflow only.
+- Sibling module workflows continue and publish their own status.
+- A global integrator workflow (`CI Checks`) remains the release-gating source of truth.
+
 ## Stage contract
 ### setup
 - Input: repository source

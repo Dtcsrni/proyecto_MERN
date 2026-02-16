@@ -29,6 +29,20 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Subproyectos Vite legacy (`client/proyectos_vite/**`):
   - smoke estructural por proyecto (entrypoints + scripts minimos)
 
+## CI modular por dominio
+- Workflows independientes activos:
+  - `.github/workflows/ci-backend.yml` (`CI Backend Module`)
+  - `.github/workflows/ci-frontend.yml` (`CI Frontend Module`)
+  - `.github/workflows/ci-portal.yml` (`CI Portal Module`)
+  - `.github/workflows/ci-docs.yml` (`CI Docs Module`)
+- Objetivo:
+  - aislar fallos por dominio y mantener señal de calidad de los demas modulos.
+- Comportamiento esperado:
+  - si falla un modulo, los otros workflows siguen ejecutando y reportando resultado.
+  - el workflow monolitico `CI Checks` permanece como gate integrador de compatibilidad global.
+- Hardening aplicado:
+  - `CI Backend Module` prepara runtime `sharp` en linux (`npm install --no-save --include=optional --os=linux --cpu=x64 sharp`) para evitar fallos de dependencias nativas.
+
 ## Flujos criticos cubiertos
 - Flujo de examen end-to-end backend.
 - Generacion/regeneracion de examenes y PDF.
@@ -61,6 +75,14 @@ npm run diagramas:consistencia:check
 Adicional obligatorio para promover a estable:
 - 10 corridas CI consecutivas en verde.
 - evidencia de flujo docente humano en producción (`docs/release/evidencias/<version>/`).
+
+## Criterio candidato v1b
+Se considera candidato `v1b` cuando ademas de los gates funcionales se cumple:
+- `CI Backend Module` en verde.
+- `CI Frontend Module` en verde.
+- `CI Portal Module` en verde.
+- `CI Docs Module` en verde.
+- `CI Checks` en verde.
 
 ## Comandos de uso frecuente
 - Backend completo:
