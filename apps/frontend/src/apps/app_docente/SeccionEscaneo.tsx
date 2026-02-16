@@ -469,7 +469,7 @@ export function SeccionEscaneo({
         </div>
       </details>
       <div className="calif-captura-grid">
-        <div className="subpanel">
+        <div className="subpanel calif-captura-panel">
           <h3>Captura individual</h3>
           <div className="grid grid--2">
             <label className="campo">
@@ -524,7 +524,7 @@ export function SeccionEscaneo({
             </Boton>
           </div>
         </div>
-        <div className="subpanel">
+        <div className="subpanel calif-captura-panel">
           <h3>Lote de imagenes</h3>
           <label className="campo">
             Lote de imagenes (bulk)
@@ -551,9 +551,9 @@ export function SeccionEscaneo({
               <ul className="lista lista-items">
                 {lote.map((item) => (
                   <li key={item.id}>
-                    <div className="item-glass">
-                      <div className="item-row">
-                        <div>
+                    <div className="item-glass calif-lote-item">
+                      <div className="item-row calif-lote-item__row">
+                        <div className="calif-lote-item__meta">
                           <div className="item-title">{item.nombre}</div>
                           <div className="item-sub">
                             {item.estado === 'pendiente' && 'En cola'}
@@ -575,11 +575,11 @@ export function SeccionEscaneo({
                             </div>
                           )}
                         </div>
-                        <div className="item-actions">
+                        <div className="item-actions calif-lote-item__preview-wrap">
                           <img
                             src={item.imagenBase64}
                             alt={`preview ${item.nombre}`}
-                            style={{ width: 120, height: 'auto', borderRadius: 8, border: '1px solid #dde3ea' }}
+                            className="calif-lote-item__preview"
                           />
                         </div>
                       </div>
@@ -669,7 +669,7 @@ export function SeccionEscaneo({
             </div>
           )}
           {requiereRevisionOmr && (
-            <div className="item-row" style={{ margin: '0.6rem 0' }}>
+            <div className="item-row calif-omr-warning-row">
               <div className="item-sub">
                 Revisión OMR requerida. Preguntas dudosas: <b>{preguntasDudosas.length}</b>
               </div>
