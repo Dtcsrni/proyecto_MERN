@@ -67,6 +67,7 @@ export function SeccionCalificar({
   claveCorrectaPorNumero,
   ordenPreguntasClave,
   contextoManual,
+  etiquetaTipoExamen,
   onCalificar,
   puedeCalificar,
   avisarSinPermiso
@@ -79,6 +80,7 @@ export function SeccionCalificar({
   claveCorrectaPorNumero: Record<number, string>;
   ordenPreguntasClave: number[];
   contextoManual?: string | null;
+  etiquetaTipoExamen?: string | null;
   onCalificar: (payload: {
     examenGeneradoId: string;
     alumnoId?: string | null;
@@ -259,7 +261,7 @@ export function SeccionCalificar({
   return (
     <div className="panel calif-grade-card">
       <h2>
-        <Icono nombre="calificar" /> Calificar examen
+        <Icono nombre="calificar" /> Calificar examen{etiquetaTipoExamen ? ` · ${etiquetaTipoExamen}` : ''}
       </h2>
       <div className="item-sub">Examen: {examenId ?? 'Sin examen'}</div>
       <div className="item-sub">Alumno: {alumnoId ?? 'Sin alumno'}</div>
