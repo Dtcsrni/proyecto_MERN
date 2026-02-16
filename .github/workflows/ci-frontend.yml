@@ -1,0 +1,97 @@
+name: CI Frontend Module
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "apps/frontend/**"
+      - "client/**"
+      - "tests/client-smoke/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "vitest.base.ts"
+      - "docs/tdd-exclusions-debt.json"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - "apps/frontend/**"
+      - "client/**"
+      - "tests/client-smoke/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "vitest.base.ts"
+      - "docs/tdd-exclusions-debt.json"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend_module:
+    name: Frontend Module
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/portal_alumno_cloud/package-lock.json
+
+      - name: Etapa setup
+        run: npm ci
+
+      - name: Instalar Chromium (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Etapa lint frontend
+        run: npm -C apps/frontend run lint
+
+      - name: Etapa typecheck frontend
+        run: npm -C apps/frontend run typecheck
+
+      - name: Etapa test frontend
+        run: npm run test:frontend:ci
+
+      - name: Etapa ux-quality-check
+        run: npm run test:ux-quality:ci
+
+      - name: Etapa coverage frontend
+        run: npm -C apps/frontend run test:coverage
+
+      - name: Etapa smoke client legacy
+        run: npm run test:client:smoke:ci
+
+      - name: Etapa proyectos client legacy
+        run: npm run test:client:proyectos:ci
+
+      - name: Etapa tdd-debt-check
+        run: npm run test:coverage:exclusions:debt
+
+      - name: Preparar base para diff coverage (PR)
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Etapa diff-coverage-check
+        run: npm run test:coverage:diff
+
+      - name: Etapa build frontend
+        run: npm -C apps/frontend run build
