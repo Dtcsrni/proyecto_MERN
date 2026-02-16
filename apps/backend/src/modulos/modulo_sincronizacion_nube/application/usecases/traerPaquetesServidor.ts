@@ -3,6 +3,7 @@ import { normalizarErrorServidorSincronizacion } from '../../domain/erroresSincr
 import { crearClientePortal } from '../../infra/portalSyncClient';
 import { MongoSyncAuditRepo, syncClock } from '../../infra/repositoriosSync';
 import { obtenerId } from '../../sincronizacionInterna';
+import { ErrorAplicacion } from '../../../../compartido/errores/errorAplicacion';
 
 const processor = new DefaultPaqueteProcessor();
 const auditRepo = new MongoSyncAuditRepo();
