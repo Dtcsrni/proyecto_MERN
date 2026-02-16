@@ -83,7 +83,7 @@ export function SeccionEscaneo({
       id: string;
       nombre: string;
       imagenBase64: string;
-      estado: 'pendiente' | 'analizando' | 'precalificando' | 'listo' | 'error' | 'rechazado_calidad';
+      estado: 'pendiente' | 'analizando' | 'precalificando' | 'listo' | 'error';
       mensaje?: string;
       folio?: string;
       numeroPagina?: number;
@@ -272,8 +272,8 @@ export function SeccionEscaneo({
         id: `${archivo.name}-${archivo.size}-${archivo.lastModified}-${Math.random().toString(16).slice(2)}`,
         nombre: archivo.name,
         imagenBase64: base64,
-        estado: aprobada ? 'pendiente' : 'rechazado_calidad',
-        mensaje: aprobada ? '' : (calidad?.motivos.join(' ') || 'No cumple el gate de calidad.'),
+        estado: 'pendiente',
+        mensaje: aprobada ? '' : `Advertencia de calidad: ${calidad?.motivos.join(' ') || 'Revisar enfoque/iluminacion.'}`,
         preview: null,
         calidad
       });
@@ -333,12 +333,6 @@ export function SeccionEscaneo({
     setProcesandoLote(true);
     for (const item of lote) {
       if (item.estado === 'listo') continue;
-      if (!item.calidad?.aprobada) {
-        setLote((prev) =>
-          prev.map((i) => (i.id === item.id ? { ...i, estado: 'rechazado_calidad', mensaje: i.mensaje || 'Imagen descartada por calidad' } : i))
-        );
-        continue;
-      }
       setLote((prev) => prev.map((i) => (i.id === item.id ? { ...i, estado: 'analizando', mensaje: '' } : i)));
       try {
         const folioEnvio = folio.trim();
@@ -551,7 +545,7 @@ export function SeccionEscaneo({
             <div className="resultado">
               <h3>Procesamiento en lote</h3>
               <progress
-                value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error' || i.estado === 'rechazado_calidad').length}
+                value={lote.filter((i) => i.estado === 'listo' || i.estado === 'error').length}
                 max={lote.length}
               />
               <ul className="lista lista-items">
@@ -566,9 +560,9 @@ export function SeccionEscaneo({
                             {item.estado === 'analizando' && 'Analizando…'}
                             {item.estado === 'precalificando' && 'Precalificando…'}
                             {item.estado === 'listo' && 'Listo'}
-                            {item.estado === 'rechazado_calidad' && `Descartada por calidad: ${item.mensaje ?? ''}`}
                             {item.estado === 'error' && `Error: ${item.mensaje ?? ''}`}
                           </div>
+                          {item.estado !== 'error' && item.mensaje && <div className="item-sub">{item.mensaje}</div>}
                           {item.folio && (
                             <div className="item-sub">
                               Folio {item.folio} · P{item.numeroPagina ?? '-'} ·{' '}
