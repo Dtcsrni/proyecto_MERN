@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-15T23:38:56.465Z",
-  "strict": false,
-  "completion": true,
+  "generatedAt": "2026-02-16T00:09:51.214Z",
+  "strict": true,
+  "completion": false,
   "model": {
     "readinessVsCompletion": "Este reporte valida readiness tecnico; completitud funcional requiere retiro/encapsulado final de legado.",
     "canaryPolicy": "canary-rollout-check es evidencia de transicion en beta y bloqueo formal en gate de estable."
@@ -13,7 +13,7 @@
     "ola2Ready": true,
     "ola2Completed": true,
     "ola3Ready": true,
-    "strictPassed": null,
+    "strictPassed": true,
     "previousWavesGuaranteed": true,
     "nextWaveReadyToExecute": true
   },
@@ -83,7 +83,7 @@
       "ok": true,
       "detail": {
         "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 33",
-        "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1400",
+        "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1476",
         "pipeline": "omr/pipeline exists: true"
       }
     },
@@ -233,11 +233,48 @@
       "detail": "scripts de gates requeridos para ola 3 estan definidos"
     }
   ],
-  "strictResults": [],
+  "strictResults": [
+    {
+      "ok": true,
+      "command": "npm run lint"
+    },
+    {
+      "ok": true,
+      "command": "npm run typecheck"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:backend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:portal:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:frontend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:coverage:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run perf:check"
+    },
+    {
+      "ok": true,
+      "command": "npm run canary:rollout:check"
+    },
+    {
+      "ok": true,
+      "command": "npm run pipeline:contract:check"
+    }
+  ],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
-      "lines": 1400
+      "lines": 1476
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
