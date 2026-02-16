@@ -28,12 +28,12 @@ export default defineConfig({
         'src/index.css'
       ],
       thresholds: {
-        // Recalibracion temporal (2026-02-13) para mantener gate bloqueante
-        // sin ocultar deuda: se ajusta al baseline real y se deja rampa documentada.
-        lines: 39,
-        functions: 40,
-        branches: 31,
-        statements: 37
+        // Baseline mínimo actualizado (2026-02-15) para mantener gate
+        // de cobertura con piso explícito y margen operativo estable.
+        lines: 42,
+        functions: 42,
+        branches: 34,
+        statements: 40
       }
     }
   }

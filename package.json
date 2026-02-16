@@ -48,6 +48,9 @@
     "test:portal:ci": "node scripts/retry.mjs --name portal --attempts 3 --delay-ms 750 --command \"npm -C apps/portal_alumno_cloud run test\"",
     "test:frontend": "npm -C apps/frontend run test",
     "test:frontend:ci": "node scripts/retry.mjs --name frontend --attempts 5 --delay-ms 900 --command \"npm -C apps/frontend run test -- --pool=forks --reporter=verbose\" --fallback-command \"npm -C apps/frontend run test -- --pool=threads --reporter=verbose\"",
+    "test:client:smoke": "playwright test -c tests/client-smoke/playwright.config.cjs",
+    "test:client:smoke:ci": "playwright test -c tests/client-smoke/playwright.config.cjs --reporter=github,list",
+    "test:frontend:coverage:min": "npm -C apps/frontend run test:coverage",
     "test:dashboard:repair": "node --test scripts/tests/dashboard-repair.test.mjs",
     "test:flujo-docente:ci": "npm -C apps/backend run test -- --reporter=verbose tests/integracion/flujoDocenteParcialE2E.test.ts tests/integracion/flujoDocenteGlobalE2E.test.ts",
     "test:e2e:docente-alumno:ci": "node scripts/testing/run-gate-with-report.mjs --gate=e2e-docente-alumno --report=reports/qa/latest/e2e-docente-alumno.json --command=\"npm -C apps/backend run test -- --reporter=verbose tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts\"",
@@ -61,13 +64,15 @@
     "test:qa:manifest": "node scripts/testing/generar-qa-manifest.mjs",
     "bigbang:beta:quick": "npm-run-all -s test:dataset-prodlike:ci test:e2e:docente-alumno:ci test:global-grade:ci test:pdf-print:ci test:ux-visual:ci test:qa:manifest",
     "bigbang:beta:check": "npm-run-all -s test:dataset-prodlike:ci test:e2e:docente-alumno:ci test:global-grade:ci test:pdf-print:ci test:ux-visual:ci test:qa:manifest bigbang:olas:strict",
-    "test:coverage:ci": "npm -C apps/backend run test:coverage && npm -C apps/portal_alumno_cloud run test:coverage && npm -C apps/frontend run test:coverage",
+    "test:coverage:ci": "npm -C apps/backend run test:coverage && npm -C apps/portal_alumno_cloud run test:coverage && npm run test:frontend:coverage:min",
     "docs:generate": "node scripts/docs.mjs --write",
     "docs:check": "node scripts/docs.mjs --check",
     "diagramas:generate": "node scripts/diagramas.mjs --write",
     "diagramas:check": "node scripts/diagramas.mjs --check",
     "diagramas:render": "node scripts/diagramas-render.mjs --write",
     "diagramas:render:check": "node scripts/diagramas-render.mjs --check",
+    "diagramas:render:linux": "node scripts/diagramas-render-linux.mjs --write",
+    "diagramas:render:linux:check": "node scripts/diagramas-render-linux.mjs --check",
     "diagramas:consistencia:check": "node scripts/diagramas-consistencia.mjs --check",
     "docs:sync": "npm run diagramas:generate && npm run diagramas:render && npm run docs:generate",
     "routes:check": "node scripts/routes-check.mjs",
@@ -125,6 +130,7 @@
     "supertest": "^6.3.4",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "@playwright/test": "^1.54.2"
   }
 }

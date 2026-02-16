@@ -40,6 +40,9 @@ jobs:
       - name: Preparar runtime sharp (linux-x64)
         run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
 
+      - name: Instalar Chromium (Playwright)
+        run: npx playwright install --with-deps chromium
+
       - name: Etapa contract-check
         run: npm run pipeline:contract:check
 
@@ -54,6 +57,7 @@ jobs:
           npm run test:backend:ci
           npm run test:portal:ci
           npm run test:frontend:ci
+          npm run test:client:smoke:ci
 
       - name: Etapa ux-quality-check
         run: npm run test:ux-quality:ci
