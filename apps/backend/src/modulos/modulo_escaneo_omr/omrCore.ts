@@ -46,6 +46,30 @@ export type MetricasPregunta = {
   scoreMean: number;
   scoreStd: number;
   scoreThreshold: number;
+  validacionAlternativas: ValidacionAlternativas;
+};
+
+export type DiagnosticoAlternativa = {
+  letra: string;
+  score: number;
+  ratioCore: number;
+  fillDelta: number;
+  contraste: number;
+  confianzaHibrida: number;
+  sinMarca: boolean;
+  razon: string;
+};
+
+export type ValidacionAlternativas = {
+  opcionSeleccionada: string | null;
+  totalAlternativas: number;
+  alternativasSinMarca: number;
+  alternativasConMarca: number;
+  cumpleDescarte: boolean;
+  maxScoreAlternativa: number;
+  maxRatioCoreAlternativa: number;
+  maxFillDeltaAlternativa: number;
+  diagnostico: DiagnosticoAlternativa[];
 };
 
 export type UmbralesDecisionOmr = {
@@ -285,12 +309,15 @@ export function calcularMetricasPregunta(args: {
   const ordenar = [...resultado.scores].sort((a, b) => b.score - a.score);
   const top = ordenar[0];
   const second = ordenar[1];
-  const rasgosTop = top
-    ? detectarOpcion(gray, integral, width, height, { x: top.x, y: top.y }, paramsBurbuja)
-    : null;
-  const rasgosSecond = second
-    ? detectarOpcion(gray, integral, width, height, { x: second.x, y: second.y }, paramsBurbuja)
-    : null;
+  const rasgosPorLetra = new Map<string, RasgosBurbuja>();
+  for (const item of resultado.scores) {
+    rasgosPorLetra.set(
+      item.letra,
+      detectarOpcion(gray, integral, width, height, { x: item.x, y: item.y }, paramsBurbuja)
+    );
+  }
+  const rasgosTop = top ? rasgosPorLetra.get(top.letra) ?? null : null;
+  const rasgosSecond = second ? rasgosPorLetra.get(second.letra) ?? null : null;
 
   const minFillDelta = umbrales.minFillDelta ?? 0.08;
   const minCenterGap = umbrales.minCenterGap ?? 10;
@@ -327,6 +354,53 @@ export function calcularMetricasPregunta(args: {
   const gapCentroTop = rasgosTop ? rasgosTop.ringMean - rasgosTop.centerMean : 0;
   const ringOnlyTop = rasgosTop?.ringOnlyPenalty ?? 0;
 
+  const umbralMarcaScoreAlternativa = Math.max(umbrales.strongScore * 0.92, umbralScore * 0.9, 0.085);
+  const umbralMarcaRatioCoreAlternativa = 0.16;
+  const umbralMarcaFillDeltaAlternativa = Math.max(0.05, minFillDelta * 0.72);
+  const umbralMarcaHibridaAlternativa = Math.max(0.26, minHybridConfidence * 0.72);
+
+  const diagnosticoAlternativas: DiagnosticoAlternativa[] = resultado.scores
+    .filter((item) => item.letra !== resultado.mejorOpcion)
+    .map((item) => {
+      const rasgos = rasgosPorLetra.get(item.letra);
+      const ratioCore = rasgos?.ratioCore ?? 0;
+      const fillDelta = rasgos?.fillDelta ?? 0;
+      const contraste = rasgos?.contraste ?? 0;
+      const confHibrida = confianzaHibrida(rasgos ?? null);
+      const hayMarca =
+        item.score >= umbralMarcaScoreAlternativa ||
+        ratioCore >= umbralMarcaRatioCoreAlternativa ||
+        fillDelta >= umbralMarcaFillDeltaAlternativa ||
+        confHibrida >= umbralMarcaHibridaAlternativa;
+      const razon = hayMarca
+        ? `Marca potencial (score=${item.score.toFixed(3)}, core=${ratioCore.toFixed(3)}, fill=${fillDelta.toFixed(3)})`
+        : `Sin marca (score=${item.score.toFixed(3)}, core=${ratioCore.toFixed(3)}, fill=${fillDelta.toFixed(3)})`;
+      return {
+        letra: item.letra,
+        score: item.score,
+        ratioCore,
+        fillDelta,
+        contraste,
+        confianzaHibrida: confHibrida,
+        sinMarca: !hayMarca,
+        razon
+      };
+    });
+
+  const alternativasConMarca = diagnosticoAlternativas.filter((item) => !item.sinMarca).length;
+  const alternativasSinMarca = diagnosticoAlternativas.length - alternativasConMarca;
+  const validacionAlternativas: ValidacionAlternativas = {
+    opcionSeleccionada: resultado.mejorOpcion,
+    totalAlternativas: diagnosticoAlternativas.length,
+    alternativasSinMarca,
+    alternativasConMarca,
+    cumpleDescarte: diagnosticoAlternativas.length > 0 ? alternativasConMarca === 0 : Boolean(resultado.mejorOpcion),
+    maxScoreAlternativa: diagnosticoAlternativas.reduce((m, item) => Math.max(m, item.score), 0),
+    maxRatioCoreAlternativa: diagnosticoAlternativas.reduce((m, item) => Math.max(m, item.ratioCore), 0),
+    maxFillDeltaAlternativa: diagnosticoAlternativas.reduce((m, item) => Math.max(m, item.fillDelta), 0),
+    diagnostico: diagnosticoAlternativas
+  };
+
   const dobleMarcada =
     (segundoScore >= umbrales.strongScore && ratio >= umbrales.secondRatio) ||
     opcionesCompetitivas >= 3 ||
@@ -346,18 +420,28 @@ export function calcularMetricasPregunta(args: {
     ringOnlyTop < 0.38 &&
     topRatio <= 0.72;
   const respaldoDominante = topZScore >= minTopZScore + 0.45 && topRatio <= 0.66 && mejorScore >= umbralScore * 1.03;
+  const suficienteDescarte = validacionAlternativas.cumpleDescarte;
   const suficiente =
     suficienteBase &&
     (suficienteHibrida || suficienteHibridaFlex || respaldoDominante) &&
-    (consistenciaAnclada || anclaConfiable || respaldoDominante);
+    (consistenciaAnclada || anclaConfiable || respaldoDominante) &&
+    suficienteDescarte;
   const confianzaBase = Math.min(1, Math.max(0, mejorScore * 1.8));
   const penalizacion = dobleMarcada ? 0.5 : 1;
   const penalizacionAnclada = consistenciaAnclada ? 1 : anclaConfiable ? 0.72 : 0.35;
+  const penalizacionDescarte = validacionAlternativas.cumpleDescarte
+    ? 1.08
+    : validacionAlternativas.alternativasConMarca >= 2
+      ? 0.35
+      : 0.58;
   const zBoost = clamp01((topZScore - 1) / 4);
   const confianza = suficiente
     ? Math.min(
         1,
-        (confianzaBase * 0.45 + hTop * 0.4 + Math.min(0.5, delta * 3) * 0.55 + zBoost * 0.2) * penalizacion * penalizacionAnclada
+        (confianzaBase * 0.45 + hTop * 0.4 + Math.min(0.5, delta * 3) * 0.55 + zBoost * 0.2) *
+          penalizacion *
+          penalizacionAnclada *
+          penalizacionDescarte
       )
     : 0;
 
@@ -372,6 +456,7 @@ export function calcularMetricasPregunta(args: {
     confianza,
     scoreMean: promedioScore,
     scoreStd: desviacionScore,
-    scoreThreshold: umbralScore
+    scoreThreshold: umbralScore,
+    validacionAlternativas
   };
 }

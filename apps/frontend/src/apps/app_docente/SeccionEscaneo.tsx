@@ -1,6 +1,6 @@
 /** Seccion de escaneo OMR y revision manual (orquestacion UI). */
 import type { ChangeEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono } from '../../ui/iconos';
@@ -20,6 +20,8 @@ import { QrAccesoMovil } from './QrAccesoMovil';
 import { evaluarCalidadCaptura, type CalidadCaptura } from './QrAccesoMovil';
 
 export { QrAccesoMovil } from './QrAccesoMovil';
+
+const UMBRAL_AUTO_CONFIABLE_UI = 0.82;
 
 export function SeccionEscaneo({
   alumnos,
@@ -78,6 +80,7 @@ export function SeccionEscaneo({
   const [bloqueoManual, setBloqueoManual] = useState(false);
   const [procesandoLote, setProcesandoLote] = useState(false);
   const [soloDudosas, setSoloDudosas] = useState(true);
+  const [aprobacionesPorPregunta, setAprobacionesPorPregunta] = useState<Record<number, boolean>>({});
   const [lote, setLote] = useState<
     Array<{
       id: string;
@@ -162,6 +165,16 @@ export function SeccionEscaneo({
     () => (soloDudosas ? filasRevision.filter((item) => item.esDudosa) : filasRevision),
     [filasRevision, soloDudosas]
   );
+  const totalPreguntasRevision = filasRevision.length;
+  const aprobadasConteo = useMemo(
+    () => filasRevision.filter((fila) => aprobacionesPorPregunta[fila.numeroPregunta]).length,
+    [aprobacionesPorPregunta, filasRevision]
+  );
+  const faltanAprobar = Math.max(0, totalPreguntasRevision - aprobadasConteo);
+  const listaPendientes = useMemo(
+    () => filasRevision.filter((fila) => !aprobacionesPorPregunta[fila.numeroPregunta]).map((fila) => fila.numeroPregunta),
+    [aprobacionesPorPregunta, filasRevision]
+  );
   const resumenCalificacionDinamica = useMemo(() => {
     if (!filasRevision.length) {
       return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
@@ -195,6 +208,14 @@ export function SeccionEscaneo({
     () => revisionesOrdenadas.filter((examen) => examen.paginas.some((pagina) => pagina.resultado.estadoAnalisis !== 'ok')).length,
     [revisionesOrdenadas]
   );
+
+  useEffect(() => {
+    const inicial: Record<number, boolean> = {};
+    for (const fila of filasRevision) {
+      inicial[fila.numeroPregunta] = false;
+    }
+    setAprobacionesPorPregunta(inicial);
+  }, [examenIdActivo, paginaActiva, filasRevision]);
 
   async function leerArchivoBase64(archivo: File): Promise<string> {
     const leer = () =>
@@ -678,6 +699,23 @@ export function SeccionEscaneo({
                   <input type="checkbox" checked={soloDudosas} onChange={(event) => setSoloDudosas(event.target.checked)} />
                   Solo dudas
                 </label>
+                {filasRevision.length > 0 && (
+                  <Boton
+                    type="button"
+                    variante="secundario"
+                    onClick={() => {
+                      const siguiente: Record<number, boolean> = {};
+                      for (const fila of filasRevision) {
+                        const autocompletadaConfiable = Boolean(fila.opcion) && fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI;
+                        siguiente[fila.numeroPregunta] = autocompletadaConfiable;
+                      }
+                      setAprobacionesPorPregunta(siguiente);
+                      onConfirmarRevisionOmr(false);
+                    }}
+                  >
+                    Marcar autocompletadas confiables
+                  </Boton>
+                )}
                 {paginaRevisionActiva && (
                   <Boton
                     type="button"
@@ -693,12 +731,19 @@ export function SeccionEscaneo({
                 <Boton
                   type="button"
                   variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
+                  disabled={totalPreguntasRevision > 0 && faltanAprobar > 0}
                   onClick={() => onConfirmarRevisionOmr(!revisionOmrConfirmada)}
                 >
                   {revisionOmrConfirmada ? 'Revisión confirmada' : 'Confirmar revisión manual'}
                 </Boton>
               </div>
             </div>
+          )}
+          {totalPreguntasRevision > 0 && (
+            <InlineMensaje tipo={faltanAprobar === 0 ? 'ok' : 'warning'}>
+              Checklist de aprobación: {aprobadasConteo}/{totalPreguntasRevision} pregunta(s).
+              {faltanAprobar > 0 ? ` Pendientes: ${listaPendientes.join(', ')}` : ' Todas las preguntas fueron aprobadas.'}
+            </InlineMensaje>
           )}
           <div className="omr-review-grid">
             <div className="item-glass omr-review-card">
@@ -732,11 +777,19 @@ export function SeccionEscaneo({
                           <span className={`badge ${fila.esCorrecta ? 'ok' : fila.opcion ? 'error' : 'warning'}`}>
                             Detectada: {fila.opcion ?? '-'}
                           </span>
+                          <span className={`badge ${fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI ? 'ok' : fila.opcion ? 'warning' : 'error'}`}>
+                            {fila.opcion
+                              ? fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI
+                                ? 'Autocompletada automática (alta confianza)'
+                                : 'Autocompletada con confianza media'
+                              : 'Sin autocompletado automático'}
+                          </span>
                           <select
                             aria-label={`Respuesta alumno pregunta ${fila.numeroPregunta}`}
                             value={fila.opcion ?? ''}
                             onChange={(event) => {
                               onActualizarPregunta(fila.numeroPregunta, event.target.value || null);
+                              setAprobacionesPorPregunta((prev) => ({ ...prev, [fila.numeroPregunta]: false }));
                               onConfirmarRevisionOmr(false);
                             }}
                           >
@@ -747,6 +800,18 @@ export function SeccionEscaneo({
                             <option value="D">D</option>
                             <option value="E">E</option>
                           </select>
+                          <label className="campo campo-inline">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(aprobacionesPorPregunta[fila.numeroPregunta])}
+                              onChange={(event) => {
+                                const checked = event.target.checked;
+                                setAprobacionesPorPregunta((prev) => ({ ...prev, [fila.numeroPregunta]: checked }));
+                                if (!checked) onConfirmarRevisionOmr(false);
+                              }}
+                            />
+                            Aprobada por docente
+                          </label>
                         </div>
                       </li>
                     );

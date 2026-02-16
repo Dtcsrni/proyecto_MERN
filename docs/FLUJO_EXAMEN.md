@@ -27,7 +27,7 @@ Flujo funcional vigente del sistema (2026-02-11).
 - Estado del examen: `generado` -> `entregado`.
 
 ## 5) Escaneo OMR
-- Subir imagen por pagina (`/api/omr/analizar`).
+- Subir imagen por pagina (`/api/v2/omr/analizar`).
 - El motor OMR:
   - detecta QR/pagina/template
   - corrige geometria (homografia o escala controlada)

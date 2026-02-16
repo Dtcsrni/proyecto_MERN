@@ -1,6 +1,6 @@
-# Inventario Tecnico del Proyecto
+# Inventario Técnico del Proyecto
 
-Fecha de corte: 2026-02-14.
+Fecha de corte: 2026-02-16.
 Commit de referencia: `15f7d35`.
 
 ## 1) Alcance del inventario
@@ -8,9 +8,9 @@ Commit de referencia: `15f7d35`.
 - Estado de avance Big-Bang hacia `1.0-beta`.
 - Matriz formal de requisitos verificables (RF/RNF) y su trazabilidad de evidencia.
 - Estado de calidad por gates (local + contrato CI).
-- Inventario exhaustivo de instrucciones para agentes IA y trazabilidad multi-sesion.
-- Inventario exhaustivo de piezas de codigo/config en `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
-- Paquete de handoff IA automatico por sesion en `docs/handoff/`.
+- Inventario exhaustivo de instrucciones para agentes IA y trazabilidad multi-sesión.
+- Inventario exhaustivo de piezas de código/config en `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
+- Paquete de handoff IA automático por sesión en `docs/handoff/`.
 
 ## 2) Estructura actual del repositorio
 - Apps:
@@ -22,7 +22,7 @@ Commit de referencia: `15f7d35`.
   - `ci/pipeline.matrix.json`
   - `.github/workflows/ci.yml`
   - `.github/workflows/package.yml`
-- Operacion y observabilidad:
+- Operación y observabilidad:
   - `ops/observabilidad/prometheus.yml`
   - `ops/observabilidad/alert.rules.yml`
   - `ops/observabilidad/grafana/dashboard-evaluapro.json`
@@ -41,15 +41,16 @@ Commit de referencia: `15f7d35`.
   - baseline perf activo (`docs/perf/baseline.json`)
   - gate `perf-check` integrado a contrato/workflow
 - Ola 1: completada (bloque estructural de frontend docente cerrado).
-  - `AppDocente.tsx`: 798 lineas (cumple <800)
-  - `SeccionEscaneo.tsx`: 798 lineas (cumple <800)
-  - `SeccionPlantillas.tsx`: 763 lineas (cumple <800)
-  - `SeccionBanco.tsx`: 777 lineas (cumple <800)
+  - `AppDocente.tsx`: 798 líneas (cumple <800)
+  - `SeccionEscaneo.tsx`: 798 líneas (cumple <800)
+  - `SeccionPlantillas.tsx`: 763 líneas (cumple <800)
+  - `SeccionBanco.tsx`: 777 líneas (cumple <800)
   - sin referencias activas a `app_docente_legacy` o `docente_core`
-- Ola 2: activa (backend core) - sub-olas segmentadas tecnicamente, cierre funcional total pendiente
-  - OMR (Ola 2A): ✅ segmentada (reconocida formalmente 2026-02-14)
-    - `servicioOmr.ts`: fachada compacta 31 lineas (feature flag `FEATURE_OMR_PIPELINE_V2`)
-    - `servicioOmrLegacy.ts`: motor legado preservado 1319 lineas
+- Ola 2: activa (backend core) - sub-olas segmentadas técnicamente, con cierres parciales por dominio
+  - OMR (Ola 2A): ✅ v2-only operativo (corte 2026-02-16)
+    - `servicioOmr.ts`: fachada compacta (sin fallback runtime a v1)
+    - `servicioOmrV2.ts`: motor operativo nominal
+    - `servicioOmrLegacy.ts`: retirado del runtime
     - Pipeline v2 modular completo:
       - `omr/qr/etapaQr.ts`
       - `omr/deteccion/etapaDeteccion.ts`
@@ -57,26 +58,26 @@ Commit de referencia: `15f7d35`.
       - `omr/calidad/etapaCalidad.ts`
       - `omr/debug/etapaDebug.ts`
       - `omr/pipeline/ejecutorPipelineOmr.ts`
-    - API v2: `rutasEscaneoOmrV2.ts` activas
-    - Observabilidad: metricas por etapa en `/api/metrics`
+    - API vigente: `/api/v2/omr/*` (`/api/omr/*` retirado)
+    - Observabilidad: métricas por etapa en `/api/metrics`
   - PDF (Ola 2B): ✅ segmentada (bootstrap DDD 2026-02-14)
-    - `servicioGeneracionPdf.ts`: fachada 60 lineas (feature flag `FEATURE_PDF_BUILDER_V2`)
-    - `servicioGeneracionPdfLegacy.ts`: motor legado preservado 1396 lineas
-    - `controladorGeneracionPdf.ts`: 1389 lineas
+    - `servicioGeneracionPdf.ts`: fachada 60 líneas (feature flag `FEATURE_PDF_BUILDER_V2`)
+    - `servicioGeneracionPdfLegacy.ts`: motor legado preservado 1396 líneas
+    - `controladorGeneracionPdf.ts`: 1389 líneas
     - Estructura DDD creada:
       - `application/usecases/generarExamenIndividual.ts` (stub)
       - `domain/examenPdf.ts`, `domain/layoutExamen.ts`
       - `infra/configuracionLayoutEnv.ts`, `infra/pdfKitRenderer.ts` (stub)
       - `shared/tiposPdf.ts`
     - API v2: `rutasGeneracionPdfV2.ts` existentes
-  - Sincronizacion (Ola 2C): ✅ segmentada (delegacion use cases)
-    - `controladorSincronizacion.ts`: 80 lineas (fachada HTTP)
+  - Sincronización (Ola 2C): ✅ segmentada (delegación use cases)
+    - `controladorSincronizacion.ts`: 80 líneas (fachada HTTP)
     - `domain/paqueteSincronizacion.ts`: ensamblado/procesado de paquetes y guardrails
-    - `infra/repositoriosSync.ts`: auditoria + cursores/fechas de sync
+    - `infra/repositoriosSync.ts`: auditoría + cursores/fechas de sync
     - `infra/portalSyncClient.ts`: cliente HTTP unificado hacia portal
-    - `infra/omrCapturas.ts`: extraccion de capturas OMR para publicacion
-    - `application/usecases/*`: orquestacion por endpoint sin cambiar contrato HTTP
-- Ola 3: iniciada en OMR/PDF (bootstrap `api/v2` + metricas de migracion dual)
+    - `infra/omrCapturas.ts`: extracción de capturas OMR para publicación
+    - `application/usecases/*`: orquestación por endpoint sin cambiar contrato HTTP
+  - Ola 3: iniciada en PDF y dominios restantes (`api/v2` + métricas de migración dual)
 - Ola 4: pendiente (hardening final + retiro de compatibilidad temporal)
 
 ## 4) Inventario exhaustivo de instrucciones para agentes IA
@@ -92,14 +93,14 @@ Commit de referencia: `15f7d35`.
 3. `.github/workflows/ci.yml`
 4. `.github/workflows/package.yml`
 
-### 4.3 Operacion, seguridad y release
+### 4.3 Operación, seguridad y release
 1. `docs/RELEASE_GATE_STABLE.md`
 2. `docs/RUNBOOK_OPERACION.md`
 3. `docs/SEGURIDAD_OPERATIVA.md`
 4. `docs/DEVOPS_BASELINE.md`
 5. `docs/VERSIONADO.md`
 
-### 4.4 Estado tecnico/documental del proyecto
+### 4.4 Estado técnico/documental del proyecto
 1. `README.md`
 2. `docs/README.md`
 3. `docs/ENGINEERING_BASELINE.md`
@@ -112,12 +113,12 @@ Commit de referencia: `15f7d35`.
 - gobernanza IA,
 - contrato CI/CD,
 - workflows ejecutables,
-- runbooks de operacion/seguridad/release,
+- runbooks de operación/seguridad/release,
 - entradas oficiales (`README` raiz y docs).
-2. Exclusion obligatoria:
+2. Exclusión obligatoria:
 - `node_modules/**` no forma parte del contrato de instrucciones del proyecto.
-3. Verificacion recomendada:
-- escaneo por rutas versionadas y validacion manual de enlaces.
+3. Verificación recomendada:
+- escaneo por rutas versionadas y validación manual de enlaces.
 
 ## 5) Contrato CI/CD auditado
 - Workflows separados por responsabilidad:
@@ -155,16 +156,16 @@ Commit de referencia: `15f7d35`.
   - branches 31.40
   - estado: pasa umbral vigente (39/40/31/37)
 
-## 7) Seguridad y operacion
+## 7) Seguridad y operación
 - Gate estricto de entorno en CI:
   - `NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check`
-- Auditoria de dependencias:
+- Auditoría de dependencias:
   - `npm audit --audit-level=high --json > npm-audit-report.json`
 - Endpoints operativos:
   - backend: `/api/salud/live`, `/api/salud/ready`, `/api/metrics`
   - portal: `/api/portal/salud/live`, `/api/portal/salud/ready`, `/api/portal/metrics`
 
-## 8) Salida academica firmada
+## 8) Salida académica firmada
 - Endpoints implementados:
   - `GET /api/analiticas/lista-academica-csv?periodoId=<id>`
   - `GET /api/analiticas/lista-academica-docx?periodoId=<id>`
@@ -173,21 +174,21 @@ Commit de referencia: `15f7d35`.
   - `lista-academica.manifest.json` con SHA-256 por archivo.
 
 ## 9) Brechas para `1.0-beta`
-Nota de criterio: en este inventario, "segmentada" != "completada". Una ola se considera completada cuando cierra migracion funcional integral y retiro/encapsulado final de legado segun gate definido.
+Nota de criterio: en este inventario, "segmentada" != "completada". Una ola se considera completada cuando cierra migración funcional integral y retiro/encapsulado final de legado según gate definido.
 
 1. Completar Ola 2:
-- OMR 2A: continuar particion interna del motor legado (corte actual: 1400 lineas, pendiente bajar <800 final).
-- PDF 2B: separar controller/use-case/domain/infra.
-- Sync 2C: continuar separacion de politicas y contratos internos (controlador ya segmentado).
-2. Completar Ola 3 (`api/v2` + migracion dual integral):
+- OMR 2A: completada en runtime (v2-only); pendiente solo mantenimiento incremental.
+- PDF 2B: separar controller/use-case/domain/infra y retirar fallback explícito.
+- Sync 2C: continuar separación de políticas y contratos internos (controlador ya segmentado).
+2. Completar Ola 3 (`api/v2` + migración dual integral):
 - Ya existe bootstrap inicial para `OMR/PDF` y contadores de fallback/v2 writes; falta expandir al resto de dominios breaking.
 3. Completar Ola 4 (hardening final + retiro de compatibilidad temporal).
-4. Continuar rampa de cobertura frontend hacia 45 en 4 metricas sin exclusiones artificiales.
+4. Continuar rampa de cobertura frontend hacia 45 en 4 métricas sin exclusiones artificiales.
 
 ## 10) Brechas para estable
 1. Completar Olas 2, 3 y 4.
 2. 10 corridas CI consecutivas verdes.
-3. Ejecutar gate humano en produccion por release candidata:
+3. Ejecutar gate humano en producción por release candidata:
 - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
 4. Versionar evidencias en:
 - `docs/release/evidencias/<version>/`

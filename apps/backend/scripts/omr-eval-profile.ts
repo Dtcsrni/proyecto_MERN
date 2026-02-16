@@ -4,7 +4,6 @@ import { pathToFileURL } from 'node:url';
 import mongoose from 'mongoose';
 import sharp from 'sharp';
 import { analizarOmr as analizarOmrV2, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
-import { analizarOmr as analizarOmrLegacy } from '../src/modulos/modulo_escaneo_omr/servicioOmrLegacy';
 import { ExamenGenerado } from '../src/modulos/modulo_generacion_pdf/modeloExamenGenerado';
 import { BancoPregunta } from '../src/modulos/modulo_banco_preguntas/modeloBancoPregunta';
 
@@ -15,14 +14,14 @@ type BundleExamen = {
 
 export type EvalProfileOptions = {
   dataset: string;
-  mode: 'legacy' | 'v2';
+  mode: 'v2';
   mongoUri: string;
   profileName: string;
 };
 
 export type EvalProfileSummary = {
   profile: string;
-  mode: 'legacy' | 'v2';
+  mode: 'v2';
   dataset: string;
   totalReactivos: number;
   detectadasV2: number;
@@ -39,7 +38,7 @@ function parseArgs(argv: string[]): EvalProfileOptions {
   const args = argv.slice(2);
   const options: EvalProfileOptions = {
     dataset: '../../omr_samples',
-    mode: 'legacy',
+    mode: 'v2',
     mongoUri: process.env.MONGODB_URI_HOST || 'mongodb://localhost:27017/mern_app',
     profileName: process.env.OMR_PROFILE_NAME || 'actual'
   };
@@ -52,7 +51,7 @@ function parseArgs(argv: string[]): EvalProfileOptions {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && (next === 'legacy' || next === 'v2')) {
+    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
       options.mode = next;
       i += 1;
       continue;
@@ -137,7 +136,7 @@ async function cargarBundleExamen(folio: string): Promise<BundleExamen | null> {
 
 export async function evaluateProfile(options: EvalProfileOptions): Promise<EvalProfileSummary> {
   const datasetRoot = path.resolve(process.cwd(), options.dataset);
-  const analizar = options.mode === 'legacy' ? analizarOmrLegacy : analizarOmrV2;
+  const analizar = analizarOmrV2;
 
   const cacheExamen = new Map<string, BundleExamen | null>();
   const states: Record<string, number> = {};

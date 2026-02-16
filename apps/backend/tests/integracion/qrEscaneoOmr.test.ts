@@ -129,7 +129,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set(auth)
       .send({
         folio,
@@ -154,7 +154,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const imagenBase64 = await QRCode.toDataURL(qrIncorrecto, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set(auth)
       .send({
         folio,

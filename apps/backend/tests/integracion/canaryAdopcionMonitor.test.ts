@@ -65,14 +65,14 @@ describe('Canary adopcion monitor (v1 vs v2)', () => {
     await cerrarMongoTest();
   });
 
-  it('rastrea adopción v1 para endpoints /examenes y /omr', async () => {
+  it('rastrea adopción v1 para /examenes y v2 para /v2/omr', async () => {
     const escenario = await prepararEscenarioFlujo(app, 'parcial', 'canario-test-v1@test.test');
 
     // Realizar solicitudes v1
     await request(app).get('/api/examenes/plantillas').set(escenario.auth).expect(200);
 
     await request(app)
-      .post('/api/omr/prevalidar-lote')
+      .post('/api/v2/omr/prevalidar-lote')
       .set(escenario.auth)
       .send({
         capturas: [{ nombreArchivo: 'test.png', imagenBase64: PNG_1X1_BASE64 }]
@@ -88,7 +88,7 @@ describe('Canary adopcion monitor (v1 vs v2)', () => {
     expect(adopcion.pdf?.v1).toBeGreaterThan(0);
 
     expect(adopcion.omr).toBeDefined();
-    expect(adopcion.omr?.v1).toBeGreaterThan(0);
+    expect(adopcion.omr?.v2).toBeGreaterThan(0);
   });
 
   it('rastrea adopción v2 para endpoints /v2/examenes y /v2/omr', async () => {

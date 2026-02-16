@@ -40,7 +40,7 @@ describe('contrato: limites de payload', () => {
     const app = crearApp();
 
     const respuesta = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set({ Authorization: `Bearer ${tokenDocentePrueba()}` })
       .send({ folio: 'FOLIO', numeroPagina: 1, imagenBase64: 'x'.repeat(1_200) })
       .expect(400);

@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-16T00:45:14.943Z",
-  "strict": true,
-  "completion": false,
+  "generatedAt": "2026-02-16T21:54:54.423Z",
+  "strict": false,
+  "completion": true,
   "model": {
     "readinessVsCompletion": "Este reporte valida readiness tecnico; completitud funcional requiere retiro/encapsulado final de legado.",
     "canaryPolicy": "canary-rollout-check es evidencia de transicion en beta y bloqueo formal en gate de estable."
   },
   "status": {
     "ola0Passed": true,
-    "ola1Passed": true,
+    "ola1Passed": false,
     "ola2Ready": true,
-    "ola2Completed": true,
+    "ola2Completed": false,
     "ola3Ready": true,
-    "strictPassed": true,
-    "previousWavesGuaranteed": true,
-    "nextWaveReadyToExecute": true
+    "strictPassed": null,
+    "previousWavesGuaranteed": false,
+    "nextWaveReadyToExecute": false
   },
   "checks": [
     {
@@ -45,8 +45,8 @@
     },
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/AppDocente.tsx",
-      "ok": true,
-      "detail": "apps/frontend/src/apps/app_docente/AppDocente.tsx: 796 lineas"
+      "ok": false,
+      "detail": "apps/frontend/src/apps/app_docente/AppDocente.tsx: 810 lineas"
     },
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx",
@@ -60,8 +60,8 @@
     },
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx",
-      "ok": true,
-      "detail": "apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx: 799 lineas"
+      "ok": false,
+      "detail": "apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx: 858 lineas"
     },
     {
       "id": "ola1.legacy.folder.removed",
@@ -82,18 +82,18 @@
       "id": "ola2a.omr.segmented",
       "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 33",
-        "legado": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts: 1476",
+        "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 35",
+        "motorV2": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts: 1532",
         "pipeline": "omr/pipeline exists: true"
       }
     },
     {
       "id": "ola2b.pdf.segmented",
-      "ok": true,
+      "ok": false,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 56",
+        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 128",
         "legado": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts: 1402",
-        "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1389",
+        "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1365",
         "capas": [
           {
             "dir": "application/usecases",
@@ -118,7 +118,7 @@
       "id": "ola2c.sync.segmented",
       "ok": true,
       "detail": {
-        "controlador": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 80",
+        "controlador": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 81",
         "capas": [
           {
             "dir": "application",
@@ -145,16 +145,11 @@
       "detail": "scripts de gates requeridos para ola 2 estan definidos"
     },
     {
-      "id": "ola2a.completion.legacy.encapsulated",
+      "id": "ola2a.completion.no.legacy.refs",
       "ok": true,
       "detail": {
-        "criterio": "referencias a servicioOmrLegacy solo en fachada/adaptadores permitidos",
-        "refsEncontradas": [
-          "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts:2:import { analizarOmr as analizarOmrLegacy, leerQrDesdeImagen as leerQrDesdeImagenLegacy, type ResultadoOmr } from './servicioOmrLegacy';",
-          "apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts:2:import { analizarOmr as analizarOmrLegacy, type ResultadoOmr } from '../../servicioOmrLegacy';",
-          "apps/backend/src/modulos/modulo_escaneo_omr/omr/qr/etapaQr.ts:2:import { leerQrDesdeImagen as leerQrDesdeImagenLegacy } from '../../servicioOmrLegacy';",
-          "apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts:1:import type { ResultadoOmr } from '../../servicioOmrLegacy';"
-        ],
+        "criterio": "cero referencias runtime import-like a servicioOmrLegacy",
+        "refsEncontradas": [],
         "refsFueraDeAllowlist": []
       }
     },
@@ -168,13 +163,15 @@
       "ok": true,
       "detail": {
         "criterio": "referencias a servicioGeneracionPdfLegacy solo en fachada/use case puente",
-        "refsEncontradas": [],
+        "refsEncontradas": [
+          "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts:7:import { generarPdfExamen as generarPdfExamenLegacy } from './servicioGeneracionPdfLegacy';"
+        ],
         "refsFueraDeAllowlist": []
       }
     },
     {
       "id": "ola2b.completion.no.v1.fallback",
-      "ok": true,
+      "ok": false,
       "detail": "servicioGeneracionPdf.ts sin fallback explicito al motor legado"
     },
     {
@@ -190,7 +187,7 @@
     {
       "id": "ola2c.completion.controller.thin",
       "ok": true,
-      "detail": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 80 lineas"
+      "detail": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts: 81 lineas"
     },
     {
       "id": "ola2c.completion.usecases.present",
@@ -233,56 +230,19 @@
       "detail": "scripts de gates requeridos para ola 3 estan definidos"
     }
   ],
-  "strictResults": [
-    {
-      "ok": true,
-      "command": "npm run lint"
-    },
-    {
-      "ok": true,
-      "command": "npm run typecheck"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:backend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:portal:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:frontend:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run test:coverage:ci"
-    },
-    {
-      "ok": true,
-      "command": "npm run perf:check"
-    },
-    {
-      "ok": true,
-      "command": "npm run canary:rollout:check"
-    },
-    {
-      "ok": true,
-      "command": "npm run pipeline:contract:check"
-    }
-  ],
+  "strictResults": [],
   "ola2Targets": [
     {
-      "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts",
-      "lines": 1476
+      "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
+      "lines": 35
     },
     {
-      "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
-      "lines": 33
+      "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts",
+      "lines": 1532
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",
-      "lines": 1389
+      "lines": 1365
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts",
@@ -290,11 +250,11 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts",
-      "lines": 56
+      "lines": 128
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",
-      "lines": 80
+      "lines": 81
     }
   ]
 }

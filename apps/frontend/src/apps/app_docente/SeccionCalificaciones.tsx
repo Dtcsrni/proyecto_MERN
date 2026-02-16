@@ -83,6 +83,7 @@ export function SeccionCalificaciones({
   solicitudesRevision = [],
   onSincronizarSolicitudesRevision = async () => ({}),
   onResolverSolicitudRevision = async () => ({}),
+  onLimpiarColaEscaneos = () => {},
   permisos,
   avisarSinPermiso
 }: {
@@ -136,6 +137,7 @@ export function SeccionCalificaciones({
   solicitudesRevision?: SolicitudRevisionAlumno[];
   onSincronizarSolicitudesRevision?: () => Promise<unknown>;
   onResolverSolicitudRevision?: (id: string, estado: 'atendida' | 'rechazada', respuestaDocente?: string) => Promise<unknown>;
+  onLimpiarColaEscaneos?: () => void;
   permisos: PermisosUI;
   avisarSinPermiso: (mensaje: string) => void;
 }) {
@@ -418,6 +420,16 @@ export function SeccionCalificaciones({
           <span>{totalPaginas} página(s) procesadas</span>
           <span>{paginasPendientes} página(s) pendientes</span>
           <span>{examenesListos} examen(es) listos</span>
+        </div>
+        <div className="item-actions">
+          <Boton
+            type="button"
+            variante="secundario"
+            disabled={revisionesSeguras.length === 0 && !resultado}
+            onClick={onLimpiarColaEscaneos}
+          >
+            <Icono nombre="recargar" /> Limpiar cola de escaneos
+          </Boton>
         </div>
       </div>
       <div className="calificaciones-layout" data-calificaciones-layout="true">
