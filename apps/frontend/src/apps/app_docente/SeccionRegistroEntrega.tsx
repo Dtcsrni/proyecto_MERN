@@ -483,7 +483,7 @@ export function SeccionRegistroEntrega({
 
     setProcesandoLote(false);
     const resumen = `Vinculados: ${vinculados} · Pendientes: ${pendientes} · Errores: ${conError}`;
-    emitToast({ level: conError > 0 ? 'warning' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
+    emitToast({ level: conError > 0 ? 'warn' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
   }
 
   async function reintentarErroresLote() {
@@ -563,7 +563,7 @@ export function SeccionRegistroEntrega({
 
     setProcesandoLote(false);
     const resumen = `Reintento · Vinculados: ${vinculados} · Pendientes: ${pendientes} · Errores: ${conError}`;
-    emitToast({ level: conError > 0 ? 'warning' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
+    emitToast({ level: conError > 0 ? 'warn' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
   }
 
   function limpiarResultadosLote() {

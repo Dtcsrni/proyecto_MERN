@@ -60,4 +60,8 @@ jobs:
 
           git add docs
           git commit -m "chore(docs): autogenerar docs y diagramas"
-          git push origin HEAD:${{ github.ref_name }}
+          if ! git push origin HEAD:${{ github.ref_name }}; then
+            echo "::warning::No se pudo hacer push automático (rama protegida o reglas de repositorio)."
+            echo "::warning::Los docs se generaron, pero deben incorporarse por PR/manualmente."
+            exit 0
+          fi
