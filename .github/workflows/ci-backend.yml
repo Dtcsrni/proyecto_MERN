@@ -5,6 +5,7 @@ on:
     branches:
       - "**"
     paths:
+      - ".github/workflows/ci-backend.yml"
       - "apps/backend/**"
       - "scripts/**"
       - "package.json"
@@ -16,6 +17,7 @@ on:
     branches:
       - "**"
     paths:
+      - ".github/workflows/ci-backend.yml"
       - "apps/backend/**"
       - "scripts/**"
       - "package.json"
