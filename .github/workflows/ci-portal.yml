@@ -5,6 +5,7 @@ on:
     branches:
       - "**"
     paths:
+      - ".github/workflows/ci-portal.yml"
       - "apps/portal_alumno_cloud/**"
       - "scripts/**"
       - "package.json"
@@ -16,6 +17,7 @@ on:
     branches:
       - "**"
     paths:
+      - ".github/workflows/ci-portal.yml"
       - "apps/portal_alumno_cloud/**"
       - "scripts/**"
       - "package.json"
