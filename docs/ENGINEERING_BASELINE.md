@@ -351,6 +351,9 @@ Commit de referencia: `15f7d35`.
 | Semana 3 | 70 | 60 | 65 | `complexity=15`, `max-depth=4`, `max-params=4` |
 
 ## Reglas de gobernanza acordadas
+0. El ciclo de desarrollo oficial (incluyendo fase de requisitos obligatoria) se documenta en:
+- `docs/CICLO_DESARROLLO.md`
+
 1. No merge sin checks minimos verdes:
 - `npm run lint`
 - `npm run typecheck`
