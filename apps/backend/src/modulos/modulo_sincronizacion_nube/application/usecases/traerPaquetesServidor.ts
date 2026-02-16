@@ -1,5 +1,4 @@
-import { ErrorAplicacion } from '../../../../compartido/errores/errorAplicacion';
-import { DefaultPaqueteProcessor, parsearDesdeRaw, validarTamanoPaqueteBase64 } from '../../domain/paqueteSincronizacion';
+import { DefaultPaqueteProcessor, resolverDesdeSincronizacion, validarTamanoPaqueteBase64 } from '../../domain/paqueteSincronizacion';
 import { normalizarErrorServidorSincronizacion } from '../../domain/erroresSincronizacion';
 import { crearClientePortal } from '../../infra/portalSyncClient';
 import { MongoSyncAuditRepo, syncClock } from '../../infra/repositoriosSync';
@@ -16,13 +15,9 @@ export async function traerPaquetesServidorUseCase(params: {
   const { docenteId, desdeRaw, limiteRaw } = params;
   const portal = crearClientePortal('SYNC_SERVIDOR_NO_CONFIG');
 
-  const desdeRawStr = String(desdeRaw ?? '').trim();
+  const { desdeRawStr } = resolverDesdeSincronizacion(desdeRaw);
   const limite = Math.min(20, Math.max(1, Number(limiteRaw) || 6));
   const cursorDesde = desdeRawStr || (await auditRepo.obtenerCursorUltimoPull(String(docenteId))) || undefined;
-
-  if (desdeRawStr && !parsearDesdeRaw(desdeRawStr)) {
-    throw new ErrorAplicacion('SYNC_DESDE_INVALIDO', 'Parametro "desde" invalido', 400);
-  }
 
   const registro = await auditRepo.crear({
     docenteId,

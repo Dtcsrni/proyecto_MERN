@@ -61,7 +61,19 @@ export function SeccionSincronizacion({
     exportadoEn: string;
     conteos: Record<string, number>;
   }>;
-  onImportarPaquete: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean; docenteCorreo?: string }) => Promise<
+  onImportarPaquete: (payload: {
+    paqueteBase64: string;
+    checksumSha256?: string;
+    dryRun?: boolean;
+    docenteCorreo?: string;
+    backupMeta?: {
+      schemaVersion?: number;
+      createdAt?: string;
+      ttlMs?: number;
+      expiresAt?: string;
+      businessLogicFingerprint?: string;
+    };
+  }) => Promise<
     | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
     | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
   >;

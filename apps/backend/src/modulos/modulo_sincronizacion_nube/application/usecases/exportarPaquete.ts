@@ -1,5 +1,4 @@
-import { ErrorAplicacion } from '../../../../compartido/errores/errorAplicacion';
-import { DefaultPaqueteAssembler, parsearDesdeRaw } from '../../domain/paqueteSincronizacion';
+import { DefaultPaqueteAssembler, resolverDesdeSincronizacion } from '../../domain/paqueteSincronizacion';
 import { MongoSyncDataRepo, syncClock } from '../../infra/repositoriosSync';
 import { Sincronizacion } from '../../modeloSincronizacion';
 
@@ -15,13 +14,9 @@ export async function exportarPaqueteUseCase(params: {
   const { docenteId, periodoIdRaw, desdeRaw, incluirPdfsRaw } = params;
   const docenteCorreo = await dataRepo.obtenerCorreoDocente(String(docenteId));
   const periodoId = String(periodoIdRaw ?? '').trim();
-  const desdeRawStr = String(desdeRaw ?? '').trim();
   const incluirPdfs = incluirPdfsRaw !== false;
 
-  const desde = parsearDesdeRaw(desdeRawStr);
-  if (desdeRawStr && !desde) {
-    throw new ErrorAplicacion('SYNC_DESDE_INVALIDO', 'Parametro "desde" invalido', 400);
-  }
+  const { desde } = resolverDesdeSincronizacion(desdeRaw);
 
   const { paquete, paqueteBase64, checksumSha256, checksumGzipSha256, exportadoEn } = await assembler.generar({
     docenteId: String(docenteId),

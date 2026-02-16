@@ -138,4 +138,86 @@ describe('sincronizacion UI behavior', () => {
     expect(confirmSpy).toHaveBeenCalled();
     confirmSpy.mockRestore();
   });
+
+  it('rechaza backup expirado antes de llamar onImportar', async () => {
+    const onImportar = vi.fn(async () => ({ mensaje: 'ok' }));
+
+    render(
+      <SeccionPaqueteSincronizacion periodos={[]} docenteCorreo="doc@local.test" onExportar={vi.fn(async () => ({
+        paqueteBase64: 'cGFxdWV0ZQ==',
+        checksumSha256: 'a'.repeat(64),
+        exportadoEn: new Date().toISOString(),
+        conteos: {}
+      }))} onImportar={onImportar} />
+    );
+
+    const contenidoArchivo = JSON.stringify({
+      version: 2,
+      paqueteBase64: 'cGFxdWV0ZQ==',
+      checksumSha256: 'b'.repeat(64),
+      docenteCorreo: 'doc@local.test',
+      backupMeta: {
+        schemaVersion: 2,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        ttlMs: 86_400_000,
+        expiresAt: '2026-01-02T00:00:00.000Z',
+        businessLogicFingerprint: 'sync-v1-lww-updatedAt-schema1'
+      }
+    });
+
+    const archivo = {
+      name: 'respaldo-expirado.ep-sync.json',
+      size: contenidoArchivo.length,
+      text: vi.fn(async () => contenidoArchivo)
+    } as unknown as File;
+
+    const input = screen.getByLabelText(/Importar backup/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [archivo] } });
+
+    await waitFor(() => {
+      expect(onImportar).toHaveBeenCalledTimes(0);
+      expect(screen.getByText(/Backup expirado/i)).toBeInTheDocument();
+    });
+  });
+
+  it('rechaza backup invalidado por fingerprint incompatible', async () => {
+    const onImportar = vi.fn(async () => ({ mensaje: 'ok' }));
+
+    render(
+      <SeccionPaqueteSincronizacion periodos={[]} docenteCorreo="doc@local.test" onExportar={vi.fn(async () => ({
+        paqueteBase64: 'cGFxdWV0ZQ==',
+        checksumSha256: 'a'.repeat(64),
+        exportadoEn: new Date().toISOString(),
+        conteos: {}
+      }))} onImportar={onImportar} />
+    );
+
+    const contenidoArchivo = JSON.stringify({
+      version: 2,
+      paqueteBase64: 'cGFxdWV0ZQ==',
+      checksumSha256: 'b'.repeat(64),
+      docenteCorreo: 'doc@local.test',
+      backupMeta: {
+        schemaVersion: 2,
+        createdAt: new Date().toISOString(),
+        ttlMs: 86_400_000,
+        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        businessLogicFingerprint: 'sync-v2-breaking-change'
+      }
+    });
+
+    const archivo = {
+      name: 'respaldo-incompatible.ep-sync.json',
+      size: contenidoArchivo.length,
+      text: vi.fn(async () => contenidoArchivo)
+    } as unknown as File;
+
+    const input = screen.getByLabelText(/Importar backup/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [archivo] } });
+
+    await waitFor(() => {
+      expect(onImportar).toHaveBeenCalledTimes(0);
+      expect(screen.getByText(/Backup invalidado/i)).toBeInTheDocument();
+    });
+  });
 });
