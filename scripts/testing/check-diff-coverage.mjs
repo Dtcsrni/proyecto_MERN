@@ -28,6 +28,8 @@ const APPS = [
   }
 ];
 
+const COVERABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+
 function getArg(name) {
   const index = process.argv.indexOf(name);
   if (index < 0) return null;
@@ -46,6 +48,11 @@ function normalizeRelative(inputPath) {
     if (!fromRoot.startsWith('..')) return fromRoot;
   }
   return normalized.replace(/^\.\//, '');
+}
+
+function isCoverableFile(filePath) {
+  const ext = path.extname(normalizeRelative(filePath)).toLowerCase();
+  return COVERABLE_EXTENSIONS.has(ext);
 }
 
 async function runGitDiff(baseRef, headRef) {
@@ -144,10 +151,29 @@ function parseLcov(content) {
   return coverageByFile;
 }
 
-async function loadCoverageMaps() {
+function appForFile(relativeFile) {
+  const normalized = normalizeRelative(relativeFile);
+  return APPS.find((app) => normalized.startsWith(`${app.scope}/`) || normalized === app.scope) ?? null;
+}
+
+function resolveRequiredApps(touched) {
+  const required = new Map();
+
+  for (const file of touched.keys()) {
+    if (!isCoverableFile(file)) continue;
+    const app = appForFile(file);
+    if (app) {
+      required.set(app.name, app);
+    }
+  }
+
+  return [...required.values()];
+}
+
+async function loadCoverageMaps(requiredApps) {
   const merged = new Map();
 
-  for (const app of APPS) {
+  for (const app of requiredApps) {
     const lcovPath = path.join(rootDir, app.lcov);
     let content;
     try {
@@ -199,13 +225,27 @@ async function main() {
     return;
   }
 
-  const coverageMap = await loadCoverageMaps();
+  const touchedCoverable = new Map([...touched.entries()].filter(([file]) => isCoverableFile(file)));
+  if (touchedCoverable.size === 0) {
+    console.log('[diff-coverage] No hay líneas modificadas en archivos instrumentables por coverage; gate en no-op.');
+    return;
+  }
+
+  const requiredApps = resolveRequiredApps(touchedCoverable);
+  if (requiredApps.length === 0) {
+    console.log('[diff-coverage] No hay apps con coverage aplicable en líneas tocadas; gate en no-op.');
+    return;
+  }
+
+  console.log(`[diff-coverage] Apps evaluadas: ${requiredApps.map((app) => app.name).join(', ')}`);
+
+  const coverageMap = await loadCoverageMaps(requiredApps);
 
   let total = 0;
   let covered = 0;
   const missing = [];
 
-  for (const [file, lines] of touched.entries()) {
+  for (const [file, lines] of touchedCoverable.entries()) {
     const normalizedFile = normalizeRelative(file);
     const lineHits = coverageMap.get(normalizedFile);
 
