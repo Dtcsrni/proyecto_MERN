@@ -33,6 +33,7 @@ export type ResultadoOmr = {
 
 type Punto = { x: number; y: number };
 type TemplateVersion = 1 | 2;
+type PerfilGeometriaOmr = 'actual' | 'geo_tight_search';
 
 type MapaOmrPagina = {
   numeroPagina: number;
@@ -63,23 +64,61 @@ type MapaOmrPagina = {
 // Geometria base de hoja carta en puntos PDF.
 const ANCHO_CARTA = 612; const ALTO_CARTA = 792;
 const MM_A_PUNTOS = 72 / 25.4; const QR_SIZE_PTS_V1 = 68; const QR_SIZE_PTS_V2 = 88;
+
+const PERFILES_GEOMETRIA_OMR: Record<PerfilGeometriaOmr, {
+  alignRange: number;
+  vertRange: number;
+  localSearchRatio: number;
+  offsetX: number;
+  offsetY: number;
+}> = {
+  actual: {
+    alignRange: 22,
+    vertRange: 12,
+    localSearchRatio: 0.38,
+    offsetX: 0,
+    offsetY: 0
+  },
+  geo_tight_search: {
+    alignRange: 16,
+    vertRange: 8,
+    localSearchRatio: 0.3,
+    offsetX: 0,
+    offsetY: 0
+  }
+};
+
+function resolverPerfilGeometriaOmr(): PerfilGeometriaOmr {
+  const raw = String(process.env.OMR_GEOMETRY_PROFILE || 'actual').trim().toLowerCase();
+  const seleccionado: PerfilGeometriaOmr = raw === 'geo_tight_search' ? 'geo_tight_search' : 'actual';
+  const entorno = String(process.env.NODE_ENV || 'development').toLowerCase();
+  const forceProd = String(process.env.OMR_GEOMETRY_PROFILE_FORCE_PROD || '').trim().toLowerCase();
+  const puedeEnProd = forceProd === '1' || forceProd === 'true';
+  if (entorno === 'production' && seleccionado !== 'actual' && !puedeEnProd) {
+    return 'actual';
+  }
+  return seleccionado;
+}
+
+const PERFIL_GEOMETRIA_OMR_ACTIVO = resolverPerfilGeometriaOmr();
+const GEOMETRIA_OMR_DEFAULT = PERFILES_GEOMETRIA_OMR[PERFIL_GEOMETRIA_OMR_ACTIVO];
 // Parametros de deteccion ajustables por entorno (centralizados para calibracion/auditoria).
 const OMR_SCORE_MIN = Number.parseFloat(process.env.OMR_SCORE_MIN || '0.08');
 const OMR_DELTA_MIN = Number.parseFloat(process.env.OMR_DELTA_MIN || '0.02');
 const OMR_STRONG_SCORE = Number.parseFloat(process.env.OMR_STRONG_SCORE || '0.09');
 const OMR_SECOND_RATIO = Number.parseFloat(process.env.OMR_SECOND_RATIO || '0.75');
 const OMR_SCORE_STD = Number.parseFloat(process.env.OMR_SCORE_STD || '0.6');
-const OMR_ALIGN_RANGE = Number.parseFloat(process.env.OMR_ALIGN_RANGE || '22');
-const OMR_VERT_RANGE = Number.parseFloat(process.env.OMR_VERT_RANGE || '12');
+const OMR_ALIGN_RANGE = Number.parseFloat(process.env.OMR_ALIGN_RANGE || String(GEOMETRIA_OMR_DEFAULT.alignRange));
+const OMR_VERT_RANGE = Number.parseFloat(process.env.OMR_VERT_RANGE || String(GEOMETRIA_OMR_DEFAULT.vertRange));
 const OMR_VERT_STEP = Number.parseFloat(process.env.OMR_VERT_STEP || '2');
-const OMR_OFFSET_X = Number.parseFloat(process.env.OMR_OFFSET_X || '0');
-const OMR_OFFSET_Y = Number.parseFloat(process.env.OMR_OFFSET_Y || '0');
+const OMR_OFFSET_X = Number.parseFloat(process.env.OMR_OFFSET_X || String(GEOMETRIA_OMR_DEFAULT.offsetX));
+const OMR_OFFSET_Y = Number.parseFloat(process.env.OMR_OFFSET_Y || String(GEOMETRIA_OMR_DEFAULT.offsetY));
 const OMR_FID_RIGHT_OFFSET_PTS = Number.parseFloat(process.env.OMR_FID_RIGHT_OFFSET_PTS || '30');
 const OMR_BUBBLE_RADIUS_PTS = Number.parseFloat(process.env.OMR_BUBBLE_RADIUS_PTS || '3.4');
 const OMR_BOX_WIDTH_PTS = Number.parseFloat(process.env.OMR_BOX_WIDTH_PTS || '42');
 const OMR_CENTER_TO_LEFT_PTS = Number.parseFloat(process.env.OMR_CENTER_TO_LEFT_PTS || '9.2');
 const OMR_LOCAL_DRIFT_PENALTY = Number.parseFloat(process.env.OMR_LOCAL_DRIFT_PENALTY || '0.08');
-const OMR_LOCAL_SEARCH_RATIO = Number.parseFloat(process.env.OMR_LOCAL_SEARCH_RATIO || '0.38');
+const OMR_LOCAL_SEARCH_RATIO = Number.parseFloat(process.env.OMR_LOCAL_SEARCH_RATIO || String(GEOMETRIA_OMR_DEFAULT.localSearchRatio));
 const OMR_MAX_CENTER_DRIFT_RATIO = Number.parseFloat(process.env.OMR_MAX_CENTER_DRIFT_RATIO || '0.42');
 const OMR_MIN_SAFE_RANGE = Number.parseFloat(process.env.OMR_MIN_SAFE_RANGE || '4');
 const OMR_AMBIGUITY_RATIO = Number.parseFloat(process.env.OMR_AMBIGUITY_RATIO || '0.99');
