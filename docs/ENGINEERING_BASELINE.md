@@ -378,3 +378,48 @@ Commit de referencia: `15f7d35`.
 - Referencia de trazabilidad IA activa:
   - `AGENTS.md`
   - `docs/IA_TRAZABILIDAD_AGENTES.md`
+
+## Requisitos verificables (corte 2026-02-15)
+
+### Reglas de verificabilidad
+- Todo requisito documentado en esta seccion debe tener evidencia ejecutable en al menos uno de estos tipos:
+  - prueba automatizada (`apps/*/tests/**/*.test.*`)
+  - endpoint/ruta montada en backend o portal
+  - artefacto de gate en `reports/qa/latest/*.json`
+  - artefacto de performance en `reports/perf/*.json`
+- Estado permitido por requisito:
+  - `cumple`: existe evidencia reciente y consistente
+  - `parcial`: existe implementacion, pero falta evidencia contractual del gate definido
+  - `pendiente`: sin evidencia verificable suficiente
+- Para evitar deriva documental, cada requisito referencia al menos una evidencia primaria y un comando/gate de validacion.
+
+### Matriz de trazabilidad de requisitos
+
+| ID | Tipo | Requisito verificable | Criterio de aceptacion verificable | Evidencia principal | Gate/Comando | Estado |
+| --- | --- | --- | --- | --- | --- | --- |
+| RF-01 | Funcional | Autenticacion docente con JWT y rutas privadas protegidas | Rutas privadas rechazan acceso sin token y aceptan sesion valida | `apps/backend/src/rutas.ts`, `apps/backend/tests/integracion/autenticacionSesion.test.ts` | `npm -C apps/backend run test -- tests/integracion/autenticacionSesion.test.ts` | cumple |
+| RF-02 | Funcional | Control RBAC por rol/permisos | Operaciones no autorizadas responden `403` y perfiles autorizados operan | `apps/backend/tests/integracion/rolesPermisos.test.ts`, `docs/ROLES_PERMISOS.md` | `npm -C apps/backend run test -- tests/integracion/rolesPermisos.test.ts` | cumple |
+| RF-03 | Funcional | Gestion de periodos y alumnos | Se permite alta/consulta/edicion segun contratos de API | `apps/backend/src/rutas.ts`, `apps/backend/tests/integracion/alumnosEdicion.test.ts` | `npm -C apps/backend run test -- tests/integracion/alumnosEdicion.test.ts` | cumple |
+| RF-04 | Funcional | Gestion de banco de preguntas y asignacion academica | Banco permite CRUD y asociacion por materia/periodo sin romper contrato | `apps/backend/tests/integracion/bancoPreguntasAsignarMateria.test.ts` | `npm -C apps/backend run test -- tests/integracion/bancoPreguntasAsignarMateria.test.ts` | cumple |
+| RF-05 | Funcional | Generacion de examen con PDF, folio, QR y mapa OMR | PDF descargable en formato carta y trazabilidad por folio/QR por pagina | `apps/backend/tests/integracion/pdfImpresionContrato.test.ts`, `docs/FORMATO_PDF.md` | `npm run test:pdf-print:ci` | cumple |
+| RF-06 | Funcional | Escaneo OMR con validacion QR y advertencias de mismatch | Analisis OMR detecta QR esperado y marca mismatch cuando no coincide | `apps/backend/tests/integracion/qrEscaneoOmr.test.ts` | `npm -C apps/backend run test -- tests/integracion/qrEscaneoOmr.test.ts` | cumple |
+| RF-07 | Funcional | Calificacion parcial/global basada en OMR o captura manual | Reglas de calificacion global/parcial cumplen contrato y topes | `apps/backend/tests/calificacion.global.reglas.test.ts`, `apps/backend/tests/integracion/calificacionGlobalContratoE2E.test.ts` | `npm run test:global-grade:ci` | cumple |
+| RF-08 | Funcional | Publicacion al portal alumno y acceso por codigo/matricula | Flujo backend -> portal -> alumno retorna resultados y PDF del examen | `apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`, `apps/portal_alumno_cloud/tests/integracion/portal.test.ts`, `reports/qa/latest/e2e-docente-alumno.json` | `npm run test:e2e:docente-alumno:ci` | cumple |
+| RF-09 | Funcional | Sincronizacion entre equipos por paquete export/import | Exportar/importar/listar mantiene shape contractual y checksums | `apps/backend/tests/sincronizacion.contrato.test.ts` | `npm -C apps/backend run test -- tests/sincronizacion.contrato.test.ts` | cumple |
+| RF-10 | Funcional | Publicacion y consulta de analiticas academicas | Exportes academicos existen con integridad SHA-256 verificable | `docs/INVENTARIO_PROYECTO.md` (seccion salida academica), `docs/RUNBOOK_OPERACION.md` | `npm run test:flujo-docente:ci` | cumple |
+| RF-11 | Funcional | UX docente/alumno en secciones criticas | Pantallas clave renderizan ayudas, navegacion y acciones minimas | `apps/frontend/tests/ux.quality.test.tsx`, `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx` | `npm run test:ux-quality:ci` | cumple |
+| RF-12 | Funcional | Versionado de API v1/v2 en dominios OMR/PDF | Contratos v2 y coexistencia con v1 se validan sin ruptura funcional | `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts` | `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts` | cumple |
+| RNF-01 | No funcional | Seguridad de entradas (sanitizacion) | Claves peligrosas `$` y con `.` se eliminan en body/query/params | `apps/backend/tests/sanitizarMongo.test.ts` | `npm -C apps/backend run test -- tests/sanitizarMongo.test.ts` | cumple |
+| RNF-02 | No funcional | Proteccion contra abuso por rate limiting | Exceso de solicitudes devuelve `429` con `retry-after` | `apps/backend/tests/rateLimit.test.ts` | `npm -C apps/backend run test -- tests/rateLimit.test.ts` | cumple |
+| RNF-03 | No funcional | Seguridad de sincronizacion cloud por API key | Endpoints sensibles del portal rechazan sin/invalid `x-api-key` | `apps/portal_alumno_cloud/tests/apiKey.test.ts` | `npm -C apps/portal_alumno_cloud run test -- tests/apiKey.test.ts` | cumple |
+| RNF-04 | No funcional | Observabilidad operativa minima | Servicios exponen `live`, `ready`, `metrics` y trazabilidad por `requestId` | `docs/DEVOPS_BASELINE.md`, `docs/RUNBOOK_OPERACION.md`, `apps/backend/src/rutas.ts` | `npm run perf:check` | cumple |
+| RNF-05 | No funcional | Rendimiento con presupuesto p95 y fallos | Rutas criticas mantienen p95 bajo presupuesto definido en baseline | `reports/perf/latest.json`, `docs/perf/baseline.json` | `npm run perf:check` | cumple |
+| RNF-06 | No funcional | Rendimiento de negocio autenticado | Operaciones de negocio cumplen budget p95 en perfil autenticado | `reports/perf/business.latest.json`, `docs/perf/baseline.business.json` | `npm run perf:check:business` | cumple |
+| RNF-07 | No funcional | Calidad continua en CI modular y gate integrador | Evidencias QA obligatorias estan presentes y consistentes | `reports/qa/latest/manifest.json`, `docs/QA_GATE_CRITERIA.md` | `npm run test:qa:manifest` | cumple |
+| RNF-08 | No funcional | Contrato de pipeline versionado | Archivos de contrato existen y gate de verificacion pasa | `ci/pipeline.contract.md`, `ci/pipeline.matrix.json` | `npm run pipeline:contract:check` | cumple |
+| RNF-09 | No funcional | TDD enforcement en cambios | Diff coverage minimo 90 y deuda de exclusiones vigente | `docs/PRUEBAS.md`, `docs/tdd-exclusions-debt.json` | `npm run test:tdd:enforcement:ci` | cumple |
+| RNF-10 | No funcional | Gate de release beta formalizado | Criterio Go/No-Go definido por evidencia automatizada + canary | `docs/RELEASE_BIGBANG_1_0_BETA.md`, `reports/qa/latest/canary-rollout-check.json` | `npm run bigbang:beta:check` | cumple |
+
+### Fuente unica de roadmap
+- El roadmap de evolucion de requisitos y brechas de cierre se mantiene en:
+  - `docs/ROADMAP_REQUISITOS.md`

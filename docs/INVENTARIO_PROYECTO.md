@@ -6,6 +6,7 @@ Commit de referencia: `15f7d35`.
 ## 1) Alcance del inventario
 - Monorepo completo (`apps/*`, `ci/*`, `.github/workflows/*`, `docs/*`, `scripts/*`, `ops/*`).
 - Estado de avance Big-Bang hacia `1.0-beta`.
+- Matriz formal de requisitos verificables (RF/RNF) y su trazabilidad de evidencia.
 - Estado de calidad por gates (local + contrato CI).
 - Inventario exhaustivo de instrucciones para agentes IA y trazabilidad multi-sesion.
 - Inventario exhaustivo de piezas de codigo/config en `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
@@ -29,6 +30,7 @@ Commit de referencia: `15f7d35`.
   - `AGENTS.md`
   - `docs/IA_TRAZABILIDAD_AGENTES.md`
   - `docs/ENGINEERING_BASELINE.md`
+  - `docs/ROADMAP_REQUISITOS.md`
   - `docs/DEVOPS_BASELINE.md`
   - `docs/RELEASE_GATE_STABLE.md`
   - `docs/RUNBOOK_OPERACION.md`
