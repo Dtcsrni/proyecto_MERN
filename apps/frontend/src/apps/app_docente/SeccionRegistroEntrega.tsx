@@ -71,10 +71,22 @@ export function SeccionRegistroEntrega({
   avisarSinPermiso: (mensaje: string) => void;
   examenesPorFolio: Map<string, { alumnoId?: string | null }>;
 }) {
+  type ResultadoLote = {
+    id: string;
+    nombre: string;
+    estado: 'procesando' | 'vinculado' | 'pendiente_alumno' | 'error';
+    archivo?: File;
+    folio?: string;
+    alumnoId?: string;
+    mensaje?: string;
+  };
+
   const [folio, setFolio] = useState('');
   const [alumnoId, setAlumnoId] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [vinculando, setVinculando] = useState(false);
+  const [procesandoLote, setProcesandoLote] = useState(false);
+  const [resultadosLote, setResultadosLote] = useState<ResultadoLote[]>([]);
   const [scanError, setScanError] = useState('');
   const [escaneando, setEscaneando] = useState(false);
   const inputCamRef = useRef<HTMLInputElement | null>(null);
@@ -176,7 +188,18 @@ export function SeccionRegistroEntrega({
     setScanError('');
     setFolio(folioDetectado);
     reproducirSonido('scan');
-    const folioNormalizado = folioDetectado.toUpperCase();
+    const alumnoDetectado = await resolverAlumnoPorFolio(folioDetectado);
+    if (alumnoDetectado) {
+      setAlumnoId(alumnoDetectado);
+      await ejecutarVinculacion(folioDetectado, alumnoDetectado, 'auto');
+      return;
+    }
+    emitToast({ level: 'ok', title: 'QR', message: 'Folio capturado. Selecciona el alumno para vincular.', durationMs: 2400 });
+  }
+
+  async function resolverAlumnoPorFolio(folioDetectado: string) {
+    const folioNormalizado = String(folioDetectado ?? '').trim().toUpperCase();
+    if (!folioNormalizado) return '';
     let alumnoDetectado = String(examenesPorFolio.get(folioNormalizado)?.alumnoId ?? '').trim();
     if (!alumnoDetectado) {
       try {
@@ -188,12 +211,7 @@ export function SeccionRegistroEntrega({
         // ignore
       }
     }
-    if (alumnoDetectado) {
-      setAlumnoId(alumnoDetectado);
-      await ejecutarVinculacion(folioDetectado, alumnoDetectado, 'auto');
-      return;
-    }
-    emitToast({ level: 'ok', title: 'QR', message: 'Folio capturado. Selecciona el alumno para vincular.', durationMs: 2400 });
+    return alumnoDetectado;
   }
 
   function extraerFolioDesdeQr(texto: string) {
@@ -387,6 +405,173 @@ export function SeccionRegistroEntrega({
     }
   }
 
+  async function procesarLoteImagenes(files: File[]) {
+    if (!puedeGestionar) {
+      avisarSinPermiso('No tienes permiso para vincular entregas.');
+      return;
+    }
+    if (files.length === 0) return;
+
+    setScanError('');
+    setProcesandoLote(true);
+    const itemsIniciales: ResultadoLote[] = files.map((file, indice) => ({
+      id: `${Date.now()}-${indice}`,
+      nombre: file.name,
+      archivo: file,
+      estado: 'procesando'
+    }));
+    setResultadosLote(itemsIniciales);
+
+    let vinculados = 0;
+    let pendientes = 0;
+    let conError = 0;
+
+    for (let indice = 0; indice < files.length; indice += 1) {
+      const file = files[indice];
+      try {
+        let valor = await leerQrConBarcodeDetector(file);
+        if (!valor) valor = await leerQrConJsQr(file);
+        if (!valor) {
+          conError += 1;
+          setResultadosLote((prev) => prev.map((item, idx) => (
+            idx === indice
+              ? { ...item, estado: 'error', mensaje: 'No se detecto ningun QR' }
+              : item
+          )));
+          continue;
+        }
+
+        const folioDetectado = extraerFolioDesdeQr(valor);
+        if (!folioDetectado) {
+          conError += 1;
+          setResultadosLote((prev) => prev.map((item, idx) => (
+            idx === indice
+              ? { ...item, estado: 'error', mensaje: 'QR sin folio valido' }
+              : item
+          )));
+          continue;
+        }
+
+        const alumnoDetectado = await resolverAlumnoPorFolio(folioDetectado);
+        if (!alumnoDetectado) {
+          pendientes += 1;
+          setResultadosLote((prev) => prev.map((item, idx) => (
+            idx === indice
+              ? { ...item, estado: 'pendiente_alumno', folio: folioDetectado, mensaje: 'Selecciona alumno manualmente' }
+              : item
+          )));
+          if (!folio.trim()) setFolio(folioDetectado);
+          continue;
+        }
+
+        await onVincular(folioDetectado.trim(), alumnoDetectado);
+        vinculados += 1;
+        setResultadosLote((prev) => prev.map((item, idx) => (
+          idx === indice
+            ? { ...item, estado: 'vinculado', folio: folioDetectado, alumnoId: alumnoDetectado }
+            : item
+        )));
+      } catch (error) {
+        conError += 1;
+        setResultadosLote((prev) => prev.map((item, idx) => (
+          idx === indice
+            ? { ...item, estado: 'error', mensaje: mensajeDeError(error, 'No se pudo procesar la imagen') }
+            : item
+        )));
+      }
+    }
+
+    setProcesandoLote(false);
+    const resumen = `Vinculados: ${vinculados} · Pendientes: ${pendientes} · Errores: ${conError}`;
+    emitToast({ level: conError > 0 ? 'warning' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
+  }
+
+  async function reintentarErroresLote() {
+    if (procesandoLote) return;
+    const errores = resultadosLote.filter((item) => item.estado === 'error' && item.archivo);
+    if (errores.length === 0) return;
+
+    setScanError('');
+    setProcesandoLote(true);
+    setResultadosLote((prev) => prev.map((item) => {
+      if (item.estado !== 'error' || !item.archivo) return item;
+      return { ...item, estado: 'procesando', mensaje: undefined, folio: undefined, alumnoId: undefined };
+    }));
+
+    let vinculados = 0;
+    let pendientes = 0;
+    let conError = 0;
+
+    for (const itemError of errores) {
+      try {
+        const file = itemError.archivo;
+        if (!file) {
+          conError += 1;
+          setResultadosLote((prev) => prev.map((item) => (
+            item.id === itemError.id ? { ...item, estado: 'error', mensaje: 'Archivo no disponible para reintento' } : item
+          )));
+          continue;
+        }
+
+        let valor = await leerQrConBarcodeDetector(file);
+        if (!valor) valor = await leerQrConJsQr(file);
+        if (!valor) {
+          conError += 1;
+          setResultadosLote((prev) => prev.map((item) => (
+            item.id === itemError.id ? { ...item, estado: 'error', mensaje: 'No se detecto ningun QR' } : item
+          )));
+          continue;
+        }
+
+        const folioDetectado = extraerFolioDesdeQr(valor);
+        if (!folioDetectado) {
+          conError += 1;
+          setResultadosLote((prev) => prev.map((item) => (
+            item.id === itemError.id ? { ...item, estado: 'error', mensaje: 'QR sin folio valido' } : item
+          )));
+          continue;
+        }
+
+        const alumnoDetectado = await resolverAlumnoPorFolio(folioDetectado);
+        if (!alumnoDetectado) {
+          pendientes += 1;
+          setResultadosLote((prev) => prev.map((item) => (
+            item.id === itemError.id
+              ? { ...item, estado: 'pendiente_alumno', folio: folioDetectado, mensaje: 'Selecciona alumno manualmente' }
+              : item
+          )));
+          if (!folio.trim()) setFolio(folioDetectado);
+          continue;
+        }
+
+        await onVincular(folioDetectado.trim(), alumnoDetectado);
+        vinculados += 1;
+        setResultadosLote((prev) => prev.map((item) => (
+          item.id === itemError.id
+            ? { ...item, estado: 'vinculado', folio: folioDetectado, alumnoId: alumnoDetectado, mensaje: undefined }
+            : item
+        )));
+      } catch (error) {
+        conError += 1;
+        setResultadosLote((prev) => prev.map((item) => (
+          item.id === itemError.id
+            ? { ...item, estado: 'error', mensaje: mensajeDeError(error, 'No se pudo reprocesar la imagen') }
+            : item
+        )));
+      }
+    }
+
+    setProcesandoLote(false);
+    const resumen = `Reintento · Vinculados: ${vinculados} · Pendientes: ${pendientes} · Errores: ${conError}`;
+    emitToast({ level: conError > 0 ? 'warning' : 'ok', title: 'Lote de entrega', message: resumen, durationMs: 4200 });
+  }
+
+  function limpiarResultadosLote() {
+    if (procesandoLote) return;
+    setResultadosLote([]);
+    setScanError('');
+  }
+
   function abrirCamara() {
     setScanError('');
     prepararAudio();
@@ -545,6 +730,74 @@ export function SeccionRegistroEntrega({
           <InlineMensaje tipo="warning">
             {scanError}
           </InlineMensaje>
+        )}
+
+        <label className="campo">
+          Lote de imagenes (bulk)
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={bloqueoEdicion || procesandoLote}
+            onChange={(event) => {
+              const archivos = Array.from(event.currentTarget.files ?? []);
+              if (archivos.length > 0) {
+                void procesarLoteImagenes(archivos);
+              }
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+        {procesandoLote && (
+          <p className="mensaje" role="status">
+            <Spinner /> Procesando lote de imagenes…
+          </p>
+        )}
+        {resultadosLote.length > 0 && (
+          <div className="resultado">
+            <h3>Resultado del lote</h3>
+            <div className="item-actions">
+              {resultadosLote.some((item) => item.estado === 'error') && (
+                <Boton
+                  type="button"
+                  variante="secundario"
+                  disabled={procesandoLote}
+                  onClick={() => void reintentarErroresLote()}
+                >
+                  Reintentar solo errores ({resultadosLote.filter((item) => item.estado === 'error').length})
+                </Boton>
+              )}
+              <Boton
+                type="button"
+                variante="secundario"
+                disabled={procesandoLote}
+                onClick={limpiarResultadosLote}
+              >
+                Limpiar resultados
+              </Boton>
+            </div>
+            <ul className="lista lista-items">
+              {resultadosLote.map((item) => (
+                <li key={item.id}>
+                  <div className="item-glass">
+                    <div className="item-row">
+                      <div>
+                        <div className="item-title">{item.nombre}</div>
+                        <div className="item-sub">
+                          {item.estado === 'procesando' && 'Procesando…'}
+                          {item.estado === 'vinculado' && 'Vinculado'}
+                          {item.estado === 'pendiente_alumno' && 'Pendiente de alumno'}
+                          {item.estado === 'error' && 'Error'}
+                        </div>
+                        {item.folio && <div className="item-sub">Folio: {item.folio}</div>}
+                        {item.mensaje && <div className="item-sub">{item.mensaje}</div>}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
       <label className="campo">
