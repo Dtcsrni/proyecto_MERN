@@ -1,0 +1,63 @@
+name: Auto-Generate Docs
+
+on:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autogen-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  autogen_docs:
+    name: Generar y versionar docs
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/portal_alumno_cloud/package-lock.json
+
+      - name: Etapa setup
+        run: npm ci
+
+      - name: Preparar runtime sharp (linux-x64)
+        run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
+
+      - name: Generar docs y diagramas
+        run: |
+          npm run diagramas:generate
+          npm run diagramas:render:linux
+          npm run docs:generate
+
+      - name: Commit y push si hay cambios
+        run: |
+          if git diff --quiet; then
+            echo "Sin cambios autogenerados"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add docs
+          git commit -m "chore(docs): autogenerar docs y diagramas"
+          git push origin HEAD:${{ github.ref_name }}
