@@ -43,6 +43,21 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Hardening aplicado:
   - `CI Backend Module` prepara runtime `sharp` en linux (`npm install --no-save --include=optional --os=linux --cpu=x64 sharp`) para evitar fallos de dependencias nativas.
 
+## Proteccion de rama main (Ruleset)
+- Ruleset activo: `main-v1b-minimo`.
+- Alcance: `refs/heads/main`.
+- Reglas activas:
+  - bloqueo de borrado de rama (`deletion`),
+  - bloqueo de force-push (`non_fast_forward`),
+  - PR obligatorio con 1 aprobación mínima,
+  - descarte de approvals stale al recibir nuevos commits,
+  - resolucion obligatoria de conversaciones,
+  - branch actualizado obligatoriamente antes de merge (`strict required status checks policy`).
+- Check requerido para merge:
+  - `Verificaciones Core (PR bloqueante)` (workflow integrador `CI Checks`).
+- Nota operativa:
+  - los workflows modulares por `paths` no se marcan como `required` para evitar PR bloqueados por checks no disparados.
+
 ## Flujos criticos cubiertos
 - Flujo de examen end-to-end backend.
 - Generacion/regeneracion de examenes y PDF.
