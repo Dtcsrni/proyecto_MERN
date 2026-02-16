@@ -708,7 +708,7 @@ export function SeccionRegistroEntrega({
               autoPlay
               muted
               playsInline
-              style={{ width: '100%', maxWidth: '320px', borderRadius: '16px', background: '#000' }}
+              className="registro-entrega-video"
             />
             <div className="nota">Apunta al QR del examen para capturar el folio.</div>
           </div>
@@ -716,6 +716,7 @@ export function SeccionRegistroEntrega({
         <input
           ref={inputCamRef}
           className="input-file-oculto"
+          aria-label="Capturar imagen para lectura de QR"
           type="file"
           accept="image/*"
           capture="environment"

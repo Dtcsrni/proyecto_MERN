@@ -323,7 +323,7 @@ export function AppAlumno() {
       </div>
       {!token && (
         <div className="auth-grid">
-          <div>
+          <div className="auth-hero auth-hero--alumno">
             <p className="eyebrow">Acceso</p>
             <h2>
               <Icono nombre="alumno" /> Consulta de resultados
@@ -621,15 +621,15 @@ export function AppAlumno() {
                                   )}
                                 </div>
                                 {comparativa.length > 0 && (
-                                  <div className="item-actions" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
+                                  <div className="item-actions alumno-revision-actions">
                                     <textarea
+                                      className="alumno-revision-comentario"
                                       value={comentarioRevisionPorFolio[resultado.folio] ?? ''}
                                       onChange={(event) =>
                                         setComentarioRevisionPorFolio((prev) => ({ ...prev, [resultado.folio]: event.target.value }))
                                       }
                                       placeholder="Comentario obligatorio: explica por qué solicitas revisión"
                                       rows={2}
-                                      style={{ width: '100%', minHeight: 58 }}
                                     />
                                     <button className="boton secundario" type="button" onClick={() => void solicitarRevision(resultado.folio)}>
                                       <Icono nombre="info" /> Solicitar revisión de marcadas

@@ -169,7 +169,12 @@ export function SeccionCalificaciones({
   const [filtroFolioManual, setFiltroFolioManual] = useState('');
   const [examenManualId, setExamenManualId] = useState('');
   const [cargandoExamenesManual, setCargandoExamenesManual] = useState(false);
+  const [activandoManual, setActivandoManual] = useState(false);
   const [manualMensaje, setManualMensaje] = useState('');
+  const [cargandoSolicitudes, setCargandoSolicitudes] = useState(false);
+  const [resolviendoSolicitudId, setResolviendoSolicitudId] = useState('');
+  const [mensajeRevision, setMensajeRevision] = useState('');
+  const bancoPorPeriodoRef = useRef<Map<string, Pregunta[]>>(new Map());
   const [manualContexto, setManualContexto] = useState<{
     examenId: string;
     alumnoId: string;
@@ -182,6 +187,7 @@ export function SeccionCalificaciones({
   } | null>(null);
 
   function seleccionarAlumnoManual(valor: string) {
+    if (valor === alumnoManualId) return;
     setAlumnoManualId(valor);
     setCargandoExamenesManual(Boolean(valor));
     setExamenesManual([]);
@@ -250,7 +256,16 @@ export function SeccionCalificaciones({
   }, [examenesManual, filtroFolioManual]);
 
   useEffect(() => {
-    if (!alumnoManualId) return;
+    if (!examenManualId) return;
+    if (examenesManualFiltrados.some((item) => item._id === examenManualId)) return;
+    setExamenManualId('');
+  }, [examenManualId, examenesManualFiltrados]);
+
+  useEffect(() => {
+    if (!alumnoManualId) {
+      setCargandoExamenesManual(false);
+      return;
+    }
     let cancelado = false;
     void clienteApi
       .obtener<{ examenes?: ExamenEntregado[] }>(
@@ -270,9 +285,7 @@ export function SeccionCalificaciones({
         });
         setExamenesManual(entregados);
         setExamenManualId((prev) => (entregados.some((item) => item._id === prev) ? prev : ''));
-        if (entregados.length === 0) {
-          setManualMensaje('No hay exámenes entregados para el alumno seleccionado.');
-        }
+        setManualMensaje(entregados.length === 0 ? 'No hay exámenes entregados para el alumno seleccionado.' : '');
       })
       .catch((error) => {
         if (cancelado) return;
@@ -288,7 +301,24 @@ export function SeccionCalificaciones({
     };
   }, [alumnoManualId]);
 
+  async function obtenerBancoPreguntas(periodoId: string) {
+    const llave = String(periodoId ?? '').trim();
+    if (llave && bancoPorPeriodoRef.current.has(llave)) {
+      return bancoPorPeriodoRef.current.get(llave) ?? [];
+    }
+
+    const banco = await clienteApi.obtener<{ preguntas: Pregunta[] }>(
+      `/banco-preguntas${llave ? `?periodoId=${encodeURIComponent(llave)}` : ''}`
+    );
+    const preguntas = Array.isArray(banco?.preguntas) ? banco.preguntas : [];
+    if (llave) {
+      bancoPorPeriodoRef.current.set(llave, preguntas);
+    }
+    return preguntas;
+  }
+
   async function activarManualDesdeEntregado() {
+    if (activandoManual) return;
     if (!examenManualId) {
       setManualMensaje('Selecciona un examen entregado.');
       return;
@@ -299,6 +329,7 @@ export function SeccionCalificaciones({
       return;
     }
     try {
+      setActivandoManual(true);
       setManualMensaje('');
       const detalle = await clienteApi.obtener<{ examen?: ExamenGeneradoClave & { _id?: string; alumnoId?: string | null; folio?: string; periodoId?: string } }>(
         `/examenes/generados/folio/${encodeURIComponent(examenSeleccionado.folio)}`
@@ -310,10 +341,8 @@ export function SeccionCalificaciones({
       }
 
       const periodoId = String((examenDetalle as { periodoId?: unknown })?.periodoId ?? '').trim();
-      const banco = await clienteApi.obtener<{ preguntas: Pregunta[] }>(
-        `/banco-preguntas${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`
-      );
-      const clave = construirClaveCorrectaExamen(examenDetalle, Array.isArray(banco?.preguntas) ? banco.preguntas : []);
+      const preguntasBanco = await obtenerBancoPreguntas(periodoId);
+      const clave = construirClaveCorrectaExamen(examenDetalle, preguntasBanco);
       if (clave.ordenPreguntas.length === 0) {
         setManualMensaje('No se pudo construir la clave del examen para calificación manual.');
         return;
@@ -338,26 +367,60 @@ export function SeccionCalificaciones({
       setManualMensaje('Modo manual activado para el examen seleccionado.');
     } catch (error) {
       setManualMensaje(mensajeDeError(error, 'No se pudo activar la calificación manual'));
+    } finally {
+      setActivandoManual(false);
+    }
+  }
+
+  async function sincronizarSolicitudesRevision() {
+    if (cargandoSolicitudes) return;
+    try {
+      setCargandoSolicitudes(true);
+      setMensajeRevision('');
+      await onSincronizarSolicitudesRevision();
+      setMensajeRevision('Solicitudes sincronizadas correctamente.');
+    } catch (error) {
+      setMensajeRevision(mensajeDeError(error, 'No se pudieron sincronizar las solicitudes'));
+    } finally {
+      setCargandoSolicitudes(false);
+    }
+  }
+
+  async function resolverSolicitud(solicitud: SolicitudRevisionAlumno, estado: 'atendida' | 'rechazada') {
+    if (!solicitud._id || resolviendoSolicitudId) return;
+    const respuesta = String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim();
+    if (respuesta.length < 8) return;
+    try {
+      setResolviendoSolicitudId(solicitud._id);
+      setMensajeRevision('');
+      await onResolverSolicitudRevision(solicitud._id, estado, respuesta);
+      setRespuestaPorSolicitudId((prev) => ({ ...prev, [solicitud.externoId]: '' }));
+      setMensajeRevision(`Solicitud ${estado === 'atendida' ? 'atendida' : 'rechazada'} correctamente.`);
+      await onSincronizarSolicitudesRevision();
+    } catch (error) {
+      setMensajeRevision(mensajeDeError(error, 'No se pudo resolver la solicitud'));
+    } finally {
+      setResolviendoSolicitudId('');
     }
   }
 
   return (
     <>
-      <div className="panel">
+      <div className="panel calificaciones-hero">
         <h2>
           <Icono nombre="calificar" /> Calificaciones
         </h2>
         <p className="nota">
           Escanea por página, revisa por examen y guarda solo cuando la revisión esté confirmada.
         </p>
-        <div className="item-meta">
+        <div className="item-meta calificaciones-hero__meta">
           <span>{revisionesSeguras.length} examen(es) en flujo</span>
           <span>{totalPaginas} página(s) procesadas</span>
           <span>{paginasPendientes} página(s) pendientes</span>
           <span>{examenesListos} examen(es) listos</span>
         </div>
       </div>
-      <div className="calificaciones-layout">
+      <div className="calificaciones-layout" data-calificaciones-layout="true">
         <div className="calificaciones-layout__main">
           <SeccionEscaneo
             alumnos={alumnos}
@@ -381,7 +444,7 @@ export function SeccionCalificaciones({
           />
         </div>
         <aside className="calificaciones-layout__aside" aria-label="Panel de calificación">
-          <section className="panel">
+          <section className="panel calificaciones-manual-panel">
             <h3>
               <Icono nombre="alumno" /> Selección manual por entregado
             </h3>
@@ -438,11 +501,11 @@ export function SeccionCalificaciones({
             {filtroFolioManual && examenesManualFiltrados.length === 0 && (
               <InlineMensaje tipo="info">No hay exámenes que coincidan con el folio buscado.</InlineMensaje>
             )}
-            <div className="item-actions">
+            <div className="item-actions calificaciones-manual-panel__actions">
               <Boton
                 type="button"
                 variante="secundario"
-                disabled={!alumnoManualId || !examenManualId || cargandoExamenesManual || !puedeCalificar}
+                disabled={!alumnoManualId || !examenManualId || cargandoExamenesManual || activandoManual || !puedeCalificar}
                 onClick={() => {
                   if (!puedeCalificar) {
                     avisarSinPermiso('No tienes permiso para calificar manualmente.');
@@ -451,7 +514,7 @@ export function SeccionCalificaciones({
                   void activarManualDesdeEntregado();
                 }}
               >
-                {cargandoExamenesManual ? 'Cargando…' : 'Usar examen para calificación manual'}
+                {activandoManual ? 'Activando modo manual…' : cargandoExamenesManual ? 'Cargando…' : 'Usar examen para calificación manual'}
               </Boton>
               {manualContexto && (
                 <Boton
@@ -493,25 +556,29 @@ export function SeccionCalificaciones({
             puedeCalificar={puedeCalificar}
             avisarSinPermiso={avisarSinPermiso}
           />
-          <section className="panel" style={{ marginTop: 12 }}>
+          <section className="panel calificaciones-revision-panel">
             <h3>
               <Icono nombre="info" /> Solicitudes de revisión del alumno
             </h3>
-            <div className="item-actions" style={{ marginBottom: 10 }}>
+            <div className="item-actions calificaciones-revision-panel__toolbar">
               <button
                 type="button"
                 className="boton secundario"
+                disabled={cargandoSolicitudes || resolviendoSolicitudId.length > 0}
                 onClick={() => {
                   if (!puedeCalificar) {
                     avisarSinPermiso('No tienes permiso para revisar solicitudes.');
                     return;
                   }
-                  void onSincronizarSolicitudesRevision();
+                  void sincronizarSolicitudesRevision();
                 }}
               >
-                <Icono nombre="recargar" /> Sincronizar solicitudes
+                <Icono nombre="recargar" /> {cargandoSolicitudes ? 'Sincronizando…' : 'Sincronizar solicitudes'}
               </button>
             </div>
+            {mensajeRevision && (
+              <InlineMensaje tipo={esMensajeError(mensajeRevision) ? 'error' : 'info'}>{mensajeRevision}</InlineMensaje>
+            )}
             {solicitudesSeguras.length === 0 && <InlineMensaje tipo="info">Sin solicitudes pendientes de revisión.</InlineMensaje>}
             <ul className="lista lista-items">
               {solicitudesSeguras.map((solicitud) => (
@@ -533,44 +600,42 @@ export function SeccionCalificaciones({
                       </div>
                     </div>
                     <textarea
+                      className="calificaciones-revision-panel__respuesta"
                       rows={2}
-                      style={{ width: '100%', minHeight: 56, marginTop: 8 }}
                       placeholder="Respuesta obligatoria para el alumno (mínimo 8 caracteres)"
                       value={respuestaPorSolicitudId[solicitud.externoId] ?? ''}
                       onChange={(event) =>
                         setRespuestaPorSolicitudId((prev) => ({ ...prev, [solicitud.externoId]: event.target.value }))
                       }
                     />
-                    <div className="item-actions" style={{ marginTop: 8 }}>
+                    <div className="item-actions calificaciones-revision-panel__actions">
                       <button
                         className="boton secundario"
                         type="button"
-                        disabled={!solicitud._id || String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8}
+                        disabled={
+                          !solicitud._id ||
+                          String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8 ||
+                          resolviendoSolicitudId.length > 0
+                        }
                         onClick={() => {
-                          if (!solicitud._id) return;
-                          void onResolverSolicitudRevision(
-                            solicitud._id,
-                            'atendida',
-                            respuestaPorSolicitudId[solicitud.externoId]
-                          );
+                          void resolverSolicitud(solicitud, 'atendida');
                         }}
                       >
-                        <Icono nombre="ok" /> Marcar atendida
+                        <Icono nombre="ok" /> {resolviendoSolicitudId === solicitud._id ? 'Procesando…' : 'Marcar atendida'}
                       </button>
                       <button
                         className="boton secundario"
                         type="button"
-                        disabled={!solicitud._id || String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8}
+                        disabled={
+                          !solicitud._id ||
+                          String(respuestaPorSolicitudId[solicitud.externoId] ?? '').trim().length < 8 ||
+                          resolviendoSolicitudId.length > 0
+                        }
                         onClick={() => {
-                          if (!solicitud._id) return;
-                          void onResolverSolicitudRevision(
-                            solicitud._id,
-                            'rechazada',
-                            respuestaPorSolicitudId[solicitud.externoId]
-                          );
+                          void resolverSolicitud(solicitud, 'rechazada');
                         }}
                       >
-                        <Icono nombre="salir" /> Rechazar
+                        <Icono nombre="salir" /> {resolviendoSolicitudId === solicitud._id ? 'Procesando…' : 'Rechazar'}
                       </button>
                     </div>
                   </div>
