@@ -1,6 +1,6 @@
 # Módulo de Generación de PDF
 
-**Estado actual:** Ola 2B - Bootstrap DDD/Clean Architecture con feature flag
+**Estado actual:** Ola 2B - DDD/Clean Architecture con canary y fallback legacy
 
 ## Arquitectura
 
@@ -36,14 +36,16 @@ El módulo usa una fachada con **feature flag** para migración segura:
 
 ```typescript
 // Variable de entorno (default: 0)
-FEATURE_PDF_BUILDER_V2=0  // Usa implementación legacy
-FEATURE_PDF_BUILDER_V2=1  // Usa nueva arquitectura DDD
+FEATURE_PDF_BUILDER_V2=0     // 0% tráfico a v2 (todo legacy)
+FEATURE_PDF_BUILDER_V2=1     // 100% tráfico a v2
+FEATURE_PDF_BUILDER_V2=0.25  // 25% tráfico a v2 (canary)
+FEATURE_PDF_BUILDER_V2=25    // Equivalente en porcentaje
 ```
 
 **Facade:** `servicioGeneracionPdf.ts`
-- Lee flag desde env
-- Delega a legacy o v2 según configuración
-- Cero riesgo en producción (default a legacy)
+- Resuelve versión con `rolloutCanary.decidirVersionCanary('pdf', semilla)`
+- Delega a legacy o v2 según objetivo canary
+- Si v2 falla, hace fallback inmediato a legacy
 
 ### Componentes Principales
 
@@ -69,15 +71,14 @@ FEATURE_PDF_BUILDER_V2=1  // Usa nueva arquitectura DDD
 
 **PdfKitRenderer** (infra/pdfKitRenderer.ts):
 - Renderizado con PDFKit
-- **Estado:** STUB (no implementado aún)
-- TODO: Migrar lógica desde legacy
+- **Estado:** Implementado para flujo modular v2
 
 #### Application Layer
 
 **generarExamenIndividual** (application/usecases/generarExamenIndividual.ts):
 - Caso de uso principal
-- **Estado:** Delega a legacy (bootstrap)
-- TODO: Implementar flujo DDD completo
+- **Estado:** Implementado en flujo modular DDD
+- Fallback a legacy se aplica en la fachada
 
 #### Shared Layer
 
@@ -98,7 +99,7 @@ FEATURE_PDF_BUILDER_V2=1  // Usa nueva arquitectura DDD
 
 ```bash
 # Feature flag para canary deployment
-FEATURE_PDF_BUILDER_V2=0  # 0=legacy, 1=v2 (default: 0)
+FEATURE_PDF_BUILDER_V2=0  # 0..1 o 0..100 (default: 0)
 
 # Configuración de layout OMR
 EXAMEN_LAYOUT_VERSION=2           # Versión plantilla (1|2)
@@ -196,8 +197,6 @@ Response: PDF buffer (Content-Type: application/pdf)
 - Todos los tests pasando
 
 **⏳ Pendiente (Implementación completa):**
-- Migrar rendering PDFKit (infra/pdfKitRenderer.ts)
-- Implementar use case completo (application/usecases/)
 - Tests de paridad v1/v2
 - Métricas de observabilidad v2
 - Canary rollout gradual en producción
