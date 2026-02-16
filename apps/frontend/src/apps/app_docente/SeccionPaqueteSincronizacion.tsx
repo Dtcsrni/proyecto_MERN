@@ -14,6 +14,18 @@ import { registrarAccionDocente } from './telemetriaDocente';
 import type { Periodo } from './tipos';
 import { esMensajeError, etiquetaMateria, mensajeDeError } from './utilidades';
 
+const BACKUP_FORMAT_VERSION = 2;
+const BACKUP_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const BACKUP_LOGIC_FINGERPRINT = 'sync-v1-lww-updatedAt-schema1';
+
+type BackupMeta = {
+  schemaVersion: number;
+  createdAt: string;
+  ttlMs: number;
+  expiresAt: string;
+  businessLogicFingerprint: string;
+};
+
 type RespuestaExportar = {
   paqueteBase64: string;
   checksumSha256: string;
@@ -21,6 +33,46 @@ type RespuestaExportar = {
   exportadoEn: string;
   conteos: Record<string, number>;
 };
+
+function construirBackupMeta(baseIso?: string): BackupMeta {
+  const createdAt = baseIso || new Date().toISOString();
+  const createdAtMs = new Date(createdAt).getTime();
+  const seguroMs = Number.isFinite(createdAtMs) ? createdAtMs : Date.now();
+  const expiresAt = new Date(seguroMs + BACKUP_TTL_MS).toISOString();
+  return {
+    schemaVersion: BACKUP_FORMAT_VERSION,
+    createdAt,
+    ttlMs: BACKUP_TTL_MS,
+    expiresAt,
+    businessLogicFingerprint: BACKUP_LOGIC_FINGERPRINT,
+  };
+}
+
+function validarBackupMeta(metaRaw: unknown): string | null {
+  if (!metaRaw || typeof metaRaw !== 'object') return null;
+  const meta = metaRaw as Partial<BackupMeta>;
+  const expiresAtRaw = String(meta.expiresAt || '').trim();
+  const fingerprint = String(meta.businessLogicFingerprint || '').trim();
+
+  if (!expiresAtRaw) {
+    return 'Backup invalido: falta backupMeta.expiresAt';
+  }
+
+  const expiresAtMs = new Date(expiresAtRaw).getTime();
+  if (!Number.isFinite(expiresAtMs)) {
+    return 'Backup invalido: backupMeta.expiresAt no es una fecha valida';
+  }
+
+  if (Date.now() > expiresAtMs) {
+    return 'Backup expirado: genera un nuevo backup antes de importar';
+  }
+
+  if (fingerprint && fingerprint !== BACKUP_LOGIC_FINGERPRINT) {
+    return 'Backup invalidado: cambio de logica de negocio detectado; exporta un backup nuevo';
+  }
+
+  return null;
+}
 
 export function SeccionPaqueteSincronizacion({
   periodos,
@@ -31,7 +83,13 @@ export function SeccionPaqueteSincronizacion({
   periodos: Periodo[];
   docenteCorreo?: string;
   onExportar: (payload: { periodoId?: string; desde?: string; incluirPdfs?: boolean }) => Promise<RespuestaExportar>;
-  onImportar: (payload: { paqueteBase64: string; checksumSha256?: string; dryRun?: boolean; docenteCorreo?: string }) => Promise<
+  onImportar: (payload: {
+    paqueteBase64: string;
+    checksumSha256?: string;
+    dryRun?: boolean;
+    docenteCorreo?: string;
+    backupMeta?: BackupMeta;
+  }) => Promise<
     | { mensaje?: string; resultados?: unknown[]; pdfsGuardados?: number }
     | { mensaje?: string; checksumSha256?: string; conteos?: Record<string, number> }
   >;
@@ -83,13 +141,15 @@ export function SeccionPaqueteSincronizacion({
       setUltimoChecksum(resp.checksumSha256 || null);
 
       const nombre = `sincronizacion_${(resp.exportadoEn || new Date().toISOString()).replace(/[:.]/g, '-')}.ep-sync.json`;
+      const backupMeta = construirBackupMeta(resp.exportadoEn);
       descargarJson(nombre, {
-        version: 1,
+        version: BACKUP_FORMAT_VERSION,
         exportadoEn: resp.exportadoEn,
         checksumSha256: resp.checksumSha256,
         checksumGzipSha256: resp.checksumGzipSha256,
         conteos: resp.conteos,
         paqueteBase64: resp.paqueteBase64,
+        backupMeta,
         ...(docenteCorreo ? { docenteCorreo } : {})
       });
       setUltimoArchivoExportado(nombre);
@@ -131,6 +191,7 @@ export function SeccionPaqueteSincronizacion({
         checksumSha256?: string;
         conteos?: Record<string, number>;
         docenteCorreo?: string;
+        backupMeta?: BackupMeta;
       };
 
       const paqueteBase64 = String(json?.paqueteBase64 || '').trim();
@@ -141,10 +202,16 @@ export function SeccionPaqueteSincronizacion({
         throw new Error('Archivo invalido: no contiene paqueteBase64');
       }
 
+      const errorMeta = validarBackupMeta(json?.backupMeta);
+      if (errorMeta) {
+        throw new Error(errorMeta);
+      }
+
       const validacion = await onImportar({
         paqueteBase64,
         checksumSha256: checksumSha256 || undefined,
         dryRun: true,
+        ...(json?.backupMeta ? { backupMeta: json.backupMeta } : {}),
         ...(correoFinal ? { docenteCorreo: correoFinal } : {})
       });
 
@@ -166,6 +233,7 @@ export function SeccionPaqueteSincronizacion({
       const resp = await onImportar({
         paqueteBase64,
         checksumSha256: checksumSha256 || undefined,
+        ...(json?.backupMeta ? { backupMeta: json.backupMeta } : {}),
         ...(correoFinal ? { docenteCorreo: correoFinal } : {})
       });
       setMensaje((resp as { mensaje?: string })?.mensaje || 'Paquete importado');

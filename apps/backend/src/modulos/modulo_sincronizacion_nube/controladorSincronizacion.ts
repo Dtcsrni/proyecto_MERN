@@ -52,7 +52,8 @@ export async function importarPaquete(req: SolicitudDocente, res: Response) {
     paqueteBase64Raw: (req.body as { paqueteBase64?: unknown })?.paqueteBase64,
     checksumSha256Raw: (req.body as { checksumSha256?: unknown })?.checksumSha256,
     docenteCorreoRaw: (req.body as { docenteCorreo?: unknown })?.docenteCorreo,
-    dryRunRaw: (req.body as { dryRun?: unknown })?.dryRun
+    dryRunRaw: (req.body as { dryRun?: unknown })?.dryRun,
+    backupMetaRaw: (req.body as { backupMeta?: unknown })?.backupMeta
   });
   res.json(payload);
 }

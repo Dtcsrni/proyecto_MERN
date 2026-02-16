@@ -340,6 +340,94 @@ describe('sincronizacion nube', () => {
     expect(await Alumno.countDocuments({ docenteId })).toBe(0);
   });
 
+  it('rechaza importacion con backupMeta expirado (SYNC_BACKUP_EXPIRADO)', async () => {
+    const docenteId = '507f1f77bcf86cd799439062';
+    const periodoId = '507f1f77bcf86cd799439061';
+    await asegurarDocente(docenteId, 'docente-expirado@test.com');
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Probabilidad',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: payload.paqueteBase64,
+            checksumSha256: payload.checksumSha256,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              ttlMs: 86_400_000,
+              expiresAt: '2026-01-02T00:00:00.000Z',
+              businessLogicFingerprint: 'sync-v1-lww-updatedAt-schema1'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_EXPIRADO',
+      estadoHttp: 409
+    });
+  });
+
+  it('rechaza importacion con backupMeta invalidado (SYNC_BACKUP_INVALIDADO)', async () => {
+    const docenteId = '507f1f77bcf86cd799439072';
+    const periodoId = '507f1f77bcf86cd799439071';
+    await asegurarDocente(docenteId, 'docente-invalido@test.com');
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Topologia',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: payload.paqueteBase64,
+            checksumSha256: payload.checksumSha256,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: new Date().toISOString(),
+              ttlMs: 86_400_000,
+              expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+              businessLogicFingerprint: 'sync-v2-breaking-change'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_INVALIDADO',
+      estadoHttp: 409
+    });
+  });
+
   it('no sobreescribe registros mas nuevos (LWW por updatedAt)', async () => {
     const docenteId = '507f1f77bcf86cd799439022';
     const periodoId = '507f1f77bcf86cd799439021';

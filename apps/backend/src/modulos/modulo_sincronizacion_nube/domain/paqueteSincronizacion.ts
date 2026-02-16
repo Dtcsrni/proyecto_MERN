@@ -31,6 +31,7 @@ import type { PaqueteAssembler, PaqueteProcessor, ResultadoImportacionPaquete } 
 
 const MAX_PDFS = 120;
 const MAX_TOTAL_COMPRESSED_BYTES = 25 * 1024 * 1024;
+const BACKUP_LOGIC_FINGERPRINT = 'sync-v1-lww-updatedAt-schema1';
 
 async function obtenerCorreoDocente(docenteId: string): Promise<string> {
   const docente = await Docente.findById(docenteId).select('correo').lean();
@@ -321,4 +322,42 @@ export class DefaultPaqueteProcessor implements PaqueteProcessor {
 
 export function parsearDesdeRaw(desdeRaw: string): Date | null {
   return desdeRaw ? parsearFechaIso(desdeRaw) : null;
+}
+
+export function validarBackupMetaImportacion(backupMetaRaw: unknown, ahoraMs: number = Date.now()) {
+  if (!backupMetaRaw || typeof backupMetaRaw !== 'object') {
+    return;
+  }
+
+  const expiresAtRaw = String(obtenerCampo(backupMetaRaw, 'expiresAt') ?? '').trim();
+  if (!expiresAtRaw) {
+    throw new ErrorAplicacion('SYNC_BACKUP_META_INVALIDA', 'Backup invalido: falta backupMeta.expiresAt', 400);
+  }
+
+  const expiresAtMs = new Date(expiresAtRaw).getTime();
+  if (!Number.isFinite(expiresAtMs)) {
+    throw new ErrorAplicacion('SYNC_BACKUP_META_INVALIDA', 'Backup invalido: backupMeta.expiresAt no es una fecha valida', 400);
+  }
+
+  if (ahoraMs > expiresAtMs) {
+    throw new ErrorAplicacion('SYNC_BACKUP_EXPIRADO', 'Backup expirado: genera un nuevo backup antes de importar', 409);
+  }
+
+  const fingerprint = String(obtenerCampo(backupMetaRaw, 'businessLogicFingerprint') ?? '').trim();
+  if (fingerprint && fingerprint !== BACKUP_LOGIC_FINGERPRINT) {
+    throw new ErrorAplicacion(
+      'SYNC_BACKUP_INVALIDADO',
+      'Backup invalidado: cambio de logica de negocio detectado; exporta un backup nuevo',
+      409
+    );
+  }
+}
+
+export function resolverDesdeSincronizacion(desdeRaw: unknown): { desdeRawStr: string; desde: Date | null } {
+  const desdeRawStr = String(desdeRaw ?? '').trim();
+  const desde = parsearDesdeRaw(desdeRawStr);
+  if (desdeRawStr && !desde) {
+    throw new ErrorAplicacion('SYNC_DESDE_INVALIDO', 'Parametro "desde" invalido', 400);
+  }
+  return { desdeRawStr, desde };
 }

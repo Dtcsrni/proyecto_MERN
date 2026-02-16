@@ -33,6 +33,7 @@ import { ExamenGenerado } from './modeloExamenGenerado';
 import { ExamenPlantilla } from './modeloExamenPlantilla';
 import { generarPdfExamen } from './servicioGeneracionPdf';
 import { generarVariante } from './servicioVariantes';
+import { resolverNumeroPaginasPlantilla } from './domain/resolverNumeroPaginasPlantilla';
 import { guardarEnPapelera } from '../modulo_papelera/servicioPapelera';
 
 type MapaVariante = {
@@ -577,14 +578,7 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
   }
 
   const totalDisponibles = preguntasDb.length;
-  const numeroPaginas = (() => {
-    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
-    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
-    // Compatibilidad legacy: si no existe numeroPaginas pero sí totalReactivos, preserva el comportamiento histórico.
-    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
-    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
-    return 1;
-  })();
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -774,13 +768,7 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas disponibles para previsualizar', 400);
   }
 
-  const numeroPaginas = (() => {
-    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
-    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
-    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
-    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
-    return 1;
-  })();
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -965,13 +953,7 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  const numeroPaginas = (() => {
-    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
-    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
-    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
-    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
-    return 1;
-  })();
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -1176,13 +1158,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  const numeroPaginas = (() => {
-    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
-    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
-    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
-    if (Number.isFinite(legacy) && legacy >= 1) return plantilla.tipo === 'parcial' ? 2 : 4;
-    return 1;
-  })();
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =

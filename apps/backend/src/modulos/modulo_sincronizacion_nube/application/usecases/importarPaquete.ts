@@ -1,4 +1,4 @@
-import { DefaultPaqueteProcessor, validarTamanoPaqueteBase64 } from '../../domain/paqueteSincronizacion';
+import { DefaultPaqueteProcessor, validarBackupMetaImportacion, validarTamanoPaqueteBase64 } from '../../domain/paqueteSincronizacion';
 import { normalizarCorreo, obtenerId } from '../../sincronizacionInterna';
 import { Sincronizacion } from '../../modeloSincronizacion';
 import { syncClock } from '../../infra/repositoriosSync';
@@ -11,11 +11,13 @@ export async function importarPaqueteUseCase(params: {
   checksumSha256Raw?: unknown;
   docenteCorreoRaw?: unknown;
   dryRunRaw?: unknown;
+  backupMetaRaw?: unknown;
 }) {
-  const { docenteId, paqueteBase64Raw, checksumSha256Raw, docenteCorreoRaw, dryRunRaw } = params;
+  const { docenteId, paqueteBase64Raw, checksumSha256Raw, docenteCorreoRaw, dryRunRaw, backupMetaRaw } = params;
 
   const paqueteBase64 = String(paqueteBase64Raw ?? '').trim();
   validarTamanoPaqueteBase64(paqueteBase64);
+  validarBackupMetaImportacion(backupMetaRaw);
 
   const checksumEsperado = String(checksumSha256Raw ?? '').trim();
   const docenteCorreo = normalizarCorreo(docenteCorreoRaw);

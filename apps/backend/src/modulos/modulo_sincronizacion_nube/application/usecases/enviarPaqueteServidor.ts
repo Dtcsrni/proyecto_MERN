@@ -1,5 +1,4 @@
-import { ErrorAplicacion } from '../../../../compartido/errores/errorAplicacion';
-import { DefaultPaqueteAssembler, parsearDesdeRaw } from '../../domain/paqueteSincronizacion';
+import { DefaultPaqueteAssembler, resolverDesdeSincronizacion } from '../../domain/paqueteSincronizacion';
 import { normalizarErrorServidorSincronizacion } from '../../domain/erroresSincronizacion';
 import { crearClientePortal } from '../../infra/portalSyncClient';
 import { MongoSyncAuditRepo, syncClock } from '../../infra/repositoriosSync';
@@ -18,13 +17,10 @@ export async function enviarPaqueteServidorUseCase(params: {
   const portal = crearClientePortal('SYNC_SERVIDOR_NO_CONFIG');
 
   const periodoId = String(periodoIdRaw ?? '').trim();
-  const desdeRawStr = String(desdeRaw ?? '').trim();
+  const { desdeRawStr, desde: desdeParseado } = resolverDesdeSincronizacion(desdeRaw);
   const incluirPdfs = incluirPdfsRaw !== false;
 
-  const desde = desdeRawStr ? parsearDesdeRaw(desdeRawStr) : await auditRepo.obtenerFechaUltimoPush(String(docenteId));
-  if (desdeRawStr && !desde) {
-    throw new ErrorAplicacion('SYNC_DESDE_INVALIDO', 'Parametro "desde" invalido', 400);
-  }
+  const desde = desdeRawStr ? desdeParseado : await auditRepo.obtenerFechaUltimoPush(String(docenteId));
 
   const registro = await auditRepo.crear({
     docenteId,

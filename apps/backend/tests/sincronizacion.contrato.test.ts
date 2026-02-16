@@ -95,4 +95,62 @@ describe('sincronizacion contratos minimos', () => {
       sincronizaciones: expect.any(Array)
     });
   });
+
+  it('mantiene contrato de error al rechazar backupMeta expirado/incompatible', async () => {
+    const docenteId = '507f1f77bcf86cd799439301';
+
+    await Docente.create({
+      _id: docenteId,
+      correo: 'contrato-sync-errores@test.com',
+      nombreCompleto: 'Docente Contrato Errores',
+      roles: ['docente'],
+      activo: true
+    });
+
+    const paqueteDummy = 'A'.repeat(40);
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: paqueteDummy,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              ttlMs: 86_400_000,
+              expiresAt: '2026-01-02T00:00:00.000Z',
+              businessLogicFingerprint: 'sync-v1-lww-updatedAt-schema1'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_EXPIRADO',
+      estadoHttp: 409
+    });
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: paqueteDummy,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: new Date().toISOString(),
+              ttlMs: 86_400_000,
+              expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+              businessLogicFingerprint: 'sync-v2-breaking-change'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_INVALIDADO',
+      estadoHttp: 409
+    });
+  });
 });

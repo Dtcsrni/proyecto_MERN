@@ -66,6 +66,23 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
+- Robustez del gate `test:coverage:diff` ante CI sin merge-base:
+  - `scripts/testing/check-diff-coverage.mjs` ahora hace fallback de `origin/base...HEAD` a `origin/base..HEAD` cuando Git reporta `no merge base`, evitando falsos rojos de infraestructura.
+- Ola 2B PDF: extracción de política de negocio `numeroPaginas` a dominio compartido:
+  - nueva función `apps/backend/src/modulos/modulo_generacion_pdf/domain/resolverNumeroPaginasPlantilla.ts`.
+  - `controladorGeneracionPdf.ts` y `controladorListadoGenerados.ts` consumen la política centralizada (sin duplicación de fallback legacy).
+  - nuevo test unitario `apps/backend/tests/pdf.numeroPaginasPlantilla.test.ts` (3 casos).
+- Ola 2C Sync: extracción de política de validación de `desde` a dominio compartido:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/paqueteSincronizacion.ts` agrega `resolverDesdeSincronizacion(...)`.
+  - uso unificado en `exportarPaquete.ts`, `enviarPaqueteServidor.ts` y `traerPaquetesServidor.ts`.
+  - nuevo test unitario `apps/backend/tests/sincronizacion.desde.test.ts` (3 casos).
+- Backups de sincronizacion por archivo endurecidos con contrato de caducidad e invalidacion por logica:
+  - `apps/frontend/src/apps/app_docente/SeccionPaqueteSincronizacion.tsx` exporta `backupMeta` (`createdAt`, `ttlMs`, `expiresAt`, `businessLogicFingerprint`) y rechaza importaciones expiradas/incompatibles antes del dry-run.
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/importarPaquete.ts` y `domain/paqueteSincronizacion.ts` validan `backupMeta` tambien en servidor (enforcement de expiracion/fingerprint aunque el cliente no valide).
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/validacionesSincronizacion.ts` incorpora `backupMeta` al contrato HTTP de `POST /sincronizaciones/paquete/importar`.
+  - `scripts/import-backup.mjs` valida el mismo contrato y elimina automaticamente el archivo `.ep-sync.json` cuando expira o queda invalidado por cambio de huella de logica.
+  - `docs/SINCRONIZACION_ENTRE_COMPUTADORAS.md` documenta flujo operativo completo y ciclo de vida del backup.
+  - `apps/frontend/tests/sincronizacion.behavior.test.tsx`, `apps/backend/tests/sincronizacion.backupMeta.test.ts`, `apps/backend/tests/sincronizacion.test.ts` y `apps/backend/tests/sincronizacion.contrato.test.ts` agregan cobertura para rechazo de backups expirados e incompatibles por fingerprint (incluyendo integración y contrato de error del endpoint de importación).
 - Navegacion y trazabilidad documental actualizadas para incluir requisitos/roadmap:
   - `docs/README.md`
   - `docs/INVENTARIO_PROYECTO.md`

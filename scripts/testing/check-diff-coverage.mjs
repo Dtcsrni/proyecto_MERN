@@ -50,12 +50,34 @@ function normalizeRelative(inputPath) {
 
 async function runGitDiff(baseRef, headRef) {
   const scopes = APPS.map((app) => app.scope);
-  const { stdout } = await execFile(
-    'git',
-    ['diff', '--unified=0', '--no-color', `${baseRef}...${headRef}`, '--', ...scopes],
-    { cwd: rootDir, windowsHide: true, maxBuffer: 20 * 1024 * 1024 }
-  );
-  return stdout;
+
+  try {
+    const { stdout } = await execFile(
+      'git',
+      ['diff', '--unified=0', '--no-color', `${baseRef}...${headRef}`, '--', ...scopes],
+      { cwd: rootDir, windowsHide: true, maxBuffer: 20 * 1024 * 1024 }
+    );
+    return stdout;
+  } catch (error) {
+    const stderr = String(error?.stderr ?? '');
+    const isNoMergeBase = /no merge base/i.test(stderr);
+
+    if (!isNoMergeBase) {
+      throw error;
+    }
+
+    console.warn(
+      `[diff-coverage] Advertencia: sin merge-base entre ${baseRef} y ${headRef}. Se usa fallback ${baseRef}..${headRef}.`
+    );
+
+    const { stdout } = await execFile(
+      'git',
+      ['diff', '--unified=0', '--no-color', `${baseRef}..${headRef}`, '--', ...scopes],
+      { cwd: rootDir, windowsHide: true, maxBuffer: 20 * 1024 * 1024 }
+    );
+
+    return stdout;
+  }
 }
 
 function parseTouchedLines(diffOutput) {

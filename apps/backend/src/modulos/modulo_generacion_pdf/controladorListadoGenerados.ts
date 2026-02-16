@@ -17,6 +17,7 @@ import { guardarPdfExamen } from '../../infraestructura/archivos/almacenLocal';
 import { Periodo } from '../modulo_alumnos/modeloPeriodo';
 import { normalizarParaNombreArchivo } from '../../compartido/utilidades/texto';
 import { Docente } from '../modulo_autenticacion/modeloDocente';
+import { resolverNumeroPaginasPlantilla } from './domain/resolverNumeroPaginasPlantilla';
 
 type BancoPreguntaLean = {
   _id: unknown;
@@ -245,13 +246,9 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     Docente.findById(docenteId).lean()
   ]);
 
-  const numeroPaginas = (() => {
-    const n = Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas);
-    if (Number.isFinite(n) && n >= 1) return Math.floor(n);
-    const legacy = Number((plantilla as unknown as { totalReactivos?: unknown })?.totalReactivos);
-    if (Number.isFinite(legacy) && legacy >= 1) return (plantilla as unknown as { tipo?: string })?.tipo === 'global' ? 4 : 2;
-    return 1;
-  })();
+  const numeroPaginas = resolverNumeroPaginasPlantilla(
+    plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown }
+  );
   const templateVersion = (() => {
     const tv = Number((examen as unknown as { mapaOmr?: { templateVersion?: unknown } })?.mapaOmr?.templateVersion);
     return tv === 2 ? 2 : 1;
