@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-02-16T02:24:21.3487580-06:00",
+  "script": "apps/backend/tmp_omr_profile_eval.ts",
+  "mode": "legacy",
+  "runs": [
+    {
+      "profile": "actual",
+      "summary": {
+        "totalReactivos": 248,
+        "detectadasV2": 180,
+        "correctasV2": 67,
+        "deteccionRateV2": 0.7258064516129032,
+        "precisionSobreTotalV2": 0.2701612903225806,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        }
+      },
+      "deltaVsActual": {
+        "totalReactivos": 0,
+        "detectadasV2": 0,
+        "correctasV2": 0,
+        "deteccionRateV2": 0.0,
+        "precisionSobreTotalV2": 0.0
+      }
+    },
+    {
+      "profile": "conservador",
+      "summary": {
+        "totalReactivos": 248,
+        "detectadasV2": 180,
+        "correctasV2": 67,
+        "deteccionRateV2": 0.7258064516129032,
+        "precisionSobreTotalV2": 0.2701612903225806,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        }
+      },
+      "deltaVsActual": {
+        "totalReactivos": 0,
+        "detectadasV2": 0,
+        "correctasV2": 0,
+        "deteccionRateV2": 0.0,
+        "precisionSobreTotalV2": 0.0
+      }
+    },
+    {
+      "profile": "balanceado",
+      "summary": {
+        "totalReactivos": 248,
+        "detectadasV2": 180,
+        "correctasV2": 67,
+        "deteccionRateV2": 0.7258064516129032,
+        "precisionSobreTotalV2": 0.2701612903225806,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        }
+      },
+      "deltaVsActual": {
+        "totalReactivos": 0,
+        "detectadasV2": 0,
+        "correctasV2": 0,
+        "deteccionRateV2": 0.0,
+        "precisionSobreTotalV2": 0.0
+      }
+    },
+    {
+      "profile": "agresivo",
+      "summary": {
+        "totalReactivos": 248,
+        "detectadasV2": 180,
+        "correctasV2": 67,
+        "deteccionRateV2": 0.7258064516129032,
+        "precisionSobreTotalV2": 0.2701612903225806,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        }
+      },
+      "deltaVsActual": {
+        "totalReactivos": 0,
+        "detectadasV2": 0,
+        "correctasV2": 0,
+        "deteccionRateV2": 0.0,
+        "precisionSobreTotalV2": 0.0
+      }
+    }
+  ]
+}

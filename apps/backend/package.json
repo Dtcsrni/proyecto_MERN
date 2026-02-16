@@ -24,7 +24,9 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --ext .ts --max-warnings=0"
+    "lint": "eslint . --ext .ts --max-warnings=0",
+    "omr:eval:profile": "tsx scripts/omr-eval-profile.ts",
+    "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

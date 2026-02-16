@@ -1,0 +1,933 @@
+{
+  "summary": {
+    "generadoEn": "2026-02-16T07:52:15.668Z",
+    "mongoUri": "mongodb://localhost:27017/mern_app",
+    "totalImagenesProcesadas": 32,
+    "totalImagenesDataset": 32,
+    "imagenesConError": 0,
+    "estadosV2": {
+      "requiere_revision": 31,
+      "ok": 1
+    },
+    "estadosV1": {
+      "requiere_revision": 31,
+      "ok": 1
+    },
+    "totalReactivos": 248,
+    "detectadasV2": 180,
+    "detectadasV1": 180,
+    "correctasV2": 67,
+    "correctasV1": 67,
+    "deteccionRateV2": 0.7258,
+    "deteccionRateV1": 0.7258,
+    "precisionSobreTotalV2": 0.2702,
+    "precisionSobreTotalV1": 0.2702,
+    "promedioCalidadV2": 0.6492,
+    "promedioCalidadV1": 0.6492,
+    "promedioConfianzaV2": 0.6796,
+    "promedioConfianzaV1": 0.6796,
+    "deltaDetectadasTotal": 0,
+    "deltaCorrectasTotal": 0
+  },
+  "rows": [
+    {
+      "archivo": "Aldo Franco/CamScanner 13-02-2026 09.58_01.jpg",
+      "estudiante": "Aldo Franco",
+      "folio": "C12DE465",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6511215602331486,
+      "calidadV1": 0.6511215602331486,
+      "confianzaPromV2": 0.625,
+      "confianzaPromV1": 0.625,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 4,
+      "correctasV1": 4,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Aldo Franco/CamScanner 13-02-2026 09.58_02.jpg",
+      "estudiante": "Aldo Franco",
+      "folio": "C12DE465",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6443682250516038,
+      "calidadV1": 0.6443682250516038,
+      "confianzaPromV2": 0.375,
+      "confianzaPromV1": 0.375,
+      "ratioAmbiguasV2": 0.625,
+      "ratioAmbiguasV1": 0.625,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 3,
+      "detectadasV1": 3,
+      "correctasV2": 0,
+      "correctasV1": 0,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Aldo Franco/CamScanner 13-02-2026 09.58_03.jpg",
+      "estudiante": "Aldo Franco",
+      "folio": "C12DE465",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6473183579401328,
+      "calidadV1": 0.6473183579401328,
+      "confianzaPromV2": 0.6836322361920684,
+      "confianzaPromV1": 0.6836322361920684,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 3,
+      "correctasV1": 3,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Aldo Franco/CamScanner 13-02-2026 09.58_04.jpg",
+      "estudiante": "Aldo Franco",
+      "folio": "C12DE465",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6516664748108406,
+      "calidadV1": 0.6516664748108406,
+      "confianzaPromV2": 0.8574412908533453,
+      "confianzaPromV1": 0.8574412908533453,
+      "ratioAmbiguasV2": 0.14285714285714285,
+      "ratioAmbiguasV1": 0.14285714285714285,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 2,
+      "correctasV1": 2,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Alondra Gomez/CamScanner 13-02-2026 10.28_01.jpg",
+      "estudiante": "Alondra Gomez",
+      "folio": "DB59FF4A",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6472317383442593,
+      "calidadV1": 0.6472317383442593,
+      "confianzaPromV2": 0.5533343032814079,
+      "confianzaPromV1": 0.5533343032814079,
+      "ratioAmbiguasV2": 0.5714285714285714,
+      "ratioAmbiguasV1": 0.5714285714285714,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 2,
+      "correctasV1": 2,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Alondra Gomez/CamScanner 13-02-2026 10.28_02.jpg",
+      "estudiante": "Alondra Gomez",
+      "folio": "DB59FF4A",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6461297505240843,
+      "calidadV1": 0.6461297505240843,
+      "confianzaPromV2": 0.5444178004597,
+      "confianzaPromV1": 0.5444178004597,
+      "ratioAmbiguasV2": 0.5,
+      "ratioAmbiguasV1": 0.5,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 3,
+      "correctasV1": 3,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Alondra Gomez/CamScanner 13-02-2026 10.28_03.jpg",
+      "estudiante": "Alondra Gomez",
+      "folio": "DB59FF4A",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.645816732369217,
+      "calidadV1": 0.645816732369217,
+      "confianzaPromV2": 0.6321753265715856,
+      "confianzaPromV1": 0.6321753265715856,
+      "ratioAmbiguasV2": 0.5,
+      "ratioAmbiguasV1": 0.5,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 3,
+      "correctasV1": 3,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Alondra Gomez/CamScanner 13-02-2026 10.28_04.jpg",
+      "estudiante": "Alondra Gomez",
+      "folio": "DB59FF4A",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6501399120971233,
+      "calidadV1": 0.6501399120971233,
+      "confianzaPromV2": 0.75,
+      "confianzaPromV1": 0.75,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 2,
+      "correctasV1": 2,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Andrei Romero/CamScanner 13-02-2026 10.15_01.jpg",
+      "estudiante": "Andrei Romero",
+      "folio": "8C85A5DA",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6558287275364834,
+      "calidadV1": 0.6558287275364834,
+      "confianzaPromV2": 0.875,
+      "confianzaPromV1": 0.875,
+      "ratioAmbiguasV2": 0.125,
+      "ratioAmbiguasV1": 0.125,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Andrei Romero/CamScanner 13-02-2026 10.15_02.jpg",
+      "estudiante": "Andrei Romero",
+      "folio": "8C85A5DA",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6510926581276449,
+      "calidadV1": 0.6510926581276449,
+      "confianzaPromV2": 0.75,
+      "confianzaPromV1": 0.75,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 0,
+      "correctasV1": 0,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Andrei Romero/CamScanner 13-02-2026 10.15_03.jpg",
+      "estudiante": "Andrei Romero",
+      "folio": "8C85A5DA",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6503963383414563,
+      "calidadV1": 0.6503963383414563,
+      "confianzaPromV2": 0.75,
+      "confianzaPromV1": 0.75,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Andrei Romero/CamScanner 13-02-2026 10.15_04.jpg",
+      "estudiante": "Andrei Romero",
+      "folio": "8C85A5DA",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6509000360746109,
+      "calidadV1": 0.6509000360746109,
+      "confianzaPromV2": 0.7142857142857143,
+      "confianzaPromV1": 0.7142857142857143,
+      "ratioAmbiguasV2": 0.2857142857142857,
+      "ratioAmbiguasV1": 0.2857142857142857,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 2,
+      "correctasV1": 2,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Cesar Castillo/CamScanner 13-02-2026 10.31_01.jpg",
+      "estudiante": "Cesar Castillo",
+      "folio": "BBBF8E63",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6460487336579126,
+      "calidadV1": 0.6460487336579126,
+      "confianzaPromV2": 0.375,
+      "confianzaPromV1": 0.375,
+      "ratioAmbiguasV2": 0.625,
+      "ratioAmbiguasV1": 0.625,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 3,
+      "detectadasV1": 3,
+      "correctasV2": 0,
+      "correctasV1": 0,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Cesar Castillo/CamScanner 13-02-2026 10.31_02.jpg",
+      "estudiante": "Cesar Castillo",
+      "folio": "BBBF8E63",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.646464943631492,
+      "calidadV1": 0.646464943631492,
+      "confianzaPromV2": 0.6821599109731127,
+      "confianzaPromV1": 0.6821599109731127,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Cesar Castillo/CamScanner 13-02-2026 10.31_03.jpg",
+      "estudiante": "Cesar Castillo",
+      "folio": "BBBF8E63",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6480854602490677,
+      "calidadV1": 0.6480854602490677,
+      "confianzaPromV2": 0.555557088099351,
+      "confianzaPromV1": 0.555557088099351,
+      "ratioAmbiguasV2": 0.5,
+      "ratioAmbiguasV1": 0.5,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 2,
+      "correctasV1": 2,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Cesar Castillo/CamScanner 13-02-2026 10.31_04.jpg",
+      "estudiante": "Cesar Castillo",
+      "folio": "BBBF8E63",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6462019421376755,
+      "calidadV1": 0.6462019421376755,
+      "confianzaPromV2": 0.6354956749255283,
+      "confianzaPromV1": 0.6354956749255283,
+      "ratioAmbiguasV2": 0.42857142857142855,
+      "ratioAmbiguasV1": 0.42857142857142855,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 3,
+      "correctasV1": 3,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Kevin Cruz/CamScanner 13-02-2026 10.24_01.jpg",
+      "estudiante": "Kevin Cruz",
+      "folio": "0ADECC1F",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6518469426372588,
+      "calidadV1": 0.6518469426372588,
+      "confianzaPromV2": 0.7578522252248089,
+      "confianzaPromV1": 0.7578522252248089,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Kevin Cruz/CamScanner 13-02-2026 10.24_02.jpg",
+      "estudiante": "Kevin Cruz",
+      "folio": "0ADECC1F",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6438837146305855,
+      "calidadV1": 0.6438837146305855,
+      "confianzaPromV2": 0.5570966783337428,
+      "confianzaPromV1": 0.5570966783337428,
+      "ratioAmbiguasV2": 0.5,
+      "ratioAmbiguasV1": 0.5,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Kevin Cruz/CamScanner 13-02-2026 10.24_03.jpg",
+      "estudiante": "Kevin Cruz",
+      "folio": "0ADECC1F",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6537894327218068,
+      "calidadV1": 0.6537894327218068,
+      "confianzaPromV2": 0.875,
+      "confianzaPromV1": 0.875,
+      "ratioAmbiguasV2": 0.125,
+      "ratioAmbiguasV1": 0.125,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 4,
+      "correctasV1": 4,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Kevin Cruz/CamScanner 13-02-2026 10.24_04.jpg",
+      "estudiante": "Kevin Cruz",
+      "folio": "0ADECC1F",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6460569680250497,
+      "calidadV1": 0.6460569680250497,
+      "confianzaPromV2": 0.5714285714285714,
+      "confianzaPromV1": 0.5714285714285714,
+      "ratioAmbiguasV2": 0.42857142857142855,
+      "ratioAmbiguasV1": 0.42857142857142855,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 4,
+      "detectadasV1": 4,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Leonardo Hernandez/CamScanner 13-02-2026 10.03_01.jpg",
+      "estudiante": "Leonardo Hernandez",
+      "folio": "BBD38EEB",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6574437478334082,
+      "calidadV1": 0.6574437478334082,
+      "confianzaPromV2": 0.875,
+      "confianzaPromV1": 0.875,
+      "ratioAmbiguasV2": 0.125,
+      "ratioAmbiguasV1": 0.125,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 5,
+      "correctasV1": 5,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Leonardo Hernandez/CamScanner 13-02-2026 10.03_02.jpg",
+      "estudiante": "Leonardo Hernandez",
+      "folio": "BBD38EEB",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6506865557455365,
+      "calidadV1": 0.6506865557455365,
+      "confianzaPromV2": 0.75,
+      "confianzaPromV1": 0.75,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 6,
+      "correctasV1": 6,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Leonardo Hernandez/CamScanner 13-02-2026 10.03_03.jpg",
+      "estudiante": "Leonardo Hernandez",
+      "folio": "BBD38EEB",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6532891586915355,
+      "calidadV1": 0.6532891586915355,
+      "confianzaPromV2": 0.875,
+      "confianzaPromV1": 0.875,
+      "ratioAmbiguasV2": 0.125,
+      "ratioAmbiguasV1": 0.125,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 7,
+      "correctasV1": 7,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Leonardo Hernandez/CamScanner 13-02-2026 10.03_04.jpg",
+      "estudiante": "Leonardo Hernandez",
+      "folio": "BBD38EEB",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6433744737167847,
+      "calidadV1": 0.6433744737167847,
+      "confianzaPromV2": 0.5790211763307068,
+      "confianzaPromV1": 0.5790211763307068,
+      "ratioAmbiguasV2": 0.5714285714285714,
+      "ratioAmbiguasV1": 0.5714285714285714,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Tadeo Rubiales/CamScanner 13-02-2026 10.26_01.jpg",
+      "estudiante": "Tadeo Rubiales",
+      "folio": "CE0A8E0E",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6495185469997621,
+      "calidadV1": 0.6495185469997621,
+      "confianzaPromV2": 0.573097026402384,
+      "confianzaPromV1": 0.573097026402384,
+      "ratioAmbiguasV2": 0.5,
+      "ratioAmbiguasV1": 0.5,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 0,
+      "correctasV1": 0,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Tadeo Rubiales/CamScanner 13-02-2026 10.26_02.jpg",
+      "estudiante": "Tadeo Rubiales",
+      "folio": "CE0A8E0E",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6483472682598617,
+      "calidadV1": 0.6483472682598617,
+      "confianzaPromV2": 0.6804034878032507,
+      "confianzaPromV1": 0.6804034878032507,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Tadeo Rubiales/CamScanner 13-02-2026 10.26_03.jpg",
+      "estudiante": "Tadeo Rubiales",
+      "folio": "CE0A8E0E",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6471093169721177,
+      "calidadV1": 0.6471093169721177,
+      "confianzaPromV2": 0.625,
+      "confianzaPromV1": 0.625,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 5,
+      "detectadasV1": 5,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Tadeo Rubiales/CamScanner 13-02-2026 10.26_04.jpg",
+      "estudiante": "Tadeo Rubiales",
+      "folio": "CE0A8E0E",
+      "pagina": 4,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6408499577897311,
+      "calidadV1": 0.6408499577897311,
+      "confianzaPromV2": 0.363269467737442,
+      "confianzaPromV1": 0.363269467737442,
+      "ratioAmbiguasV2": 0.7142857142857143,
+      "ratioAmbiguasV1": 0.7142857142857143,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 3,
+      "detectadasV1": 3,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Yazmin Aguilar/CamScanner 13-02-2026 10.11_01.jpg",
+      "estudiante": "Yazmin Aguilar",
+      "folio": "86357693",
+      "pagina": 1,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6529609936594457,
+      "calidadV1": 0.6529609936594457,
+      "confianzaPromV2": 0.8152704636566667,
+      "confianzaPromV1": 0.8152704636566667,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Yazmin Aguilar/CamScanner 13-02-2026 10.11_02.jpg",
+      "estudiante": "Yazmin Aguilar",
+      "folio": "86357693",
+      "pagina": 2,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6477157986474457,
+      "calidadV1": 0.6477157986474457,
+      "confianzaPromV2": 0.6885791115630258,
+      "confianzaPromV1": 0.6885791115630258,
+      "ratioAmbiguasV2": 0.375,
+      "ratioAmbiguasV1": 0.375,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 6,
+      "detectadasV1": 6,
+      "correctasV2": 6,
+      "correctasV1": 6,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Yazmin Aguilar/CamScanner 13-02-2026 10.11_03.jpg",
+      "estudiante": "Yazmin Aguilar",
+      "folio": "86357693",
+      "pagina": 3,
+      "estadoAnalisisV2": "requiere_revision",
+      "estadoAnalisisV1": "requiere_revision",
+      "calidadV2": 0.6541218356853458,
+      "calidadV1": 0.6541218356853458,
+      "confianzaPromV2": 0.80317426927332,
+      "confianzaPromV1": 0.80317426927332,
+      "ratioAmbiguasV2": 0.25,
+      "ratioAmbiguasV1": 0.25,
+      "totalReactivosPagina": 8,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    },
+    {
+      "archivo": "Yazmin Aguilar/CamScanner 13-02-2026 10.11_04.jpg",
+      "estudiante": "Yazmin Aguilar",
+      "folio": "86357693",
+      "pagina": 4,
+      "estadoAnalisisV2": "ok",
+      "estadoAnalisisV1": "ok",
+      "calidadV2": 0.65397358414995,
+      "calidadV1": 0.65397358414995,
+      "confianzaPromV2": 1,
+      "confianzaPromV1": 1,
+      "ratioAmbiguasV2": 0,
+      "ratioAmbiguasV1": 0,
+      "totalReactivosPagina": 7,
+      "detectadasV2": 7,
+      "detectadasV1": 7,
+      "correctasV2": 1,
+      "correctasV1": 1,
+      "advertenciasV2": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas",
+        "Calidad baja compensada por senal OMR fuerte (confianza 1.00, ambiguas 0.0%)"
+      ],
+      "advertenciasV1": [
+        "El QR no coincide con el examen esperado",
+        "Se eligio transformacion por escala por mayor coherencia de marcas",
+        "Calidad baja compensada por senal OMR fuerte (confianza 1.00, ambiguas 0.0%)"
+      ],
+      "deltaDetectadas": 0,
+      "deltaCorrectas": 0
+    }
+  ],
+  "errores": []
+}
