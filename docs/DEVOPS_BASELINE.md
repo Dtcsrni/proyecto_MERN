@@ -45,7 +45,7 @@ Fecha de baseline: 2026-02-13.
 - Reglas vigentes:
   - bloqueo de borrado de rama (`deletion`),
   - bloqueo de force-push (`non_fast_forward`),
-  - pull request obligatorio con 1 aprobacion minima,
+  - pull request obligatorio con 1 aprobación mínima,
   - descarte de approvals stale al recibir nuevos commits,
   - resolucion obligatoria de conversaciones,
   - branch actualizado obligatoriamente antes de merge (`strict required status checks policy`).
