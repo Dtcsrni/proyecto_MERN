@@ -134,10 +134,12 @@ este documento se actualiza automáticamente al regenerar.
 - `DASHBOARD_TRAY_AUTOSTART` (usado en: scripts/launcher-dashboard.mjs, scripts/start-tray.mjs)
 - `DIAGRAMAS_PUPPETEER_CONFIG` (usado en: scripts/diagramas-render.mjs)
 - `DIAGRAMAS_RENDER_CHECK` (usado en: scripts/diagramas-render.mjs)
+- `DIFF_COVERAGE_MIN` (usado en: scripts/testing/check-diff-coverage.mjs)
 - `DOCENTE_TOKEN` (usado en: scripts/release/preflight-global-prod.mjs)
 - `DOMINIOS_CORREO_PERMITIDOS` (usado en: scripts/perf-collect-business.ts)
 - `EVALUAPRO_DEVELOPER_NAME` (usado en: scripts/launcher-dashboard.mjs)
 - `EVALUAPRO_DEVELOPER_ROLE` (usado en: scripts/launcher-dashboard.mjs)
+- `GITHUB_BASE_REF` (usado en: scripts/testing/check-diff-coverage.mjs)
 - `GITHUB_SHA` (usado en: scripts/release/gate-prod-flow.mjs)
 - `JWT_SECRETO` (usado en: scripts/perf-collect-business.ts)
 - `LOCALAPPDATA` (usado en: scripts/detect-host-ip.mjs, scripts/launcher-dashboard.mjs, scripts/vscode-prune-extensions.mjs)
@@ -180,6 +182,8 @@ este documento se actualiza automáticamente al regenerar.
 - `ALLOW_TEST_CONSOLE` (usado en: test-utils/vitestStrict.ts)
 
 ## Root
+- `CI` (usado en: tests/client-smoke/playwright.config.cjs)
+- `CLIENT_SMOKE_PORT` (usado en: tests/client-smoke/playwright.config.cjs)
 - `JWT_SECRETO` (usado en: client/proyectos_vite/login-react-mern/server/src/autenticacion.ts)
 - `MONGODB_URI` (usado en: client/proyectos_vite/login-react-mern/server/src/baseDatos.ts)
 - `NODE_ENV` (usado en: client/proyectos_vite/login-react-mern/server/src/autenticacion.ts)
