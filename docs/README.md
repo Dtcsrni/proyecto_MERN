@@ -21,6 +21,7 @@ Ultima actualizacion integral: 2026-02-13.
 - `UX_QUALITY_CRITERIA.md`: criterios bloqueantes y verificables de calidad GUI/UX.
 - `DESPLIEGUE.md`: despliegue local y cloud.
 - `VERSIONADO.md`: politica de version y release.
+- `CICLO_DESARROLLO.md`: ciclo oficial de desarrollo (incluye fase de requisitos obligatoria).
 - `ENGINEERING_BASELINE.md`: baseline de ingeniería y reglas de gobernanza técnica.
 - `DEVOPS_BASELINE.md`: baseline de operación/entrega y contrato CI/CD.
 - `SEGURIDAD_OPERATIVA.md`: checklist operativo de seguridad.
