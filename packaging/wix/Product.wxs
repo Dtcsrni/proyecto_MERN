@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="EvaluaPro"
+    Manufacturer="I.S.C. Erick Renato Vega Ceron"
+    Version="0.2.0.0"
+    UpgradeCode="E5CBF5D2-F6AF-4E6D-9B63-8DF259C47951"
+    InstallerVersion="500"
+    Compressed="yes"
+    Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="Ya existe una versión más reciente de EvaluaPro instalada." />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="INSTALL_DESKTOP_SHORTCUTS" Value="1" />
+    <Property Id="NODEINSTALLED64">
+      <RegistrySearch Root="HKLM" Key="SOFTWARE\Node.js" Name="InstallPath" Type="raw" />
+    </Property>
+    <Property Id="NODEINSTALLEDUSER">
+      <RegistrySearch Root="HKCU" Key="SOFTWARE\Node.js" Name="InstallPath" Type="raw" />
+    </Property>
+    <Property Id="DOCKERINSTALLED64">
+      <RegistrySearch Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop" Name="DisplayName" Type="raw" />
+    </Property>
+    <Property Id="DOCKERINSTALLEDUSER">
+      <RegistrySearch Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop" Name="DisplayName" Type="raw" />
+    </Property>
+    <Launch Condition="NODEINSTALLED64 OR NODEINSTALLEDUSER" Message="No se detecto Node.js 24+. Instala Node.js antes de usar EvaluaPro." />
+    <Launch Condition="DOCKERINSTALLED64 OR DOCKERINSTALLEDUSER" Message="No se detecto Docker Desktop. Instalalo antes de usar EvaluaPro en modo prod local." />
+
+    <Feature Id="MainFeature" Title="EvaluaPro" Level="1">
+      <ComponentGroupRef Id="CG.AppFiles" />
+      <ComponentGroupRef Id="CG.Shortcuts" />
+      <ComponentGroupRef Id="CG.Cleanup" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="EvaluaPro">
+        <Directory Id="LOGSFOLDER" Name="logs" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="EvaluaProMenuDir" Name="EvaluaPro" />
+    </StandardDirectory>
+
+    <Icon Id="EvaluaProIcon" SourceFile="$(var.SourceRoot)\scripts\icons\dashboard-prod.ico" />
+    <Property Id="ARPPRODUCTICON" Value="EvaluaProIcon" />
+    <Property Id="ARPCONTACT" Value="I.S.C. Erick Renato Vega Ceron" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario" />
+    <Property Id="ARPCOMMENTS" Value="Distribucion estable local con autoconfiguracion de stack/portal cuando es posible. Requiere Node.js 24+ y Docker Desktop." />
+  </Package>
+</Wix>

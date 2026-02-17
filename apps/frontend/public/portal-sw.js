@@ -1,3 +1,9 @@
+/**
+ * portal-sw
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*
   Service Worker para portales Docente/Alumno (Vite).
   - No cachea HTML de navegación (evita "no se ven los cambios").

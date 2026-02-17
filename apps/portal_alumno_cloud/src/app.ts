@@ -13,6 +13,7 @@ import { configuracion } from './configuracion';
 import rutasPortal from './rutas';
 import { sanitizarMongo } from './infraestructura/seguridad/sanitizarMongo';
 import { manejadorErroresPortal } from './compartido/errores/manejadorErrores';
+import { middlewareIdSolicitud, middlewareRegistroSolicitud } from './infraestructura/observabilidad/middlewareObservabilidad';
 
 export function crearApp() {
   const app = express();
@@ -24,6 +25,8 @@ export function crearApp() {
   app.use(cors({ origin: configuracion.corsOrigenes }));
   app.use(express.json({ limit: '25mb' }));
   app.use(sanitizarMongo());
+  app.use(middlewareIdSolicitud);
+  app.use(middlewareRegistroSolicitud);
   app.use(
     rateLimit({
       windowMs: configuracion.rateLimitWindowMs,

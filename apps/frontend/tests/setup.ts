@@ -1,3 +1,9 @@
+/**
+ * setup
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Setup comun de pruebas React.
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';

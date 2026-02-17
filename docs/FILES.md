@@ -9,6 +9,8 @@ Este documento resume la estructura vigente del repositorio.
 - `docs/`: documentacion tecnica y operativa.
 - `scripts/`: utilidades de arranque, dashboard, docs y diagramas.
 - `apps/`: aplicaciones del monorepo.
+- `ci/`: contrato de pipeline agnostico.
+- `ops/`: observabilidad local (Prometheus/Grafana/alertas).
 
 ## apps/
 - `apps/backend/`: API docente (escritura, OMR, calificacion, sincronizacion).
@@ -21,6 +23,9 @@ Este documento resume la estructura vigente del repositorio.
   - autenticacion, alumnos, banco, generacion_pdf,
   - vinculacion_entrega, escaneo_omr, calificacion,
   - analiticas, sincronizacion_nube, admin_docentes, papelera
+- Estado OMR vigente:
+  - endpoint operativo: `/api/v2/omr/*`
+  - ruta `/api/omr/*` retirada del runtime
 - `src/infraestructura/*`: base de datos, archivos, seguridad, logging, correo
 - `src/compartido/*`: errores, validaciones, utilidades
 - `tests/*`: unitarias, contrato e integracion
@@ -45,6 +50,7 @@ Este documento resume la estructura vigente del repositorio.
 - Seguridad/RBAC: `SEGURIDAD.md`, `ROLES_PERMISOS.md`
 - Operacion: `DESPLIEGUE.md`, `PRUEBAS.md`, `SINCRONIZACION_ENTRE_COMPUTADORAS.md`
 - Gobierno: `VERSIONADO.md`
+- Inventario: `INVENTARIO_PROYECTO.md`
 - Auto: `AUTO_DOCS_INDEX.md`, `AUTO_ENV.md`
 
 ## Nota

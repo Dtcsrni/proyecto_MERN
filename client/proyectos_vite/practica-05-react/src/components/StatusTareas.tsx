@@ -1,3 +1,9 @@
+/**
+ * StatusTareas
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import type { EstadoTarea, Tarea } from '../types';;
 
 //Componente que define el "contrato" como un estado que puede

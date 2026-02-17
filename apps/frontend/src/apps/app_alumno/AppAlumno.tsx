@@ -13,8 +13,10 @@ import { Icono, IlustracionSinResultados, Spinner } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { CampoTexto } from '../../ui/ux/componentes/CampoTexto';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
+import { HelperPanel } from '../../ui/ux/componentes/HelperPanel';
 import { obtenerSessionId } from '../../ui/ux/sesion';
 import { TemaBoton } from '../../tema/TemaBoton';
+import { abrirVentanaVersion, obtenerVersionApp } from '../../ui/version/versionInfo';
 import {
   accionCerrarSesion,
   accionToastSesionParaError,
@@ -41,6 +43,13 @@ type Resultado = {
     coincide: boolean;
     confianza?: number;
   }>;
+  omrCapturas?: Array<{
+    numeroPagina: number;
+    formato: 'jpg' | 'jpeg' | 'png' | 'webp';
+    imagenBase64: string;
+    calidad?: number;
+    sugerencias?: string[];
+  }>;
   omrAuditoria?: {
     estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
     revisionConfirmada?: boolean;
@@ -52,6 +61,7 @@ type Resultado = {
 };
 
 export function AppAlumno() {
+  const version = obtenerVersionApp();
   const [codigo, setCodigo] = useState('');
   const [matricula, setMatricula] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -60,6 +70,9 @@ export function AppAlumno() {
   const [detallesPorFolio, setDetallesPorFolio] = useState<Record<string, Resultado>>({});
   const [cargandoDetallePorFolio, setCargandoDetallePorFolio] = useState<Record<string, boolean>>({});
   const [errorDetallePorFolio, setErrorDetallePorFolio] = useState<Record<string, string>>({});
+  const [seleccionRevisionPorFolio, setSeleccionRevisionPorFolio] = useState<Record<string, Record<number, boolean>>>({});
+  const [comentarioRevisionPorFolio, setComentarioRevisionPorFolio] = useState<Record<string, string>>({});
+  const [conformidadPorFolio, setConformidadPorFolio] = useState<Record<string, boolean>>({});
   const [cargando, setCargando] = useState(false);
   const intentosFallidosRef = useRef(0);
   const [cooldownHasta, setCooldownHasta] = useState(0);
@@ -228,6 +241,56 @@ export function AppAlumno() {
     }
   }
 
+  async function solicitarRevision(folio: string) {
+    const seleccion = seleccionRevisionPorFolio[folio] ?? {};
+    const preguntas = Object.entries(seleccion)
+      .filter(([, activa]) => Boolean(activa))
+      .map(([numero]) => Number(numero))
+      .filter((numero) => Number.isInteger(numero) && numero > 0);
+    if (preguntas.length === 0) {
+      emitToast({ level: 'warn', title: 'Sin selección', message: 'Marca al menos una pregunta para solicitar revisión.' });
+      return;
+    }
+    const comentario = (comentarioRevisionPorFolio[folio] ?? '').trim();
+    if (comentario.length < 12) {
+      emitToast({
+        level: 'warn',
+        title: 'Comentario obligatorio',
+        message: 'Explica brevemente el motivo de revisión (mínimo 12 caracteres).'
+      });
+      return;
+    }
+    try {
+      await clientePortal.enviar('/solicitudes-revision', {
+        folio,
+        solicitudes: preguntas.map((numeroPregunta) => ({ numeroPregunta, comentario }))
+      });
+      emitToast({ level: 'ok', title: 'Solicitud enviada', message: 'Tu solicitud de revisión fue registrada.' });
+    } catch (error) {
+      emitToast({
+        level: 'error',
+        title: 'No se pudo enviar',
+        message: mensajeDeError(error, 'No se pudo registrar la solicitud de revisión'),
+        action: accionToastSesionParaError(error, 'alumno')
+      });
+    }
+  }
+
+  async function enviarConformidad(folio: string) {
+    try {
+      await clientePortal.enviar('/solicitudes-revision/conformidad', { folio, conformidad: true });
+      setConformidadPorFolio((prev) => ({ ...prev, [folio]: true }));
+      emitToast({ level: 'ok', title: 'Conformidad enviada', message: 'Se registró tu conformidad con resultados.' });
+    } catch (error) {
+      emitToast({
+        level: 'error',
+        title: 'No se pudo registrar conformidad',
+        message: mensajeDeError(error, 'No se pudo registrar la conformidad'),
+        action: accionToastSesionParaError(error, 'alumno')
+      });
+    }
+  }
+
   const token = obtenerTokenAlumno();
   const puedeIngresar = Boolean(codigo.trim() && matricula.trim());
   // Valida sin bloquear el flujo (hay códigos reales con '-' / '_' y longitudes variables).
@@ -242,6 +305,14 @@ export function AppAlumno() {
           <Icono nombre="alumno" /> Portal Alumno
         </p>
         <div className="cabecera__acciones">
+          <button
+            type="button"
+            className="chip chip-version"
+            title="Abrir información de versión"
+            onClick={() => abrirVentanaVersion('alumno')}
+          >
+            v{version}
+          </button>
           <TemaBoton />
           {token && (
             <button className="boton secundario" type="button" onClick={cerrarSesion}>
@@ -252,7 +323,7 @@ export function AppAlumno() {
       </div>
       {!token && (
         <div className="auth-grid">
-          <div>
+          <div className="auth-hero auth-hero--alumno">
             <p className="eyebrow">Acceso</p>
             <h2>
               <Icono nombre="alumno" /> Consulta de resultados
@@ -328,6 +399,20 @@ export function AppAlumno() {
             >
               Consultar
             </Boton>
+            <HelperPanel
+              titulo="Como consultar sin errores"
+              descripcion="Sigue esta secuencia para evitar bloqueos por codigo o matricula."
+              pasos={[
+                'Usa el codigo de acceso mas reciente compartido por tu docente.',
+                'Escribe tu matricula sin espacios y revisa que tenga el formato esperado.',
+                'Si no hay resultados, pulsa Recargar antes de volver a ingresar.'
+              ]}
+              notas={
+                <InlineMensaje tipo="info">
+                  Si necesitas aclarar una respuesta, abre el detalle del folio y usa “Solicitar revision de marcadas”.
+                </InlineMensaje>
+              }
+            />
           </div>
         </div>
       )}
@@ -356,6 +441,15 @@ export function AppAlumno() {
       {token && resultados.length > 0 && (
         <div className="resultado">
           <h3>Resultados disponibles</h3>
+          <HelperPanel
+            titulo="Interpretacion de resultados"
+            descripcion="Puedes revisar cada reactivo comparando la clave correcta con tu respuesta detectada."
+            pasos={[
+              'Abre “Ver detalle” en el folio que quieres revisar.',
+              'Marca solo las preguntas que quieras impugnar y envia la solicitud.',
+              'Cuando termines, marca conformidad para cerrar el flujo de revision.'
+            ]}
+          />
           <ul className="lista lista-items">
             {resultados.map((resultado) => (
               <li key={resultado.folio}>
@@ -490,6 +584,7 @@ export function AppAlumno() {
                                           <th>Clave correcta</th>
                                           <th>Tu respuesta</th>
                                           <th>Estado</th>
+                                          <th>Solicitar revisión</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -503,12 +598,88 @@ export function AppAlumno() {
                                                 {item.coincide ? 'Correcta' : 'Incorrecta'}
                                               </span>
                                             </td>
+                                            <td>
+                                              <label>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={Boolean(seleccionRevisionPorFolio[resultado.folio]?.[item.numeroPregunta])}
+                                                  onChange={(event) => {
+                                                    setSeleccionRevisionPorFolio((prev) => {
+                                                      const folioActual = { ...(prev[resultado.folio] ?? {}) };
+                                                      folioActual[item.numeroPregunta] = event.target.checked;
+                                                      return { ...prev, [resultado.folio]: folioActual };
+                                                    });
+                                                  }}
+                                                />{' '}
+                                                Revisar
+                                              </label>
+                                            </td>
                                           </tr>
                                         ))}
                                       </tbody>
                                     </table>
                                   )}
                                 </div>
+                                {comparativa.length > 0 && (
+                                  <div className="item-actions alumno-revision-actions">
+                                    <textarea
+                                      className="alumno-revision-comentario"
+                                      value={comentarioRevisionPorFolio[resultado.folio] ?? ''}
+                                      onChange={(event) =>
+                                        setComentarioRevisionPorFolio((prev) => ({ ...prev, [resultado.folio]: event.target.value }))
+                                      }
+                                      placeholder="Comentario obligatorio: explica por qué solicitas revisión"
+                                      rows={2}
+                                    />
+                                    <button className="boton secundario" type="button" onClick={() => void solicitarRevision(resultado.folio)}>
+                                      <Icono nombre="info" /> Solicitar revisión de marcadas
+                                    </button>
+                                    <label>
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(conformidadPorFolio[resultado.folio])}
+                                        onChange={(event) =>
+                                          setConformidadPorFolio((prev) => ({ ...prev, [resultado.folio]: event.target.checked }))
+                                        }
+                                      />{' '}
+                                      En conformidad con resultados
+                                    </label>
+                                    <button
+                                      className="boton secundario"
+                                      type="button"
+                                      disabled={!conformidadPorFolio[resultado.folio]}
+                                      onClick={() => void enviarConformidad(resultado.folio)}
+                                    >
+                                      <Icono nombre="ok" /> Enviar conformidad
+                                    </button>
+                                  </div>
+                                )}
+                                {Array.isArray(detalle.omrCapturas) && detalle.omrCapturas.length > 0 && (
+                                  <div className="panel alumno-detalle" aria-label="Capturas OMR por página">
+                                    <h4>Capturas OMR por página</h4>
+                                    <div className="guia-grid">
+                                      {detalle.omrCapturas
+                                        .slice()
+                                        .sort((a, b) => Number(a.numeroPagina) - Number(b.numeroPagina))
+                                        .map((captura) => (
+                                          <div className="item-glass" key={`${resultado.folio}-captura-${captura.numeroPagina}`}>
+                                            <div className="item-meta">
+                                              <span>Página {captura.numeroPagina}</span>
+                                              {typeof captura.calidad === 'number' && <span>Calidad: {(captura.calidad * 100).toFixed(0)}%</span>}
+                                            </div>
+                                            <img
+                                              className="preview"
+                                              alt={`Captura OMR página ${captura.numeroPagina}`}
+                                              src={`data:image/${captura.formato};base64,${captura.imagenBase64}`}
+                                            />
+                                            {Array.isArray(captura.sugerencias) && captura.sugerencias.length > 0 && (
+                                              <InlineMensaje tipo="info">{captura.sugerencias.join(' | ')}</InlineMensaje>
+                                            )}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             );
                           })()}

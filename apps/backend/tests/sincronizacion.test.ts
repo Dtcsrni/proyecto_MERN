@@ -1,3 +1,9 @@
+/**
+ * sincronizacion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del modulo de sincronizacion a nube.
 import type { Response } from 'express';
 import type { SolicitudDocente } from '../src/modulos/modulo_autenticacion/middlewareAutenticacion';
@@ -30,6 +36,10 @@ function crearRespuesta() {
     status: vi.fn().mockReturnThis(),
     json: vi.fn()
   } as unknown as Response;
+}
+
+async function esperar(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function asegurarDocente(docenteId: string, correo: string) {
@@ -330,6 +340,94 @@ describe('sincronizacion nube', () => {
     expect(await Alumno.countDocuments({ docenteId })).toBe(0);
   });
 
+  it('rechaza importacion con backupMeta expirado (SYNC_BACKUP_EXPIRADO)', async () => {
+    const docenteId = '507f1f77bcf86cd799439062';
+    const periodoId = '507f1f77bcf86cd799439061';
+    await asegurarDocente(docenteId, 'docente-expirado@test.com');
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Probabilidad',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: payload.paqueteBase64,
+            checksumSha256: payload.checksumSha256,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              ttlMs: 86_400_000,
+              expiresAt: '2026-01-02T00:00:00.000Z',
+              businessLogicFingerprint: 'sync-v1-lww-updatedAt-schema1'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_EXPIRADO',
+      estadoHttp: 409
+    });
+  });
+
+  it('rechaza importacion con backupMeta invalidado (SYNC_BACKUP_INVALIDADO)', async () => {
+    const docenteId = '507f1f77bcf86cd799439072';
+    const periodoId = '507f1f77bcf86cd799439071';
+    await asegurarDocente(docenteId, 'docente-invalido@test.com');
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Topologia',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    const resExport = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resExport);
+    const payload = (resExport.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await expect(
+      importarPaquete(
+        {
+          body: {
+            paqueteBase64: payload.paqueteBase64,
+            checksumSha256: payload.checksumSha256,
+            backupMeta: {
+              schemaVersion: 2,
+              createdAt: new Date().toISOString(),
+              ttlMs: 86_400_000,
+              expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+              businessLogicFingerprint: 'sync-v2-breaking-change'
+            }
+          },
+          docenteId
+        } as SolicitudDocente,
+        crearRespuesta()
+      )
+    ).rejects.toMatchObject({
+      codigo: 'SYNC_BACKUP_INVALIDADO',
+      estadoHttp: 409
+    });
+  });
+
   it('no sobreescribe registros mas nuevos (LWW por updatedAt)', async () => {
     const docenteId = '507f1f77bcf86cd799439022';
     const periodoId = '507f1f77bcf86cd799439021';
@@ -374,5 +472,77 @@ describe('sincronizacion nube', () => {
     await importarPaquete(reqImport, crearRespuesta());
     const alumnoDespues = await Alumno.findById(alumno._id).lean();
     expect(alumnoDespues?.nombreCompleto).toBe('Luis Perez (editado)');
+  });
+
+  it('sincroniza entre computadoras aplicando version mas reciente aunque lleguen paquetes fuera de orden', async () => {
+    const docenteId = '507f1f77bcf86cd799439052';
+    const periodoId = '507f1f77bcf86cd799439051';
+    await asegurarDocente(docenteId, 'docente-equipos@test.com');
+
+    await Periodo.create({
+      _id: periodoId,
+      docenteId,
+      nombre: 'Sistemas Distribuidos',
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaFin: new Date('2026-06-30T00:00:00.000Z')
+    });
+
+    const alumno = await Alumno.create({
+      docenteId,
+      periodoId,
+      matricula: '2024-010',
+      nombres: 'Carla',
+      apellidos: 'Nava',
+      nombreCompleto: 'Carla Nava',
+      grupo: 'A'
+    });
+
+    const resV1 = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resV1);
+    const paqueteV1 = (resV1.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    // Fuerza monotonicidad de timestamps para probar LWW aun si los paquetes
+    // se generan muy rapido en el mismo ms.
+    await esperar(15);
+    await Alumno.updateOne({ _id: alumno._id }, { $set: { nombreCompleto: 'Carla Nava V2', grupo: 'B' } });
+    await esperar(15);
+
+    const resV2 = crearRespuesta();
+    await exportarPaquete({ body: { periodoId, incluirPdfs: false }, docenteId } as SolicitudDocente, resV2);
+    const paqueteV2 = (resV2.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      paqueteBase64: string;
+      checksumSha256: string;
+    };
+
+    await limpiarMongoTest();
+    await asegurarDocente(docenteId, 'docente-equipos@test.com');
+
+    await importarPaquete(
+      { body: { paqueteBase64: paqueteV1.paqueteBase64, checksumSha256: paqueteV1.checksumSha256 }, docenteId } as SolicitudDocente,
+      crearRespuesta()
+    );
+    let alumnoEnEquipo2 = await Alumno.findById(alumno._id).lean();
+    expect(alumnoEnEquipo2?.nombreCompleto).toBe('Carla Nava');
+    expect(alumnoEnEquipo2?.grupo).toBe('A');
+
+    await importarPaquete(
+      { body: { paqueteBase64: paqueteV2.paqueteBase64, checksumSha256: paqueteV2.checksumSha256 }, docenteId } as SolicitudDocente,
+      crearRespuesta()
+    );
+    alumnoEnEquipo2 = await Alumno.findById(alumno._id).lean();
+    expect(alumnoEnEquipo2?.nombreCompleto).toBe('Carla Nava V2');
+    expect(alumnoEnEquipo2?.grupo).toBe('B');
+
+    // Reimportar un paquete antiguo ya no debe degradar el estado.
+    await importarPaquete(
+      { body: { paqueteBase64: paqueteV1.paqueteBase64, checksumSha256: paqueteV1.checksumSha256 }, docenteId } as SolicitudDocente,
+      crearRespuesta()
+    );
+    alumnoEnEquipo2 = await Alumno.findById(alumno._id).lean();
+    expect(alumnoEnEquipo2?.nombreCompleto).toBe('Carla Nava V2');
+    expect(alumnoEnEquipo2?.grupo).toBe('B');
   });
 });

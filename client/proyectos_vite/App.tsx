@@ -1,3 +1,9 @@
+/**
+ * App
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { useMemo, useState } from 'react';
 import '../App.css';
 import { getSession, login, logout } from './practica-05-react/src/app/auth';

@@ -1,3 +1,9 @@
+/**
+ * correo
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 export function normalizarDominio(dominio: string): string {
   const limpio = String(dominio || '').trim().toLowerCase();
   return limpio.startsWith('@') ? limpio.slice(1) : limpio;

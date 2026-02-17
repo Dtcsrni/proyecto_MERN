@@ -1,3 +1,9 @@
+/**
+ * iconos
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import type { ReactNode } from 'react';
 
 type PropsIcono = {

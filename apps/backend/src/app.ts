@@ -13,7 +13,12 @@ import rateLimit from 'express-rate-limit';
 import { configuracion } from './configuracion';
 import { crearRouterApi } from './rutas';
 import { manejadorErrores } from './compartido/errores/manejadorErrores';
+import { middlewareIdSolicitud, middlewareRegistroSolicitud } from './compartido/observabilidad/middlewareObservabilidad';
 import { sanitizarMongo } from './infraestructura/seguridad/sanitizarMongo';
+import {
+  middlewareManejadorErroresRobusto,
+  middlewareContextoRobustez
+} from './compartido/robustez/manejadorErrores';
 
 export function crearApp() {
   const app = express();
@@ -33,6 +38,9 @@ export function crearApp() {
   );
   app.use(express.json({ limit: configuracion.limiteJson }));
   app.use(sanitizarMongo());
+  app.use(middlewareContextoRobustez);
+  app.use(middlewareIdSolicitud);
+  app.use(middlewareRegistroSolicitud);
   app.use(
     rateLimit({
       windowMs: configuracion.rateLimitWindowMs,
@@ -45,6 +53,10 @@ export function crearApp() {
 
   app.use('/api', crearRouterApi());
 
+  // Middleware de error handling robusto para v2
+  app.use(middlewareManejadorErroresRobusto);
+
+  // Middleware de error handling antiguo (para v1 por compatibilidad)
   app.use(manejadorErrores);
 
   return app;

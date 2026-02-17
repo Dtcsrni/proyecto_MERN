@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle
+    Name="EvaluaPro Setup Estable"
+    Manufacturer="I.S.C. Erick Renato Vega Ceron"
+    Version="0.2.0.0"
+    UpgradeCode="6EA80CBA-C4F5-4434-8B27-B66480ABAB4A">
+
+    <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" Overridable="yes" />
+
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+        Theme="standard"
+        LicenseUrl="https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario/blob/main/README.md" />
+    </BootstrapperApplication>
+
+    <Chain>
+      <MsiPackage
+        Id="EvaluaProMsi"
+        SourceFile="$(var.SourceRoot)\dist\installer\EvaluaPro.msi"
+        DisplayInternalUI="no"
+        Visible="yes">
+        <MsiProperty Name="INSTALL_DESKTOP_SHORTCUTS" Value="[InstallDesktopShortcuts]" />
+      </MsiPackage>
+    </Chain>
+  </Bundle>
+</Wix>

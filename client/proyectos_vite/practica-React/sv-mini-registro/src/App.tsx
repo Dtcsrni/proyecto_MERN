@@ -1,3 +1,9 @@
+/**
+ * App
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 /**

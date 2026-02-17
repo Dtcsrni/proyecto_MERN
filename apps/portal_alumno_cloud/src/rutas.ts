@@ -11,15 +11,18 @@
  * - La telemetria se maneja best-effort (no debe interrumpir la UX).
  */
 import { Router, type Request, type Response } from 'express';
+import mongoose from 'mongoose';
 import { gunzipSync } from 'zlib';
 import { configuracion } from './configuracion';
 import { CodigoAcceso } from './modelos/modeloCodigoAcceso';
 import { EventoUsoAlumno } from './modelos/modeloEventoUsoAlumno';
 import { PaqueteSyncDocente } from './modelos/modeloPaqueteSyncDocente';
 import { ResultadoAlumno } from './modelos/modeloResultadoAlumno';
+import { SolicitudRevision } from './modelos/modeloSolicitudRevision';
 import { SesionAlumno } from './modelos/modeloSesionAlumno';
 import { generarTokenSesion } from './servicios/servicioSesion';
 import { requerirSesionAlumno, type SolicitudAlumno } from './servicios/middlewareSesion';
+import { exportarMetricasPrometheus } from './infraestructura/observabilidad/metrics';
 
 const router = Router();
 
@@ -66,7 +69,7 @@ function parsearFechaIso(valor: unknown): Date | null {
 function parsearLimite(valor: unknown, porDefecto: number) {
   const n = typeof valor === 'number' ? valor : Number(valor);
   if (!Number.isFinite(n)) return porDefecto;
-  return Math.min(25, Math.max(1, Math.floor(n)));
+  return Math.min(200, Math.max(1, Math.floor(n)));
 }
 
 /**
@@ -127,6 +130,38 @@ router.get('/salud', (_req, res) => {
   res.json({ estado: 'ok', tiempoActivo: process.uptime() });
 });
 
+router.get('/salud/live', (_req, res) => {
+  res.json({
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    servicio: 'portal-alumno',
+    env: process.env.NODE_ENV ?? 'development'
+  });
+});
+
+router.get('/salud/ready', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  const lista = estadoDb === 1 || !configuracion.mongoUri;
+  res.status(lista ? 200 : 503).json({
+    estado: lista ? 'ok' : 'degradado',
+    tiempoActivo: process.uptime(),
+    dependencias: {
+      db: {
+        estado: estadoDb,
+        lista
+      }
+    }
+  });
+});
+
+router.get('/metrics', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(
+    `${exportarMetricasPrometheus()}\n\n# HELP evaluapro_portal_db_ready_state Estado de conexión MongoDB del portal (0-3)\n# TYPE evaluapro_portal_db_ready_state gauge\nevaluapro_portal_db_ready_state ${estadoDb}\n`
+  );
+});
+
 router.post('/sincronizar', async (req, res) => {
   if (!requerirApiKey(req, res)) return;
 
@@ -185,6 +220,7 @@ router.post('/sincronizar', async (req, res) => {
     'proyectoTexto',
     'respuestasDetectadas',
     'comparativaRespuestas',
+    'omrCapturas',
     'omrAuditoria'
   ];
   for (const calificacion of calificaciones) {
@@ -258,6 +294,7 @@ router.post('/sincronizar', async (req, res) => {
         periodoId: periodo._id,
         docenteId: calificacion.docenteId,
         alumnoId: calificacion.alumnoId,
+        examenGeneradoId: calificacion.examenGeneradoId,
         matricula: typeof alumno.matricula === 'string' ? normalizarMatricula(alumno.matricula) : undefined,
         nombreCompleto: typeof alumno.nombreCompleto === 'string' ? alumno.nombreCompleto.trim() : undefined,
         grupo: typeof alumno.grupo === 'string' ? alumno.grupo.trim() : undefined,
@@ -272,6 +309,7 @@ router.post('/sincronizar', async (req, res) => {
         proyectoTexto: calificacion.proyectoTexto,
         respuestasDetectadas: Array.isArray(calificacion.respuestasDetectadas) ? calificacion.respuestasDetectadas : [],
         comparativaRespuestas: Array.isArray(calificacion.comparativaRespuestas) ? calificacion.comparativaRespuestas : [],
+        omrCapturas: Array.isArray(calificacion.omrCapturas) ? calificacion.omrCapturas : [],
         omrAuditoria: calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object' ? calificacion.omrAuditoria : undefined,
         banderas: banderasExamen,
         pdfComprimidoBase64: typeof examen?.pdfComprimidoBase64 === 'string' ? examen.pdfComprimidoBase64 : undefined
@@ -504,6 +542,191 @@ router.get('/resultados/:folio', requerirSesionAlumno, async (req: SolicitudAlum
     return;
   }
   res.json({ resultado });
+});
+
+router.post('/solicitudes-revision', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['folio', 'solicitudes'])) {
+    responderError(res, 400, 'DATOS_INVALIDOS', 'Payload invalido');
+    return;
+  }
+
+  const folio = normalizarString((req.body as { folio?: unknown })?.folio);
+  const solicitudes = Array.isArray((req.body as { solicitudes?: unknown }).solicitudes)
+    ? ((req.body as { solicitudes?: unknown[] }).solicitudes ?? [])
+    : [];
+  if (!folio || solicitudes.length === 0) {
+    responderError(res, 400, 'DATOS_INVALIDOS', 'folio y solicitudes requeridos');
+    return;
+  }
+
+  const resultado = await ResultadoAlumno.findOne({ folio, periodoId: req.periodoId, alumnoId: req.alumnoId }).lean();
+  if (!resultado) {
+    responderError(res, 404, 'NO_ENCONTRADO', 'Resultado no encontrado');
+    return;
+  }
+
+  type SolicitudEntrada = { numeroPregunta?: unknown; comentario?: unknown };
+  const ahora = new Date();
+  const operaciones = (solicitudes as SolicitudEntrada[])
+    .slice(0, 100)
+    .map((item) => {
+      const numeroPregunta = Number(item?.numeroPregunta);
+      if (!Number.isInteger(numeroPregunta) || numeroPregunta <= 0) return null;
+      const comentario = normalizarString(item?.comentario).slice(0, 500);
+      if (comentario.length < 12) return null;
+      const externoId = `${folio}:${req.alumnoId}:${numeroPregunta}`;
+      return SolicitudRevision.updateOne(
+        { externoId },
+        {
+          $set: {
+            periodoId: req.periodoId,
+            docenteId: resultado.docenteId,
+            alumnoId: req.alumnoId,
+            examenGeneradoId: resultado.examenGeneradoId,
+            folio,
+            numeroPregunta,
+            comentario,
+            estado: 'pendiente',
+            solicitadoEn: ahora,
+            origen: 'portal'
+          }
+        },
+        { upsert: true }
+      );
+    })
+    .filter(Boolean);
+
+  await Promise.all(operaciones as Array<Promise<unknown>>);
+  if (operaciones.length === 0) {
+    responderError(
+      res,
+      400,
+      'COMENTARIO_OBLIGATORIO',
+      'Cada solicitud debe incluir comentario obligatorio (minimo 12 caracteres)'
+    );
+    return;
+  }
+
+  const pendientes = await SolicitudRevision.find({ alumnoId: req.alumnoId, folio, estado: 'pendiente' })
+    .sort({ numeroPregunta: 1 })
+    .lean();
+  res.status(201).json({ mensaje: 'Solicitudes registradas', pendientes });
+});
+
+router.post('/solicitudes-revision/conformidad', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['folio', 'conformidad'])) {
+    responderError(res, 400, 'DATOS_INVALIDOS', 'Payload invalido');
+    return;
+  }
+  const folio = normalizarString((req.body as { folio?: unknown })?.folio);
+  const conformidad = Boolean((req.body as { conformidad?: unknown })?.conformidad);
+  if (!folio || !conformidad) {
+    responderError(res, 400, 'DATOS_INVALIDOS', 'folio y conformidad requeridos');
+    return;
+  }
+
+  const ahora = new Date();
+  await SolicitudRevision.updateMany(
+    { alumnoId: req.alumnoId, periodoId: req.periodoId, folio },
+    { $set: { conformidadAlumno: true, conformidadActualizadaEn: ahora } }
+  );
+  res.json({ mensaje: 'Conformidad registrada', conformidadAlumno: true, folio });
+});
+
+router.post('/sincronizacion-docente/solicitudes-revision/pull', async (req, res) => {
+  if (!requerirApiKey(req, res)) return;
+  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['docenteId', 'desde', 'limite'])) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+
+  const docenteId = normalizarString((req.body as { docenteId?: unknown })?.docenteId);
+  if (!docenteId) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'docenteId requerido');
+    return;
+  }
+  const desde = parsearFechaIso((req.body as { desde?: unknown })?.desde);
+  const limite = parsearLimite((req.body as { limite?: unknown })?.limite, 80);
+  const filtro: Record<string, unknown> = { docenteId };
+  if (desde) filtro.updatedAt = { $gt: desde };
+
+  const solicitudes = await SolicitudRevision.find(filtro).sort({ updatedAt: 1 }).limit(limite).lean();
+  const respuesta = solicitudes.map((s) => ({
+    externoId: s.externoId,
+    docenteId: s.docenteId,
+    periodoId: s.periodoId,
+    alumnoId: s.alumnoId,
+    examenGeneradoId: s.examenGeneradoId,
+    folio: s.folio,
+    numeroPregunta: s.numeroPregunta,
+    comentario: s.comentario,
+    estado: s.estado,
+    solicitadoEn: s.solicitadoEn ? new Date(s.solicitadoEn).toISOString() : new Date().toISOString(),
+    atendidoEn: s.atendidoEn ? new Date(s.atendidoEn).toISOString() : null,
+    respuestaDocente: s.respuestaDocente,
+    firmaDocente: s.firmaDocente,
+    firmadoEn: s.firmadoEn ? new Date(s.firmadoEn).toISOString() : null,
+    cerradoEn: s.cerradoEn ? new Date(s.cerradoEn).toISOString() : null,
+    conformidadAlumno: Boolean(s.conformidadAlumno),
+    conformidadActualizadaEn: s.conformidadActualizadaEn ? new Date(s.conformidadActualizadaEn).toISOString() : null,
+    updatedAt: s.updatedAt ? new Date(s.updatedAt).toISOString() : new Date().toISOString()
+  }));
+
+  res.json({
+    solicitudes: respuesta,
+    ultimoCursor: respuesta.length ? respuesta[respuesta.length - 1].updatedAt : null
+  });
+});
+
+router.post('/sincronizacion-docente/solicitudes-revision/update', async (req, res) => {
+  if (!requerirApiKey(req, res)) return;
+  if (!tieneSoloClavesPermitidas(req.body ?? {}, ['externoId', 'estado', 'respuestaDocente', 'conformidadAlumno', 'firmaDocente', 'firmadoEn', 'cerradoEn'])) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+  const externoId = normalizarString((req.body as { externoId?: unknown })?.externoId);
+  const estado = normalizarString((req.body as { estado?: unknown })?.estado).toLowerCase();
+  const respuestaDocente = normalizarString((req.body as { respuestaDocente?: unknown })?.respuestaDocente).slice(0, 500);
+  const firmaDocente = normalizarString((req.body as { firmaDocente?: unknown })?.firmaDocente).slice(0, 200);
+  const firmadoEn = parsearFechaIso((req.body as { firmadoEn?: unknown })?.firmadoEn);
+  const cerradoEn = parsearFechaIso((req.body as { cerradoEn?: unknown })?.cerradoEn);
+  const conformidadAlumno = Boolean((req.body as { conformidadAlumno?: unknown })?.conformidadAlumno);
+  if (!externoId) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'externoId requerido');
+    return;
+  }
+
+  const update: Record<string, unknown> = {};
+  if (estado === 'atendida' || estado === 'rechazada' || estado === 'pendiente') {
+    update.estado = estado;
+    if (estado !== 'pendiente') update.atendidoEn = new Date();
+    if (estado === 'atendida') {
+      update.firmadoEn = new Date();
+      update.firmaDocente = 'firmado-docente';
+    }
+    if (estado === 'rechazada') {
+      update.cerradoEn = new Date();
+    }
+  }
+  if (respuestaDocente) update.respuestaDocente = respuestaDocente;
+  if (firmaDocente) update.firmaDocente = firmaDocente;
+  if (firmadoEn) update.firmadoEn = firmadoEn;
+  if (cerradoEn) update.cerradoEn = cerradoEn;
+  if (conformidadAlumno) {
+    update.conformidadAlumno = true;
+    update.conformidadActualizadaEn = new Date();
+  }
+  if (Object.keys(update).length === 0) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'No hay cambios para aplicar');
+    return;
+  }
+
+  const actualizada = await SolicitudRevision.findOneAndUpdate({ externoId }, { $set: update }, { new: true }).lean();
+  if (!actualizada) {
+    responderError(res, 404, 'NO_ENCONTRADO', 'Solicitud no encontrada');
+    return;
+  }
+  res.json({ solicitud: actualizada });
 });
 
 router.get('/examen/:folio', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {

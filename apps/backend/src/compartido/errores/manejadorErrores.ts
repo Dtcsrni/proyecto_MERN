@@ -13,7 +13,7 @@ import { logError } from '../../infraestructura/logging/logger';
 
 export function manejadorErrores(
   error: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) {
@@ -68,7 +68,11 @@ export function manejadorErrores(
   // mensaje generico al cliente para evitar leakage de detalles internos.
   const entorno = process.env.NODE_ENV;
   if (entorno !== 'test') {
-    logError('Error no controlado en request', error);
+    logError('Error no controlado en request', error, {
+      requestId: (req as Request & { requestId?: string }).requestId,
+      route: req.path,
+      method: req.method
+    });
   }
 
   const exponerMensaje = entorno !== 'production';

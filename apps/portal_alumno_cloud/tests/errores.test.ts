@@ -1,3 +1,9 @@
+/**
+ * errores.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del manejador de errores del portal.
 import express from 'express';
 import request from 'supertest';

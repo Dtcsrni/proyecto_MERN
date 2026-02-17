@@ -1,3 +1,9 @@
+/**
+ * archivarExamenGenerado.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, it, expect } from 'vitest';
 import { crearApp } from '../../src/app';

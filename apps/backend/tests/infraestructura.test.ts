@@ -1,3 +1,9 @@
+/**
+ * infraestructura.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de infraestructura local.
 import { promises as fs } from 'fs';
 import path from 'path';

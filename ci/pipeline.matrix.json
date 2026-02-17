@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "node": ">=24",
+  "profiles": {
+    "core": [
+      "setup",
+      "lint",
+      "typecheck",
+      "test",
+      "ux-quality-check",
+      "coverage-check",
+      "tdd-enforcement-check",
+      "build",
+      "docs-check",
+      "security-scan"
+    ],
+    "extended": [
+      "setup",
+      "flujo-docente-check",
+      "dataset-prodlike-check",
+      "docente-alumno-e2e-check",
+      "global-grade-check",
+      "pdf-print-check",
+      "ux-visual-check",
+      "perf-check",
+      "perf-business-check",
+      "canary-rollout-check",
+      "bigbang-olas-strict-check",
+      "qa-manifest"
+    ],
+    "package": [
+      "package"
+    ]
+  },
+  "stages": [
+    {
+      "name": "setup",
+      "commands": [
+        "npm ci"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "lint",
+      "commands": [
+        "npm run lint"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "typecheck",
+      "commands": [
+        "npm run typecheck"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "test",
+      "commands": [
+        "npm run test:backend:ci",
+        "npm run test:portal:ci",
+        "npm run test:frontend:ci",
+        "npm run test:client:smoke:ci",
+        "npm run test:client:proyectos:ci"
+      ],
+      "artifacts": [
+        "test-report-backend.txt",
+        "test-report-portal.txt",
+        "test-report-frontend.txt"
+      ]
+    },
+    {
+      "name": "ux-quality-check",
+      "commands": [
+        "npm run test:ux-quality:ci"
+      ],
+      "artifacts": [
+        "apps/frontend/tests/ux.quality.test.tsx"
+      ]
+    },
+    {
+      "name": "flujo-docente-check",
+      "commands": [
+        "npm run test:flujo-docente:ci"
+      ],
+      "artifacts": [
+        "apps/backend/tests/integracion/flujoDocenteParcialE2E.test.ts",
+        "apps/backend/tests/integracion/flujoDocenteGlobalE2E.test.ts"
+      ]
+    },
+    {
+      "name": "dataset-prodlike-check",
+      "commands": [
+        "npm run test:dataset-prodlike:ci"
+      ],
+      "artifacts": [
+        "tests/fixtures/prodlike/prodlike-anon.json.gz",
+        "reports/qa/latest/dataset-prodlike.json"
+      ]
+    },
+    {
+      "name": "docente-alumno-e2e-check",
+      "commands": [
+        "npm run test:e2e:docente-alumno:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/e2e-docente-alumno.json"
+      ]
+    },
+    {
+      "name": "global-grade-check",
+      "commands": [
+        "npm run test:global-grade:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/global-grade.json"
+      ]
+    },
+    {
+      "name": "pdf-print-check",
+      "commands": [
+        "npm run test:pdf-print:ci",
+        "npm run test:pdf-visual:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/pdf-print.json"
+      ]
+    },
+    {
+      "name": "ux-visual-check",
+      "commands": [
+        "npm run test:ux-quality:ci",
+        "npm run test:ux-visual:ci",
+        "npm run test:e2e:journeys:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/ux-visual.json"
+      ]
+    },
+    {
+      "name": "coverage-check",
+      "commands": [
+        "npm run test:coverage:ci"
+      ],
+      "artifacts": [
+        "apps/backend/coverage/**",
+        "apps/frontend/coverage/**",
+        "apps/portal_alumno_cloud/coverage/**"
+      ]
+    },
+    {
+      "name": "tdd-enforcement-check",
+      "commands": [
+        "npm run test:coverage:exclusions:debt",
+        "npm run test:coverage:diff"
+      ],
+      "artifacts": [
+        "docs/tdd-exclusions-debt.json"
+      ]
+    },
+    {
+      "name": "perf-check",
+      "commands": [
+        "npm run perf:check"
+      ],
+      "artifacts": [
+        "reports/perf/latest.json",
+        "docs/perf/baseline.json"
+      ]
+    },
+    {
+      "name": "perf-business-check",
+      "commands": [
+        "npm run perf:check:business"
+      ],
+      "artifacts": [
+        "reports/perf/business.latest.json",
+        "docs/perf/baseline.business.json"
+      ]
+    },
+    {
+      "name": "canary-rollout-check",
+      "commands": [
+        "npm run canary:rollout:check"
+      ],
+      "artifacts": [
+        "reports/qa/latest/canary-rollout-check.json"
+      ]
+    },
+    {
+      "name": "bigbang-olas-strict-check",
+      "commands": [
+        "npm run bigbang:olas:strict"
+      ],
+      "artifacts": [
+        "reports/qa/latest/olas-bigbang.json"
+      ]
+    },
+    {
+      "name": "build",
+      "commands": [
+        "npm run build"
+      ],
+      "artifacts": [
+        "apps/backend/dist/**",
+        "apps/frontend/dist/**",
+        "apps/portal_alumno_cloud/dist/**"
+      ]
+    },
+    {
+      "name": "docs-check",
+      "commands": [
+        "npm run docs:check",
+        "npm run diagramas:check",
+        "npm run diagramas:render:check",
+        "npm run diagramas:consistencia:check",
+        "npm run routes:check"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "security-scan",
+      "commands": [
+        "NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check",
+        "npm audit --audit-level=high --json > npm-audit-report.json",
+        "npm run security:audit"
+      ],
+      "artifacts": [
+        "npm-audit-report.json"
+      ]
+    },
+    {
+      "name": "qa-manifest",
+      "commands": [
+        "npm run test:qa:manifest"
+      ],
+      "artifacts": [
+        "reports/qa/latest/manifest.json",
+        "reports/qa/latest/**"
+      ]
+    },
+    {
+      "name": "package",
+      "commands": [
+        "docker build -f apps/backend/Dockerfile .",
+        "docker build -f apps/frontend/Dockerfile .",
+        "docker build -f apps/portal_alumno_cloud/Dockerfile ."
+      ],
+      "artifacts": [
+        "image-digests.txt"
+      ]
+    }
+  ],
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "apps/portal_alumno_cloud"
+  ],
+  "post_release_gates": [
+    {
+      "name": "stable-gate-manual",
+      "commands": [
+        "npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json"
+      ],
+      "artifacts": [
+        "docs/release/evidencias/<version>/manifest.json",
+        "docs/release/evidencias/<version>/timeline.md",
+        "docs/release/evidencias/<version>/metrics_snapshot.txt",
+        "docs/release/evidencias/<version>/integridad_sha256.json"
+      ],
+      "blocking_for_stable": true
+    }
+  ]
+}

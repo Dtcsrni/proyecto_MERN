@@ -1,3 +1,9 @@
+/**
+ * variantes.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de variantes y ordenes aleatorios.
 import { describe, expect, it } from 'vitest';
 import { generarVariante } from '../src/modulos/modulo_generacion_pdf/servicioVariantes';

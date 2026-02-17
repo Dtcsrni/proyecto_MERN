@@ -1,3 +1,9 @@
+/**
+ * vitest.config
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Configuracion Vitest del portal alumno.
 import { defineConfig } from 'vitest/config';
 import { baseVitestConfig } from '../../vitest.base';
@@ -7,6 +13,15 @@ export default defineConfig({
     ...baseVitestConfig,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
-    setupFiles: ['tests/setup.ts']
+    setupFiles: ['tests/setup.ts'],
+    coverage: {
+      ...baseVitestConfig.coverage,
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50
+      }
+    }
   }
 });

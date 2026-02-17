@@ -4,11 +4,11 @@
 %% Backend:
 %% - prefijo: /api
 %% - montajes publicos: /autenticacion, /salud
-%% - montajes protegidos: /admin, /alumnos, /analiticas, /banco-preguntas, /calificaciones, /entregas, /examenes, /omr, /papelera, /periodos, /sincronizaciones
+%% - montajes protegidos: /admin, /alumnos, /analiticas, /banco-preguntas, /calificaciones, /canary-rollout, /entregas, /examenes, /omr, /papelera, /periodos, /sincronizaciones, /v2/examenes, /v2/omr
 %% Portal alumno cloud:
 %% - prefijo: /api/portal
-%% - GET: /examen/:folio, /resultados, /resultados/:folio, /salud
-%% - POST: /eventos-uso, /ingresar, /limpiar, /sincronizacion-docente/pull, /sincronizacion-docente/push, /sincronizar
+%% - GET: /examen/:folio, /metrics, /resultados, /resultados/:folio, /salud, /salud/live, /salud/ready
+%% - POST: /eventos-uso, /ingresar, /limpiar, /sincronizacion-docente/pull, /sincronizacion-docente/push, /sincronizacion-docente/solicitudes-revision/pull, /sincronizacion-docente/solicitudes-revision/update, /sincronizar, /solicitudes-revision, /solicitudes-revision/conformidad
 %% AUTO:END system_model
 flowchart LR
     classDef user fill:#1e3a8a,stroke:#1e40af,color:#ffffff;

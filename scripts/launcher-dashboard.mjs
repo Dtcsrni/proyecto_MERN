@@ -1,3 +1,9 @@
+/**
+ * launcher-dashboard
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*
   Local web dashboard to control the dev stack.
   - Serves a small HTML UI and JSON endpoints on localhost.
@@ -60,6 +66,7 @@ const logDir = path.join(root, 'logs');
 const logFile = path.join(logDir, 'dashboard.log');
 const lockPath = path.join(logDir, 'dashboard.lock.json');
 const singletonPath = path.join(logDir, 'dashboard.singleton.json');
+const dashboardConfigPath = path.join(logDir, 'dashboard.config.json');
 ensureDir(logDir);
 
 // Logging persistence mode:
@@ -97,7 +104,14 @@ const noiseStats = new Map();
 const processes = new Map();
 
 // Dev convenience: auto-restart tasks when source files change.
-let autoRestart = mode === 'dev';
+const dashboardConfigDefaults = Object.freeze({
+  autoRestart: mode === 'dev',
+  showFullLogs: Boolean(fullLogs),
+  autoScroll: true,
+  pauseUpdates: false
+});
+let dashboardConfig = loadDashboardConfig();
+let autoRestart = dashboardConfig.autoRestart;
 let restartTimer = null;
 
 // HTML template and assets.
@@ -107,11 +121,24 @@ const dashboardPath = path.join(__dirname, 'dashboard.html');
 const manifestPath = path.join(__dirname, 'dashboard.webmanifest');
 const iconPath = path.join(__dirname, 'dashboard-icon.svg');
 const swPath = path.join(__dirname, 'dashboard-sw.js');
+const shortcutsScriptPath = path.join(root, 'scripts', 'create-shortcuts.ps1');
+const portalDistEntry = path.join(root, 'apps', 'portal_alumno_cloud', 'dist', 'index.js');
 
 const cachedDashboardHtml = fs.readFileSync(dashboardPath, 'utf8');
 const cachedManifestJson = fs.readFileSync(manifestPath, 'utf8');
 const cachedIconSvg = fs.readFileSync(iconPath, 'utf8');
 const cachedSwJs = fs.existsSync(swPath) ? fs.readFileSync(swPath, 'utf8') : '';
+
+const repairState = {
+  runId: '',
+  state: 'idle', // idle|running|ok|error
+  currentStep: '',
+  percent: 0,
+  steps: [],
+  manualActions: [],
+  issues: [],
+  lastRun: null
+};
 
 function shouldLiveReloadUi() {
   // En prod: UI estable (cache en memoria).
@@ -132,13 +159,340 @@ function readRootPackageInfo() {
   try {
     const raw = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
     const parsed = JSON.parse(raw);
+    const authorName = typeof parsed.author === 'string'
+      ? parsed.author
+      : (parsed.author && typeof parsed.author === 'object' ? String(parsed.author.name || '') : '');
     return {
       name: typeof parsed.name === 'string' ? parsed.name : '',
-      version: typeof parsed.version === 'string' ? parsed.version : ''
+      version: typeof parsed.version === 'string' ? parsed.version : '',
+      authorName: String(authorName || '').trim(),
+      repositoryUrl: String(parsed?.repository?.url || '').trim()
     };
   } catch {
-    return { name: '', version: '' };
+    return { name: '', version: '', authorName: '', repositoryUrl: '' };
   }
+}
+
+function readChangelogSnippet(maxChars = 24_000) {
+  try {
+    const changelogPath = path.join(root, 'CHANGELOG.md');
+    const raw = fs.readFileSync(changelogPath, 'utf8');
+    if (!raw) return '';
+    return raw.slice(0, Math.max(2_000, maxChars));
+  } catch {
+    return '';
+  }
+}
+
+function readVersionCatalog() {
+  try {
+    const filePath = path.join(root, 'config', 'version-catalog.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    const repositoryUrl = String(parsed?.repositoryUrl || '').trim();
+    const technologies = Array.isArray(parsed?.technologies)
+      ? parsed.technologies
+        .map((item) => ({
+          id: String(item?.id || '').trim(),
+          label: String(item?.label || '').trim(),
+          logoUrl: String(item?.logoUrl || '').trim(),
+          website: String(item?.website || '').trim()
+        }))
+        .filter((item) => item.id && item.label && item.logoUrl)
+      : [];
+    return { repositoryUrl, technologies };
+  } catch {
+    return { repositoryUrl: '', technologies: [] };
+  }
+}
+
+function buildVersionInfoPayload(source = 'dashboard') {
+  const pkg = readRootPackageInfo();
+  const catalog = readVersionCatalog();
+  const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || pkg.authorName || 'Equipo EvaluaPro').trim();
+  const developerRole = String(process.env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo').trim();
+  const changelog = readChangelogSnippet();
+  return {
+    source,
+    app: {
+      name: pkg.name || 'evaluapro',
+      version: pkg.version || '0.0.0',
+      dashboardMode: mode
+    },
+    repositoryUrl: catalog.repositoryUrl || String(pkg.repositoryUrl || '').trim() || 'https://github.com/Dtcsrni',
+    technologies: catalog.technologies,
+    developer: {
+      nombre: developerName || 'Equipo EvaluaPro',
+      rol: developerRole || 'Desarrollo'
+    },
+    system: {
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      hostname: safeExec('hostname', 'desconocido'),
+      uptimeSec: Math.floor(process.uptime()),
+      dashboardPort: listeningPort || Number(portArg || 0) || 0,
+      generatedAt: new Date().toISOString()
+    },
+    changelog
+  };
+}
+
+function renderVersionInfoPage() {
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EvaluaPro · Version Info</title>
+  <style>
+    :root {
+      --bg-0:#05070f;
+      --bg-1:#0a1022;
+      --bg-2:#0f1a33;
+      --ink:#d8e7ff;
+      --muted:#95a8cc;
+      --cyan:#1de9ff;
+      --mag:#ff4dd8;
+      --lime:#7dffb3;
+      --card:rgba(8,14,30,0.78);
+      --bd:rgba(29,233,255,0.35);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      color:var(--ink);
+      font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(29,233,255,0.22), transparent 35%),
+        radial-gradient(circle at 88% 5%, rgba(255,77,216,0.2), transparent 36%),
+        linear-gradient(145deg, var(--bg-0), var(--bg-1) 52%, var(--bg-2));
+      overflow-x:hidden;
+    }
+    body::after {
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255,255,255,0.04) 0px,
+        rgba(255,255,255,0.0) 2px,
+        rgba(255,255,255,0.0) 6px
+      );
+      mix-blend-mode:overlay;
+    }
+    .wrap {
+      width:min(1120px, 94vw);
+      margin:26px auto 44px;
+      display:grid;
+      gap:16px;
+      animation: rise .48s cubic-bezier(.2,.9,.2,1);
+    }
+    @keyframes rise { from { opacity:0; transform:translateY(16px);} to {opacity:1; transform:translateY(0);} }
+    .hero {
+      border:1px solid var(--bd);
+      border-radius:20px;
+      background:linear-gradient(130deg, rgba(29,233,255,0.12), rgba(255,77,216,0.08) 62%, rgba(125,255,179,0.08));
+      box-shadow:0 22px 60px rgba(0,0,0,0.45);
+      padding:20px 22px;
+    }
+    .title { margin:0; font-size:clamp(1.25rem, 2vw, 2rem); letter-spacing:.02em; }
+    .sub { margin:8px 0 0; color:var(--muted); }
+    .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .card {
+      border:1px solid rgba(149,168,204,0.28);
+      background:var(--card);
+      border-radius:16px;
+      padding:14px;
+      backdrop-filter: blur(7px);
+      box-shadow:0 10px 34px rgba(0,0,0,0.34);
+    }
+    .k { color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.07em; }
+    .v { font-weight:700; margin-top:4px; }
+    .badge {
+      display:inline-flex; align-items:center; gap:8px;
+      border-radius:999px; padding:6px 12px;
+      border:1px solid var(--bd);
+      background:rgba(29,233,255,0.12);
+      color:#d7fdff; font-weight:700;
+      margin-top:8px;
+    }
+    .changelog {
+      margin:0;
+      border:1px solid rgba(149,168,204,0.28);
+      background:rgba(5,8,18,0.9);
+      color:#b7c8e8;
+      border-radius:16px;
+      padding:18px;
+      min-height:320px;
+      white-space:pre-wrap;
+      overflow:auto;
+      line-height:1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      box-shadow: inset 0 0 0 1px rgba(29,233,255,0.1);
+    }
+    .pulse {
+      width:10px; height:10px; border-radius:50%;
+      background:var(--lime);
+      box-shadow:0 0 0 0 rgba(125,255,179,.8);
+      animation:pulse 1.8s infinite;
+    }
+    .actions {
+      margin-top:12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .repo-link {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(29,233,255,0.45);
+      background:rgba(29,233,255,0.1);
+      color:#d8f6ff;
+      text-decoration:none;
+      font-weight:700;
+      transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .repo-link:hover {
+      transform:translateY(-2px);
+      box-shadow:0 14px 30px rgba(29,233,255,0.22);
+      border-color:rgba(29,233,255,0.72);
+    }
+    .tech-grid {
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    }
+    .tech-item {
+      border:1px solid rgba(149,168,204,0.28);
+      background:rgba(8,14,30,0.86);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:inherit;
+      position:relative;
+      overflow:hidden;
+      animation:techFloat 4.2s ease-in-out infinite;
+      animation-delay:var(--delay, 0s);
+      transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .tech-item::after {
+      content:"";
+      position:absolute;
+      inset:-150% auto auto -40%;
+      width:50%;
+      height:300%;
+      transform:rotate(20deg);
+      background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.16), rgba(255,255,255,0));
+      pointer-events:none;
+      animation:scan 2.8s linear infinite;
+    }
+    .tech-item:hover {
+      transform:translateY(-2px);
+      border-color:rgba(29,233,255,0.68);
+      box-shadow:0 18px 34px rgba(29,233,255,0.14);
+    }
+    .tech-logo {
+      width:28px;
+      height:28px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 6px rgba(29,233,255,0.26));
+      flex-shrink:0;
+    }
+    .tech-name {
+      font-weight:700;
+      color:#d6e8ff;
+    }
+    @keyframes techFloat {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-3px); }
+    }
+    @keyframes scan {
+      0% { left:-65%; }
+      100% { left:130%; }
+    }
+    @keyframes pulse {
+      0% { box-shadow:0 0 0 0 rgba(125,255,179,.65);}
+      70% { box-shadow:0 0 0 13px rgba(125,255,179,0);}
+      100% { box-shadow:0 0 0 0 rgba(125,255,179,0);}
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1 class="title">EvaluaPro · Version Center</h1>
+      <p class="sub">Detalles de versión, sistema, desarrollador y changelog en tiempo real.</p>
+      <span class="badge"><span class="pulse"></span><span id="badge-version">Cargando versión...</span></span>
+      <div class="actions">
+        <a id="repo-link" class="repo-link" href="https://github.com/Dtcsrni" target="_blank" rel="noreferrer noopener">Repositorio del desarrollador</a>
+      </div>
+    </section>
+    <section class="grid" id="info-grid"></section>
+    <section class="card">
+      <div class="k">Tecnologías utilizadas</div>
+      <div class="tech-grid" id="tech-grid"></div>
+    </section>
+    <pre class="changelog" id="changelog">Cargando changelog...</pre>
+  </main>
+  <script>
+    function esc(value) {
+      return String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+    }
+
+    async function loadInfo() {
+      try {
+        const res = await fetch('/api/version-info', { cache: 'no-store' });
+        const data = await res.json();
+        const grid = document.getElementById('info-grid');
+        const badge = document.getElementById('badge-version');
+        const changelog = document.getElementById('changelog');
+        const techGrid = document.getElementById('tech-grid');
+        const repoLink = document.getElementById('repo-link');
+        badge.textContent = String((data && data.app && data.app.name) || 'evaluapro') + ' v' + String((data && data.app && data.app.version) || '0.0.0');
+        if (repoLink && data?.repositoryUrl) repoLink.href = String(data.repositoryUrl);
+        const cards = [
+          ['Sistema', 'Node', String(data?.system?.node || '-')],
+          ['Sistema', 'Plataforma', String(data?.system?.platform || '-') + ' / ' + String(data?.system?.arch || '-')],
+          ['Sistema', 'Host', String(data?.system?.hostname || '-')],
+          ['Sistema', 'Modo dashboard', String(data?.app?.dashboardMode || '-')],
+          ['Desarrollador', 'Nombre', String(data?.developer?.nombre || '-')],
+          ['Desarrollador', 'Rol', String(data?.developer?.rol || '-')],
+          ['Versionado', 'Generado', String(data?.system?.generatedAt || '-')],
+          ['Versionado', 'Source', String(data?.source || '-')]
+        ];
+        grid.innerHTML = cards.map(([sec,key,val]) => (
+          '<article class="card"><div class="k">' + esc(sec) + ' · ' + esc(key) + '</div><div class="v">' + esc(val) + '</div></article>'
+        )).join('');
+        const techs = Array.isArray(data?.technologies) ? data.technologies : [];
+        if (techGrid) {
+          techGrid.innerHTML = techs.map((tech, idx) => {
+            const delay = ((idx % 5) * 0.22).toFixed(2);
+            const href = esc(tech?.website || '#');
+            const logo = esc(tech?.logoUrl || '');
+            const label = esc(tech?.label || tech?.id || 'Tecnología');
+            return '<a class="tech-item" style="--delay:' + delay + 's" href="' + href + '" target="_blank" rel="noreferrer noopener"><img class="tech-logo" src="' + logo + '" alt="' + label + ' logo" loading="lazy"/><span class="tech-name">' + label + '</span></a>';
+          }).join('') || '<div class="v">Sin tecnologías registradas.</div>';
+        }
+        changelog.textContent = String(data?.changelog || 'Sin changelog disponible.');
+      } catch (error) {
+        const msg = 'No se pudo cargar version-info: ' + (error && error.message ? error.message : 'error');
+        const cl = document.getElementById('changelog');
+        if (cl) cl.textContent = msg;
+      }
+    }
+    loadInfo();
+  </script>
+</body>
+</html>`;
 }
 
 function parseEnvContent(content) {
@@ -323,6 +677,36 @@ function readJsonFile(filePath) {
   }
 }
 
+function sanitizeDashboardConfig(raw = null) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const next = {
+    autoRestart: Boolean(source.autoRestart),
+    showFullLogs: Boolean(source.showFullLogs),
+    autoScroll: source.autoScroll === undefined ? true : Boolean(source.autoScroll),
+    pauseUpdates: Boolean(source.pauseUpdates)
+  };
+  if (mode !== 'dev') next.autoRestart = false;
+  return next;
+}
+
+function saveDashboardConfig(config) {
+  const safeConfig = sanitizeDashboardConfig(config);
+  dashboardConfig = safeConfig;
+  autoRestart = safeConfig.autoRestart;
+  try {
+    fs.writeFileSync(dashboardConfigPath, JSON.stringify(safeConfig, null, 2));
+  } catch (error) {
+    logSystem(`No se pudo guardar dashboard.config.json: ${error.message}`, 'warn');
+  }
+  return safeConfig;
+}
+
+function loadDashboardConfig() {
+  const fromDisk = readJsonFile(dashboardConfigPath);
+  if (!fromDisk) return sanitizeDashboardConfig(dashboardConfigDefaults);
+  return sanitizeDashboardConfig(Object.assign({}, dashboardConfigDefaults, fromDisk));
+}
+
 function isPidAlive(pid) {
   const id = Number(pid);
   if (!Number.isFinite(id) || id <= 0) return false;
@@ -333,6 +717,13 @@ function isPidAlive(pid) {
     if (err && err.code === 'ESRCH') return false;
     return true;
   }
+}
+
+function lockAgeMs(startedAt) {
+  if (!startedAt) return Number.POSITIVE_INFINITY;
+  const ts = Date.parse(String(startedAt));
+  if (!Number.isFinite(ts)) return Number.POSITIVE_INFINITY;
+  return Date.now() - ts;
 }
 
 function writeSingletonLock(payload, exclusive = false) {
@@ -388,6 +779,18 @@ async function ensureSingletonLock() {
         logSystem(`Dashboard ya esta activo: ${url}`, 'ok', { console: true });
         if (!noOpen) openBrowser(url);
       } else {
+        const ageMs = lockAgeMs(existing.startedAt);
+        if (ageMs > 5 * 60 * 1000) {
+          try { if (fs.existsSync(singletonPath)) fs.unlinkSync(singletonPath); } catch {}
+          logSystem('Lock singleton obsoleto detectado. Se recupera automaticamente.', 'warn', { console: true });
+          if (writeSingletonLock(payload, true)) {
+            singletonOwned = true;
+            singletonPayload = payload;
+            return { ok: true, recovered: true };
+          }
+          logSystem('No se pudo reescribir lock singleton recuperado.', 'error', { console: true });
+          return { ok: false };
+        }
         logSystem('Otra instancia del dashboard ya esta iniciando.', 'warn', { console: true });
       }
     } else {
@@ -721,7 +1124,10 @@ function requestDockerAutostart(reason = 'startup') {
 
     dockerAutostart.stack.state = 'starting';
     logSystem(`Iniciando stack Docker (${mode})...`, 'system');
-    if (!isRunning(mode)) startTask(mode, commands[mode]);
+    if (!isRunning(mode)) {
+      const command = getCommand(mode);
+      if (command) startTask(mode, command);
+    }
   })()
     .catch((err) => {
       setDockerAutostart({ state: 'error', ready: false, version: '', lastError: err?.message || 'Error iniciando Docker' });
@@ -784,6 +1190,291 @@ async function collectHealth() {
     Object.entries(targets).map(async ([name, url]) => [name, await checkHealth(url)])
   );
   return Object.fromEntries(entries);
+}
+
+function runCommandCapture(command, timeoutMs = 20_000) {
+  const result = spawn('cmd.exe', ['/c', command], {
+    cwd: root,
+    windowsHide: true
+  });
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    let done = false;
+    const timeout = setTimeout(() => {
+      if (done) return;
+      done = true;
+      try { result.kill(); } catch {}
+      resolve({ ok: false, code: 124, stdout, stderr: `${stderr}\nTimeout` });
+    }, Math.max(1000, Number(timeoutMs) || 20_000));
+
+    result.stdout.on('data', (chunk) => { stdout += String(chunk || ''); });
+    result.stderr.on('data', (chunk) => { stderr += String(chunk || ''); });
+    result.on('error', (error) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timeout);
+      resolve({ ok: false, code: 1, stdout, stderr: `${stderr}\n${error?.message || 'error'}` });
+    });
+    result.on('exit', (code) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timeout);
+      resolve({ ok: Number(code || 0) === 0, code: Number(code || 0), stdout, stderr });
+    });
+  });
+}
+
+function isShortcutsMissing() {
+  if (!process.env.USERPROFILE) return false;
+  const desktop = path.join(process.env.USERPROFILE, 'Desktop');
+  const startMenu = path.join(
+    process.env.APPDATA || '',
+    'Microsoft',
+    'Windows',
+    'Start Menu',
+    'Programs'
+  );
+  const desktopProd = path.join(desktop, 'EvaluaPro - Prod.lnk');
+  const desktopDev = path.join(desktop, 'EvaluaPro - Dev.lnk');
+  const startProd = path.join(startMenu, 'EvaluaPro - Prod.lnk');
+  const startDev = path.join(startMenu, 'EvaluaPro - Dev.lnk');
+  const hasDesktop = fs.existsSync(desktopProd) && fs.existsSync(desktopDev);
+  const hasStartMenu = fs.existsSync(startProd) && fs.existsSync(startDev);
+  return !(hasDesktop || hasStartMenu);
+}
+
+function detectNodeMajor() {
+  const v = safeExecFast('node -v', '', 1000).replace(/^v/i, '').trim();
+  const major = Number(String(v).split('.')[0] || 0);
+  if (!Number.isFinite(major) || major <= 0) return 0;
+  return major;
+}
+
+async function diagnoseRepairStatus() {
+  const issues = [];
+  const running = runningTasks();
+  const expectedMode = mode === 'prod' ? 'prod' : (mode === 'dev' ? 'dev' : 'none');
+  const nodeMajor = detectNodeMajor();
+  const dockerVersion = tryGetDockerVersion();
+  const health = await collectHealth();
+  const stackRunning = expectedMode === 'none' ? false : (isStackRunning(expectedMode) || running.includes(expectedMode));
+  const portalRunning = running.includes('portal') || Boolean(health?.apiPortal?.ok);
+
+  if (nodeMajor < 24) {
+    issues.push({
+      code: 'prereq.node.missing_or_old',
+      severity: 'error',
+      message: 'Node.js 24+ no detectado.',
+      autoFixable: false
+    });
+  }
+  if (!dockerVersion) {
+    issues.push({
+      code: 'prereq.docker.unavailable',
+      severity: 'error',
+      message: 'Docker Desktop no esta disponible o no responde.',
+      autoFixable: false
+    });
+  }
+  if (!fs.existsSync(portalDistEntry)) {
+    issues.push({
+      code: 'portal.dist.missing',
+      severity: 'error',
+      message: 'Falta build del portal (dist/index.js).',
+      autoFixable: true
+    });
+  }
+  if (expectedMode !== 'none' && !stackRunning) {
+    issues.push({
+      code: 'services.stack.down',
+      severity: 'error',
+      message: `Stack ${expectedMode} no esta activo.`,
+      autoFixable: true
+    });
+  }
+  if (expectedMode !== 'none' && !portalRunning) {
+    issues.push({
+      code: 'services.portal.down',
+      severity: 'error',
+      message: 'Servicio portal no esta saludable.',
+      autoFixable: true
+    });
+  }
+  if (isShortcutsMissing()) {
+    issues.push({
+      code: 'shortcuts.missing',
+      severity: 'warn',
+      message: 'No se detectaron accesos directos esperados.',
+      autoFixable: true
+    });
+  }
+
+  const needsRepair = issues.some((issue) => issue.severity === 'error');
+  repairState.issues = issues;
+  return { needsRepair, issues, lastRun: repairState.lastRun };
+}
+
+function createRepairSteps() {
+  return [
+    { id: 'precheck', label: 'Diagnostico inicial', state: 'pending', detail: '' },
+    { id: 'ensure_prereq_visibility', label: 'Verificacion de prerequisitos', state: 'pending', detail: '' },
+    { id: 'repair_portal_dist', label: 'Reparar build portal', state: 'pending', detail: '' },
+    { id: 'repair_shortcuts', label: 'Recrear accesos directos', state: 'pending', detail: '' },
+    { id: 'repair_stack', label: 'Recuperar stack', state: 'pending', detail: '' },
+    { id: 'repair_portal_service', label: 'Recuperar portal', state: 'pending', detail: '' },
+    { id: 'postcheck_health', label: 'Validacion final de salud', state: 'pending', detail: '' },
+    { id: 'finalize', label: 'Finalizacion', state: 'pending', detail: '' }
+  ];
+}
+
+function updateRepairPercent() {
+  const total = repairState.steps.length || 1;
+  const done = repairState.steps.filter((step) => step.state === 'ok' || step.state === 'skipped').length;
+  repairState.percent = Math.round((done / total) * 100);
+}
+
+async function runRepairStep(stepId, work) {
+  const step = repairState.steps.find((item) => item.id === stepId);
+  if (!step) return;
+  repairState.currentStep = stepId;
+  step.state = 'running';
+  updateRepairPercent();
+  try {
+    const detail = await work();
+    step.state = 'ok';
+    step.detail = String(detail || 'OK');
+  } catch (error) {
+    step.state = 'error';
+    step.detail = String(error?.message || 'Error');
+    throw error;
+  } finally {
+    updateRepairPercent();
+  }
+}
+
+function markStepSkipped(stepId, detail = 'No aplica') {
+  const step = repairState.steps.find((item) => item.id === stepId);
+  if (!step) return;
+  step.state = 'skipped';
+  step.detail = detail;
+  updateRepairPercent();
+}
+
+async function startRepairRun() {
+  if (repairState.state === 'running') {
+    return { ok: false, error: 'already_running', runId: repairState.runId };
+  }
+
+  repairState.runId = `repair-${Date.now()}`;
+  repairState.state = 'running';
+  repairState.currentStep = '';
+  repairState.percent = 0;
+  repairState.steps = createRepairSteps();
+  repairState.manualActions = [];
+  const startedAt = Date.now();
+  let success = true;
+  const running = runningTasks();
+  const expectedMode = mode === 'prod' ? 'prod' : (mode === 'dev' ? 'dev' : (running.includes('prod') ? 'prod' : 'dev'));
+  const diagnostics = await diagnoseRepairStatus();
+  repairState.issues = diagnostics.issues;
+
+  (async () => {
+    try {
+      await runRepairStep('precheck', async () => `${diagnostics.issues.length} hallazgos.`);
+      await runRepairStep('ensure_prereq_visibility', async () => {
+        const blockers = diagnostics.issues.filter((issue) =>
+          issue.code === 'prereq.node.missing_or_old' || issue.code === 'prereq.docker.unavailable'
+        );
+        if (blockers.length === 0) return 'Prerequisitos minimos disponibles.';
+        if (blockers.some((i) => i.code === 'prereq.node.missing_or_old')) {
+          repairState.manualActions.push('Instala/actualiza Node.js a version 24 o superior.');
+        }
+        if (blockers.some((i) => i.code === 'prereq.docker.unavailable')) {
+          repairState.manualActions.push('Inicia Docker Desktop y verifica que responda docker version.');
+        }
+        return `${blockers.length} prerequisitos pendientes reportados.`;
+      });
+
+      if (!fs.existsSync(portalDistEntry)) {
+        await runRepairStep('repair_portal_dist', async () => {
+          const result = await runCommandCapture('npm -C apps/portal_alumno_cloud run build', 180_000);
+          if (!result.ok) throw new Error('Fallo build portal.');
+          return 'Build portal completado.';
+        });
+      } else {
+        markStepSkipped('repair_portal_dist', 'Build portal ya disponible.');
+      }
+
+      await runRepairStep('repair_shortcuts', async () => {
+        if (!fs.existsSync(shortcutsScriptPath)) return 'Script de accesos no encontrado, se omite.';
+        const result = await runCommandCapture('powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcuts.ps1 -Force', 60_000);
+        if (!result.ok) throw new Error('No se pudieron recrear accesos directos.');
+        return 'Accesos directos recreados.';
+      });
+
+      await runRepairStep('repair_stack', async () => {
+        const task = expectedMode === 'prod' ? 'prod' : 'dev';
+        const command = getCommand(task);
+        if (!command) throw new Error('No hay comando de stack configurado.');
+        if (isRunning(task)) restartTask(task);
+        else startTask(task, command);
+        await sleep(1500);
+        return `Stack ${task} solicitado.`;
+      });
+
+      await runRepairStep('repair_portal_service', async () => {
+        const command = getCommand('portal');
+        if (!command) throw new Error('No hay comando de portal configurado.');
+        if (isRunning('portal')) restartTask('portal');
+        else startTask('portal', command);
+        await sleep(1000);
+        return 'Portal solicitado.';
+      });
+
+      await runRepairStep('postcheck_health', async () => {
+        let finalHealth = await collectHealth();
+        for (let i = 0; i < 2; i += 1) {
+          if (finalHealth?.apiDocente?.ok && finalHealth?.apiPortal?.ok) break;
+          await sleep(1500);
+          finalHealth = await collectHealth();
+        }
+        const okApi = Boolean(finalHealth?.apiDocente?.ok);
+        const okPortal = Boolean(finalHealth?.apiPortal?.ok);
+        if (!okApi || !okPortal) {
+          if (!okApi) repairState.manualActions.push('API docente sigue sin salud. Revisa Docker/logs del backend.');
+          if (!okPortal) repairState.manualActions.push('Portal sigue sin salud. Revisa logs del portal.');
+          throw new Error('Salud final incompleta.');
+        }
+        return 'Servicios saludables despues de reparacion.';
+      });
+    } catch (error) {
+      success = false;
+      logSystem(`Reparacion fallida: ${error?.message || 'error'}`, 'error');
+    } finally {
+      const finalizeStep = repairState.steps.find((step) => step.id === 'finalize');
+      if (finalizeStep) {
+        finalizeStep.state = success ? 'ok' : 'error';
+        finalizeStep.detail = success ? 'Reparacion completada.' : 'Reparacion incompleta.';
+      }
+      updateRepairPercent();
+      repairState.state = success ? 'ok' : 'error';
+      repairState.currentStep = '';
+      repairState.lastRun = {
+        startedAt,
+        finishedAt: Date.now(),
+        ok: success,
+        steps: repairState.steps.map((step) => ({
+          id: step.id,
+          state: step.state,
+          detail: step.detail
+        }))
+      };
+      await diagnoseRepairStatus();
+    }
+  })();
+
+  return { ok: true, runId: repairState.runId };
 }
 
 function truncateLine(text) {
@@ -957,7 +1648,10 @@ function findBrowserExecutable() {
 function openBrowser(url) {
   const browserExe = findBrowserExecutable();
   if (browserExe) {
-    const child = spawn(browserExe, [url], { detached: true, stdio: 'ignore', windowsHide: true });
+    const lower = browserExe.toLowerCase();
+    const supportsNewWindow = lower.endsWith('msedge.exe') || lower.endsWith('chrome.exe');
+    const browserArgs = supportsNewWindow ? ['--new-window', url] : [url];
+    const child = spawn(browserExe, browserArgs, { detached: true, stdio: 'ignore', windowsHide: true });
     child.unref();
     return;
   }
@@ -1018,17 +1712,27 @@ function noiseSnapshot() {
 }
 
 // Known commands exposed via the dashboard.
-const commands = {
+const baseCommands = {
   dev: 'npm run dev',
   'dev-frontend': 'npm run dev:frontend',
   'dev-backend': 'npm run dev:backend',
   // En dashboard, PROD debe levantar el stack rapidamente (sin correr verify/tests).
   prod: 'npm run stack:prod',
-  portal: 'npm run dev:portal',
+  'portal-dev': 'npm run dev:portal',
+  'portal-prod': 'npm run portal:prod',
   status: 'npm run status',
   'docker-ps': 'docker ps',
   'docker-down': 'docker compose down'
 };
+
+function getCommand(taskName) {
+  const task = String(taskName || '').trim();
+  if (!task) return null;
+  if (task === 'portal') {
+    return mode === 'prod' ? baseCommands['portal-prod'] : baseCommands['portal-dev'];
+  }
+  return baseCommands[task] ?? null;
+}
 
 function isRunning(name) {
   const entry = processes.get(name);
@@ -1062,7 +1766,7 @@ function stackDisplayString(runningList = [], compose = null) {
 }
 
 function restartTask(name, delayMs = 700) {
-  const command = commands[name];
+  const command = getCommand(name);
   if (!command) {
     logSystem(`[${name}] reinicio solicitado pero no existe comando`, 'warn');
     return;
@@ -1348,6 +2052,16 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathName === '/version-info') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+    res.end(renderVersionInfoPage());
+    return;
+  }
+
   if (req.method === 'GET' && pathName === '/manifest.webmanifest') {
     res.writeHead(200, {
       'Content-Type': 'application/manifest+json; charset=utf-8',
@@ -1410,7 +2124,12 @@ const server = http.createServer(async (req, res) => {
       else uiMode = 'none';
     }
 
+    const pkg = readRootPackageInfo();
     const payload = {
+      app: {
+        name: pkg.name || 'evaluapro',
+        version: pkg.version || '0.0.0'
+      },
       root,
       mode: uiMode,
       modeConfig: mode,
@@ -1435,9 +2154,15 @@ const server = http.createServer(async (req, res) => {
       rawSize: rawLines.length,
       noise,
       noiseTotal,
-      autoRestart
+      autoRestart,
+      config: dashboardConfig
     };
     sendJson(res, 200, payload);
+    return;
+  }
+
+  if (req.method === 'GET' && pathName === '/api/version-info') {
+    sendJson(res, 200, buildVersionInfoPayload('dashboard'));
     return;
   }
 
@@ -1509,16 +2234,67 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathName === '/api/config') {
-    sendJson(res, 200, { autoRestart });
+    sendJson(res, 200, dashboardConfig);
     return;
   }
 
   if (req.method === 'POST' && pathName === '/api/config') {
     const body = await readBody(req);
-    const next = Boolean(body.autoRestart);
-    autoRestart = mode === 'dev' ? next : false;
+    const previous = dashboardConfig;
+    const next = saveDashboardConfig(Object.assign({}, dashboardConfig, body || {}));
+    const changed = [];
+    if (next.autoRestart !== previous.autoRestart) changed.push('autoRestart');
+    if (next.showFullLogs !== previous.showFullLogs) changed.push('showFullLogs');
+    if (next.autoScroll !== previous.autoScroll) changed.push('autoScroll');
+    if (next.pauseUpdates !== previous.pauseUpdates) changed.push('pauseUpdates');
     logSystem(`Auto-reinicio: ${autoRestart ? 'ACTIVO' : 'DESACTIVADO'}`, autoRestart ? 'ok' : 'warn');
-    sendJson(res, 200, { ok: true, autoRestart });
+    if (changed.length > 0) {
+      logSystem(`Configuracion dashboard actualizada: ${changed.join(', ')}`, 'system');
+    }
+    sendJson(res, 200, { ok: true, config: dashboardConfig });
+    return;
+  }
+
+  if (req.method === 'POST' && pathName === '/api/config/reset') {
+    const previous = dashboardConfig;
+    const next = saveDashboardConfig(dashboardConfigDefaults);
+    const changed = [];
+    if (previous.autoRestart !== next.autoRestart) changed.push('autoRestart');
+    if (previous.showFullLogs !== next.showFullLogs) changed.push('showFullLogs');
+    if (previous.autoScroll !== next.autoScroll) changed.push('autoScroll');
+    if (previous.pauseUpdates !== next.pauseUpdates) changed.push('pauseUpdates');
+    logSystem(`Configuracion dashboard reiniciada a valores por defecto (${changed.length ? changed.join(', ') : 'sin cambios'})`, 'warn');
+    sendJson(res, 200, { ok: true, config: dashboardConfig, defaults: dashboardConfigDefaults });
+    return;
+  }
+
+  if (req.method === 'GET' && pathName === '/api/repair/status') {
+    const status = await diagnoseRepairStatus();
+    sendJson(res, 200, status);
+    return;
+  }
+
+  if (req.method === 'POST' && pathName === '/api/repair/run') {
+    const result = await startRepairRun();
+    if (!result.ok && result.error === 'already_running') {
+      sendJson(res, 409, result);
+      return;
+    }
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === 'GET' && pathName === '/api/repair/progress') {
+    sendJson(res, 200, {
+      runId: repairState.runId || '',
+      state: repairState.state,
+      currentStep: repairState.currentStep,
+      percent: repairState.percent,
+      steps: repairState.steps,
+      manualActions: repairState.manualActions,
+      issues: repairState.issues,
+      lastRun: repairState.lastRun
+    });
     return;
   }
 
@@ -1567,9 +2343,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathName === '/api/start') {
     const body = await readBody(req);
     const task = String(body.task || '').trim();
-    const command = commands[task];
+    const command = getCommand(task);
     if (!command) return sendJson(res, 400, { error: 'Tarea desconocida' });
     pushEvent('api', 'dashboard', 'info', 'POST /api/start', { task });
+    if (task === 'portal' && mode === 'prod') {
+      logSystem('Portal prod build en curso/inicio solicitado.', 'system');
+    }
     startTask(task, command);
     return sendJson(res, 200, { ok: true });
   }
@@ -1603,7 +2382,7 @@ const server = http.createServer(async (req, res) => {
       const toRestart = candidates.filter((name) => running.includes(name));
       if (toRestart.length === 0) {
         const preferido = mode === 'prod' ? 'prod' : 'dev';
-        const comando = commands[preferido];
+        const comando = getCommand(preferido);
         if (comando) {
           startTask(preferido, comando);
           return sendJson(res, 200, { ok: true, restarted: [], started: [preferido] });
@@ -1613,7 +2392,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, restarted: toRestart });
     }
 
-    if (!commands[task]) return sendJson(res, 400, { error: 'Tarea desconocida' });
+    if (!getCommand(task)) return sendJson(res, 400, { error: 'Tarea desconocida' });
     restartTask(task);
     return sendJson(res, 200, { ok: true, restarted: [task] });
   }
@@ -1621,9 +2400,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathName === '/api/run') {
     const body = await readBody(req);
     const task = String(body.task || '').trim();
-    const command = commands[task];
+    const command = getCommand(task);
     if (!command) return sendJson(res, 400, { error: 'Comando desconocido' });
     pushEvent('api', 'dashboard', 'info', 'POST /api/run', { task });
+    if (task === 'portal' && mode === 'prod') {
+      logSystem('Portal prod build en curso/inicio solicitado.', 'system');
+    }
     startTask(task, command);
     return sendJson(res, 200, { ok: true });
   }
