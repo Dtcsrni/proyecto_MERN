@@ -719,7 +719,6 @@ export function SeccionRegistroEntrega({
           aria-label="Capturar imagen para lectura de QR"
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (!file) return;

@@ -6,7 +6,6 @@ import { emitToast } from '../../ui/toast/toastBus';
 import { Icono } from '../../ui/iconos';
 import { Boton } from '../../ui/ux/componentes/Boton';
 import { InlineMensaje } from '../../ui/ux/componentes/InlineMensaje';
-import { AyudaFormulario } from './AyudaFormulario';
 import { registrarAccionDocente } from './telemetriaDocente';
 import type {
   Alumno,
@@ -16,7 +15,6 @@ import type {
   RevisionExamenOmr
 } from './tipos';
 import { esMensajeError, mensajeDeError } from './utilidades';
-import { QrAccesoMovil } from './QrAccesoMovil';
 import { evaluarCalidadCaptura, type CalidadCaptura } from './QrAccesoMovil';
 
 export { QrAccesoMovil } from './QrAccesoMovil';
@@ -30,10 +28,12 @@ export function SeccionEscaneo({
   resultado,
   onActualizar,
   onActualizarPregunta,
+  respuestasPaginaEditable,
   respuestasCombinadas,
   claveCorrectaPorNumero,
   ordenPreguntasClave,
   revisionOmrConfirmada,
+  hayCambiosPendientesOmrActiva = false,
   onConfirmarRevisionOmr,
   revisionesOmr,
   examenIdActivo,
@@ -58,10 +58,12 @@ export function SeccionEscaneo({
   resultado: ResultadoOmr | null;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
   onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
+  respuestasPaginaEditable: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   respuestasCombinadas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   claveCorrectaPorNumero: Record<number, string>;
   ordenPreguntasClave: number[];
   revisionOmrConfirmada: boolean;
+  hayCambiosPendientesOmrActiva?: boolean;
   onConfirmarRevisionOmr: (confirmada: boolean) => void;
   revisionesOmr: RevisionExamenOmr[];
   examenIdActivo: string | null;
@@ -72,15 +74,13 @@ export function SeccionEscaneo({
   avisarSinPermiso: (mensaje: string) => void;
 }) {
   const [folio, setFolio] = useState('');
-  const [numeroPagina, setNumeroPagina] = useState(1);
+  const [numeroPagina, setNumeroPagina] = useState(0);
   const [imagenBase64, setImagenBase64] = useState('');
   const [calidadCaptura, setCalidadCaptura] = useState<CalidadCaptura | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [analizando, setAnalizando] = useState(false);
   const [bloqueoManual, setBloqueoManual] = useState(false);
   const [procesandoLote, setProcesandoLote] = useState(false);
-  const [soloDudosas, setSoloDudosas] = useState(true);
-  const [aprobacionesPorPregunta, setAprobacionesPorPregunta] = useState<Record<number, boolean>>({});
   const [lote, setLote] = useState<
     Array<{
       id: string;
@@ -100,6 +100,10 @@ export function SeccionEscaneo({
     () => (Array.isArray(respuestasCombinadas) ? respuestasCombinadas : []),
     [respuestasCombinadas]
   );
+  const respuestasPaginaEditableSeguras = useMemo(
+    () => (Array.isArray(respuestasPaginaEditable) ? respuestasPaginaEditable : []),
+    [respuestasPaginaEditable]
+  );
   const ordenPreguntasClaveSegura = useMemo(
     () => (Array.isArray(ordenPreguntasClave) ? ordenPreguntasClave : []),
     [ordenPreguntasClave]
@@ -111,14 +115,20 @@ export function SeccionEscaneo({
   const paginaManual = Number.isFinite(numeroPagina) ? Math.max(0, Math.floor(numeroPagina)) : 0;
   const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [item._id, item.nombreCompleto])), [alumnos]);
   const estadoAnalisisResultado = resultado?.estadoAnalisis ?? 'requiere_revision';
+  const paginaDetectadaQr = useMemo(() => {
+    const qrTexto = String(resultado?.qrTexto ?? '').trim();
+    if (!qrTexto) return null;
+    const match = /:P(\d+)(?::|$)/i.exec(qrTexto);
+    if (!match?.[1]) return null;
+    const pagina = Number(match[1]);
+    return Number.isFinite(pagina) && pagina > 0 ? pagina : null;
+  }, [resultado?.qrTexto]);
   const calidadPaginaResultado = Number.isFinite(Number(resultado?.calidadPagina)) ? Number(resultado?.calidadPagina) : 0;
   const confianzaPromedioResultado = Number.isFinite(Number(resultado?.confianzaPromedioPagina))
     ? Number(resultado?.confianzaPromedioPagina)
     : 0;
   const ratioAmbiguasResultado = Number.isFinite(Number(resultado?.ratioAmbiguas)) ? Number(resultado?.ratioAmbiguas) : 0;
-  const motivosRevisionResultado = Array.isArray(resultado?.motivosRevision) ? resultado.motivosRevision : [];
   const advertenciasResultado = Array.isArray(resultado?.advertencias) ? resultado.advertencias : [];
-  const requiereRevisionOmr = Boolean(resultado && estadoAnalisisResultado !== 'ok');
   const estadoAnalisisClase =
     estadoAnalisisResultado === 'ok' ? 'ok' : estadoAnalisisResultado === 'rechazado_calidad' ? 'error' : 'warning';
   const revisionesOrdenadas = useMemo(
@@ -132,34 +142,45 @@ export function SeccionEscaneo({
     const examenObjetivo =
       (examenIdActivo ? revisionesOrdenadas.find((item) => item.examenId === examenIdActivo) : null) ?? revisionesOrdenadas[0];
     if (!examenObjetivo || examenObjetivo.paginas.length === 0) return;
-    const paginasOrdenadas = [...examenObjetivo.paginas].sort((a, b) => a.numeroPagina - b.numeroPagina);
-    const primeraPagina = paginasOrdenadas[0]?.numeroPagina;
-    if (!Number.isFinite(Number(primeraPagina))) return;
-    const primeraPaginaNumero = Number(primeraPagina);
+    const paginasOrdenadas = [...examenObjetivo.paginas].sort((a, b) => Number(a.numeroPagina) - Number(b.numeroPagina));
+    const paginaUno = paginasOrdenadas.find((pagina) => Number(pagina.numeroPagina) === 1)?.numeroPagina;
+    const primeraDisponible = paginasOrdenadas[0]?.numeroPagina;
+    const paginaInicio = Number.isFinite(Number(paginaUno)) ? Number(paginaUno) : Number(primeraDisponible);
+    if (!Number.isFinite(paginaInicio)) return;
     const cambioExamen = examenAutoInicializadoRef.current !== examenObjetivo.examenId;
     const paginaActual = Number(paginaActiva);
     const paginaActualEsValida = Number.isFinite(paginaActual)
-      ? examenObjetivo.paginas.some((pagina) => pagina.numeroPagina === paginaActual)
+      ? examenObjetivo.paginas.some((pagina) => Number(pagina.numeroPagina) === paginaActual)
       : false;
 
     if (!examenIdActivo || cambioExamen) {
       examenAutoInicializadoRef.current = examenObjetivo.examenId;
-      if (paginaActual !== primeraPaginaNumero) {
-        onSeleccionarRevision(examenObjetivo.examenId, primeraPaginaNumero);
+      if (paginaActual !== paginaInicio) {
+        onSeleccionarRevision(examenObjetivo.examenId, paginaInicio);
       }
       return;
     }
 
     if (!paginaActualEsValida) {
-      onSeleccionarRevision(examenObjetivo.examenId, primeraPaginaNumero);
+      onSeleccionarRevision(examenObjetivo.examenId, paginaInicio);
     }
   }, [examenIdActivo, onSeleccionarRevision, paginaActiva, revisionesOrdenadas]);
   const paginaRevisionActiva = useMemo(() => {
     if (!examenIdActivo || !Number.isFinite(Number(paginaActiva))) return null;
     const examen = revisionesSeguras.find((item) => item.examenId === examenIdActivo);
     if (!examen) return null;
-    return examen.paginas.find((pagina) => pagina.numeroPagina === Number(paginaActiva)) ?? null;
+    return examen.paginas.find((pagina) => Number(pagina.numeroPagina) === Number(paginaActiva)) ?? null;
   }, [examenIdActivo, paginaActiva, revisionesSeguras]);
+  const hayCambiosPendientesPagina = useMemo(() => {
+    if (!paginaRevisionActiva) return false;
+    const firma = (respuestas: Array<{ numeroPregunta: number; opcion: string | null }>) =>
+      [...respuestas]
+        .map((item) => `${Number(item.numeroPregunta)}:${item.opcion ?? ''}`)
+        .sort()
+        .join('|');
+    return firma(respuestasPaginaEditableSeguras) !== firma(paginaRevisionActiva.respuestas);
+  }, [paginaRevisionActiva, respuestasPaginaEditableSeguras]);
+  const hayCambiosPendientesExamen = Boolean(examenIdActivo) && (hayCambiosPendientesOmrActiva || hayCambiosPendientesPagina);
   const examenRevisionActivo = useMemo(() => {
     if (!examenIdActivo) return null;
     return revisionesSeguras.find((item) => item.examenId === examenIdActivo) ?? null;
@@ -173,17 +194,30 @@ export function SeccionEscaneo({
     if (!examenRevisionActivo) return 0;
     return Array.isArray(examenRevisionActivo.paginas) ? examenRevisionActivo.paginas.length : 0;
   }, [examenRevisionActivo]);
-  const respuestasFuenteRevision = useMemo(
-    () => (Array.isArray(paginaRevisionActiva?.respuestas) ? paginaRevisionActiva.respuestas : respuestasCombinadasSeguras),
-    [paginaRevisionActiva, respuestasCombinadasSeguras]
+  const paginasExamenActivoOrdenadas = useMemo(() => {
+    if (!examenRevisionActivo || !Array.isArray(examenRevisionActivo.paginas)) return [] as number[];
+    return [...examenRevisionActivo.paginas]
+      .map((pagina) => Number(pagina.numeroPagina))
+      .filter((numero) => Number.isFinite(numero))
+      .sort((a, b) => a - b);
+  }, [examenRevisionActivo]);
+  const indicePaginaActiva = useMemo(() => {
+    const actual = Number(paginaActiva);
+    if (!Number.isFinite(actual)) return -1;
+    return paginasExamenActivoOrdenadas.findIndex((numero) => numero === actual);
+  }, [paginaActiva, paginasExamenActivoOrdenadas]);
+  const paginaAnterior = indicePaginaActiva > 0 ? paginasExamenActivoOrdenadas[indicePaginaActiva - 1] : null;
+  const paginaSiguiente =
+    indicePaginaActiva >= 0 && indicePaginaActiva < paginasExamenActivoOrdenadas.length - 1
+      ? paginasExamenActivoOrdenadas[indicePaginaActiva + 1]
+      : null;
+  const respuestasPaginaOrdenadas = useMemo(
+    () => [...respuestasPaginaEditableSeguras].sort((a, b) => a.numeroPregunta - b.numeroPregunta),
+    [respuestasPaginaEditableSeguras]
   );
-  const respuestasCombinadasOrdenadas = useMemo(
-    () => [...respuestasFuenteRevision].sort((a, b) => a.numeroPregunta - b.numeroPregunta),
-    [respuestasFuenteRevision]
-  );
-  const respuestasCombinadasPorNumero = useMemo(
-    () => new Map(respuestasCombinadasOrdenadas.map((item) => [item.numeroPregunta, item])),
-    [respuestasCombinadasOrdenadas]
+  const respuestasPaginaPorNumero = useMemo(
+    () => new Map(respuestasPaginaOrdenadas.map((item) => [item.numeroPregunta, item])),
+    [respuestasPaginaOrdenadas]
   );
   const ordenRevision = useMemo(() => {
     const ordenExamenActivo = Array.isArray(examenRevisionActivo?.ordenPreguntas)
@@ -191,16 +225,22 @@ export function SeccionEscaneo({
       : [];
     if (ordenExamenActivo.length > 0) return ordenExamenActivo;
     if (ordenPreguntasClaveSegura.length > 0) return ordenPreguntasClaveSegura;
-    const numerosRespuestas = respuestasCombinadasOrdenadas.map((item) => item.numeroPregunta);
+    const numerosRespuestas = respuestasCombinadasSeguras.map((item) => item.numeroPregunta);
     const numerosClave = Object.keys(claveCorrectaRevision)
       .map((numero) => Number(numero))
       .filter((numero) => Number.isFinite(numero));
     return Array.from(new Set([...numerosClave, ...numerosRespuestas])).sort((a, b) => a - b);
-  }, [claveCorrectaRevision, examenRevisionActivo, ordenPreguntasClaveSegura, respuestasCombinadasOrdenadas]);
+  }, [claveCorrectaRevision, examenRevisionActivo, ordenPreguntasClaveSegura, respuestasCombinadasSeguras]);
+  const ordenRevisionPagina = useMemo(() => {
+    const numerosPagina = new Set(respuestasPaginaOrdenadas.map((item) => item.numeroPregunta));
+    const ordenFiltrado = ordenRevision.filter((numeroPregunta) => numerosPagina.has(numeroPregunta));
+    if (ordenFiltrado.length > 0) return ordenFiltrado;
+    return [...numerosPagina].sort((a, b) => a - b);
+  }, [ordenRevision, respuestasPaginaOrdenadas]);
   const filasRevision = useMemo(
     () =>
-      ordenRevision.map((numeroPregunta) => {
-        const detectada = respuestasCombinadasPorNumero.get(numeroPregunta);
+      ordenRevisionPagina.map((numeroPregunta) => {
+        const detectada = respuestasPaginaPorNumero.get(numeroPregunta);
         const confianza = Number.isFinite(Number(detectada?.confianza)) ? Number(detectada?.confianza) : 0;
         const opcion = typeof detectada?.opcion === 'string' && detectada.opcion ? detectada.opcion : null;
         const correcta = claveCorrectaRevision[numeroPregunta] ?? null;
@@ -208,23 +248,9 @@ export function SeccionEscaneo({
         const esCorrecta = Boolean(correcta && opcion && opcion === correcta);
         return { numeroPregunta, opcion, confianza, correcta, esDudosa, esCorrecta };
       }),
-    [claveCorrectaRevision, ordenRevision, respuestasCombinadasPorNumero]
+    [claveCorrectaRevision, ordenRevisionPagina, respuestasPaginaPorNumero]
   );
-  const preguntasDudosas = useMemo(() => filasRevision.filter((item) => item.esDudosa), [filasRevision]);
-  const preguntasMostradas = useMemo(
-    () => (soloDudosas ? filasRevision.filter((item) => item.esDudosa) : filasRevision),
-    [filasRevision, soloDudosas]
-  );
-  const totalPreguntasRevision = filasRevision.length;
-  const aprobadasConteo = useMemo(
-    () => filasRevision.filter((fila) => aprobacionesPorPregunta[fila.numeroPregunta]).length,
-    [aprobacionesPorPregunta, filasRevision]
-  );
-  const faltanAprobar = Math.max(0, totalPreguntasRevision - aprobadasConteo);
-  const listaPendientes = useMemo(
-    () => filasRevision.filter((fila) => !aprobacionesPorPregunta[fila.numeroPregunta]).map((fila) => fila.numeroPregunta),
-    [aprobacionesPorPregunta, filasRevision]
-  );
+  const preguntasMostradas = filasRevision;
   const resumenCalificacionDinamica = useMemo(() => {
     if (!filasRevision.length) {
       return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
@@ -253,19 +279,6 @@ export function SeccionEscaneo({
     () => revisionesOrdenadas.reduce((acumulado, examen) => acumulado + examen.paginas.length, 0),
     [revisionesOrdenadas]
   );
-  const porcentajeAuto = totalPaginasRevision > 0 ? Math.round(((totalPaginasRevision - paginasPendientes) / totalPaginasRevision) * 100) : 0;
-  const examenesConPendiente = useMemo(
-    () => revisionesOrdenadas.filter((examen) => examen.paginas.some((pagina) => pagina.resultado.estadoAnalisis !== 'ok')).length,
-    [revisionesOrdenadas]
-  );
-
-  useEffect(() => {
-    const inicial: Record<number, boolean> = {};
-    for (const fila of filasRevision) {
-      inicial[fila.numeroPregunta] = false;
-    }
-    setAprobacionesPorPregunta(inicial);
-  }, [examenIdActivo, paginaActiva, filasRevision]);
 
   async function leerArchivoBase64(archivo: File): Promise<string> {
     const leer = () =>
@@ -459,86 +472,6 @@ export function SeccionEscaneo({
           <span>{paginasPendientes} pendiente(s)</span>
         </div>
       </div>
-      <div className="calif-kpi-grid">
-        <div className="item-glass calif-kpi-card">
-          <span className="item-sub">Autoanalizables</span>
-          <b>{porcentajeAuto}%</b>
-        </div>
-        <div className="item-glass calif-kpi-card">
-          <span className="item-sub">Exámenes con revisión</span>
-          <b>{examenesConPendiente}</b>
-        </div>
-        <div className="item-glass calif-kpi-card">
-          <span className="item-sub">Preguntas dudosas</span>
-          <b>{preguntasDudosas.length}</b>
-        </div>
-        <div className="item-glass calif-kpi-card">
-          <span className="item-sub">Nota dinámica</span>
-          <b>{resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</b>
-        </div>
-      </div>
-      <details className="colapsable">
-        <summary>Guía de captura y revisión</summary>
-        <AyudaFormulario titulo="Para que sirve y como llenarlo">
-          <p>
-            <b>Proposito:</b> detectar QR/folio y respuestas OMR con precisión alta, y corregir manualmente los casos ambiguos.
-          </p>
-          <ul className="lista">
-            <li>
-              <b>Folio:</b> opcional si el QR esta legible (se detecta automaticamente).
-            </li>
-            <li>
-              <b>Pagina:</b> opcional si el QR incluye el numero de pagina.
-            </li>
-            <li>
-              <b>Imagen:</b> foto/escaneo nitido, sin recortes y con buena luz.
-            </li>
-          </ul>
-        </AyudaFormulario>
-        <div className="subpanel guia-visual">
-          <div className="guia-flujo" aria-hidden="true">
-            <Icono nombre="pdf" />
-            <Icono nombre="chevron" className="icono icono--muted" />
-            <Icono nombre="escaneo" />
-            <Icono nombre="chevron" className="icono icono--muted" />
-            <Icono nombre="calificar" />
-            <span>Hoja a imagen a analisis a ajuste</span>
-          </div>
-          <div className="guia-grid">
-            <QrAccesoMovil vista="calificaciones" />
-            <div className="item-glass guia-card">
-              <div className="guia-card__header">
-                <span className="chip chip-static" aria-hidden="true">
-                  <Icono nombre="escaneo" /> Con movil
-                </span>
-              </div>
-              <ul className="guia-pasos">
-                <li className="guia-paso">
-                  <span className="paso-num">1</span>
-                  <div>
-                    <div className="paso-titulo">Conecta el movil</div>
-                    <p className="nota">Misma red WiFi: abre la URL local en el teléfono.</p>
-                  </div>
-                </li>
-                <li className="guia-paso">
-                  <span className="paso-num">2</span>
-                  <div>
-                    <div className="paso-titulo">Abre la camara</div>
-                    <p className="nota">Captura la hoja completa con buena luz.</p>
-                  </div>
-                </li>
-                <li className="guia-paso">
-                  <span className="paso-num">3</span>
-                  <div>
-                    <div className="paso-titulo">Analiza y ajusta</div>
-                    <p className="nota">Corrige preguntas dudosas y confirma revisión.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </details>
       <div className="calif-captura-grid">
         <div className="subpanel calif-captura-panel">
           <h3>Captura individual</h3>
@@ -574,7 +507,7 @@ export function SeccionEscaneo({
           )}
           <label className="campo">
             Imagen
-            <input type="file" accept="image/*" capture="environment" onChange={cargarArchivo} disabled={bloqueoAnalisis} />
+            <input type="file" accept="image/*" onChange={cargarArchivo} disabled={bloqueoAnalisis} />
           </label>
           {calidadCaptura && (
             <InlineMensaje tipo={calidadCaptura.aprobada ? 'ok' : 'warning'}>
@@ -683,18 +616,19 @@ export function SeccionEscaneo({
                           <span>{paginasOrdenadas.length} página(s)</span>
                           <span>{pendientes} pendiente(s) de revisión</span>
                           <span>{examen.revisionConfirmada ? 'Revisión confirmada' : 'Revisión sin confirmar'}</span>
+                          {esActivo && hayCambiosPendientesExamen ? <span className="badge warning">Cambios pendientes</span> : null}
                         </div>
                       </div>
                       <div className="item-actions revision-pills-wrap">
                         {paginasOrdenadas.map((pagina) => {
-                          const activa = esActivo && paginaActiva === pagina.numeroPagina;
+                          const activa = esActivo && Number(paginaActiva) === Number(pagina.numeroPagina);
                           const estado = pagina.resultado.estadoAnalisis === 'ok' ? 'ok' : 'revision';
                           return (
                             <button
                               key={`${examen.examenId}-${pagina.numeroPagina}`}
                               type="button"
                               className={`revision-pill revision-pill--${estado}${activa ? ' activa' : ''}`}
-                              onClick={() => onSeleccionarRevision(examen.examenId, pagina.numeroPagina)}
+                              onClick={() => onSeleccionarRevision(examen.examenId, Number(pagina.numeroPagina))}
                             >
                               P{pagina.numeroPagina}
                             </button>
@@ -718,6 +652,61 @@ export function SeccionEscaneo({
       {resultado && (
         <div className="resultado">
           <h3>Mesa de revisión manual</h3>
+          <div className="item-actions">
+            <span className={`badge ${hayCambiosPendientesExamen ? 'warning' : 'ok'}`}>
+              {hayCambiosPendientesExamen ? 'Cambios pendientes sin confirmar' : 'Sin cambios pendientes'}
+            </span>
+            <Boton
+              type="button"
+              variante="secundario"
+              disabled={!examenIdActivo || paginaAnterior === null}
+              onClick={() => {
+                if (!examenIdActivo || paginaAnterior === null) return;
+                onSeleccionarRevision(examenIdActivo, paginaAnterior);
+                onConfirmarRevisionOmr(false);
+              }}
+            >
+              Página anterior
+            </Boton>
+            <span className="item-sub">
+              Página {indicePaginaActiva >= 0 ? indicePaginaActiva + 1 : '-'} de {paginasExamenActivoOrdenadas.length || '-'}
+            </span>
+            <Boton
+              type="button"
+              variante="secundario"
+              disabled={!examenIdActivo || paginaSiguiente === null}
+              onClick={() => {
+                if (!examenIdActivo || paginaSiguiente === null) return;
+                onSeleccionarRevision(examenIdActivo, paginaSiguiente);
+                onConfirmarRevisionOmr(false);
+              }}
+            >
+              Página siguiente
+            </Boton>
+            {paginaRevisionActiva && (
+              <Boton
+                type="button"
+                variante="secundario"
+                onClick={() => {
+                  onActualizar(paginaRevisionActiva.respuestas);
+                  onConfirmarRevisionOmr(false);
+                }}
+              >
+                Restablecer página
+              </Boton>
+            )}
+            <Boton
+              type="button"
+              variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
+              onClick={() => onConfirmarRevisionOmr(!revisionOmrConfirmada)}
+            >
+              {revisionOmrConfirmada
+                ? hayCambiosPendientesExamen
+                  ? 'Guardar cambios pendientes'
+                  : 'Revisión confirmada'
+                : 'Confirmar revisión'}
+            </Boton>
+          </div>
           <div className="item-sub">
             Examen activo: <b>{examenIdActivo ?? '-'}</b> · Página activa: <b>{paginaActiva ?? '-'}</b>
             {totalPaginasExamenActivo > 0 ? (
@@ -733,78 +722,23 @@ export function SeccionEscaneo({
             {Math.round(calidadPaginaResultado * 100)}% · Confianza media {Math.round(confianzaPromedioResultado * 100)}% · Ambiguas{' '}
             {(ratioAmbiguasResultado * 100).toFixed(1)}%
           </div>
+          {paginaDetectadaQr !== null && (
+            <div className="item-sub">
+              Página detectada por QR: <b>{paginaDetectadaQr}</b>
+              {Number.isFinite(Number(paginaActiva)) && Number(paginaActiva) !== paginaDetectadaQr
+                ? ' · No coincide con la página activa'
+                : ' · Coincide con la página activa'}
+            </div>
+          )}
           <div className="item-sub">
             Orden de preguntas: {examenRevisionActivo?.ordenPreguntas?.length ? 'propio del examen activo' : 'referencia general'} · Reactivos en revisión:{' '}
-            {ordenRevision.length}
+            {ordenRevisionPagina.length}
           </div>
           <div className="item-meta">
             <span>Aciertos (dinámico): {resumenCalificacionDinamica.aciertos}/{resumenCalificacionDinamica.total}</span>
             <span>Contestadas: {resumenCalificacionDinamica.contestadas}</span>
             <span>Calificación dinámica: {resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</span>
           </div>
-          {motivosRevisionResultado.length > 0 && (
-            <div className="alerta">
-              {motivosRevisionResultado.map((m, idx) => (
-                <p key={idx}>{m}</p>
-              ))}
-            </div>
-          )}
-          {requiereRevisionOmr && (
-            <div className="item-row calif-omr-warning-row">
-              <div className="item-sub">
-                Revisión OMR requerida. Preguntas dudosas: <b>{preguntasDudosas.length}</b>
-              </div>
-              <div className="item-actions">
-                <label className="campo campo-inline">
-                  <input type="checkbox" checked={soloDudosas} onChange={(event) => setSoloDudosas(event.target.checked)} />
-                  Solo dudas
-                </label>
-                {filasRevision.length > 0 && (
-                  <Boton
-                    type="button"
-                    variante="secundario"
-                    onClick={() => {
-                      const siguiente: Record<number, boolean> = {};
-                      for (const fila of filasRevision) {
-                        const autocompletadaConfiable = Boolean(fila.opcion) && fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI;
-                        siguiente[fila.numeroPregunta] = autocompletadaConfiable;
-                      }
-                      setAprobacionesPorPregunta(siguiente);
-                      onConfirmarRevisionOmr(false);
-                    }}
-                  >
-                    Marcar autocompletadas confiables
-                  </Boton>
-                )}
-                {paginaRevisionActiva && (
-                  <Boton
-                    type="button"
-                    variante="secundario"
-                    onClick={() => {
-                      onActualizar(paginaRevisionActiva.respuestas);
-                      onConfirmarRevisionOmr(false);
-                    }}
-                  >
-                    Restablecer pagina activa
-                  </Boton>
-                )}
-                <Boton
-                  type="button"
-                  variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
-                  disabled={totalPreguntasRevision > 0 && faltanAprobar > 0}
-                  onClick={() => onConfirmarRevisionOmr(!revisionOmrConfirmada)}
-                >
-                  {revisionOmrConfirmada ? 'Revisión confirmada' : 'Confirmar revisión manual'}
-                </Boton>
-              </div>
-            </div>
-          )}
-          {totalPreguntasRevision > 0 && (
-            <InlineMensaje tipo={faltanAprobar === 0 ? 'ok' : 'warning'}>
-              Checklist de aprobación: {aprobadasConteo}/{totalPreguntasRevision} pregunta(s).
-              {faltanAprobar > 0 ? ` Pendientes: ${listaPendientes.join(', ')}` : ' Todas las preguntas fueron aprobadas.'}
-            </InlineMensaje>
-          )}
           <div className="omr-review-grid">
             <div className="item-glass omr-review-card omr-review-card--imagen">
               <h4>Imagen del examen</h4>
@@ -822,12 +756,10 @@ export function SeccionEscaneo({
                 )}
               </div>
             </div>
-            <div className="item-glass omr-review-card">
+            <div className="item-glass omr-review-card omr-review-card--panel omr-review-card--respuestas">
               <h4>Respuesta del alumno (editable)</h4>
               {preguntasMostradas.length === 0 ? (
-                <InlineMensaje tipo="info">
-                  {filasRevision.length === 0 ? 'Aún no hay respuestas para revisar.' : 'No hay preguntas dudosas con el filtro actual.'}
-                </InlineMensaje>
+                <InlineMensaje tipo="info">Aún no hay respuestas para revisar.</InlineMensaje>
               ) : (
                 <ul className="lista omr-respuesta-lista">
                   {preguntasMostradas.map((fila) => {
@@ -844,18 +776,13 @@ export function SeccionEscaneo({
                             Detectada: {fila.opcion ?? '-'}
                           </span>
                           <span className={`badge ${fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI ? 'ok' : fila.opcion ? 'warning' : 'error'}`}>
-                            {fila.opcion
-                              ? fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI
-                                ? 'Autocompletada automática (alta confianza)'
-                                : 'Autocompletada con confianza media'
-                              : 'Sin autocompletado automático'}
+                            {fila.opcion ? (fila.confianza >= UMBRAL_AUTO_CONFIABLE_UI ? 'Auto: alta' : 'Auto: media') : 'Auto: ninguna'}
                           </span>
                           <select
                             aria-label={`Respuesta alumno pregunta ${fila.numeroPregunta}`}
                             value={fila.opcion ?? ''}
                             onChange={(event) => {
                               onActualizarPregunta(fila.numeroPregunta, event.target.value || null);
-                              setAprobacionesPorPregunta((prev) => ({ ...prev, [fila.numeroPregunta]: false }));
                               onConfirmarRevisionOmr(false);
                             }}
                           >
@@ -866,18 +793,6 @@ export function SeccionEscaneo({
                             <option value="D">D</option>
                             <option value="E">E</option>
                           </select>
-                          <label className="campo campo-inline">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(aprobacionesPorPregunta[fila.numeroPregunta])}
-                              onChange={(event) => {
-                                const checked = event.target.checked;
-                                setAprobacionesPorPregunta((prev) => ({ ...prev, [fila.numeroPregunta]: checked }));
-                                if (!checked) onConfirmarRevisionOmr(false);
-                              }}
-                            />
-                            Aprobada por docente
-                          </label>
                         </div>
                       </li>
                     );
@@ -885,15 +800,15 @@ export function SeccionEscaneo({
                 </ul>
               )}
             </div>
-            <div className="item-glass omr-review-card">
+            <div className="item-glass omr-review-card omr-review-card--panel omr-review-card--clave">
               <h4>Clave correcta (orden oficial)</h4>
-              {ordenRevision.length === 0 ? (
+              {ordenRevisionPagina.length === 0 ? (
                 <InlineMensaje tipo="info">No hay clave disponible para este examen.</InlineMensaje>
               ) : (
-                <ul className="lista">
-                  {ordenRevision.map((numeroPregunta) => {
+                <ul className="lista omr-clave-lista">
+                  {ordenRevisionPagina.map((numeroPregunta) => {
                     const correcta = claveCorrectaRevision[numeroPregunta] ?? '-';
-                    const detectada = respuestasCombinadasPorNumero.get(numeroPregunta)?.opcion ?? null;
+                    const detectada = respuestasPaginaPorNumero.get(numeroPregunta)?.opcion ?? null;
                     const coincide = Boolean(correcta && detectada && correcta === detectada);
                     return (
                       <li key={`key-${numeroPregunta}`}>
