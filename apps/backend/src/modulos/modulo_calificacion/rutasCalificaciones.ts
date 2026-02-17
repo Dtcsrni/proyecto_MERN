@@ -6,6 +6,7 @@ import { validarCuerpo } from '../../compartido/validaciones/validar';
 import {
   calificarExamen,
   listarSolicitudesRevision,
+  obtenerCalificacionPorExamen,
   resolverSolicitudRevision,
   sincronizarSolicitudesRevision
 } from './controladorCalificacion';
@@ -19,6 +20,7 @@ import { requerirPermiso } from '../modulo_autenticacion/middlewarePermisos';
 const router = Router();
 
 router.post('/calificar', requerirPermiso('calificaciones:calificar'), validarCuerpo(esquemaCalificarExamen, { strict: true }), calificarExamen);
+router.get('/examen/:examenGeneradoId', requerirPermiso('calificaciones:calificar'), obtenerCalificacionPorExamen);
 router.get('/revision/solicitudes', requerirPermiso('calificaciones:calificar'), listarSolicitudesRevision);
 router.post(
   '/revision/solicitudes/sincronizar',

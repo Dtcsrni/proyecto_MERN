@@ -139,6 +139,30 @@ describe('cobertura dominios docente', () => {
     expect(screen.getByRole('heading', { name: /Calificar examen/i })).toBeInTheDocument();
   });
 
+  it('asigna 5.00 con todos los aciertos y deshabilita bonus', () => {
+    render(
+      <SeccionCalificar
+        examenId="ex-1"
+        alumnoId="alu-1"
+        resultadoOmr={null}
+        revisionOmrConfirmada
+        respuestasDetectadas={[
+          { numeroPregunta: 1, opcion: 'A', confianza: 0.9 },
+          { numeroPregunta: 2, opcion: 'B', confianza: 0.9 }
+        ]}
+        claveCorrectaPorNumero={{ 1: 'A', 2: 'B' }}
+        ordenPreguntasClave={[1, 2]}
+        onCalificar={async () => ({})}
+        puedeCalificar
+        avisarSinPermiso={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/Calificación final: 5\.00 \/ 5\.00/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeDisabled();
+    expect(screen.getByText(/Bonus deshabilitado: la calificación del examen ya es 5\.00\./i)).toBeInTheDocument();
+  });
+
   it('renderiza SeccionCalificaciones', () => {
     render(
       <SeccionCalificaciones

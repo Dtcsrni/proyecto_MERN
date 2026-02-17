@@ -24,6 +24,15 @@ const esquemaAnalisisOmr = z
   })
   .strict();
 
+const esquemaPaginaOmrCalificacion = z
+  .object({
+    numeroPagina: z.number().int().positive(),
+    imagenBase64: z.string().trim().min(1),
+    estadoAnalisis: z.enum(['ok', 'rechazado_calidad', 'requiere_revision']).optional(),
+    templateVersionDetectada: z.union([z.literal(1), z.literal(2)]).optional()
+  })
+  .strict();
+
 export const esquemaCalificarExamen = z.object({
   examenGeneradoId: esquemaObjectId,
   alumnoId: esquemaObjectId.optional(),
@@ -35,6 +44,7 @@ export const esquemaCalificarExamen = z.object({
   retroalimentacion: z.string().optional(),
   respuestasDetectadas: z.array(esquemaRespuestaDetectada).max(500).optional(),
   omrAnalisis: esquemaAnalisisOmr.optional(),
+  paginasOmr: z.array(esquemaPaginaOmrCalificacion).max(100).optional(),
   soloPreview: z.boolean().optional()
 });
 

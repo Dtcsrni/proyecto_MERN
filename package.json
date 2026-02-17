@@ -33,7 +33,7 @@
   },
   "scripts": {
     "dev": "node scripts/detect-host-ip.mjs && npm-run-all --parallel dev:backend dev:frontend:wait",
-    "dev:backend": "node scripts/start-tray.mjs --mode dev --port 4519 && node scripts/detect-host-ip.mjs && docker compose --profile dev up --build --force-recreate mongo_local api_docente_local",
+    "dev:backend": "node scripts/start-tray.mjs --mode dev --port 4519 && node scripts/detect-host-ip.mjs && docker compose --profile dev up --build mongo_local api_docente_local",
     "dev:frontend": "npm -C apps/frontend run dev",
     "dev:frontend:wait": "node scripts/wait-api.mjs && npm -C apps/frontend run dev",
     "dev:portal": "npm -C apps/portal_alumno_cloud run dev",
