@@ -674,6 +674,18 @@ main.page {
   gap: var(--gap);
 }
 
+@media (min-width: 1280px) {
+  .card {
+    max-width: min(1680px, calc(100vw - 2.5rem));
+  }
+}
+
+@media (min-width: 1920px) {
+  .card {
+    max-width: min(1880px, calc(100vw - 3rem));
+  }
+}
+
 @media (max-width: 600px) {
   main.page {
     padding: 1.5rem 1rem;
@@ -1746,8 +1758,8 @@ p {
 }
 
 .calificaciones-layout__main {
-  z-index: 1;
-  overflow: visible;
+  z-index: 0;
+  overflow-x: hidden;
 }
 
 .calificaciones-layout__aside {
@@ -1801,14 +1813,21 @@ p {
   margin-top: 0.15rem;
 }
 
-@media (min-width: 1700px) {
+@media (min-width: 1100px) {
   .calificaciones-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    grid-template-columns: 1fr;
   }
 
   .calificaciones-layout__aside {
-    position: sticky;
-    top: 5.2rem;
+    max-height: none;
+    overflow: visible;
+    align-self: auto;
+  }
+}
+
+@media (min-width: 1800px) {
+  .calificaciones-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1844,7 +1863,7 @@ p {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 0.8rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 @media (max-width: 1280px) {
@@ -1855,6 +1874,7 @@ p {
 
 .calif-captura-panel {
   min-width: 0;
+  align-content: start;
 }
 
 .calif-captura-panel .grid--2 {
@@ -1863,6 +1883,7 @@ p {
 
 .calif-captura-panel .item-actions {
   justify-content: flex-start;
+  align-items: center;
 }
 
 @media (max-width: 860px) {
@@ -1965,6 +1986,7 @@ p {
 
 .omr-review-card {
   min-width: 0;
+  padding: 0.75rem 0.8rem;
 }
 
 .omr-review-card--imagen {
@@ -1978,13 +2000,13 @@ p {
 
 .omr-review-card__image {
   width: 100%;
-  max-height: clamp(520px, 78vh, 1200px);
+  max-height: clamp(620px, 82vh, 1400px);
   object-fit: contain;
 }
 
 .omr-review-card h4 {
   margin: 0 0 0.55rem 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .calif-omr-warning-row {
@@ -2025,6 +2047,16 @@ p {
   flex-wrap: wrap;
 }
 
+.omr-respuesta-item__controls select {
+  min-width: 68px;
+}
+
+.omr-clave-lista li {
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .calif-grade-card {
   display: grid;
   gap: 0.75rem;
@@ -2049,6 +2081,10 @@ p {
 .calificaciones-revision-panel,
 .calif-grade-card {
   min-width: 0;
+}
+
+.calificaciones-manual-panel {
+  display: none;
 }
 
 .calificaciones-manual-panel__actions {
@@ -2088,8 +2124,30 @@ p {
 
 @media (min-width: 1100px) {
   .omr-review-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    grid-template-columns: minmax(420px, 1.45fr) minmax(280px, 0.9fr) minmax(240px, 0.8fr);
     align-items: start;
+  }
+
+  .omr-review-card--imagen {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .omr-review-card--respuestas {
+    grid-column: 2;
+    overflow: visible;
+  }
+
+  .omr-review-card--clave {
+    grid-column: 3;
+    align-self: start;
+    overflow: visible;
+  }
+
+  .omr-review-card--imagen .omr-review-card__image {
+    max-height: clamp(700px, 84vh, 1500px);
   }
 
   .calif-grade-grid {
@@ -2097,9 +2155,16 @@ p {
   }
 }
 
+@media (max-width: 1099px) {
+  .calificaciones-layout__aside {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 @media (min-width: 2300px) {
   .omr-review-grid {
-    grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.2fr) minmax(220px, 0.9fr);
+    grid-template-columns: minmax(560px, 1.05fr) minmax(520px, 1fr) minmax(440px, 0.9fr);
   }
 }
 

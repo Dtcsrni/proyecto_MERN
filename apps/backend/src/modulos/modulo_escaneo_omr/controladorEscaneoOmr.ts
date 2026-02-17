@@ -47,7 +47,8 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   const templateQr = match?.[3] ? Number(match[3]) : undefined;
 
   const folioNormalizado = String(folio || folioDetectado || '').toUpperCase();
-  const pagina = Number(numeroPagina || paginaDetectada || 1);
+  const paginaSolicitada = Number(numeroPagina);
+  const pagina = Number.isFinite(paginaSolicitada) && paginaSolicitada > 0 ? paginaSolicitada : Number(paginaDetectada || 1);
 
   const examen = await ExamenGenerado.findOne({ folio: folioNormalizado, docenteId }).lean();
   if (!examen) {

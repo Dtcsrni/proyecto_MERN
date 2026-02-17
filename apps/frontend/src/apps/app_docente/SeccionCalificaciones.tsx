@@ -67,7 +67,9 @@ export function SeccionCalificaciones({
   resultado,
   onActualizar,
   onActualizarPregunta,
+  respuestasPaginaEditable,
   revisionOmrConfirmada,
+  hayCambiosPendientesOmrActiva = false,
   onConfirmarRevisionOmr,
   revisionesOmr,
   examenIdActivo,
@@ -102,7 +104,9 @@ export function SeccionCalificaciones({
   resultado: ResultadoOmr | null;
   onActualizar: (respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => void;
   onActualizarPregunta: (numeroPregunta: number, opcion: string | null) => void;
+  respuestasPaginaEditable: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
   revisionOmrConfirmada: boolean;
+  hayCambiosPendientesOmrActiva?: boolean;
   onConfirmarRevisionOmr: (confirmada: boolean) => void;
   revisionesOmr: RevisionExamenOmr[];
   examenIdActivo: string | null;
@@ -420,6 +424,11 @@ export function SeccionCalificaciones({
           <span>{totalPaginas} página(s) procesadas</span>
           <span>{paginasPendientes} página(s) pendientes</span>
           <span>{examenesListos} examen(es) listos</span>
+          {examenIdActivo ? (
+            <span className={`badge ${hayCambiosPendientesOmrActiva ? 'warning' : 'ok'}`}>
+              {hayCambiosPendientesOmrActiva ? 'Examen activo con cambios pendientes' : 'Examen activo sin cambios pendientes'}
+            </span>
+          ) : null}
         </div>
         <div className="item-actions">
           <Boton
@@ -441,10 +450,12 @@ export function SeccionCalificaciones({
             resultado={resultado}
             onActualizar={onActualizar}
             onActualizarPregunta={onActualizarPregunta}
+            respuestasPaginaEditable={respuestasPaginaEditable}
             respuestasCombinadas={respuestasParaCalificar}
             claveCorrectaPorNumero={claveCorrectaPorNumero}
             ordenPreguntasClave={ordenPreguntasClave}
             revisionOmrConfirmada={revisionOmrConfirmada}
+            hayCambiosPendientesOmrActiva={hayCambiosPendientesOmrActiva}
             onConfirmarRevisionOmr={onConfirmarRevisionOmr}
             revisionesOmr={revisionesOmr}
             examenIdActivo={examenIdActivo}
