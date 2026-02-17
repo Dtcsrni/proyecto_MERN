@@ -1,0 +1,584 @@
+{
+  "generadoEn": "2026-02-17T05:52:44.716Z",
+  "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+  "mode": "v2",
+  "thresholds": {
+    "qualityRejectMin": 0.65,
+    "qualityReviewMin": 0.8,
+    "autoConfMin": 0.82,
+    "autoAmbiguasMax": 0.06,
+    "autoDeteccionMin": 0.85,
+    "autoRescueQualityMin": 0.58,
+    "autoRescueConfMin": 0.84,
+    "autoRescueAmbigMax": 0.04
+  },
+  "totals": {
+    "totalIntentadas": 32,
+    "totalProcesadas": 32,
+    "imagenesConError": 0,
+    "qrNoDetectado": 0,
+    "examenNoEncontrado": 0,
+    "paginaNoEncontrada": 0
+  },
+  "estados": [
+    {
+      "estado": "ok",
+      "total": 0,
+      "ratio": 0,
+      "calidadPromedio": 0,
+      "confianzaPromedio": 0,
+      "ratioAmbiguasPromedio": 0,
+      "topMotivos": []
+    },
+    {
+      "estado": "requiere_revision",
+      "total": 1,
+      "ratio": 0.03125,
+      "calidadPromedio": 0.6395,
+      "confianzaPromedio": 0.25,
+      "ratioAmbiguasPromedio": 0.75,
+      "topMotivos": [
+        {
+          "motivo": "Alineacion global inestable (se uso escala simple)",
+          "total": 1
+        },
+        {
+          "motivo": "P17: multiple marca / ambiguedad",
+          "total": 1
+        },
+        {
+          "motivo": "P20: multiple marca / ambiguedad",
+          "total": 1
+        },
+        {
+          "motivo": "P23: multiple marca / ambiguedad",
+          "total": 1
+        },
+        {
+          "motivo": "Calidad baja (0.64), revisar manualmente",
+          "total": 1
+        },
+        {
+          "motivo": "P21: multiple marca / ambiguedad",
+          "total": 1
+        },
+        {
+          "motivo": "Calidad insuficiente (0.63 < 0.65)",
+          "total": 1
+        },
+        {
+          "motivo": "Segundo pase OMR aplicado por baja calidad/inestabilidad",
+          "total": 1
+        }
+      ]
+    },
+    {
+      "estado": "rechazado_calidad",
+      "total": 31,
+      "ratio": 0.96875,
+      "calidadPromedio": 0.6363,
+      "confianzaPromedio": 0.0149,
+      "ratioAmbiguasPromedio": 0.9879,
+      "topMotivos": [
+        {
+          "motivo": "Segundo pase OMR aplicado por baja calidad/inestabilidad",
+          "total": 27
+        },
+        {
+          "motivo": "Calidad insuficiente (0.64 < 0.65)",
+          "total": 21
+        },
+        {
+          "motivo": "Alineacion global inestable (se uso escala simple)",
+          "total": 15
+        },
+        {
+          "motivo": "Calidad insuficiente (0.63 < 0.65)",
+          "total": 10
+        },
+        {
+          "motivo": "P7: multiple marca / ambiguedad",
+          "total": 5
+        },
+        {
+          "motivo": "P12: multiple marca / ambiguedad",
+          "total": 5
+        },
+        {
+          "motivo": "P28: multiple marca / ambiguedad",
+          "total": 5
+        },
+        {
+          "motivo": "P3: multiple marca / ambiguedad",
+          "total": 4
+        },
+        {
+          "motivo": "P21: multiple marca / ambiguedad",
+          "total": 4
+        },
+        {
+          "motivo": "P4: multiple marca / ambiguedad",
+          "total": 4
+        }
+      ]
+    },
+    {
+      "estado": "sin_estado",
+      "total": 0,
+      "ratio": 0,
+      "calidadPromedio": 0,
+      "confianzaPromedio": 0,
+      "ratioAmbiguasPromedio": 0,
+      "topMotivos": []
+    }
+  ],
+  "topMotivos": [
+    {
+      "motivo": "Segundo pase OMR aplicado por baja calidad/inestabilidad",
+      "total": 28
+    },
+    {
+      "motivo": "Calidad insuficiente (0.64 < 0.65)",
+      "total": 21
+    },
+    {
+      "motivo": "Alineacion global inestable (se uso escala simple)",
+      "total": 16
+    },
+    {
+      "motivo": "Calidad insuficiente (0.63 < 0.65)",
+      "total": 11
+    },
+    {
+      "motivo": "P7: multiple marca / ambiguedad",
+      "total": 5
+    },
+    {
+      "motivo": "P12: multiple marca / ambiguedad",
+      "total": 5
+    },
+    {
+      "motivo": "P21: multiple marca / ambiguedad",
+      "total": 5
+    },
+    {
+      "motivo": "P28: multiple marca / ambiguedad",
+      "total": 5
+    },
+    {
+      "motivo": "P3: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P23: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P4: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P1: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P14: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P31: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P30: multiple marca / ambiguedad",
+      "total": 4
+    },
+    {
+      "motivo": "P5: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P11: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P13: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P22: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P24: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P17: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P20: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P25: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P27: multiple marca / ambiguedad",
+      "total": 3
+    },
+    {
+      "motivo": "P29: multiple marca / ambiguedad",
+      "total": 3
+    }
+  ],
+  "casosCriticos": [
+    {
+      "archivo": "Cesar Castillo\\CamScanner 13-02-2026 10.31_02.jpg",
+      "folio": "BBBF8E63",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6334,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P10: multiple marca / ambiguedad",
+        "P15: multiple marca / ambiguedad",
+        "P16: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Leonardo Hernandez\\CamScanner 13-02-2026 10.03_04.jpg",
+      "folio": "BBD38EEB",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6334,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P25: multiple marca / ambiguedad",
+        "P28: multiple marca / ambiguedad",
+        "P30: multiple marca / ambiguedad",
+        "P31: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Kevin Cruz\\CamScanner 13-02-2026 10.24_02.jpg",
+      "folio": "0ADECC1F",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6336,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P12: multiple marca / ambiguedad",
+        "P13: multiple marca / ambiguedad",
+        "P14: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Yazmin Aguilar\\CamScanner 13-02-2026 10.11_04.jpg",
+      "folio": "86357693",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.634,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Aldo Franco\\CamScanner 13-02-2026 09.58_03.jpg",
+      "folio": "C12DE465",
+      "pagina": 3,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6342,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P22: multiple marca / ambiguedad",
+        "P23: multiple marca / ambiguedad",
+        "P24: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "P21: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Cesar Castillo\\CamScanner 13-02-2026 10.31_04.jpg",
+      "folio": "BBBF8E63",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6343,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P28: multiple marca / ambiguedad",
+        "P29: multiple marca / ambiguedad",
+        "P31: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "P27: multiple marca / ambiguedad",
+        "P30: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Tadeo Rubiales\\CamScanner 13-02-2026 10.26_04.jpg",
+      "folio": "CE0A8E0E",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6344,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P25: multiple marca / ambiguedad",
+        "P29: multiple marca / ambiguedad",
+        "P30: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "P31: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Kevin Cruz\\CamScanner 13-02-2026 10.24_04.jpg",
+      "folio": "0ADECC1F",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6346,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P27: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Tadeo Rubiales\\CamScanner 13-02-2026 10.26_03.jpg",
+      "folio": "CE0A8E0E",
+      "pagina": 3,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6346,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Calidad insuficiente (0.63 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Yazmin Aguilar\\CamScanner 13-02-2026 10.11_02.jpg",
+      "folio": "86357693",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6346,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P12: multiple marca / ambiguedad",
+        "P14: multiple marca / ambiguedad",
+        "P16: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.63 < 0.65)",
+        "P9: multiple marca / ambiguedad",
+        "P13: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Alondra Gomez\\CamScanner 13-02-2026 10.28_04.jpg",
+      "folio": "DB59FF4A",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6351,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "P28: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Tadeo Rubiales\\CamScanner 13-02-2026 10.26_02.jpg",
+      "folio": "CE0A8E0E",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6353,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P9: multiple marca / ambiguedad",
+        "P11: multiple marca / ambiguedad",
+        "P12: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "P16: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Aldo Franco\\CamScanner 13-02-2026 09.58_04.jpg",
+      "folio": "C12DE465",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6354,
+      "confianzaPromedioPagina": 0.0863,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P28: multiple marca / ambiguedad",
+        "P31: confianza baja (0.60)",
+        "Calidad insuficiente (0.64 < 0.65)"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Alondra Gomez\\CamScanner 13-02-2026 10.28_02.jpg",
+      "folio": "DB59FF4A",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6357,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P12: multiple marca / ambiguedad",
+        "P14: multiple marca / ambiguedad",
+        "P15: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Leonardo Hernandez\\CamScanner 13-02-2026 10.03_02.jpg",
+      "folio": "BBD38EEB",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6357,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P14: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Leonardo Hernandez\\CamScanner 13-02-2026 10.03_03.jpg",
+      "folio": "BBD38EEB",
+      "pagina": 3,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6358,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P23: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "P17: multiple marca / ambiguedad",
+        "P21: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Andrei Romero\\CamScanner 13-02-2026 10.15_02.jpg",
+      "folio": "8C85A5DA",
+      "pagina": 2,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6361,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P11: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Kevin Cruz\\CamScanner 13-02-2026 10.24_03.jpg",
+      "folio": "0ADECC1F",
+      "pagina": 3,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6363,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P22: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "P17: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    },
+    {
+      "archivo": "Andrei Romero\\CamScanner 13-02-2026 10.15_04.jpg",
+      "folio": "8C85A5DA",
+      "pagina": 4,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6366,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "Alineacion global inestable (se uso escala simple)",
+        "P28: multiple marca / ambiguedad",
+        "P31: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "P25: multiple marca / ambiguedad",
+        "P27: multiple marca / ambiguedad",
+        "P29: multiple marca / ambiguedad",
+        "P30: multiple marca / ambiguedad",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 7
+    },
+    {
+      "archivo": "Yazmin Aguilar\\CamScanner 13-02-2026 10.11_01.jpg",
+      "folio": "86357693",
+      "pagina": 1,
+      "estado": "rechazado_calidad",
+      "calidadPagina": 0.6373,
+      "confianzaPromedioPagina": 0,
+      "ratioAmbiguas": 1,
+      "motivosRevision": [
+        "P1: multiple marca / ambiguedad",
+        "P4: multiple marca / ambiguedad",
+        "Calidad insuficiente (0.64 < 0.65)",
+        "Segundo pase OMR aplicado por baja calidad/inestabilidad"
+      ],
+      "respuestasDetectadas": 8
+    }
+  ]
+}

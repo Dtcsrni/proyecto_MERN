@@ -1,6 +1,6 @@
 /** Seccion de escaneo OMR y revision manual (orquestacion UI). */
 import type { ChangeEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono } from '../../ui/iconos';
@@ -125,40 +125,90 @@ export function SeccionEscaneo({
     () => [...revisionesSeguras].sort((a, b) => b.actualizadoEn - a.actualizadoEn),
     [revisionesSeguras]
   );
+  const examenAutoInicializadoRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (revisionesOrdenadas.length === 0) return;
+    const examenObjetivo =
+      (examenIdActivo ? revisionesOrdenadas.find((item) => item.examenId === examenIdActivo) : null) ?? revisionesOrdenadas[0];
+    if (!examenObjetivo || examenObjetivo.paginas.length === 0) return;
+    const paginasOrdenadas = [...examenObjetivo.paginas].sort((a, b) => a.numeroPagina - b.numeroPagina);
+    const primeraPagina = paginasOrdenadas[0]?.numeroPagina;
+    if (!Number.isFinite(Number(primeraPagina))) return;
+    const primeraPaginaNumero = Number(primeraPagina);
+    const cambioExamen = examenAutoInicializadoRef.current !== examenObjetivo.examenId;
+    const paginaActual = Number(paginaActiva);
+    const paginaActualEsValida = Number.isFinite(paginaActual)
+      ? examenObjetivo.paginas.some((pagina) => pagina.numeroPagina === paginaActual)
+      : false;
+
+    if (!examenIdActivo || cambioExamen) {
+      examenAutoInicializadoRef.current = examenObjetivo.examenId;
+      if (paginaActual !== primeraPaginaNumero) {
+        onSeleccionarRevision(examenObjetivo.examenId, primeraPaginaNumero);
+      }
+      return;
+    }
+
+    if (!paginaActualEsValida) {
+      onSeleccionarRevision(examenObjetivo.examenId, primeraPaginaNumero);
+    }
+  }, [examenIdActivo, onSeleccionarRevision, paginaActiva, revisionesOrdenadas]);
   const paginaRevisionActiva = useMemo(() => {
     if (!examenIdActivo || !Number.isFinite(Number(paginaActiva))) return null;
     const examen = revisionesSeguras.find((item) => item.examenId === examenIdActivo);
     if (!examen) return null;
     return examen.paginas.find((pagina) => pagina.numeroPagina === Number(paginaActiva)) ?? null;
   }, [examenIdActivo, paginaActiva, revisionesSeguras]);
+  const examenRevisionActivo = useMemo(() => {
+    if (!examenIdActivo) return null;
+    return revisionesSeguras.find((item) => item.examenId === examenIdActivo) ?? null;
+  }, [examenIdActivo, revisionesSeguras]);
+  const claveCorrectaRevision = useMemo(() => {
+    const claveExamen = examenRevisionActivo?.claveCorrectaPorNumero;
+    if (claveExamen && Object.keys(claveExamen).length > 0) return claveExamen;
+    return claveCorrectaPorNumero;
+  }, [claveCorrectaPorNumero, examenRevisionActivo]);
+  const totalPaginasExamenActivo = useMemo(() => {
+    if (!examenRevisionActivo) return 0;
+    return Array.isArray(examenRevisionActivo.paginas) ? examenRevisionActivo.paginas.length : 0;
+  }, [examenRevisionActivo]);
+  const respuestasFuenteRevision = useMemo(
+    () => (Array.isArray(paginaRevisionActiva?.respuestas) ? paginaRevisionActiva.respuestas : respuestasCombinadasSeguras),
+    [paginaRevisionActiva, respuestasCombinadasSeguras]
+  );
   const respuestasCombinadasOrdenadas = useMemo(
-    () => [...respuestasCombinadasSeguras].sort((a, b) => a.numeroPregunta - b.numeroPregunta),
-    [respuestasCombinadasSeguras]
+    () => [...respuestasFuenteRevision].sort((a, b) => a.numeroPregunta - b.numeroPregunta),
+    [respuestasFuenteRevision]
   );
   const respuestasCombinadasPorNumero = useMemo(
     () => new Map(respuestasCombinadasOrdenadas.map((item) => [item.numeroPregunta, item])),
     [respuestasCombinadasOrdenadas]
   );
   const ordenRevision = useMemo(() => {
+    const ordenExamenActivo = Array.isArray(examenRevisionActivo?.ordenPreguntas)
+      ? examenRevisionActivo.ordenPreguntas.filter((numero) => Number.isFinite(Number(numero)))
+      : [];
+    if (ordenExamenActivo.length > 0) return ordenExamenActivo;
     if (ordenPreguntasClaveSegura.length > 0) return ordenPreguntasClaveSegura;
     const numerosRespuestas = respuestasCombinadasOrdenadas.map((item) => item.numeroPregunta);
-    const numerosClave = Object.keys(claveCorrectaPorNumero)
+    const numerosClave = Object.keys(claveCorrectaRevision)
       .map((numero) => Number(numero))
       .filter((numero) => Number.isFinite(numero));
     return Array.from(new Set([...numerosClave, ...numerosRespuestas])).sort((a, b) => a - b);
-  }, [claveCorrectaPorNumero, ordenPreguntasClaveSegura, respuestasCombinadasOrdenadas]);
+  }, [claveCorrectaRevision, examenRevisionActivo, ordenPreguntasClaveSegura, respuestasCombinadasOrdenadas]);
   const filasRevision = useMemo(
     () =>
       ordenRevision.map((numeroPregunta) => {
         const detectada = respuestasCombinadasPorNumero.get(numeroPregunta);
         const confianza = Number.isFinite(Number(detectada?.confianza)) ? Number(detectada?.confianza) : 0;
         const opcion = typeof detectada?.opcion === 'string' && detectada.opcion ? detectada.opcion : null;
-        const correcta = claveCorrectaPorNumero[numeroPregunta] ?? null;
+        const correcta = claveCorrectaRevision[numeroPregunta] ?? null;
         const esDudosa = !opcion || confianza < 0.75;
         const esCorrecta = Boolean(correcta && opcion && opcion === correcta);
         return { numeroPregunta, opcion, confianza, correcta, esDudosa, esCorrecta };
       }),
-    [claveCorrectaPorNumero, ordenRevision, respuestasCombinadasPorNumero]
+    [claveCorrectaRevision, ordenRevision, respuestasCombinadasPorNumero]
   );
   const preguntasDudosas = useMemo(() => filasRevision.filter((item) => item.esDudosa), [filasRevision]);
   const preguntasMostradas = useMemo(
@@ -670,12 +720,22 @@ export function SeccionEscaneo({
           <h3>Mesa de revisión manual</h3>
           <div className="item-sub">
             Examen activo: <b>{examenIdActivo ?? '-'}</b> · Página activa: <b>{paginaActiva ?? '-'}</b>
+            {totalPaginasExamenActivo > 0 ? (
+              <>
+                {' '}
+                de <b>{totalPaginasExamenActivo}</b>
+              </>
+            ) : null}
             {paginaRevisionActiva?.nombreArchivo ? ` · Archivo: ${paginaRevisionActiva.nombreArchivo}` : ''}
           </div>
           <div className="item-sub">
             Estado <span className={`badge ${estadoAnalisisClase}`}>{estadoAnalisisResultado}</span> · Calidad{' '}
             {Math.round(calidadPaginaResultado * 100)}% · Confianza media {Math.round(confianzaPromedioResultado * 100)}% · Ambiguas{' '}
             {(ratioAmbiguasResultado * 100).toFixed(1)}%
+          </div>
+          <div className="item-sub">
+            Orden de preguntas: {examenRevisionActivo?.ordenPreguntas?.length ? 'propio del examen activo' : 'referencia general'} · Reactivos en revisión:{' '}
+            {ordenRevision.length}
           </div>
           <div className="item-meta">
             <span>Aciertos (dinámico): {resumenCalificacionDinamica.aciertos}/{resumenCalificacionDinamica.total}</span>
@@ -746,15 +806,21 @@ export function SeccionEscaneo({
             </InlineMensaje>
           )}
           <div className="omr-review-grid">
-            <div className="item-glass omr-review-card">
+            <div className="item-glass omr-review-card omr-review-card--imagen">
               <h4>Imagen del examen</h4>
-              {paginaRevisionActiva?.imagenBase64 ? (
-                <img className="preview" src={paginaRevisionActiva.imagenBase64} alt={`Examen ${examenIdActivo ?? ''} página ${paginaActiva ?? ''}`} />
-              ) : imagenBase64 ? (
-                <img className="preview" src={imagenBase64} alt="Imagen cargada para analisis OMR" />
-              ) : (
-                <InlineMensaje tipo="info">Selecciona una página de la revisión para ver su imagen.</InlineMensaje>
-              )}
+              <div className="omr-review-card__image-wrap">
+                {paginaRevisionActiva?.imagenBase64 ? (
+                  <img
+                    className="preview omr-review-card__image"
+                    src={paginaRevisionActiva.imagenBase64}
+                    alt={`Examen ${examenIdActivo ?? ''} página ${paginaActiva ?? ''}`}
+                  />
+                ) : imagenBase64 ? (
+                  <img className="preview omr-review-card__image" src={imagenBase64} alt="Imagen cargada para analisis OMR" />
+                ) : (
+                  <InlineMensaje tipo="info">Selecciona una página de la revisión para ver su imagen.</InlineMensaje>
+                )}
+              </div>
             </div>
             <div className="item-glass omr-review-card">
               <h4>Respuesta del alumno (editable)</h4>
@@ -826,7 +892,7 @@ export function SeccionEscaneo({
               ) : (
                 <ul className="lista">
                   {ordenRevision.map((numeroPregunta) => {
-                    const correcta = claveCorrectaPorNumero[numeroPregunta] ?? '-';
+                    const correcta = claveCorrectaRevision[numeroPregunta] ?? '-';
                     const detectada = respuestasCombinadasPorNumero.get(numeroPregunta)?.opcion ?? null;
                     const coincide = Boolean(correcta && detectada && correcta === detectada);
                     return (

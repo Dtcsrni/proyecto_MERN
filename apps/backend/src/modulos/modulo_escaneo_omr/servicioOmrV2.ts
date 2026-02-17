@@ -144,6 +144,16 @@ const OMR_COLORIMETRY_WHITE_PERCENTILE = Math.max(
   0.85,
   Math.min(0.99, Number.parseFloat(process.env.OMR_COLORIMETRY_WHITE_PERCENTILE || '0.96'))
 );
+const OMR_SECOND_PASS_ENABLED =
+  String(process.env.OMR_SECOND_PASS_ENABLED || '1').toLowerCase() !== 'false' && process.env.OMR_SECOND_PASS_ENABLED !== '0';
+const OMR_SECOND_PASS_QUALITY_MAX = Number.parseFloat(process.env.OMR_SECOND_PASS_QUALITY_MAX || '0.72');
+const OMR_SECOND_PASS_CONF_MAX = Number.parseFloat(process.env.OMR_SECOND_PASS_CONF_MAX || '0.5');
+const OMR_SECOND_PASS_FIDUCIALES_RESCUE =
+  String(process.env.OMR_SECOND_PASS_FIDUCIALES_RESCUE || '1').toLowerCase() !== 'false' &&
+  process.env.OMR_SECOND_PASS_FIDUCIALES_RESCUE !== '0';
+const OMR_REJECT_KEEP_RESPONSES_MIN_DETECTION = Number.parseFloat(
+  process.env.OMR_REJECT_KEEP_RESPONSES_MIN_DETECTION || '0.22'
+);
 
 type PerfilDeteccionOmr = {
   version: TemplateVersion;
@@ -268,6 +278,12 @@ type DebugInfo = {
   folio?: string;
   numeroPagina?: number;
   templateVersionDetectada?: TemplateVersion;
+};
+
+type OpcionesAnalisisInterno = {
+  aggressivePreprocess?: boolean;
+  noRetry?: boolean;
+  rescueFiduciales?: boolean;
 };
 
 type DebugPregunta = {
@@ -396,7 +412,11 @@ function resolverEstadoAnalisis(args: {
     const senalMuyDebil = confianzaMedia < 0.2 || ratioAmbiguas > 0.85;
     if (senalMuyDebil) {
       estado = 'rechazado_calidad';
-      anularRespuestas = true;
+      if (deteccionRatio < OMR_REJECT_KEEP_RESPONSES_MIN_DETECTION) {
+        anularRespuestas = true;
+      } else {
+        advertencias.push('Calidad rechazada: respuestas conservadas para revision manual');
+      }
       motivos.push(`Calidad insuficiente (${calidadPagina.toFixed(2)} < ${OMR_QUALITY_REJECT_MIN.toFixed(2)})`);
       advertencias.push(`Pagina rechazada por baja calidad (${calidadPagina.toFixed(2)})`);
     } else {
@@ -622,7 +642,7 @@ async function exportarPatchesOmr(
   await fs.writeFile(path.join(baseDir, 'metadata.json'), JSON.stringify(metadata, null, 2), 'utf8');
 }
 
-async function decodificarImagen(base64: string) {
+async function decodificarImagen(base64: string, aggressivePreprocess = false) {
   const buffer = Buffer.from(limpiarBase64(base64), 'base64');
   const imagen = sharp(buffer).rotate().normalize();
   const { width, height } = await imagen.metadata();
@@ -662,15 +682,21 @@ async function decodificarImagen(base64: string) {
 
   const metricasPrevias = calcularMetricasImagen(gray, w, h);
   const contrasteGlobal = Math.abs(percentilGray(gray, 0.9) - percentilGray(gray, 0.1));
-  const requiereRescate = metricasPrevias.blurVar < 110 || contrasteGlobal < 52;
+  const requiereRescate = aggressivePreprocess || metricasPrevias.blurVar < 110 || contrasteGlobal < 52;
   if (requiereRescate) {
     const realzada = realzarGrayParaFotoDificil(gray, w, h);
-    const mezcla = Math.max(0.35, Math.min(0.8, contrasteGlobal < 42 ? 0.72 : 0.5));
+    const mezclaBase = aggressivePreprocess ? 0.78 : contrasteGlobal < 42 ? 0.72 : 0.5;
+    const mezcla = Math.max(0.4, Math.min(0.9, mezclaBase));
     const combinada = new Uint8ClampedArray(gray.length);
     for (let i = 0; i < gray.length; i += 1) {
       combinada[i] = Math.round(gray[i] * (1 - mezcla) + realzada[i] * mezcla);
     }
-    gray = combinada;
+    if (aggressivePreprocess) {
+      const reforzada = realzarGrayParaFotoDificil(combinada, w, h);
+      gray = new Uint8ClampedArray(reforzada);
+    } else {
+      gray = combinada;
+    }
   }
 
   const integral = calcularIntegral(gray, w, h);
@@ -1146,16 +1172,115 @@ export async function leerQrDesdeImagen(imagenBase64: string): Promise<string | 
   return qr?.data;
 }
 
+function puntajeEstado(estado: ResultadoOmr['estadoAnalisis']) {
+  if (estado === 'ok') return 3;
+  if (estado === 'requiere_revision') return 2;
+  return 1;
+}
+
+function puntuarResultadoOmr(resultado: ResultadoOmr) {
+  const total = Math.max(1, resultado.respuestasDetectadas.length);
+  const contestadas = resultado.respuestasDetectadas.filter((r) => Boolean(r.opcion)).length;
+  const cobertura = contestadas / total;
+  return (
+    puntajeEstado(resultado.estadoAnalisis) * 2 +
+    resultado.calidadPagina * 1.1 +
+    resultado.confianzaPromedioPagina * 0.9 +
+    (1 - resultado.ratioAmbiguas) * 0.8 +
+    cobertura * 0.7
+  );
+}
+
+function debeIntentarSegundoPase(resultado: ResultadoOmr) {
+  if (!OMR_SECOND_PASS_ENABLED) return false;
+  if (resultado.estadoAnalisis === 'ok') return false;
+  if (resultado.calidadPagina <= OMR_SECOND_PASS_QUALITY_MAX) return true;
+  if (resultado.confianzaPromedioPagina <= OMR_SECOND_PASS_CONF_MAX) return true;
+  if (resultado.motivosRevision.some((m) => /alineacion global inestable/i.test(m))) return true;
+  return false;
+}
+
+function fusionarResultadosOmr(base: ResultadoOmr, rescate: ResultadoOmr): ResultadoOmr {
+  const baseMejor = puntuarResultadoOmr(base) >= puntuarResultadoOmr(rescate);
+  const principal = baseMejor ? base : rescate;
+  const secundario = baseMejor ? rescate : base;
+
+  const mapaSec = new Map(secundario.respuestasDetectadas.map((r) => [r.numeroPregunta, r]));
+  const respuestasDetectadas = principal.respuestasDetectadas.map((rPrincipal) => {
+    const rSec = mapaSec.get(rPrincipal.numeroPregunta);
+    if (!rSec) return rPrincipal;
+
+    if (rPrincipal.opcion && rSec.opcion && rPrincipal.opcion === rSec.opcion) {
+      return {
+        numeroPregunta: rPrincipal.numeroPregunta,
+        opcion: rPrincipal.opcion,
+        confianza: Math.max(rPrincipal.confianza, rSec.confianza)
+      };
+    }
+    if (rPrincipal.opcion && !rSec.opcion) return rPrincipal;
+    if (!rPrincipal.opcion && rSec.opcion) return rSec;
+    if (!rPrincipal.opcion && !rSec.opcion) {
+      return {
+        numeroPregunta: rPrincipal.numeroPregunta,
+        opcion: null,
+        confianza: Math.max(rPrincipal.confianza, rSec.confianza)
+      };
+    }
+    return rPrincipal.confianza >= rSec.confianza ? rPrincipal : rSec;
+  });
+
+  const sumaConf = respuestasDetectadas.reduce((acc, r) => acc + Math.max(0, r.confianza), 0);
+  const total = Math.max(1, respuestasDetectadas.length);
+  const contestadas = respuestasDetectadas.filter((r) => Boolean(r.opcion)).length;
+  const ambiguas = respuestasDetectadas.filter((r) => !r.opcion).length;
+  const confianzaPromedioPagina = sumaConf / total;
+  const ratioAmbiguas = ambiguas / total;
+
+  const decisionEstado = resolverEstadoAnalisis({
+    calidadPagina: Math.max(base.calidadPagina, rescate.calidadPagina),
+    confianzaMedia: confianzaPromedioPagina,
+    ratioAmbiguas,
+    totalRespuestas: respuestasDetectadas.length,
+    respuestasContestadas: contestadas
+  });
+
+  const advertencias = Array.from(new Set([...base.advertencias, ...rescate.advertencias]));
+  const motivosRevision = Array.from(
+    new Set([
+      ...base.motivosRevision,
+      ...rescate.motivosRevision,
+      ...decisionEstado.motivos,
+      'Segundo pase OMR aplicado por baja calidad/inestabilidad'
+    ])
+  ).slice(0, 24);
+
+  return {
+    respuestasDetectadas,
+    advertencias,
+    qrTexto: principal.qrTexto ?? secundario.qrTexto,
+    calidadPagina: Math.max(base.calidadPagina, rescate.calidadPagina),
+    estadoAnalisis: decisionEstado.estado,
+    motivosRevision,
+    templateVersionDetectada: principal.templateVersionDetectada,
+    confianzaPromedioPagina,
+    ratioAmbiguas
+  };
+}
+
 export async function analizarOmr(
   imagenBase64: string,
   mapaPagina: MapaOmrPagina,
   qrEsperado?: string | string[],
   margenMm = 10,
-  debugInfo?: DebugInfo
+  debugInfo?: DebugInfo,
+  opcionesInternas?: OpcionesAnalisisInterno
 ): Promise<ResultadoOmr> {
   const advertencias: string[] = [];
   const motivosRevision: string[] = [];
-  const { data, gray, integral, width, height, metricasColor } = await decodificarImagen(imagenBase64);
+  const { data, gray, integral, width, height, metricasColor } = await decodificarImagen(
+    imagenBase64,
+    Boolean(opcionesInternas?.aggressivePreprocess)
+  );
   const templateInicial = debugInfo?.templateVersionDetectada ?? mapaPagina.templateVersion ?? 1;
   const perfilInicial = ajustarPerfilConMapa(resolverPerfilDeteccion(templateInicial), mapaPagina);
   let qrDetalle = detectarQrMejorado(data, gray, width, height, {
@@ -1260,10 +1385,17 @@ export async function analizarOmr(
     if (puntajeEscala > puntajeHom + 0.03) {
       advertencias.push('Se eligio transformacion por escala por mayor coherencia de marcas');
       motivosRevision.push('Alineacion global inestable (se uso escala simple)');
-      transformar = transformarEscala;
+      if (opcionesInternas?.rescueFiduciales) {
+        advertencias.push('Rescate fiduciales: se mantiene transformacion base para ajuste local');
+      } else {
+        transformar = transformarEscala;
+      }
     }
   }
   const estado: EstadoImagenOmr = { gray, integral, width, height, escalaX, paramsBurbuja };
+  const umbralRespuestaConf = opcionesInternas?.aggressivePreprocess
+    ? Math.max(0.62, OMR_RESPUESTA_CONF_MIN - 0.14)
+    : OMR_RESPUESTA_CONF_MIN;
   const respuestasDetectadas: ResultadoOmr['respuestasDetectadas'] = [];
   const patches: PatchRegistro[] = [];
   let sumaConfianza = 0;
@@ -1294,6 +1426,9 @@ export async function analizarOmr(
       perfil.reprojectionMaxErrorPx < Number.POSITIVE_INFINITY &&
       (!Number.isFinite(prep.reprojectionErrorPx ?? Number.NaN) || (prep.reprojectionErrorPx ?? Infinity) > perfil.reprojectionMaxErrorPx)
     ) {
+      if (opcionesInternas?.rescueFiduciales) {
+        motivosRevision.push(`P${pregunta.numeroPregunta}: rescate fiduciales por error geométrico local`);
+      } else {
       respuestasDetectadas.push({
         numeroPregunta: pregunta.numeroPregunta,
         opcion: null,
@@ -1319,6 +1454,7 @@ export async function analizarOmr(
         });
       }
       return;
+      }
     }
     const { mejorDx, mejorDy } = buscarMejorOffsetPregunta({
       estado,
@@ -1361,7 +1497,7 @@ export async function analizarOmr(
       },
       detectarOpcion
     });
-    const opcionDetectada = metricas.suficiente && metricas.confianza >= OMR_RESPUESTA_CONF_MIN ? metricas.mejorOpcion : null;
+    const opcionDetectada = metricas.suficiente && metricas.confianza >= umbralRespuestaConf ? metricas.mejorOpcion : null;
     respuestasDetectadas.push({
       numeroPregunta: pregunta.numeroPregunta,
       opcion: opcionDetectada,
@@ -1369,7 +1505,7 @@ export async function analizarOmr(
     });
     sumaConfianza += metricas.confianza;
     if (opcionDetectada) respuestasContestadas += 1;
-    if (metricas.dobleMarcada || !metricas.suficiente || metricas.confianza < OMR_RESPUESTA_CONF_MIN) {
+    if (metricas.dobleMarcada || !metricas.suficiente || metricas.confianza < umbralRespuestaConf) {
       preguntasAmbiguas += 1;
       if (metricas.dobleMarcada) {
         motivosRevision.push(`P${pregunta.numeroPregunta}: multiple marca / ambiguedad`);
@@ -1515,7 +1651,7 @@ export async function analizarOmr(
   }
 
   const motivosUnicos = Array.from(new Set(motivosRevision)).slice(0, 24);
-  return {
+  const resultadoBase: ResultadoOmr = {
     respuestasDetectadas,
     advertencias,
     qrTexto,
@@ -1526,5 +1662,29 @@ export async function analizarOmr(
     confianzaPromedioPagina: confianzaMedia,
     ratioAmbiguas
   };
+
+  if (!opcionesInternas?.noRetry && debeIntentarSegundoPase(resultadoBase)) {
+    const resultadoRescate = await analizarOmr(
+      imagenBase64,
+      mapaPagina,
+      qrEsperado,
+      margenMm,
+      debugInfo,
+      {
+        aggressivePreprocess: true,
+        noRetry: true,
+        rescueFiduciales: OMR_SECOND_PASS_FIDUCIALES_RESCUE
+      }
+    );
+    const fusion = fusionarResultadosOmr(resultadoBase, resultadoRescate);
+    const scoreBase = puntuarResultadoOmr(resultadoBase);
+    const scoreRescate = puntuarResultadoOmr(resultadoRescate);
+    const scoreFusion = puntuarResultadoOmr(fusion);
+    if (scoreFusion >= scoreBase || scoreRescate > scoreBase) {
+      return scoreFusion >= scoreRescate ? fusion : resultadoRescate;
+    }
+  }
+
+  return resultadoBase;
 }
 

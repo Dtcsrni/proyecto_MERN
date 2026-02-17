@@ -27,9 +27,11 @@
     "lint": "eslint . --ext .ts --max-warnings=0",
     "dev:omr:geo-tight": "tsx scripts/omr-run-dev-profile.ts geo_tight_search",
     "dev:omr:actual": "tsx scripts/omr-run-dev-profile.ts actual",
+    "auth:reset-password": "tsx scripts/auth-reset-password.ts",
     "omr:eval:profile": "tsx scripts/omr-eval-profile.ts",
     "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts",
-    "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts"
+    "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts",
+    "omr:diagnose:rechazo": "tsx scripts/omr-diagnose-rechazo.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
