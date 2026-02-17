@@ -22,6 +22,15 @@ npm run dev:portal
 npm run stack:prod
 ```
 
+Portal prod local (sin watch):
+```bash
+npm run portal:prod
+```
+
+Notas:
+- `portal:prod` compila `apps/portal_alumno_cloud` solo si falta `dist/index.js`.
+- El acceso directo `EvaluaPro - Prod` (tray) arranca stack + portal automaticamente si estaban apagados.
+
 ## Servicios locales tipicos
 - `mongo_local`
 - `api_docente_local` / `api_docente_prod`
@@ -51,6 +60,47 @@ Portal cloud:
 - `CORS_ORIGENES`
 
 Referencia completa: `docs/AUTO_ENV.md`.
+
+## Distribuible estable Windows (MSI/WiX)
+Estructura:
+- `packaging/wix/Product.wxs`
+- `packaging/wix/Bundle.wxs`
+- `packaging/wix/Fragments/*`
+
+Build local:
+```powershell
+npm run msi:build
+```
+
+Garantia de estabilidad para distribuible:
+- `msi:build` ejecuta checks obligatorios antes de empaquetar:
+  - `lint`
+  - `typecheck`
+  - `test:backend:ci`
+  - `test:portal:ci`
+  - `test:frontend:ci`
+  - `bigbang:olas:check`
+  - `pipeline:contract:check`
+- si algun check falla, no se genera instalador.
+
+Artefactos:
+- `dist/installer/EvaluaPro.msi`
+- `dist/installer/EvaluaPro-Setup.exe`
+
+Prerequisitos de instalacion:
+- Node.js 24+
+- Docker Desktop
+- WiX Toolset v4 (solo para generar instalador)
+
+Autoconfiguracion durante uso:
+- shortcuts Dev/Prod instalados automaticamente.
+- acceso directo Prod intenta iniciar stack+portal si no estan activos.
+- instalacion/actualizacion crea accesos directos automaticamente.
+- escritorio habilitado por defecto (`InstallDesktopShortcuts=1`).
+
+No autoconfigurable por instalador:
+- instalacion de Node.js/Docker Desktop.
+- credenciales/secretos de entorno de produccion real.
 
 ## Operacion y verificacion
 - Estado rapido:

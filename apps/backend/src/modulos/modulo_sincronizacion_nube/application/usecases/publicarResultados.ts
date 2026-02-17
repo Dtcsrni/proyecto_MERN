@@ -1,0 +1,144 @@
+import { promises as fs } from 'fs';
+import { ErrorAplicacion } from '../../../../compartido/errores/errorAplicacion';
+import { Alumno } from '../../../modulo_alumnos/modeloAlumno';
+import { Periodo } from '../../../modulo_alumnos/modeloPeriodo';
+import { Calificacion } from '../../../modulo_calificacion/modeloCalificacion';
+import { BancoPregunta } from '../../../modulo_banco_preguntas/modeloBancoPregunta';
+import { ExamenGenerado } from '../../../modulo_generacion_pdf/modeloExamenGenerado';
+import { BanderaRevision } from '../../../modulo_analiticas/modeloBanderaRevision';
+import { CodigoAcceso } from '../../modeloCodigoAcceso';
+import { Sincronizacion } from '../../modeloSincronizacion';
+import { comprimirBase64, construirComparativaRespuestas } from '../../sincronizacionInterna';
+import { crearClientePortal } from '../../infra/portalSyncClient';
+import { leerCapturasOmrParaPortal } from '../../infra/omrCapturas';
+import { syncClock } from '../../infra/repositoriosSync';
+
+export async function publicarResultadosUseCase(params: { docenteId: string; periodoId: string }) {
+  const { docenteId, periodoId } = params;
+  const portal = crearClientePortal('PORTAL_NO_CONFIG');
+
+  const periodo = await Periodo.findOne({ _id: periodoId, docenteId }).lean();
+  if (!periodo) {
+    throw new ErrorAplicacion('PERIODO_NO_ENCONTRADO', 'Periodo no encontrado', 404);
+  }
+
+  const alumnos = await Alumno.find({ docenteId, periodoId }).lean();
+  const calificaciones = await Calificacion.find({ docenteId, periodoId }).lean();
+  const banderas = await BanderaRevision.find({ docenteId }).lean();
+  const examenes = await ExamenGenerado.find({ docenteId, periodoId }).lean();
+
+  const capturasOmrPorExamen = new Map<string, Awaited<ReturnType<typeof leerCapturasOmrParaPortal>>>();
+  for (const examen of examenes) {
+    const examenId = String((examen as unknown as { _id?: unknown })?._id ?? '').trim();
+    const folio = String((examen as unknown as { folio?: unknown })?.folio ?? '').trim();
+    if (!examenId || !folio) continue;
+    const capturas = await leerCapturasOmrParaPortal(folio);
+    if (capturas.length > 0) capturasOmrPorExamen.set(examenId, capturas);
+  }
+
+  const examenesMap = new Map<string, Record<string, unknown>>(examenes.map((examen) => [String(examen._id), examen as Record<string, unknown>]));
+  const preguntasIds = Array.from(
+    new Set(
+      examenes
+        .flatMap((examen) => {
+          const orden = (examen.mapaVariante?.ordenPreguntas ?? []) as unknown[];
+          return Array.isArray(orden) ? orden : [];
+        })
+        .map((id) => String(id))
+        .filter(Boolean)
+    )
+  );
+  const preguntasDb = preguntasIds.length ? await BancoPregunta.find({ _id: { $in: preguntasIds } }).lean() : [];
+  const codigo = await CodigoAcceso.findOne({ docenteId, periodoId, usado: false }).lean();
+
+  const examenesPayload: Array<Record<string, unknown>> = [];
+  for (const examen of examenes) {
+    let pdfComprimidoBase64: string | undefined;
+    if (examen.rutaPdf) {
+      try {
+        const contenido = await fs.readFile(examen.rutaPdf);
+        pdfComprimidoBase64 = comprimirBase64(contenido);
+      } catch {
+        // best-effort
+      }
+    }
+    examenesPayload.push({
+      examenGeneradoId: examen._id,
+      folio: examen.folio,
+      pdfComprimidoBase64
+    });
+  }
+
+  const payload = {
+    docenteId,
+    periodo: { _id: periodo._id },
+    alumnos: alumnos.map((alumno) => ({
+      _id: alumno._id,
+      matricula: alumno.matricula,
+      nombreCompleto: alumno.nombreCompleto,
+      grupo: alumno.grupo
+    })),
+    calificaciones: calificaciones.map((calificacion) => ({
+      ...(() => {
+        const respuestasDetectadas = Array.isArray(calificacion.respuestasDetectadas)
+          ? (calificacion.respuestasDetectadas as Array<{ numeroPregunta?: unknown; opcion?: unknown; confianza?: unknown }>)
+              .map((respuesta) => ({
+                numeroPregunta: Number(respuesta?.numeroPregunta),
+                opcion: typeof respuesta?.opcion === 'string' ? respuesta.opcion.toUpperCase() : null,
+                ...(typeof respuesta?.confianza === 'number' ? { confianza: respuesta.confianza } : {})
+              }))
+              .filter((respuesta) => Number.isInteger(respuesta.numeroPregunta) && respuesta.numeroPregunta > 0)
+          : [];
+
+        return {
+          respuestasDetectadas,
+          comparativaRespuestas: construirComparativaRespuestas(
+            examenesMap.get(String(calificacion.examenGeneradoId)),
+            preguntasDb as Array<Record<string, unknown>>,
+            respuestasDetectadas
+          )
+        };
+      })(),
+      docenteId: calificacion.docenteId,
+      alumnoId: calificacion.alumnoId,
+      examenGeneradoId: calificacion.examenGeneradoId,
+      tipoExamen: calificacion.tipoExamen,
+      totalReactivos: calificacion.totalReactivos,
+      aciertos: calificacion.aciertos,
+      calificacionExamenFinalTexto: calificacion.calificacionExamenFinalTexto,
+      calificacionParcialTexto: calificacion.calificacionParcialTexto,
+      calificacionGlobalTexto: calificacion.calificacionGlobalTexto,
+      evaluacionContinuaTexto: calificacion.evaluacionContinuaTexto,
+      proyectoTexto: calificacion.proyectoTexto,
+      omrCapturas: capturasOmrPorExamen.get(String(calificacion.examenGeneradoId)) ?? [],
+      omrAuditoria: calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object' ? calificacion.omrAuditoria : undefined
+    })),
+    examenes: examenesPayload,
+    banderas: banderas.map((bandera) => ({
+      examenGeneradoId: bandera.examenGeneradoId,
+      alumnoId: bandera.alumnoId,
+      tipo: bandera.tipo,
+      severidad: bandera.severidad,
+      descripcion: bandera.descripcion,
+      sugerencia: bandera.sugerencia
+    })),
+    codigoAcceso: codigo ? { codigo: codigo.codigo, expiraEn: codigo.expiraEn } : null
+  };
+
+  const respuesta = await portal.postJson<Record<string, unknown>>('/api/portal/sincronizar', payload);
+
+  const estado = respuesta.ok ? 'exitoso' : 'fallido';
+  await Sincronizacion.create({
+    docenteId,
+    estado,
+    tipo: 'publicacion',
+    detalles: { periodoId, status: respuesta.status },
+    ejecutadoEn: syncClock.now()
+  });
+
+  if (!respuesta.ok) {
+    throw new ErrorAplicacion('PUBLICACION_FALLIDA', 'No se pudo publicar en la nube', 502);
+  }
+
+  return { mensaje: 'Publicacion enviada' };
+}

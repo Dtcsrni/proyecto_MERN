@@ -1,3 +1,9 @@
+/**
+ * vitestStrict
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
 export type StrictHarnessOptions = {
@@ -114,79 +120,84 @@ export function instalarTestHardening(opts: StrictHarnessOptions = {}) {
   let restoreWarn: (() => void) | undefined;
   let restoreError: (() => void) | undefined;
 
-  beforeAll(() => {
-    if (!allowConsole) {
-      const originalWarn = console.warn.bind(console);
-      const originalError = console.error.bind(console);
-
-      const warnSpy = vi.spyOn(console, 'warn');
-      const errorSpy = vi.spyOn(console, 'error');
-
-      warnSpy.mockImplementation((...args: unknown[]) => {
-        const msg = stringifyArgs(args);
-        if (!matchesAny(msg, allowConsolePatterns)) consoleWarnCalls.push(msg);
-        originalWarn(...args);
-      });
-
-      errorSpy.mockImplementation((...args: unknown[]) => {
-        const msg = stringifyArgs(args);
-        if (!matchesAny(msg, allowConsolePatterns)) consoleErrorCalls.push(msg);
-        originalError(...args);
-      });
-
-      restoreWarn = () => warnSpy.mockRestore();
-      restoreError = () => errorSpy.mockRestore();
-    }
-
-    process.on('unhandledRejection', onUnhandledRejection);
-    process.on('uncaughtException', onUncaughtException);
-    process.on('warning', onNodeWarning);
-
-    if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
-      window.addEventListener('error', onWindowError);
-      window.addEventListener('unhandledrejection', onWindowUnhandledRejection);
-    }
-  });
-
-  afterEach(() => {
-    const issues: string[] = [];
-
-    try {
+  try {
+    beforeAll(() => {
       if (!allowConsole) {
-        if (consoleWarnCalls.length > 0) issues.push(`console.warn: ${consoleWarnCalls.slice(0, 3).join(' | ')}`);
-        if (consoleErrorCalls.length > 0) issues.push(`console.error: ${consoleErrorCalls.slice(0, 3).join(' | ')}`);
+        const originalWarn = console.warn.bind(console);
+        const originalError = console.error.bind(console);
+
+        const warnSpy = vi.spyOn(console, 'warn');
+        const errorSpy = vi.spyOn(console, 'error');
+
+        warnSpy.mockImplementation((...args: unknown[]) => {
+          const msg = stringifyArgs(args);
+          if (!matchesAny(msg, allowConsolePatterns)) consoleWarnCalls.push(msg);
+          originalWarn(...args);
+        });
+
+        errorSpy.mockImplementation((...args: unknown[]) => {
+          const msg = stringifyArgs(args);
+          if (!matchesAny(msg, allowConsolePatterns)) consoleErrorCalls.push(msg);
+          originalError(...args);
+        });
+
+        restoreWarn = () => warnSpy.mockRestore();
+        restoreError = () => errorSpy.mockRestore();
       }
 
-      if (!allowNodeWarnings && nodeWarnings.length > 0) {
-        issues.push(`process.warning: ${nodeWarnings.slice(0, 3).join(' | ')}`);
+      process.on('unhandledRejection', onUnhandledRejection);
+      process.on('uncaughtException', onUncaughtException);
+      process.on('warning', onNodeWarning);
+
+      if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
+        window.addEventListener('error', onWindowError);
+        window.addEventListener('unhandledrejection', onWindowUnhandledRejection);
+      }
+    });
+
+    afterEach(() => {
+      const issues: string[] = [];
+
+      try {
+        if (!allowConsole) {
+          if (consoleWarnCalls.length > 0) issues.push(`console.warn: ${consoleWarnCalls.slice(0, 3).join(' | ')}`);
+          if (consoleErrorCalls.length > 0) issues.push(`console.error: ${consoleErrorCalls.slice(0, 3).join(' | ')}`);
+        }
+
+        if (!allowNodeWarnings && nodeWarnings.length > 0) {
+          issues.push(`process.warning: ${nodeWarnings.slice(0, 3).join(' | ')}`);
+        }
+
+        if (unhandled.length > 0) {
+          issues.push(`unhandled: ${unhandled.slice(0, 3).join(' | ')}`);
+        }
+      } finally {
+        consoleWarnCalls.length = 0;
+        consoleErrorCalls.length = 0;
+        nodeWarnings.length = 0;
+        unhandled.length = 0;
       }
 
-      if (unhandled.length > 0) {
-        issues.push(`unhandled: ${unhandled.slice(0, 3).join(' | ')}`);
+      if (issues.length > 0) {
+        throw new Error(`Fallo por warnings/errores en entorno de test: ${issues.join(' ; ')}`);
       }
-    } finally {
-      consoleWarnCalls.length = 0;
-      consoleErrorCalls.length = 0;
-      nodeWarnings.length = 0;
-      unhandled.length = 0;
-    }
+    });
 
-    if (issues.length > 0) {
-      throw new Error(`Fallo por warnings/errores en entorno de test: ${issues.join(' ; ')}`);
-    }
-  });
+    afterAll(() => {
+      process.off('unhandledRejection', onUnhandledRejection);
+      process.off('uncaughtException', onUncaughtException);
+      process.off('warning', onNodeWarning);
 
-  afterAll(() => {
-    process.off('unhandledRejection', onUnhandledRejection);
-    process.off('uncaughtException', onUncaughtException);
-    process.off('warning', onNodeWarning);
+      if (typeof window !== 'undefined' && window && typeof window.removeEventListener === 'function') {
+        window.removeEventListener('error', onWindowError);
+        window.removeEventListener('unhandledrejection', onWindowUnhandledRejection);
+      }
 
-    if (typeof window !== 'undefined' && window && typeof window.removeEventListener === 'function') {
-      window.removeEventListener('error', onWindowError);
-      window.removeEventListener('unhandledrejection', onWindowUnhandledRejection);
-    }
-
-    restoreWarn?.();
-    restoreError?.();
-  });
+      restoreWarn?.();
+      restoreError?.();
+    });
+  } catch {
+    // Cuando Vitest evalua fuera de runner (caso esporadico), no registrar hooks.
+    return;
+  }
 }

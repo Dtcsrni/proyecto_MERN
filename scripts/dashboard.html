@@ -2731,6 +2731,7 @@
         </svg>
       </button>
       <button class="chip" id="theme-toggle" type="button" title="Cambiar tema (claro/oscuro)">Tema</button>
+      <button class="chip" id="version-chip" type="button" title="Abrir información de versión">v...</button>
     </div>
   </header>
 
@@ -2761,6 +2762,18 @@
       >
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16v2H4v-2zM6 4h4v11H6V4zm6 3h4v8h-4V7z"/></svg>
         Estado y logs
+      </button>
+      <button
+        id="tab-config"
+        class="tab-btn"
+        data-tab="config"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-config"
+        tabindex="-1"
+      >
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.9 7.9 0 0 0 .1-2l2-1.6-2-3.4-2.5 1a7.8 7.8 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7c-.6.2-1.2.5-1.7 1l-2.5-1-2 3.4 2 1.6a7.9 7.9 0 0 0 .1 2l-2 1.6 2 3.4 2.5-1c.5.4 1.1.8 1.7 1l.4 2.7h4l.4-2.7c.6-.2 1.2-.6 1.7-1l2.5 1 2-3.4-2-1.6ZM11 15a3 3 0 1 1 2 0 3 3 0 0 1-2 0Z"/></svg>
+        Configuración
       </button>
       <button
         id="tab-db"
@@ -3281,25 +3294,6 @@
                 </button>
               </div>
 
-              <div class="toolbar-group switches" aria-label="Opciones de salida">
-                <label class="toggle">
-                  <input type="checkbox" id="full-logs" />
-                  Logs detallados
-                </label>
-                <label class="toggle">
-                  <input type="checkbox" id="auto-scroll" checked />
-                  Auto-scroll
-                </label>
-                <label class="toggle">
-                  <input type="checkbox" id="pause-updates" />
-                  Pausar actualizaciones
-                </label>
-                <label class="toggle" title="En modo dev, reinicia el stack cuando cambien archivos del front/back">
-                  <input type="checkbox" id="auto-restart" />
-                  Auto-reinicio (dev)
-                </label>
-              </div>
-
               <div class="toolbar-group filter" aria-label="Filtro de salida">
                 <input class="search" id="log-filter" placeholder="Filtrar texto" aria-label="Filtrar salida" />
                 <button class="ghost-btn" id="clear-filter" type="button">Limpiar filtro</button>
@@ -3318,6 +3312,80 @@
             </div>
             <div class="log-shell collapsed" id="log-shell">
               <div class="log-body" id="log" role="log" aria-label="Salida de consola" aria-live="off">Cargando...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-config" class="tab-panel" data-panel="config" role="tabpanel" tabindex="0" aria-labelledby="tab-config" hidden>
+      <div class="panel-grid">
+        <div class="left-col">
+          <div class="card">
+            <h2>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.9 7.9 0 0 0 .1-2l2-1.6-2-3.4-2.5 1a7.8 7.8 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7c-.6.2-1.2.5-1.7 1l-2.5-1-2 3.4 2 1.6a7.9 7.9 0 0 0 .1 2l-2 1.6 2 3.4 2.5-1c.5.4 1.1.8 1.7 1l.4 2.7h4l.4-2.7c.6-.2 1.2-.6 1.7-1l2.5 1 2-3.4-2-1.6ZM11 15a3 3 0 1 1 2 0 3 3 0 0 1-2 0Z"/></svg>
+              Configuración del dashboard
+            </h2>
+            <p class="hint">Estos ajustes se guardan localmente para próximas sesiones.</p>
+            <div class="toolbar toolbar-grid">
+              <div class="toolbar-group switches" aria-label="Configuraciones">
+                <label class="toggle">
+                  <input type="checkbox" id="full-logs" />
+                  Logs detallados
+                </label>
+                <label class="toggle">
+                  <input type="checkbox" id="auto-scroll" />
+                  Auto-scroll
+                </label>
+                <label class="toggle">
+                  <input type="checkbox" id="pause-updates" />
+                  Pausar actualizaciones
+                </label>
+                <label class="toggle" title="En modo dev, reinicia el stack cuando cambien archivos del front/back">
+                  <input type="checkbox" id="auto-restart" />
+                  Auto-reinicio (dev)
+                </label>
+              </div>
+            </div>
+            <div class="toolbar toolbar-spaced">
+              <button class="danger" id="reset-config" type="button">Restablecer valores por defecto</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <h2>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7V3h-6v2h4.6A7 7 0 1 0 19 12h2z"/></svg>
+              Reparación de instalación
+            </h2>
+            <p class="hint">Diagnóstico no destructivo. Corrige build de portal, accesos directos y recuperación de servicios.</p>
+            <div class="install-grid" aria-live="polite">
+              <div class="install-row"><div class="k">Estado</div><div class="v" id="repair-status">Sin comprobar</div></div>
+              <div class="install-row"><div class="k">Progreso</div><div class="v" id="repair-progress-text">-</div></div>
+              <div class="install-row"><div class="k">Paso actual</div><div class="v" id="repair-current-step">-</div></div>
+            </div>
+            <div class="health-check" aria-live="polite">
+              <div class="health-check-bar"><span id="repair-progress-bar"></span></div>
+            </div>
+            <div class="eventos-estado" aria-label="Hallazgos reparación">
+              <div class="eventos-estado-cabecera">
+                <div class="eventos-estado-titulo">Hallazgos</div>
+              </div>
+              <div class="eventos-estado-lista" id="repair-issues-list">
+                <div class="evento-estado"><div class="mensaje"><div class="mensaje-titulo">Sin diagnóstico aún.</div></div></div>
+              </div>
+            </div>
+            <div class="eventos-estado" aria-label="Acciones manuales reparación">
+              <div class="eventos-estado-cabecera">
+                <div class="eventos-estado-titulo">Acciones manuales</div>
+              </div>
+              <div class="eventos-estado-lista" id="repair-manual-list">
+                <div class="evento-estado"><div class="mensaje"><div class="mensaje-titulo">Sin acciones manuales pendientes.</div></div></div>
+              </div>
+            </div>
+            <div class="toolbar toolbar-spaced">
+              <button class="ghost-btn" id="repair-diagnose" type="button">Diagnosticar ahora</button>
+              <button class="ok" id="repair-run" type="button">Reparar instalación</button>
             </div>
           </div>
         </div>
@@ -3378,9 +3446,15 @@
 
     // Identificador de UI (útil para confirmar que el HTML recargó cambios).
     // Nota: actualiza este valor cuando hagas cambios visibles al dashboard.
-    const UI_REV = '2026-02-04.1';
+    const UI_REV = '2026-02-14.3';
 
     const CLAVE_ALMACEN_TEMA = 'seuDashboardTheme';
+    const CONFIG_DASHBOARD_DEFAULT = {
+      autoRestart: false,
+      showFullLogs: false,
+      autoScroll: true,
+      pauseUpdates: false
+    };
 
     function establecerColorMetaTema(color) {
       const meta = document.querySelector('meta[name="theme-color"]');
@@ -3479,12 +3553,17 @@
       });
     }
 
+    function abrirVersionInfoDashboard() {
+      const features = 'noopener,noreferrer,width=1220,height=860';
+      window.open('/version-info', '_blank', features);
+    }
+
     function obtenerPestanaDesdeHash() {
       const crudo = String(location.hash || '').replace(/^#/, '').trim();
       if (!crudo) return null;
       const parametros = new URLSearchParams(crudo.includes('=') ? crudo : `tab=${crudo}`);
       const pestana = String(parametros.get('tab') || '').trim();
-      if (pestana === 'main' || pestana === 'status' || pestana === 'db') return pestana;
+      if (pestana === 'main' || pestana === 'status' || pestana === 'config' || pestana === 'db') return pestana;
       return null;
     }
 
@@ -3574,9 +3653,9 @@
     };
 
       const state = {
-        mostrarCompleto: false,
-        autoDesplazamiento: true,
-        pausado: false,
+        mostrarCompleto: CONFIG_DASHBOARD_DEFAULT.showFullLogs,
+        autoDesplazamiento: CONFIG_DASHBOARD_DEFAULT.autoScroll,
+        pausado: CONFIG_DASHBOARD_DEFAULT.pauseUpdates,
         filtro: '',
         enEjecucion: new Set(),
         logsVisibles: false,
@@ -3599,7 +3678,18 @@
         ultimoErrorEventos: '',
         logsOkRecientes: true,
         ultimoErrorLogs: '',
-        autoReinicio: false,
+        autoReinicio: CONFIG_DASHBOARD_DEFAULT.autoRestart,
+        repair: {
+          needsRepair: false,
+          issues: [],
+          state: 'idle',
+          runId: '',
+          currentStep: '',
+          percent: 0,
+          steps: [],
+          manualActions: [],
+          lastRun: null
+        },
         https: null,
         compose: null,
         instalacion: null,
@@ -4684,6 +4774,9 @@
         refrescarEventos();
         refrescarInfoInstalacion();
         if (state.logsVisibles) refrescarLogs();
+      } else if (nombre === 'config') {
+        refrescarRepairStatus();
+        refrescarRepairProgress();
       } else if (nombre === 'db') {
         refrescarMongoExpress(true);
       }
@@ -5082,15 +5175,18 @@
           establecerTexto('mode-chip', `Modo: ${formatearEtiquetaModo(modoMostrar)}`);
           establecerTexto('running-chip', `Procesos: ${conteoEjecucion}`);
           establecerTexto('port-chip', `Puerto: ${datos.port || '-'}`);
+          establecerTexto('version-chip', `v${String(datos?.app?.version || '?')}`);
           establecerTexto('log-size', `${datos.logSize} líneas`);
           establecerTexto('raw-size', `${datos.rawSize} en bruto`);
           establecerTexto('last-refresh-status', `Actualizado ${new Date().toLocaleTimeString()}`);
 
-          state.autoReinicio = Boolean(datos.autoRestart);
+          const configRemota = datos && typeof datos.config === 'object'
+            ? datos.config
+            : { autoRestart: Boolean(datos.autoRestart) };
+          aplicarConfigDashboard(configRemota, { refrescarLogs: false });
           const toggleAutoReinicio = $('auto-restart');
           if (toggleAutoReinicio) {
             toggleAutoReinicio.disabled = String(datos.modeConfig || datos.mode || '').toLowerCase() !== 'dev';
-            toggleAutoReinicio.checked = state.autoReinicio;
           }
 
           establecerPuntoEjecucion(conteoEjecucion > 0);
@@ -5191,9 +5287,192 @@
       }
     }
 
-    async function establecerAutoReinicio(valor) {
-      await api('/api/config', { autoRestart: Boolean(valor) });
-      refrescarEstado();
+    function normalizarConfigDashboard(config) {
+      const raw = config && typeof config === 'object' ? config : {};
+      return {
+        autoRestart: Boolean(raw.autoRestart),
+        showFullLogs: Boolean(raw.showFullLogs),
+        autoScroll: raw.autoScroll === undefined ? true : Boolean(raw.autoScroll),
+        pauseUpdates: Boolean(raw.pauseUpdates)
+      };
+    }
+
+    function aplicarConfigDashboard(config, opciones = {}) {
+      const cfg = normalizarConfigDashboard(config);
+      state.mostrarCompleto = cfg.showFullLogs;
+      state.autoDesplazamiento = cfg.autoScroll;
+      state.pausado = cfg.pauseUpdates;
+      state.autoReinicio = cfg.autoRestart;
+
+      const logsCompletos = $('full-logs');
+      if (logsCompletos) logsCompletos.checked = state.mostrarCompleto;
+
+      const autoDesplazamiento = $('auto-scroll');
+      if (autoDesplazamiento) autoDesplazamiento.checked = state.autoDesplazamiento;
+
+      const pausarActualizaciones = $('pause-updates');
+      if (pausarActualizaciones) pausarActualizaciones.checked = state.pausado;
+
+      const toggleAutoReinicio = $('auto-restart');
+      if (toggleAutoReinicio) toggleAutoReinicio.checked = state.autoReinicio;
+
+      establecerChipPausa(state.pausado);
+      if (opciones.refrescarLogs !== false) refrescarLogs();
+    }
+
+    async function guardarConfigDashboard(parcial, toastTexto = '') {
+      const respuesta = await api('/api/config', parcial || {});
+      if (respuesta && respuesta.ok && respuesta.config) {
+        aplicarConfigDashboard(respuesta.config);
+        if (toastTexto) mostrarToast(toastTexto, 'ok');
+        return true;
+      }
+      mostrarToast('No se pudo guardar la configuración', 'error');
+      return false;
+    }
+
+    async function resetearConfigDashboard() {
+      const respuesta = await api('/api/config/reset', {});
+      if (respuesta && respuesta.ok && respuesta.config) {
+        aplicarConfigDashboard(respuesta.config);
+        mostrarToast('Configuración restablecida', 'ok');
+        refrescarEstado();
+        return;
+      }
+      mostrarToast('No se pudo restablecer la configuración', 'error');
+    }
+
+    async function cargarConfigDashboard() {
+      try {
+        const respuesta = await fetch('/api/config');
+        const data = await respuesta.json();
+        aplicarConfigDashboard(data);
+      } catch {
+        aplicarConfigDashboard(CONFIG_DASHBOARD_DEFAULT);
+      }
+    }
+
+    function renderizarListaSimple(id, items, fallback) {
+      const contenedor = $(id);
+      if (!contenedor) return;
+      const lista = Array.isArray(items) ? items : [];
+      if (lista.length === 0) {
+        contenedor.innerHTML = `<div class="evento-estado"><div class="mensaje"><div class="mensaje-titulo">${fallback}</div></div></div>`;
+        return;
+      }
+      contenedor.innerHTML = '';
+      lista.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'evento-estado';
+        const sev = String(item && item.severity ? item.severity : 'info').toLowerCase();
+        if (sev === 'error') row.classList.add('error');
+        if (sev === 'warn') row.classList.add('warn');
+        const msg = document.createElement('div');
+        msg.className = 'mensaje';
+        const title = document.createElement('div');
+        title.className = 'mensaje-titulo';
+        title.textContent = String(item && item.message ? item.message : item || '-');
+        msg.appendChild(title);
+        row.appendChild(msg);
+        contenedor.appendChild(row);
+      });
+    }
+
+    function actualizarUiRepair() {
+      const estado = state.repair || {};
+      const estadoTexto = estado.state === 'running'
+        ? 'Reparando...'
+        : (estado.needsRepair ? 'Requiere reparación' : (estado.state === 'ok' ? 'Sin problemas' : 'Sin comprobar'));
+      establecerTexto('repair-status', estadoTexto);
+      establecerTexto('repair-progress-text', `${Number(estado.percent || 0)}%`);
+      establecerTexto('repair-current-step', estado.currentStep || '-');
+      const bar = $('repair-progress-bar');
+      if (bar) bar.style.setProperty('width', `${Number(estado.percent || 0)}%`);
+
+      renderizarListaSimple('repair-issues-list', estado.issues || [], 'Sin hallazgos de reparación.');
+      const manualItems = (estado.manualActions || []).map((message) => ({ message, severity: 'warn' }));
+      renderizarListaSimple('repair-manual-list', manualItems, 'Sin acciones manuales pendientes.');
+
+      const btnRun = $('repair-run');
+      if (btnRun) btnRun.disabled = estado.state === 'running';
+    }
+
+    async function refrescarRepairStatus() {
+      try {
+        const res = await fetch('/api/repair/status');
+        const data = await res.json();
+        state.repair.needsRepair = Boolean(data.needsRepair);
+        state.repair.issues = Array.isArray(data.issues) ? data.issues : [];
+        state.repair.lastRun = data.lastRun || null;
+        if (state.repair.state !== 'running') {
+          state.repair.state = state.repair.lastRun?.ok ? 'ok' : 'idle';
+        }
+        actualizarUiRepair();
+      } catch {
+        mostrarToastErrorSiAplica('No se pudo obtener el diagnóstico de reparación.');
+      }
+    }
+
+    async function refrescarRepairProgress() {
+      try {
+        const res = await fetch('/api/repair/progress');
+        const data = await res.json();
+        state.repair.runId = String(data.runId || '');
+        state.repair.state = String(data.state || 'idle');
+        state.repair.currentStep = String(data.currentStep || '');
+        state.repair.percent = Number(data.percent || 0);
+        state.repair.steps = Array.isArray(data.steps) ? data.steps : [];
+        state.repair.manualActions = Array.isArray(data.manualActions) ? data.manualActions : [];
+        state.repair.issues = Array.isArray(data.issues) ? data.issues : state.repair.issues;
+        state.repair.lastRun = data.lastRun || state.repair.lastRun;
+        actualizarUiRepair();
+        return data;
+      } catch {
+        mostrarToastErrorSiAplica('No se pudo leer avance de reparación.');
+        return null;
+      }
+    }
+
+    async function ejecutarReparacion() {
+      try {
+        const res = await fetch('/api/repair/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        if (res.status === 409) {
+          mostrarToast('Ya hay una reparación en curso.', 'warn');
+          return;
+        }
+        const data = await res.json();
+        if (!data || !data.ok) {
+          mostrarToast('No se pudo iniciar la reparación.', 'error');
+          return;
+        }
+        state.repair.state = 'running';
+        state.repair.runId = String(data.runId || '');
+        state.repair.percent = 0;
+        actualizarUiRepair();
+        mostrarToast('Reparación iniciada.', 'info');
+
+        let attempts = 0;
+        while (attempts < 180) {
+          attempts += 1;
+          const progress = await refrescarRepairProgress();
+          const st = String(progress?.state || state.repair.state || '');
+          if (st === 'ok' || st === 'error' || st === 'idle') break;
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+
+        await refrescarRepairStatus();
+        if (state.repair.state === 'ok' || state.repair.lastRun?.ok) {
+          mostrarToast('Reparación completada.', 'ok');
+        } else {
+          mostrarToast('Reparación incompleta. Revisa acciones manuales.', 'warn');
+        }
+      } catch {
+        mostrarToast('Error iniciando reparación.', 'error');
+      }
     }
 
     function renderizarLogs(entradas) {
@@ -5492,6 +5771,7 @@
       logsCompletos.addEventListener('change', (event) => {
         state.mostrarCompleto = event.target.checked;
         refrescarLogs();
+        guardarConfigDashboard({ showFullLogs: state.mostrarCompleto });
       });
     }
 
@@ -5499,6 +5779,7 @@
     if (autoDesplazamiento) {
       autoDesplazamiento.addEventListener('change', (event) => {
         state.autoDesplazamiento = event.target.checked;
+        guardarConfigDashboard({ autoScroll: state.autoDesplazamiento });
       });
     }
 
@@ -5508,6 +5789,7 @@
         state.pausado = event.target.checked;
         establecerChipPausa(state.pausado);
         mostrarToast(state.pausado ? 'Actualizaciones pausadas' : 'Actualizaciones reanudadas', state.pausado ? 'warn' : 'ok');
+        guardarConfigDashboard({ pauseUpdates: state.pausado });
       });
     }
 
@@ -5516,7 +5798,30 @@
       toggleAutoReinicio.addEventListener('change', (event) => {
         const value = event.target.checked;
         mostrarToast(value ? 'Auto-reinicio activado' : 'Auto-reinicio desactivado', value ? 'ok' : 'warn');
-        establecerAutoReinicio(value);
+        guardarConfigDashboard({ autoRestart: value });
+      });
+    }
+
+    const botonResetConfig = $('reset-config');
+    if (botonResetConfig) {
+      botonResetConfig.addEventListener('click', () => {
+        resetearConfigDashboard();
+      });
+    }
+
+    const botonDiagnosticarRepair = $('repair-diagnose');
+    if (botonDiagnosticarRepair) {
+      botonDiagnosticarRepair.addEventListener('click', async () => {
+        await refrescarRepairStatus();
+        await refrescarRepairProgress();
+        mostrarToast('Diagnóstico de reparación actualizado.', 'ok');
+      });
+    }
+
+    const botonRunRepair = $('repair-run');
+    if (botonRunRepair) {
+      botonRunRepair.addEventListener('click', () => {
+        ejecutarReparacion();
       });
     }
 
@@ -5525,6 +5830,11 @@
       indicadorSistema.addEventListener('click', () => {
         establecerPestana('status');
       });
+    }
+
+    const versionChip = $('version-chip');
+    if (versionChip) {
+      versionChip.addEventListener('click', () => abrirVersionInfoDashboard());
     }
 
     const filtroLogs = $('log-filter');
@@ -5631,6 +5941,9 @@
     establecerLogsVisibles(false);
     renderizarActividad();
     renderizarHistorialSalud();
+    cargarConfigDashboard();
+    refrescarRepairStatus();
+    refrescarRepairProgress();
     refrescarEstado();
     refrescarInfoInstalacion();
     refrescarSenales();
@@ -5642,6 +5955,7 @@
       if (state.logsVisibles) refrescarLogs();
       else refrescarSenales();
       if (state.pestanaActiva === 'status') refrescarEventos();
+      if (state.pestanaActiva === 'config') refrescarRepairProgress();
       if (state.pestanaActiva === 'db') refrescarMongoExpress();
     }, 3000);
   </script>

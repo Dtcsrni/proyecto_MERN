@@ -1,3 +1,9 @@
+/**
+ * app
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /*Script para formularios POE*/
 /*-Estado: listaReactivos*/
 /*-Validacion: cantidad mínima de preguntas y formularios no vacios*/
@@ -5,7 +11,7 @@
 const listaReactivos = [];
 const formularioReactivos = document.getElementById('formulario');
 const textoPregunta = document.getElementById('textoPregunta');
-const textoRespuesta1 = document.getElementById('textoRespuesta');
+const textoRespuesta = document.getElementById('textoRespuesta');
 const textoError = document.getElementById('textoError');
 const botonAgregar = document.getElementById('btnAgregarRespuesta');
 const botonLimpiar = document.getElementById('btnLimpiarFormulario');
@@ -21,7 +27,7 @@ if(!formularioReactivos || !textoPregunta || !textoRespuesta || !textoError ||
     if(!textoError) console.error('No se encontró el campo de texto del error');
     if(!botonAgregar) console.error('No se encontró el botón de agregar respuesta');
     if(!botonLimpiar) console.error('No se encontró el botón de limpiar formulario');
-    if(!listaPreguntas) console.error('No se encontró la lista de preguntas');
+    if(!listaEnPantalla) console.error('No se encontró la lista de preguntas');
     if(!textoVacio) console.error('No se encontró el texto de lista vacía');
 
     throw new Error('No se encontraron los elementos del DOM necesarios');
@@ -52,7 +58,6 @@ function validar(){
 
 function pintarPantalla(){
     listaEnPantalla.textContent = '';
-    textoVacio.textContent = '';
     textoVacio.style.display = listaReactivos.length ? "none": "block";
     for(let i = 0; i < listaReactivos.length; i++){
         const li = document.createElement('li');
@@ -66,7 +71,7 @@ function limpiarFormulario(){
     textoPregunta.value = '';
     textoRespuesta.value = '';
     textoError.textContent = '';
-    btnAgregarRespuesta.disabled = true;
+    botonAgregar.disabled = true;
     textoPregunta.focus();
 }
 

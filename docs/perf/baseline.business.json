@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-14T00:26:25.277Z",
+  "sourceReport": "reports/perf/business.latest.json",
+  "baselineFactor": 3,
+  "baselineMarginMs": 50,
+  "budgets": [
+    {
+      "service": "backend",
+      "route": "/api/examenes/plantillas",
+      "method": "GET",
+      "baselineP95Ms": 5.14,
+      "budgetP95Ms": 55.14,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/examenes/generados",
+      "method": "GET",
+      "baselineP95Ms": 4.77,
+      "budgetP95Ms": 54.77,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/periodos",
+      "method": "GET",
+      "baselineP95Ms": 3.77,
+      "budgetP95Ms": 53.77,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/sincronizaciones",
+      "method": "GET",
+      "baselineP95Ms": 4.07,
+      "budgetP95Ms": 54.07,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/omr/prevalidar-lote",
+      "method": "POST",
+      "baselineP95Ms": 597.96,
+      "budgetP95Ms": 1793.88,
+      "maxFailures": 0
+    },
+    {
+      "service": "backend",
+      "route": "/api/analiticas/lista-academica-csv?periodoId=507f1f77bcf86cd799439011",
+      "method": "GET",
+      "baselineP95Ms": 6.92,
+      "budgetP95Ms": 56.92,
+      "maxFailures": 0
+    }
+  ]
+}

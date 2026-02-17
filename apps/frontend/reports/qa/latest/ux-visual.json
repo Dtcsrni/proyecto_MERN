@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "ejecutadoEn": "2026-02-16T17:44:19.106Z",
+  "suite": "ux.visual",
+  "snapshots": [
+    {
+      "id": "docente-acceso",
+      "estado": "ok"
+    },
+    {
+      "id": "alumno-acceso",
+      "estado": "ok"
+    }
+  ]
+}

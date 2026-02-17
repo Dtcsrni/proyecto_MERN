@@ -38,6 +38,9 @@ const jwtSecreto = process.env.JWT_SECRETO ?? '';
 if (entorno === 'production' && !jwtSecreto) {
   throw new Error('JWT_SECRETO es requerido en producción');
 }
+if (entorno === 'production' && !mongoUri) {
+  throw new Error('MONGODB_URI es requerido en producción');
+}
 const jwtSecretoEfectivo = jwtSecreto || 'cambia-este-secreto';
 const jwtExpiraHoras = Number(process.env.JWT_EXPIRA_HORAS ?? 8);
 const refreshTokenDias = Number(process.env.REFRESH_TOKEN_DIAS ?? 30);
@@ -70,6 +73,8 @@ const omrImagenBase64MaxChars = parsearNumeroSeguro(process.env.OMR_IMAGEN_BASE6
   min: 1_000,
   max: 50_000_000
 });
+const featureOmrPipelineV2 =
+  /^(1|true|si|yes)$/i.test(String(process.env.FEATURE_OMR_PIPELINE_V2 || '').trim());
 
 export const configuracion = {
   puerto,
@@ -89,5 +94,6 @@ export const configuracion = {
   rateLimitLimit,
   rateLimitCredencialesLimit,
   rateLimitRefrescoLimit,
-  omrImagenBase64MaxChars
+  omrImagenBase64MaxChars,
+  featureOmrPipelineV2
 };

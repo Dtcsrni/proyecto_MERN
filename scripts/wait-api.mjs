@@ -1,3 +1,9 @@
+/**
+ * wait-api
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';
@@ -49,6 +55,7 @@ const base = String(process.env.VITE_API_PROXY_TARGET || 'http://localhost:4000'
 const healthPath = String(process.env.API_HEALTHCHECK_PATH || '/api/salud').trim() || '/api/salud';
 const timeoutMs = clampNumber(process.env.API_HEALTHCHECK_TIMEOUT_MS, 90_000, 5_000, 10 * 60_000);
 const intervalMs = clampNumber(process.env.API_HEALTHCHECK_INTERVAL_MS, 250, 100, 10_000);
+const stableMs = clampNumber(process.env.API_HEALTHCHECK_STABLE_MS, 3_000, 0, 120_000);
 const strict = /^(1|true|si|yes)$/i.test(String(process.env.API_HEALTHCHECK_STRICT || '').trim());
 
 function crearUrl() {
@@ -105,8 +112,25 @@ async function esperarApi() {
   console.log(`[wait-api] Esperando backend en ${url}...`);
   while (Date.now() < limite) {
     if (await ping(url)) {
-      console.log(`[wait-api] OK ${url}`);
-      return;
+      if (stableMs <= 0) {
+        console.log(`[wait-api] OK ${url}`);
+        return;
+      }
+
+      const estableHasta = Date.now() + stableMs;
+      let estable = true;
+      while (Date.now() < estableHasta) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        if (!(await ping(url))) {
+          estable = false;
+          break;
+        }
+      }
+
+      if (estable) {
+        console.log(`[wait-api] OK estable (${stableMs}ms) ${url}`);
+        return;
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }

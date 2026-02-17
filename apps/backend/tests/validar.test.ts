@@ -1,3 +1,9 @@
+/**
+ * validar.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del helper de validacion Zod.
 import express from 'express';
 import request from 'supertest';

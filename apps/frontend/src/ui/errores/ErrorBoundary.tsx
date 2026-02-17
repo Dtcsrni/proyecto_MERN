@@ -1,3 +1,9 @@
+/**
+ * ErrorBoundary
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import type { ReactNode } from 'react';
 import React from 'react';
 

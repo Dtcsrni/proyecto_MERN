@@ -1,3 +1,9 @@
+/**
+ * csv.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del generador CSV.
 import { describe, expect, it } from 'vitest';
 import { generarCsv } from '../src/modulos/modulo_analiticas/servicioExportacionCsv';

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="CG.Shortcuts">
+      <Component Id="CMP.ShortcutDesktopProd" Directory="DesktopFolder" Guid="7D746D16-3049-4EEE-AEC5-4B0FD25D79AE">
+        <Condition>INSTALL_DESKTOP_SHORTCUTS = 1</Condition>
+        <Shortcut
+          Id="SC.DesktopProd"
+          Name="EvaluaPro - Prod"
+          Description="Modo estable local: stack prod + portal"
+          Target="[System64Folder]wscript.exe"
+          Arguments="//nologo &quot;[INSTALLFOLDER]scripts\launcher-tray-hidden.vbs&quot; prod 4519"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="EvaluaProIcon" />
+        <RemoveFolder Id="RF.DesktopProd" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\EvaluaPro" Name="DesktopProd" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CMP.ShortcutDesktopDev" Directory="DesktopFolder" Guid="80AF25AB-8F98-4DE0-AF43-C84F536FC779">
+        <Condition>INSTALL_DESKTOP_SHORTCUTS = 1</Condition>
+        <Shortcut
+          Id="SC.DesktopDev"
+          Name="EvaluaPro - Dev"
+          Description="Modo desarrollo local"
+          Target="[System64Folder]wscript.exe"
+          Arguments="//nologo &quot;[INSTALLFOLDER]scripts\launcher-tray-hidden.vbs&quot; dev 4519"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="EvaluaProIcon" />
+        <RemoveFolder Id="RF.DesktopDev" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\EvaluaPro" Name="DesktopDev" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CMP.ShortcutMenuProd" Directory="EvaluaProMenuDir" Guid="86FC4E0A-3C0A-45A7-9B6F-4BD3EA1C90B8">
+        <Shortcut
+          Id="SC.MenuProd"
+          Name="EvaluaPro - Prod"
+          Description="Modo estable local: stack prod + portal"
+          Target="[System64Folder]wscript.exe"
+          Arguments="//nologo &quot;[INSTALLFOLDER]scripts\launcher-tray-hidden.vbs&quot; prod 4519"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="EvaluaProIcon" />
+        <RegistryValue Root="HKLM" Key="Software\EvaluaPro" Name="MenuProd" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CMP.ShortcutMenuDev" Directory="EvaluaProMenuDir" Guid="CC7D14A6-C42B-40CC-8A35-A8C7CEB8D2A2">
+        <Shortcut
+          Id="SC.MenuDev"
+          Name="EvaluaPro - Dev"
+          Description="Modo desarrollo local"
+          Target="[System64Folder]wscript.exe"
+          Arguments="//nologo &quot;[INSTALLFOLDER]scripts\launcher-tray-hidden.vbs&quot; dev 4519"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="EvaluaProIcon" />
+        <RegistryValue Root="HKLM" Key="Software\EvaluaPro" Name="MenuDev" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

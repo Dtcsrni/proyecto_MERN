@@ -7,6 +7,7 @@ import { AppAlumno } from './apps/app_alumno/AppAlumno';
 import { AppDocente } from './apps/app_docente/AppDocente';
 import { TemaProvider } from './tema/TemaProvider';
 import { TooltipLayer } from './ui/ux/tooltip/TooltipLayer';
+import { VersionInfoPage } from './ui/version/VersionInfoPage';
 
 function establecerFavicon(href: string) {
   if (typeof document === 'undefined') return;
@@ -24,6 +25,7 @@ function establecerFavicon(href: string) {
 function App() {
   const destino = import.meta.env.VITE_APP_DESTINO || 'docente';
   const googleClientId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+  const esVersionInfo = typeof window !== 'undefined' && String(window.location.hash || '').startsWith('#/version-info');
 
   useEffect(() => {
     const esAlumno = destino === 'alumno';
@@ -31,14 +33,16 @@ function App() {
     establecerFavicon(esAlumno ? '/favicon-alumno.svg' : '/favicon-docente.svg');
   }, [destino]);
 
-  const contenido = destino === 'alumno' ? <AppAlumno /> : <AppDocente />;
+  const contenido = esVersionInfo
+    ? <VersionInfoPage />
+    : (destino === 'alumno' ? <AppAlumno /> : <AppDocente />);
 
   return (
     <TemaProvider>
       <main className="page">
         {googleClientId && destino !== 'alumno' ? <GoogleOAuthProvider clientId={googleClientId}>{contenido}</GoogleOAuthProvider> : contenido}
       </main>
-      <TooltipLayer />
+      {!esVersionInfo ? <TooltipLayer /> : null}
     </TemaProvider>
   );
 }

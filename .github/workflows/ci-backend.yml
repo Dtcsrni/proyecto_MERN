@@ -1,0 +1,86 @@
+name: CI Backend Module
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/ci-backend.yml"
+      - "apps/backend/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "vitest.base.ts"
+      - "docs/tdd-exclusions-debt.json"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/ci-backend.yml"
+      - "apps/backend/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "vitest.base.ts"
+      - "docs/tdd-exclusions-debt.json"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend_module:
+    name: Backend Module
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/portal_alumno_cloud/package-lock.json
+
+      - name: Etapa setup
+        run: npm ci
+
+      - name: Preparar runtime sharp (linux-x64)
+        run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
+
+      - name: Etapa lint backend
+        run: npm -C apps/backend run lint
+
+      - name: Etapa typecheck backend
+        run: npm -C apps/backend run typecheck
+
+      - name: Etapa test backend
+        run: npm run test:backend:ci
+
+      - name: Etapa coverage backend
+        run: npm -C apps/backend run test:coverage
+
+      - name: Etapa tdd-debt-check
+        run: npm run test:coverage:exclusions:debt
+
+      - name: Preparar base para diff coverage (PR)
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Etapa diff-coverage-check
+        run: npm run test:coverage:diff
+
+      - name: Etapa build backend
+        run: npm -C apps/backend run build

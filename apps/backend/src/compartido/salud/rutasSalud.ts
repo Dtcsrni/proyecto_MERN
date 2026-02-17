@@ -4,14 +4,161 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 import QRCode from 'qrcode';
+import type { RespuestaLiveness, RespuestaReadiness, RespuestaSalud } from '../tipos/observabilidad';
+import { exportarMetricasPrometheus } from '../observabilidad/metrics';
 
 const router = Router();
+type TecnologiaVersion = { id: string; label: string; logoUrl: string; website: string };
+
+function leerPackageMetadata(raiz: string) {
+  let appName = 'evaluapro';
+  let appVersion = '0.0.0';
+  let authorName = '';
+  let repositoryUrl = '';
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
+    appName = String(pkg?.name || appName);
+    appVersion = String(pkg?.version || appVersion);
+    authorName = typeof pkg?.author === 'string'
+      ? String(pkg.author)
+      : String(pkg?.author?.name || '');
+    repositoryUrl = String(pkg?.repository?.url || '').trim();
+  } catch {
+    // fallback
+  }
+  return { appName, appVersion, authorName, repositoryUrl };
+}
+
+function mapTecnologias(raw: unknown[]): TecnologiaVersion[] {
+  return raw
+    .map((item: unknown) => {
+      const entry = item as Record<string, unknown>;
+      return {
+        id: String(entry.id || '').trim(),
+        label: String(entry.label || '').trim(),
+        logoUrl: String(entry.logoUrl || '').trim(),
+        website: String(entry.website || '').trim()
+      };
+    })
+    .filter((item: TecnologiaVersion) => item.id && item.label && item.logoUrl);
+}
+
+function leerCatalogoVersion(raiz: string, fallbackRepositoryUrl: string) {
+  let repositoryUrl = fallbackRepositoryUrl;
+  let technologies: TecnologiaVersion[] = [];
+  try {
+    const catalog = JSON.parse(fs.readFileSync(path.join(raiz, 'config', 'version-catalog.json'), 'utf8'));
+    repositoryUrl = String(catalog?.repositoryUrl || repositoryUrl || '').trim();
+    const rawTech = Array.isArray(catalog?.technologies) ? catalog.technologies : [];
+    technologies = mapTecnologias(rawTech as unknown[]);
+  } catch {
+    // fallback
+  }
+  return { repositoryUrl, technologies };
+}
+
+function leerChangelog(raiz: string) {
+  try {
+    return fs.readFileSync(path.join(raiz, 'CHANGELOG.md'), 'utf8').slice(0, 24_000);
+  } catch {
+    return '';
+  }
+}
+
+function buscarRaizRepo(inicio: string) {
+  let actual = inicio;
+  for (let i = 0; i < 10; i += 1) {
+    const hasPkg = fs.existsSync(path.join(actual, 'package.json'));
+    const hasChangelog = fs.existsSync(path.join(actual, 'CHANGELOG.md'));
+    if (hasPkg && hasChangelog) return actual;
+    const next = path.dirname(actual);
+    if (next === actual) break;
+    actual = next;
+  }
+  return path.resolve(inicio, '../../../../..');
+}
+
+function leerVersionInfo() {
+  const raiz = buscarRaizRepo(process.cwd());
+  const pkg = leerPackageMetadata(raiz);
+  const catalogo = leerCatalogoVersion(raiz, pkg.repositoryUrl);
+  const changelog = leerChangelog(raiz);
+
+  const developerName = String(process.env.EVALUAPRO_DEVELOPER_NAME || pkg.authorName || 'Equipo EvaluaPro').trim();
+  const developerRole = String(process.env.EVALUAPRO_DEVELOPER_ROLE || 'Desarrollo').trim();
+
+  return {
+    app: { name: pkg.appName, version: pkg.appVersion },
+    repositoryUrl: catalogo.repositoryUrl || 'https://github.com/Dtcsrni',
+    technologies: catalogo.technologies,
+    developer: {
+      nombre: developerName || 'Equipo EvaluaPro',
+      rol: developerRole || 'Desarrollo'
+    },
+    system: {
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      hostname: os.hostname(),
+      env: process.env.NODE_ENV ?? 'development',
+      uptimeSec: Math.floor(process.uptime()),
+      generatedAt: new Date().toISOString()
+    },
+    changelog
+  };
+}
 
 router.get('/', (_req, res) => {
   const estado = mongoose.connection.readyState; // 0,1,2,3
   const textoEstado = ['desconectado', 'conectado', 'conectando', 'desconectando'][estado] ?? 'desconocido';
-  res.json({ estado: 'ok', tiempoActivo: process.uptime(), db: { estado, descripcion: textoEstado } });
+  const payload: RespuestaSalud & { db: { estado: number; descripcion: string } } = {
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    db: { estado, descripcion: textoEstado }
+  };
+  res.json(payload);
+});
+
+router.get('/live', (_req, res) => {
+  const payload: RespuestaLiveness = {
+    estado: 'ok',
+    tiempoActivo: process.uptime(),
+    servicio: 'api-docente',
+    env: process.env.NODE_ENV ?? 'development'
+  };
+  res.json(payload);
+});
+
+router.get('/ready', (_req, res) => {
+  const estado = mongoose.connection.readyState; // 0,1,2,3
+  const textoEstado = ['desconectado', 'conectado', 'conectando', 'desconectando'][estado] ?? 'desconocido';
+  const lista = estado === 1;
+  const payload: RespuestaReadiness = {
+    estado: lista ? 'ok' : 'degradado',
+    tiempoActivo: process.uptime(),
+    dependencias: {
+      db: {
+        estado,
+        descripcion: textoEstado,
+        lista
+      }
+    }
+  };
+  res.status(lista ? 200 : 503).json(payload);
+});
+
+router.get('/metrics', (_req, res) => {
+  const estadoDb = mongoose.connection.readyState;
+  const payload = `${exportarMetricasPrometheus()}\n\n# HELP evaluapro_db_ready_state Estado de conexión MongoDB (0-3)\n# TYPE evaluapro_db_ready_state gauge\nevaluapro_db_ready_state ${estadoDb}\n`;
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(payload);
+});
+
+router.get('/version-info', (_req, res) => {
+  res.json(leerVersionInfo());
 });
 
 function esIpPrivada(ip: string) {

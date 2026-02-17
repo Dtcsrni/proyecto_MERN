@@ -1,3 +1,9 @@
+/**
+ * vscode-tune
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import fs from "fs";
 import path from "path";
 import os from "os";

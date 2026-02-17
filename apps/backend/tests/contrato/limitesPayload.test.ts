@@ -1,3 +1,9 @@
+/**
+ * limitesPayload.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { tokenDocentePrueba } from '../utils/token';
@@ -34,7 +40,7 @@ describe('contrato: limites de payload', () => {
     const app = crearApp();
 
     const respuesta = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set({ Authorization: `Bearer ${tokenDocentePrueba()}` })
       .send({ folio: 'FOLIO', numeroPagina: 1, imagenBase64: 'x'.repeat(1_200) })
       .expect(400);

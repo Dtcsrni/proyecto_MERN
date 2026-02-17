@@ -1,0 +1,11 @@
+{
+  "totalReactivos": 248,
+  "detectadasV2": 180,
+  "correctasV2": 67,
+  "deteccionRateV2": 0.7258064516129032,
+  "precisionSobreTotalV2": 0.2701612903225806,
+  "estadosV2": {
+    "requiere_revision": 31,
+    "ok": 1
+  }
+}

@@ -1,3 +1,9 @@
+/**
+ * seedAdmin
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { Docente } from './modeloDocente';
 import { crearHash } from './servicioHash';
 

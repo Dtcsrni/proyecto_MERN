@@ -6,6 +6,11 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 - UI: `dashboard.html`
 - SW: `dashboard-sw.js`
 - Launcher: `launcher-dashboard.mjs`
+- Reparacion desde Configuracion:
+  - diagnostico: `GET /api/repair/status`
+  - iniciar reparacion: `POST /api/repair/run`
+  - progreso: `GET /api/repair/progress`
+  - alcance v1 no destructivo: build portal si falta, recrear accesos directos y recuperar stack/portal.
 
 ## Accesos directos / bandeja
 - Generación de accesos: `create-shortcuts.ps1`
@@ -15,6 +20,62 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 ## Ejecutables rápidos
 - `launch-dev.cmd`
 - `launch-prod.cmd`
+
+## Handoff IA (continuidad de sesiones)
+- Script: `ia-handoff.mjs`
+- Comandos:
+  - `npm run ia:handoff:quick`
+  - `npm run ia:handoff:full`
+- Salida:
+  - `docs/handoff/sesiones/<YYYY-MM-DD>/<sesion>.md`
+
+## Comentarios autoexplicativos por archivo
+- Script: `ia-docblocks.mjs`
+- Comando:
+  - `npm run ia:docblocks`
+- Uso:
+  - agrega cabeceras de contexto a archivos versionados comentables del repo (`ts`, `tsx`, `js`, `jsx`, `mjs`, `cjs`, `sh`, `ps1`, `cmd`) que no tengan cabecera inicial.
+
+## Inventario de codigo por sesion
+- Script: `inventario-codigo.mjs`
+- Comando:
+  - `npm run inventario:codigo`
+- Salida:
+  - `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`
+
+## QA preproducción (dataset + e2e + PDF + UX)
+- Scripts:
+  - `testing/export-anon-fixture.mjs`
+  - `testing/validate-anon-fixture.mjs`
+  - `testing/import-anon-fixture.mjs`
+  - `testing/generar-qa-manifest.mjs`
+- Comandos:
+  - `npm run test:dataset-prodlike:ci`
+  - `npm run test:e2e:docente-alumno:ci`
+  - `npm run test:global-grade:ci`
+  - `npm run test:pdf-print:ci`
+  - `npm run test:ux-visual:ci`
+  - `npm run test:qa:manifest`
+- Salidas:
+  - `reports/qa/latest/*.json`
+
+## Preflight de producción para examen global
+- Script:
+  - `release/preflight-global-prod.mjs`
+- Comando:
+  - `npm run release:preflight:global -- --api-base=<https://api-dominio/api> --token=<jwt_docente> --periodo-id=<periodoId> [--modo=readonly|smoke] [--alumno-id=<alumnoId>]`
+- Uso:
+  - `readonly` (default): valida precondiciones sin mutar datos.
+  - `smoke`: genera 1 examen global y lo archiva para validar extremo a extremo.
+- Salida:
+  - `reports/qa/latest/preflight-global-prod.json`
+
+## READMEs de carpetas (base)
+- Script: `generar-readmes-carpetas.mjs`
+- Comando:
+  - `npm run docs:carpetas:generate`
+- Uso:
+  - crea `README.md` base en carpetas objetivo que aún no lo tengan.
 
 Notas:
 - Varios scripts asumen Docker Desktop iniciado.

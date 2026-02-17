@@ -1,3 +1,9 @@
+/**
+ * servicioPapelera
+ *
+ * Responsabilidad: Servicio de dominio/aplicacion con reglas de negocio reutilizables.
+ * Limites: Mantener invariantes del dominio y errores controlados.
+ */
 import { Papelera } from './modeloPapelera';
 
 const DIAS_RETENCION = 45;

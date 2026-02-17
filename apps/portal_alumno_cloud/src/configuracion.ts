@@ -20,6 +20,12 @@ const corsOrigenes = (process.env.CORS_ORIGENES ?? '*')
   .filter(Boolean);
 const portalApiKey = process.env.PORTAL_API_KEY ?? '';
 const codigoAccesoHoras = Number(process.env.CODIGO_ACCESO_HORAS ?? 12);
+if (entorno === 'production' && !mongoUri) {
+  throw new Error('MONGODB_URI es requerido en producción (portal)');
+}
+if (entorno === 'production' && !portalApiKey) {
+  throw new Error('PORTAL_API_KEY es requerido en producción (portal)');
+}
 
 function parsearNumeroSeguro(valor: unknown, porDefecto: number, { min, max }: { min?: number; max?: number } = {}) {
   const n = typeof valor === 'number' ? valor : Number(valor);

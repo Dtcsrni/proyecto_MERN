@@ -1,13 +1,21 @@
 {
   "name": "backend",
   "description": "API docente (Express + TypeScript + MongoDB) para gestión de evaluaciones, autenticación y flujo de examen.",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.1",
   "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario"
   },
-  "keywords": ["api", "express", "typescript", "mongodb", "mongoose", "evaluacion", "docente"],
+  "keywords": [
+    "api",
+    "express",
+    "typescript",
+    "mongodb",
+    "mongoose",
+    "evaluacion",
+    "docente"
+  ],
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,13 +23,23 @@
     "typecheck": "tsc --noEmit --project tsconfig.json --pretty false",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "lint": "eslint . --ext .ts --max-warnings=0"
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .ts --max-warnings=0",
+    "dev:omr:geo-tight": "tsx scripts/omr-run-dev-profile.ts geo_tight_search",
+    "dev:omr:actual": "tsx scripts/omr-run-dev-profile.ts actual",
+    "auth:reset-password": "tsx scripts/auth-reset-password.ts",
+    "omr:eval:profile": "tsx scripts/omr-eval-profile.ts",
+    "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts",
+    "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts",
+    "omr:diagnose:rechazo": "tsx scripts/omr-diagnose-rechazo.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "decimal.js": "^10.4.3",
+    "docx": "^9.5.2",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "google-auth-library": "^9.15.1",

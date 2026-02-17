@@ -1,3 +1,9 @@
+/**
+ * portal.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de integracion del portal alumno.
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -97,5 +103,86 @@ describe('portal alumno', () => {
       .expect(401);
 
     expect(respuesta.body.error.codigo).toBe('NO_AUTORIZADO');
+  });
+
+  it('permite solicitar revision por pregunta y sincronizarla para docente', async () => {
+    const periodoId = '507f1f77bcf86cd799439021';
+    const alumnoId = '507f1f77bcf86cd799439022';
+    const docenteId = '507f1f77bcf86cd799439023';
+    const examenId = '507f1f77bcf86cd799439024';
+    const folio = 'FOLIO-REV-1';
+
+    await request(app)
+      .post('/api/portal/sincronizar')
+      .set({ 'x-api-key': apiKey })
+      .send({
+        periodo: { _id: periodoId },
+        alumnos: [{ _id: alumnoId, matricula: 'CUH512410169', nombreCompleto: 'Alumno Revision', grupo: 'A' }],
+        calificaciones: [
+          {
+            docenteId,
+            alumnoId,
+            examenGeneradoId: examenId,
+            tipoExamen: 'parcial',
+            totalReactivos: 2,
+            aciertos: 1,
+            calificacionExamenFinalTexto: '3',
+            comparativaRespuestas: [
+              { numeroPregunta: 1, correcta: 'A', detectada: 'B', coincide: false },
+              { numeroPregunta: 2, correcta: 'C', detectada: 'C', coincide: true }
+            ]
+          }
+        ],
+        examenes: [{ examenGeneradoId: examenId, folio }],
+        banderas: [],
+        codigoAcceso: { codigo: 'CODREV', expiraEn: new Date(Date.now() + 60 * 60 * 1000).toISOString() }
+      })
+      .expect(200);
+
+    const ingreso = await request(app)
+      .post('/api/portal/ingresar')
+      .send({ codigo: 'CODREV', matricula: 'CUH512410169' })
+      .expect(200);
+    const token = ingreso.body.token as string;
+
+    expect(token).toBeTruthy();
+
+    await request(app)
+      .post('/api/portal/solicitudes-revision')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        folio,
+        solicitudes: [{ numeroPregunta: 1, comentario: 'Creo que mi marca es correcta' }]
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/api/portal/solicitudes-revision')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        folio,
+        solicitudes: [{ numeroPregunta: 1, comentario: 'corto' }]
+      })
+      .expect(400);
+
+    const pull = await request(app)
+      .post('/api/portal/sincronizacion-docente/solicitudes-revision/pull')
+      .set({ 'x-api-key': apiKey })
+      .send({ docenteId })
+      .expect(200);
+
+    expect(Array.isArray(pull.body.solicitudes)).toBe(true);
+    expect(pull.body.solicitudes[0].folio).toBe(folio);
+    expect(pull.body.solicitudes[0].numeroPregunta).toBe(1);
+
+    await request(app)
+      .post('/api/portal/sincronizacion-docente/solicitudes-revision/update')
+      .set({ 'x-api-key': apiKey })
+      .send({
+        externoId: pull.body.solicitudes[0].externoId,
+        estado: 'atendida',
+        respuestaDocente: 'Revisado por docente'
+      })
+      .expect(200);
   });
 });

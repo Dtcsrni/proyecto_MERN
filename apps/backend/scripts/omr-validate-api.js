@@ -1,3 +1,9 @@
+/**
+ * omr-validate-api
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 /* eslint-disable no-console */
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -111,7 +117,7 @@ async function main() {
     const buffer = await fs.readFile(entrada.archivo);
     const comprimida = await compressImage(buffer);
     const imagenBase64 = `data:image/jpeg;base64,${comprimida.toString('base64')}`;
-    const res = await fetch(`${BASE_API}/omr/analizar`, {
+    const res = await fetch(`${BASE_API}/v2/omr/analizar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

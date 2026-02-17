@@ -1,3 +1,9 @@
+/**
+ * ToastProvider
+ *
+ * Responsabilidad: Componente/utilidad de UI reutilizable.
+ * Limites: Preservar accesibilidad y contratos de props existentes.
+ */
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { onToast, type ToastPayload } from './toastBus';
 

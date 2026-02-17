@@ -1,3 +1,9 @@
+/**
+ * clienteApi.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del cliente API docente.
 import { describe, expect, it, vi } from 'vitest';
 import {

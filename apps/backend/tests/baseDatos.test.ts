@@ -1,3 +1,9 @@
+/**
+ * baseDatos.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de conexion a base de datos.
 import mongoose from 'mongoose';
 import { describe, expect, it, vi } from 'vitest';

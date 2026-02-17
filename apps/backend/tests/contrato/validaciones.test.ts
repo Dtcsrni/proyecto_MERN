@@ -1,3 +1,9 @@
+/**
+ * validaciones.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de validacion de payloads.
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
@@ -234,7 +240,7 @@ describe('validaciones de payload', () => {
   it('rechaza analizar OMR sin folio', async () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)
-      .post('/api/omr/analizar')
+      .post('/api/v2/omr/analizar')
       .set({ Authorization: `Bearer ${token}` })
       .send({ imagenBase64: 'x'.repeat(20) })
       .expect(400);
@@ -378,6 +384,16 @@ describe('validaciones de payload', () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)
       .get('/api/analiticas/calificaciones-csv')
+      .set({ Authorization: `Bearer ${token}` })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
+  });
+
+  it('requiere periodoId en calificaciones-xlsx', async () => {
+    const token = tokenDocentePrueba();
+    const respuesta = await request(app)
+      .get('/api/analiticas/calificaciones-xlsx')
       .set({ Authorization: `Bearer ${token}` })
       .expect(400);
 

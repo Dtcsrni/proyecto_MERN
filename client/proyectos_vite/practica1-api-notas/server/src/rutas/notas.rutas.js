@@ -1,3 +1,9 @@
+/**
+ * notas.rutas
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 //Elementos de API
 //POST /api/notas   -> crear nueva nota
 

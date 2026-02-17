@@ -1,3 +1,9 @@
+/**
+ * autorizacion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de autorizacion JWT.
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';

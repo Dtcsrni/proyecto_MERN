@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2026-02-16T09:22:52.676Z",
+  "mode": "legacy",
+  "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+  "baselineProfile": "actual",
+  "winner": {
+    "profile": "geo_tight_search",
+    "precisionSobreTotalV2": 0.2903225806451613,
+    "deteccionRateV2": 0.717741935483871,
+    "deltaVsActual": {
+      "detectadasV2": -2,
+      "correctasV2": 5,
+      "deteccionRateV2": -0.008065,
+      "precisionSobreTotalV2": 0.020161,
+      "imagenesConError": 0
+    }
+  },
+  "runs": [
+    {
+      "profile": "actual",
+      "summary": {
+        "profile": "actual",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 180,
+        "correctasV2": 67,
+        "deteccionRateV2": 0.7258064516129032,
+        "precisionSobreTotalV2": 0.2701612903225806,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": 0,
+        "correctasV2": 0,
+        "deteccionRateV2": 0,
+        "precisionSobreTotalV2": 0,
+        "imagenesConError": 0
+      }
+    },
+    {
+      "profile": "geo_wide_search",
+      "summary": {
+        "profile": "geo_wide_search",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 182,
+        "correctasV2": 71,
+        "deteccionRateV2": 0.7338709677419355,
+        "precisionSobreTotalV2": 0.2862903225806452,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": 2,
+        "correctasV2": 4,
+        "deteccionRateV2": 0.008065,
+        "precisionSobreTotalV2": 0.016129,
+        "imagenesConError": 0
+      }
+    },
+    {
+      "profile": "geo_tight_search",
+      "summary": {
+        "profile": "geo_tight_search",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 178,
+        "correctasV2": 72,
+        "deteccionRateV2": 0.717741935483871,
+        "precisionSobreTotalV2": 0.2903225806451613,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": -2,
+        "correctasV2": 5,
+        "deteccionRateV2": -0.008065,
+        "precisionSobreTotalV2": 0.020161,
+        "imagenesConError": 0
+      }
+    },
+    {
+      "profile": "offset_left_up",
+      "summary": {
+        "profile": "offset_left_up",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 202,
+        "correctasV2": 61,
+        "deteccionRateV2": 0.8145161290322581,
+        "precisionSobreTotalV2": 0.24596774193548387,
+        "estadosV2": {
+          "requiere_revision": 27,
+          "ok": 5
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": 22,
+        "correctasV2": -6,
+        "deteccionRateV2": 0.08871,
+        "precisionSobreTotalV2": -0.024194,
+        "imagenesConError": 0
+      }
+    },
+    {
+      "profile": "offset_right_down",
+      "summary": {
+        "profile": "offset_right_down",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 194,
+        "correctasV2": 57,
+        "deteccionRateV2": 0.782258064516129,
+        "precisionSobreTotalV2": 0.22983870967741934,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": 14,
+        "correctasV2": -10,
+        "deteccionRateV2": 0.056452,
+        "precisionSobreTotalV2": -0.040323,
+        "imagenesConError": 0
+      }
+    },
+    {
+      "profile": "hybrid_balanced",
+      "summary": {
+        "profile": "hybrid_balanced",
+        "mode": "legacy",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 188,
+        "correctasV2": 71,
+        "deteccionRateV2": 0.7580645161290323,
+        "precisionSobreTotalV2": 0.2862903225806452,
+        "estadosV2": {
+          "requiere_revision": 31,
+          "ok": 1
+        },
+        "imagenesConError": 0
+      },
+      "deltaVsActual": {
+        "detectadasV2": 8,
+        "correctasV2": 4,
+        "deteccionRateV2": 0.032258,
+        "precisionSobreTotalV2": 0.016129,
+        "imagenesConError": 0
+      }
+    }
+  ]
+}

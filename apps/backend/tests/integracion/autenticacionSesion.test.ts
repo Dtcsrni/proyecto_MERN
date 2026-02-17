@@ -1,3 +1,9 @@
+/**
+ * autenticacionSesion.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas de sesiones persistentes (refresh) y login opcional con Google.
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';

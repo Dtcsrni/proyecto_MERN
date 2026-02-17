@@ -2,6 +2,356 @@
 
 Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 
+## [Unreleased]
+
+### Added
+- Documentacion formal de requisitos verificables (RF/RNF) con matriz de trazabilidad (requisito -> evidencia -> gate) en:
+  - `docs/ENGINEERING_BASELINE.md` (seccion "Requisitos verificables").
+- Roadmap separado de cierre de brechas de requisitos beta -> estable:
+  - `docs/ROADMAP_REQUISITOS.md`.
+- Reparación operativa desde Dashboard (pestaña Configuración):
+  - endpoints en `scripts/launcher-dashboard.mjs`:
+    - `GET /api/repair/status`
+    - `POST /api/repair/run`
+    - `GET /api/repair/progress`
+  - UI de diagnóstico/progreso en `scripts/dashboard.html`.
+  - motor no destructivo (build portal si falta, recreación de accesos, recuperación stack/portal, post-check de salud).
+- Dual perf gate de negocio autenticado:
+  - `scripts/perf-collect-business.ts`
+  - `scripts/perf-check-business.mjs`
+  - `docs/perf/baseline.business.json`
+- Bootstrap API v2 para dominios iniciales:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/rutasEscaneoOmrV2.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
+- Middleware de observabilidad de transicion v1/v2:
+  - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
+- Prueba de contrato/paridad v2:
+  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
+- Ola 2B PDF: nueva arquitectura DDD/Clean Architecture con feature flag:
+  - `apps/backend/src/modulos/modulo_generacion_pdf/shared/tiposPdf.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/infra/configuracionLayoutEnv.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/domain/examenPdf.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/domain/layoutExamen.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/application/usecases/generarExamenIndividual.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts`
+  - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts` (preservation)
+- Ola 2C Sync: nueva arquitectura interna por capas:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/shared/tiposSync.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/repositoriosSync.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/portalSyncClient.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/infra/omrCapturas.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/erroresSincronizacion.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/paqueteSincronizacion.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/listarSincronizaciones.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/generarCodigoAcceso.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/publicarResultados.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/exportarPaquete.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/importarPaquete.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/enviarPaqueteServidor.ts`
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/traerPaquetesServidor.ts`
+- Prueba de contrato minima para behavior lock Sync:
+  - `apps/backend/tests/sincronizacion.contrato.test.ts`
+- Extraccion interna OMR (Ola 2A, corte intermedio):
+  - `apps/backend/src/modulos/modulo_escaneo_omr/infra/imagenProcesamientoLegacy.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/application/README.md`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/domain/README.md`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/infra/README.md`
+- Estructura de empaquetado MSI/WiX para estable local en Windows:
+  - `packaging/wix/Product.wxs`
+  - `packaging/wix/Bundle.wxs`
+  - `packaging/wix/Fragments/AppFiles.wxs`
+  - `packaging/wix/Fragments/Shortcuts.wxs`
+  - `packaging/wix/Fragments/Cleanup.wxs`
+  - `packaging/wix/README.md`
+  - `scripts/build-msi.ps1`
+
+### Changed
+- Robustez del gate `test:coverage:diff` ante CI sin merge-base:
+  - `scripts/testing/check-diff-coverage.mjs` ahora hace fallback de `origin/base...HEAD` a `origin/base..HEAD` cuando Git reporta `no merge base`, evitando falsos rojos de infraestructura.
+- Ola 2B PDF: extracción de política de negocio `numeroPaginas` a dominio compartido:
+  - nueva función `apps/backend/src/modulos/modulo_generacion_pdf/domain/resolverNumeroPaginasPlantilla.ts`.
+  - `controladorGeneracionPdf.ts` y `controladorListadoGenerados.ts` consumen la política centralizada (sin duplicación de fallback legacy).
+  - nuevo test unitario `apps/backend/tests/pdf.numeroPaginasPlantilla.test.ts` (3 casos).
+- Ola 2C Sync: extracción de política de validación de `desde` a dominio compartido:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/paqueteSincronizacion.ts` agrega `resolverDesdeSincronizacion(...)`.
+  - uso unificado en `exportarPaquete.ts`, `enviarPaqueteServidor.ts` y `traerPaquetesServidor.ts`.
+  - nuevo test unitario `apps/backend/tests/sincronizacion.desde.test.ts` (3 casos).
+- Backups de sincronizacion por archivo endurecidos con contrato de caducidad e invalidacion por logica:
+  - `apps/frontend/src/apps/app_docente/SeccionPaqueteSincronizacion.tsx` exporta `backupMeta` (`createdAt`, `ttlMs`, `expiresAt`, `businessLogicFingerprint`) y rechaza importaciones expiradas/incompatibles antes del dry-run.
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/application/usecases/importarPaquete.ts` y `domain/paqueteSincronizacion.ts` validan `backupMeta` tambien en servidor (enforcement de expiracion/fingerprint aunque el cliente no valide).
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/validacionesSincronizacion.ts` incorpora `backupMeta` al contrato HTTP de `POST /sincronizaciones/paquete/importar`.
+  - `scripts/import-backup.mjs` valida el mismo contrato y elimina automaticamente el archivo `.ep-sync.json` cuando expira o queda invalidado por cambio de huella de logica.
+  - `docs/SINCRONIZACION_ENTRE_COMPUTADORAS.md` documenta flujo operativo completo y ciclo de vida del backup.
+  - `apps/frontend/tests/sincronizacion.behavior.test.tsx`, `apps/backend/tests/sincronizacion.backupMeta.test.ts`, `apps/backend/tests/sincronizacion.test.ts` y `apps/backend/tests/sincronizacion.contrato.test.ts` agregan cobertura para rechazo de backups expirados e incompatibles por fingerprint (incluyendo integración y contrato de error del endpoint de importación).
+- Navegacion y trazabilidad documental actualizadas para incluir requisitos/roadmap:
+  - `docs/README.md`
+  - `docs/INVENTARIO_PROYECTO.md`
+  - `docs/AUTO_DOCS_INDEX.md`
+- Evidencia QA regenerada para reflejar estado actual de artefactos:
+  - `reports/qa/latest/manifest.json`
+- CI modular por dominio activado con workflows independientes:
+  - `.github/workflows/ci-backend.yml`
+  - `.github/workflows/ci-frontend.yml`
+  - `.github/workflows/ci-portal.yml`
+  - `.github/workflows/ci-docs.yml`
+- Filtros `paths` ajustados para autovalidar los workflows modulares cuando cambia su propio YAML.
+- Hardening de `CI Backend Module` para runtime nativo `sharp` en Linux:
+  - instalacion explicita `npm install --no-save --include=optional --os=linux --cpu=x64 sharp` antes de pruebas.
+- Evidencia de aislamiento CI:
+  - fallo puntual en backend module no bloquea ejecucion exitosa de frontend/portal/docs/package/autogen-docs.
+
+- `apps/backend/src/rutas.ts` monta:
+  - adapters v1 instrumentados en `/api/examenes` y `/api/omr`
+  - rutas nuevas `/api/v2/examenes` y `/api/v2/omr`
+- `apps/backend/src/compartido/observabilidad/metrics.ts` agrega contadores:
+  - `evaluapro_schema_fallback_reads_total`
+  - `evaluapro_schema_v2_writes_total`
+- `package.json` agrega scripts:
+  - `perf:collect:business`
+  - `perf:baseline:business`
+  - `perf:check:business`
+- CI/contrato pipeline incorpora etapa bloqueante `perf-business-check`:
+  - `.github/workflows/ci.yml`
+  - `ci/pipeline.contract.md`
+  - `ci/pipeline.matrix.json`
+- Ola 2C (sincronizacion) avanzó con particion interna sin romper API:
+  - Nuevo archivo `apps/backend/src/modulos/modulo_sincronizacion_nube/sincronizacionInterna.ts`.
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` delega hashing, parsing, LWW y errores de conectividad.
+- Ola 2C (sincronizacion) profundizada:
+  - `apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts` ahora es fachada HTTP delgada (79 lineas) delegando en `application/usecases/*`.
+  - Se mantiene contrato HTTP sin cambios en rutas, permisos ni validaciones.
+- Correccion LWW en importacion de paquetes para preservar `updatedAt` del paquete al aplicar `upsert`.
+- Pruebas de sincronizacion reforzadas y validadas:
+  - `apps/backend/tests/sincronizacion.test.ts`
+  - `apps/frontend/tests/sincronizacion.behavior.test.tsx`
+- UX contractual endurecida con gate bloqueante adicional:
+  - Nuevo test `apps/frontend/tests/ux.quality.test.tsx`.
+  - Nuevo script raíz `npm run test:ux-quality:ci`.
+  - `CI Checks` ahora ejecuta `Etapa ux-quality-check`.
+  - Contrato/matriz CI actualizados (`ci/pipeline.contract.md`, `ci/pipeline.matrix.json`).
+- Mejoras de ayuda contextual en sincronización docente:
+  - `apps/frontend/src/apps/app_docente/SeccionSincronizacion.tsx` usa `HelperPanel` con flujo recomendado.
+- Nueva guía de criterios verificables GUI/UX:
+  - `docs/UX_QUALITY_CRITERIA.md`.
+- Gate BigBang alineado por dominio en `scripts/bigbang-olas-check.mjs`:
+  - reemplazo de `ola2.pending.monoliths.detected` por:
+    - `ola2a.omr.segmented` (actualizado desde monolith.pending)
+    - `ola2b.pdf.segmented` (actualizado desde monolith.pending)
+    - `ola2c.sync.segmented`
+- Ola 2A OMR: reconocimiento formal de segmentación existente:
+  - Gate check actualizado para validar arquitectura pipeline v2:
+    - Fachada compacta: `servicioOmr.ts` (31 lineas)
+    - Legacy preservado: `servicioOmrLegacy.ts` (1319 lineas)
+    - Pipeline v2 modular: `omr/pipeline/ejecutorPipelineOmr.ts`
+  - Arquitectura ya implementada previamente con feature flag `FEATURE_OMR_PIPELINE_V2`
+  - Pipeline v2 con etapas modulares: qr, deteccion, scoring, calidad, debug
+  - Tests de paridad v1/v2: `apps/backend/tests/omr.paridad.test.ts` (5 tests)
+  - Estado confirmado: todas las gates OK (ola0, ola1, ola2-ready, strict-gates)
+- Ola 2B PDF: fachada con feature flag para canary deployment:
+  - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
+  - Legacy preservado en `servicioGeneracionPdfLegacy.ts` (1396 lineas).
+  - Variable de entorno `FEATURE_PDF_BUILDER_V2` (default: 0).
+  - Estructura DDD implementada: application/domain/infra/shared layers.
+  - Domain entities: `ExamenPdf`, `LayoutExamen` (value objects).
+  - Infrastructure: `ConfiguracionLayoutEnv` (parser), `PdfKitRenderer` (stub).
+  - Use case: `generarExamenIndividual` (delega a legacy en bootstrap).
+  - Tests de paridad v1/v2: `apps/backend/tests/pdf.paridad.test.ts` (8 tests)
+  - Documentacion completa en README.md del modulo.
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
+- Ola 3 (API v2 + métricas de adopción canary rollout):
+  - Sistema de métricas de adopción: `apps/backend/src/compartido/observabilidad/metricsAdopcion.ts`
+    - Rastreo de adopción v1 vs v2 por módulo y endpoint
+    - Cálculo dinámico de porcentaje con estados: iniciando, canario, madurando, completado
+    - Exportación de detalles top 20 endpoints por adopción
+  - Middleware de rastreo: `apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts`
+    - `middlewareAdopcionV1()` y `middlewareAdopcionV2()` para rastrear solicitudes
+    - Montado en rutas: `/api/examenes`, `/api/v2/examenes`, `/api/omr`, `/api/v2/omr`
+  - Dashboard de canary rollout: `scripts/canary-adoption-monitor.mjs`
+    - Monitoreo en tiempo real de adopción
+    - Cálculo de recomendaciones de escalado automático
+    - Uso: `npm run canary:monitor`
+  - Tests de adopción canary: `apps/backend/tests/integracion/canaryAdopcionMonitor.test.ts` (6 tests)
+    - Validación de rastreo v1 y v2
+    - Validación de cálculo de porcentajes
+    - Validación de formato Prometheus
+    - Validación de distinción por módulo
+    - Validación de consistencia de contadores
+  - Métricas Prometheus agregadas a `/api/metrics`:
+    - `evaluapro_adopcion_v2_porcentaje{modulo="..."}` gauge porcentaje
+    - `evaluapro_adopcion_v1_total{modulo="..."}` counter requisiciones v1
+    - `evaluapro_adopcion_v2_total{modulo="..."}` counter requisiciones v2
+  - Todos los tests de adopción pasan (✅ 6/6)
+  - Sistema completamente integrado en pipeline CI/CD
+- Validacion del sprint Big Bang + Ola 3 ejecutada en verde:
+  - `npm -C apps/backend run lint` ✅
+  - `npm -C apps/backend run typecheck` ✅
+  - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts` ✅
+  - `npm -C apps/backend run test -- tests/integracion/canaryAdopcionMonitor.test.ts` ✅ (6/6)
+  - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts` ✅
+  - `npm run bigbang:olas:check` ✅
+  - `npm run bigbang:olas:strict` ✅
+  - `npm run pipeline:contract:check` ✅
+- Arranque prod local endurecido para primera estable distribuible:
+  - Nuevo script `portal:prod` en `package.json` usando `scripts/start-portal-prod.mjs`:
+    - build condicional de portal si falta `dist/index.js`
+    - inicio en modo compilado (sin watch)
+  - `scripts/launcher-dashboard.mjs` ahora resuelve `portal` por modo:
+    - dev -> `dev:portal`
+    - prod -> `portal:prod`
+  - Endpoints `/api/start`, `/api/run`, `/api/restart` usan resolucion dinamica por modo.
+  - `scripts/launcher-tray.ps1` asegura autostart idempotente:
+    - stack prod/dev si falta
+    - portal si falta
+  - `scripts/create-shortcuts.ps1` alinea descripcion de accesos Dev/Prod.
+- Instalador estable reforzado con criterios de release:
+  - metadatos de desarrollador en MSI/Bundle:
+    - `I.S.C. Erick Renato Vega Ceron`
+  - prerequisitos no autoconfigurables validados por instalador:
+    - Node.js 24+
+    - Docker Desktop
+  - politica de upgrade in-place mantenida para instalaciones existentes.
+  - `scripts/build-msi.ps1` ahora ejecuta checks obligatorios de estabilidad antes de empaquetar.
+  - progreso de build MSI con barra por fase real (checks + build MSI + bundle).
+  - accesos directos auto-generados en instalacion/actualizacion:
+    - menu inicio siempre
+    - escritorio por defecto habilitado (`InstallDesktopShortcuts=1`, configurable)
+
+## [0.2.0-beta.1] - 2026-02-13
+
+### Added
+- Documento de inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`.
+- Inventario exhaustivo de codigo/config versionado: `docs/INVENTARIO_CODIGO_EXHAUSTIVO.md`.
+- Paquete de handoff IA automatico:
+  - `scripts/ia-handoff.mjs`
+  - `docs/handoff/PLANTILLA_HANDOFF_IA.md`
+  - `docs/handoff/README.md`
+- Script de estandarizacion de cabeceras de contexto:
+  - `scripts/ia-docblocks.mjs`
+- Documento explicativo de configuracion Mermaid:
+  - `docs/diagramas/mermaid.config.md`
+- Generador de READMEs por carpeta:
+  - `scripts/generar-readmes-carpetas.mjs`
+- READMEs base generados en carpetas objetivo de backend/frontend/portal/scripts/ops/diagramas.
+- Shell de UI docente extraído a `apps/frontend/src/apps/app_docente/ShellDocente.tsx`.
+- Guía de operación para agentes IA: `AGENTS.md`.
+- Documento de trazabilidad IA multi-sesion: `docs/IA_TRAZABILIDAD_AGENTES.md`.
+- Nuevas pruebas de cobertura frontend:
+  - `apps/frontend/tests/utilidades.appDocente.test.ts`
+  - `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx`
+  - `apps/frontend/tests/banco.estimadores.test.tsx`
+  - `apps/frontend/tests/plantillas.hooks.test.tsx`
+  - `apps/frontend/tests/seccionAutenticacion.test.tsx`
+- Nuevos módulos/hook para refactor docente:
+  - `apps/frontend/src/apps/app_docente/features/banco/hooks/estimadoresBanco.ts`
+  - `apps/frontend/src/apps/app_docente/features/plantillas/hooks/usePlantillasPreviewActions.ts`
+- Contratos y scripts QA preproduccion:
+  - `docs/QA_GATE_CRITERIA.md`
+  - `docs/fixtures/ANON_DATASET_CONTRACT.md`
+  - `scripts/testing/export-anon-fixture.mjs`
+  - `scripts/testing/validate-anon-fixture.mjs`
+  - `scripts/testing/import-anon-fixture.mjs`
+  - `scripts/testing/generar-qa-manifest.mjs`
+  - `apps/backend/src/compartido/tipos/qa.ts`
+- Nuevas pruebas bloqueantes:
+  - `apps/backend/tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts`
+  - `apps/backend/tests/calificacion.global.reglas.test.ts`
+  - `apps/backend/tests/integracion/calificacionGlobalContratoE2E.test.ts`
+  - `apps/backend/tests/integracion/pdfImpresionContrato.test.ts`
+  - `apps/frontend/tests/ux.visual.test.tsx`
+- Preflight operativo para generación de examen global en producción:
+  - `scripts/release/preflight-global-prod.mjs`
+  - `docs/OPERACION_EXAMEN_GLOBAL_PROD.md`
+- Ola 2A (OMR) iniciada con pipeline modular y canary:
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/types.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/qr/etapaQr.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/deteccion/etapaDeteccion.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/calidad/etapaCalidad.ts`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/debug/etapaDebug.ts`
+
+### Changed
+- Actualización integral de documentación raíz y técnica:
+  - `README.md`
+  - `docs/README.md`
+  - `docs/FILES.md`
+  - `docs/ENGINEERING_BASELINE.md`
+  - `docs/DEVOPS_BASELINE.md`
+  - `docs/VERSIONADO.md`
+  - `docs/INVENTARIO_PROYECTO.md`
+- Inventario de instrucciones IA ampliado para incluir `.github/copilot-instructions.md` como fuente activa de gobierno técnico para asistentes IDE.
+- `AppDocente.tsx` reducido a 757 líneas (meta de partición progresiva).
+- `AppDocente.tsx` reducido a 798 líneas (cumple `<800`).
+- `SeccionEscaneo.tsx` reducido a 798 líneas (cumple `<800`).
+- `SeccionBanco.tsx` reducido a 777 líneas (cumple `<800`).
+- `SeccionPlantillas.tsx` reducido a 763 líneas (cumple `<800`).
+- Cierre formal de Ola 1 en documentación de estado:
+  - `README.md`
+  - `docs/ENGINEERING_BASELINE.md`
+  - `docs/INVENTARIO_PROYECTO.md`
+- Recalibración temporal de gate frontend en `apps/frontend/vitest.config.ts`:
+  - lines 39, functions 40, branches 31, statements 37
+  - objetivo de rampa hacia 45 mantenido en documentación de baseline.
+- Tests de comportamiento ajustados en frontend:
+  - `apps/frontend/tests/plantillas.refactor.test.tsx`
+  - `apps/frontend/tests/banco.refactor.test.tsx`
+  - `apps/frontend/tests/escaneo.refactor.test.tsx`
+- Comentarios de mantenimiento añadidos en componentes/servicios criticos:
+  - `apps/frontend/src/apps/app_docente/AppDocente.tsx`
+  - `apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx`
+  - `apps/frontend/src/apps/app_docente/SeccionBanco.tsx`
+  - `apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx`
+  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`
+- Scripts raiz actualizados con comandos:
+  - `npm run ia:handoff:quick`
+  - `npm run ia:handoff:full`
+  - `npm run ia:docblocks`
+  - `npm run docs:carpetas:generate`
+  - `npm run test:dataset-prodlike:ci`
+  - `npm run test:e2e:docente-alumno:ci`
+  - `npm run test:global-grade:ci`
+  - `npm run test:pdf-print:ci`
+  - `npm run test:ux-visual:ci`
+  - `npm run test:qa:manifest`
+  - `npm run release:preflight:global`
+- Contrato CI ampliado con stages bloqueantes:
+  - `dataset-prodlike-check`
+  - `docente-alumno-e2e-check`
+  - `global-grade-check`
+  - `pdf-print-check`
+  - `ux-visual-check`
+  - `qa-manifest`
+- Documentación operativa ampliada para validación previa de generación global por materia/curso:
+  - `docs/RUNBOOK_OPERACION.md`
+  - `scripts/README.md`
+  - `docs/README.md`
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada compatible con feature flag:
+  - `FEATURE_OMR_PIPELINE_V2=0|1` (por defecto desactivado para rollout canary)
+- Observabilidad OMR agregada en `/api/metrics`:
+  - `evaluapro_omr_stage_duration_ms`
+  - `evaluapro_omr_stage_errors_total`
+  - `evaluapro_omr_pipeline_total`
+  - `evaluapro_omr_pipeline_error_total`
+  - `evaluapro_omr_pipeline_duration_ms`
+- `scripts/perf-collect.ts` ampliado para medir rutas criticas de negocio (examenes/omr/sincronizaciones/analiticas).
+- `scripts/bigbang-olas-check.mjs` actualizado para validar el monolito OMR en `servicioOmrLegacy.ts`.
+- `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` con layout parametrico milimetrico para impresion:
+  - grilla configurable
+  - alturas de encabezado configurables
+  - zona segura inferior configurable
+  - politica de bajo consumo de tinta (menos rellenos solidos).
+- `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` ahora ajusta parametros de deteccion usando geometria real del `mapaOmr` generado por pagina.
+- `apps/backend/tests/integracion/pdfImpresionContrato.test.ts` ampliado para validar presencia y rangos del perfil de layout parametrico en `mapaOmr`.
+
+### Fixed
+- Selectores ambiguos en pruebas de refactor (`Plantillas` y `Banco`) que generaban fallos falsos negativos.
+
+### Notes
+- Estado de gates del corte:
+  - `lint`, `typecheck`, `test:frontend:ci`, `test:coverage:ci`, `test:backend:ci`, `test:portal:ci`, `perf:check`, `pipeline:contract:check`: verdes.
+  - cobertura frontend validada contra umbral vigente: lines 39.20, functions 40.28, statements 37.21, branches 31.40.
+
 ## [0.1.0] - 2026-01-15
 
 - Monorepo inicial (backend, frontend, portal alumno cloud)

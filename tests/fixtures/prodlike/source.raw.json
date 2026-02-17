@@ -1,0 +1,35 @@
+{
+  "version": "1",
+  "periodos": [
+    {
+      "_id": "67f100000000000000000001",
+      "docenteId": "67f100000000000000000010",
+      "nombre": "Sistemas Visuales Ene-Feb 2026",
+      "grupos": ["A", "B"]
+    }
+  ],
+  "docentes": [
+    {
+      "_id": "67f100000000000000000010",
+      "nombreCompleto": "Docente Ejemplo",
+      "correo": "docente.real@cuh.mx"
+    }
+  ],
+  "alumnos": [
+    {
+      "_id": "67f100000000000000000020",
+      "docenteId": "67f100000000000000000010",
+      "periodoId": "67f100000000000000000001",
+      "matricula": "CUH512410168",
+      "nombreCompleto": "Alumno Ejemplo",
+      "correo": "alumno.real@cuh.mx",
+      "grupo": "A"
+    }
+  ],
+  "bancoPreguntas": [],
+  "plantillas": [],
+  "examenes": [],
+  "entregas": [],
+  "calificaciones": []
+}
+

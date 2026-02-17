@@ -1,3 +1,9 @@
+/**
+ * clienteComun
+ *
+ * Responsabilidad: Cliente compartido de comunicacion HTTP y normalizacion de errores.
+ * Limites: Cambios pueden afectar todo el frontend.
+ */
 import { emitToast, type ToastAction } from '../ui/toast/toastBus';
 
 export type TipoSesion = 'docente' | 'alumno';

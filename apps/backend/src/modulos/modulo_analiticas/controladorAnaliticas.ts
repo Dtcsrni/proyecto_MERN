@@ -12,7 +12,16 @@ import { EventoUso } from './modeloEventoUso';
 import { generarCsv } from './servicioExportacionCsv';
 import { Calificacion } from '../modulo_calificacion/modeloCalificacion';
 import { Alumno } from '../modulo_alumnos/modeloAlumno';
+import { Periodo } from '../modulo_alumnos/modeloPeriodo';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
+import { Docente } from '../modulo_autenticacion/modeloDocente';
+import { construirListaAcademica } from './servicioListaAcademica';
+import { COLUMNAS_LISTA_ACADEMICA } from './tiposListaAcademica';
+import { generarDocxListaAcademica } from './servicioExportacionDocx';
+import { generarXlsxCalificacionesProduccion } from './servicioExportacionXlsxCalificaciones';
+import { construirManifiestoIntegridadLista, serializarManifiestoEstable } from './servicioFirmaIntegridad';
+import { registrarExportacionLista } from '../../compartido/observabilidad/metrics';
+import { log } from '../../infraestructura/logging/logger';
 
 /**
  * Registra eventos de uso asociados al docente.
@@ -136,4 +145,127 @@ export async function exportarCsvCalificaciones(req: SolicitudDocente, res: Resp
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="calificaciones.csv"');
   res.send(csv);
+}
+
+function cicloLectivo(fechaInicio?: Date, fechaFin?: Date): string {
+  if (!fechaInicio || !fechaFin) return '';
+  const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
+  const mesInicio = meses[inicio.getUTCMonth()] ?? '';
+  const mesFin = meses[fin.getUTCMonth()] ?? '';
+  const anio = fin.getUTCFullYear();
+  return `${mesInicio}-${mesFin} ${anio}`;
+}
+
+export async function exportarXlsxCalificaciones(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const periodoId = String(req.query.periodoId || '').trim();
+  if (!periodoId) {
+    throw new ErrorAplicacion('DATOS_INVALIDOS', 'periodoId requerido', 400);
+  }
+
+  const [docente, periodo, alumnos, calificaciones] = await Promise.all([
+    Docente.findById(docenteId).lean(),
+    Periodo.findOne({ _id: periodoId, docenteId }).lean(),
+    Alumno.find({ docenteId, periodoId }).lean(),
+    Calificacion.find({ docenteId, periodoId }).lean()
+  ]);
+
+  if (!periodo) {
+    throw new ErrorAplicacion('PERIODO_NO_ENCONTRADO', 'Periodo no encontrado', 404);
+  }
+
+  const xlsx = await generarXlsxCalificacionesProduccion({
+    docenteNombre: String(docente?.nombreCompleto || ''),
+    nombrePeriodo: String(periodo.nombre || ''),
+    cicloLectivo: cicloLectivo(periodo.fechaInicio, periodo.fechaFin),
+    alumnos,
+    calificaciones
+  });
+
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+  res.setHeader('Content-Disposition', 'attachment; filename="calificaciones-produccion.xlsx"');
+  res.send(xlsx);
+}
+
+async function obtenerListaAcademicaPorPeriodo(docenteId: string, periodoId: string) {
+  const alumnos = await Alumno.find({ docenteId, periodoId }).lean();
+  const calificaciones = await Calificacion.find({ docenteId, periodoId }).lean();
+  const banderas = await BanderaRevision.find({ docenteId }).lean();
+  return construirListaAcademica(alumnos, calificaciones, banderas);
+}
+
+function validarPeriodoId(periodoId: string) {
+  if (!periodoId) {
+    throw new ErrorAplicacion('DATOS_INVALIDOS', 'periodoId requerido', 400);
+  }
+}
+
+export async function exportarListaAcademicaCsv(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const periodoId = String(req.query.periodoId || '').trim();
+  const requestId = (req as SolicitudDocente & { requestId?: string }).requestId;
+  validarPeriodoId(periodoId);
+
+  try {
+    const filas = await obtenerListaAcademicaPorPeriodo(docenteId, periodoId);
+    const csv = generarCsv(COLUMNAS_LISTA_ACADEMICA, filas);
+    registrarExportacionLista('csv', true);
+    log('info', 'Exportacion lista academica CSV', { requestId, userId: docenteId, periodoId, filas: filas.length });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="lista-academica.csv"');
+    res.send(csv);
+  } catch (error) {
+    registrarExportacionLista('csv', false);
+    throw error;
+  }
+}
+
+export async function exportarListaAcademicaDocx(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const periodoId = String(req.query.periodoId || '').trim();
+  const requestId = (req as SolicitudDocente & { requestId?: string }).requestId;
+  validarPeriodoId(periodoId);
+
+  try {
+    const filas = await obtenerListaAcademicaPorPeriodo(docenteId, periodoId);
+    const docx = await generarDocxListaAcademica(COLUMNAS_LISTA_ACADEMICA, filas);
+    registrarExportacionLista('docx', true);
+    log('info', 'Exportacion lista academica DOCX', { requestId, userId: docenteId, periodoId, filas: filas.length });
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="lista-academica.docx"');
+    res.send(docx);
+  } catch (error) {
+    registrarExportacionLista('docx', false);
+    throw error;
+  }
+}
+
+export async function exportarListaAcademicaFirma(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const periodoId = String(req.query.periodoId || '').trim();
+  const requestId = (req as SolicitudDocente & { requestId?: string }).requestId;
+  validarPeriodoId(periodoId);
+
+  try {
+    const filas = await obtenerListaAcademicaPorPeriodo(docenteId, periodoId);
+    const csvData = Buffer.from(generarCsv(COLUMNAS_LISTA_ACADEMICA, filas), 'utf-8');
+    const docxData = await generarDocxListaAcademica(COLUMNAS_LISTA_ACADEMICA, filas);
+    const manifiesto = construirManifiestoIntegridadLista(periodoId, csvData, docxData);
+    registrarExportacionLista('firma', true);
+    log('info', 'Exportacion firma lista academica', { requestId, userId: docenteId, periodoId, filas: filas.length });
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="lista-academica.manifest.json"');
+    res.send(serializarManifiestoEstable(manifiesto));
+  } catch (error) {
+    registrarExportacionLista('firma', false);
+    throw error;
+  }
 }

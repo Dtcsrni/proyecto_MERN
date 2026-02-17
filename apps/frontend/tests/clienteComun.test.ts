@@ -1,3 +1,9 @@
+/**
+ * clienteComun.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del cliente comun (retry/backoff).
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fetchConManejoErrores } from '../src/servicios_api/clienteComun';

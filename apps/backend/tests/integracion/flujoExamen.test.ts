@@ -1,3 +1,9 @@
+/**
+ * flujoExamen.test
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 // Pruebas del flujo completo de examen.
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -136,6 +142,12 @@ describe('flujo de examen', () => {
       .set(auth)
       .expect(200);
     expect(csvResp.text).toContain('matricula,nombre,grupo,parcial1,parcial2,global,final,banderas');
+
+    const xlsxResp = await request(app)
+      .get(`/api/analiticas/calificaciones-xlsx?periodoId=${periodoId}`)
+      .set(auth)
+      .expect(200);
+    expect(xlsxResp.header['content-type']).toContain('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(String(xlsxResp.header['content-disposition'] ?? '')).toContain('calificaciones-produccion.xlsx');
   });
 });
-

@@ -1,3 +1,9 @@
+/**
+ * App
+ *
+ * Responsabilidad: Modulo interno del sistema.
+ * Limites: Mantener contrato y comportamiento observable del modulo.
+ */
 import { useEffect, useState } from "react";  
 const URL_API = import.meta.env.VITE_URL_API;
 
