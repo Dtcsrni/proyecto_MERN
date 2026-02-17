@@ -37,8 +37,8 @@ import type {
 } from './tipos';
 import {
   combinarRespuestasOmrPaginas,
-  construirClaveCorrectaExamen,
   consolidarResultadoOmrExamen,
+  construirClaveCorrectaExamen,
   normalizarResultadoOmr,
   obtenerVistaInicial
 } from './utilidades';
@@ -107,12 +107,16 @@ export function AppDocente() {
   const [respuestasEditadas, setRespuestasEditadas] = useState<
     Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>
   >([]);
+  const [borradoresRespuestasOmr, setBorradoresRespuestasOmr] = useState<
+    Record<string, Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>>
+  >({});
   const [revisionOmrConfirmada, setRevisionOmrConfirmada] = useState(false);
   const [examenIdOmr, setExamenIdOmr] = useState<string | null>(null);
   const [examenAlumnoId, setExamenAlumnoId] = useState<string | null>(null);
   const [paginaOmrActiva, setPaginaOmrActiva] = useState<number | null>(null);
   const [revisionesOmr, setRevisionesOmr] = useState<RevisionExamenOmr[]>([]);
   const [solicitudesRevision, setSolicitudesRevision] = useState<SolicitudRevisionAlumno[]>([]);
+  const [marcaActualizacionCalificados, setMarcaActualizacionCalificados] = useState<number>(0);
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [ultimaActualizacionDatos, setUltimaActualizacionDatos] = useState<number | null>(null);
   function cerrarSesion() {
@@ -253,15 +257,10 @@ export function AppDocente() {
     () => revisionesOmr.find((item) => item.examenId === examenIdOmr) ?? null,
     [examenIdOmr, revisionesOmr]
   );
-  const respuestasOmrConsolidadas = useMemo(() => {
-    if (!examenOmrActivo) return [];
-    const combinadas = combinarRespuestasOmrPaginas(examenOmrActivo.paginas);
-    return combinadas;
-  }, [examenOmrActivo]);
-  const resultadoOmrConsolidado = useMemo(() => {
-    if (!examenOmrActivo) return resultadoOmr;
-    return consolidarResultadoOmrExamen(examenOmrActivo.paginas) ?? resultadoOmr;
-  }, [examenOmrActivo, resultadoOmr]);
+  const paginaOmrConfirmadaActiva = useMemo(() => {
+    if (!examenOmrActivo || !Number.isFinite(Number(paginaOmrActiva))) return null;
+    return examenOmrActivo.paginas.find((pagina) => Number(pagina.numeroPagina) === Number(paginaOmrActiva)) ?? null;
+  }, [examenOmrActivo, paginaOmrActiva]);
   const claveCorrectaOmrActiva = useMemo(
     () => (examenOmrActivo?.claveCorrectaPorNumero ? examenOmrActivo.claveCorrectaPorNumero : {}),
     [examenOmrActivo]
@@ -276,6 +275,48 @@ export function AppDocente() {
             .sort((a, b) => a - b),
     [claveCorrectaOmrActiva, examenOmrActivo]
   );
+  const respuestasCombinadasRevisionOmrActiva = useMemo(() => {
+    if (!examenOmrActivo || !Array.isArray(examenOmrActivo.paginas)) return [];
+    const combinadas = examenOmrActivo.paginas.flatMap((pagina) => {
+      const numeroPagina = Number(pagina.numeroPagina);
+      const llave = `${examenOmrActivo.examenId}::${numeroPagina}`;
+      const borrador = borradoresRespuestasOmr[llave];
+      if (Array.isArray(borrador)) return borrador;
+      return Array.isArray(pagina.respuestas) ? pagina.respuestas : [];
+    });
+    return [...combinadas].sort((a, b) => Number(a.numeroPregunta) - Number(b.numeroPregunta));
+  }, [borradoresRespuestasOmr, examenOmrActivo]);
+  const respuestasCombinadasEstablesOmrActiva = useMemo(() => {
+    if (!examenOmrActivo || !Array.isArray(examenOmrActivo.paginas)) return [];
+    return combinarRespuestasOmrPaginas(examenOmrActivo.paginas);
+  }, [examenOmrActivo]);
+  const respuestasParaCalificarOmrActiva = useMemo(
+    () => (Array.isArray(respuestasCombinadasEstablesOmrActiva) ? respuestasCombinadasEstablesOmrActiva : []),
+    [respuestasCombinadasEstablesOmrActiva]
+  );
+  const resultadoParaCalificarOmrActiva = useMemo(() => {
+    if (!examenOmrActivo || !Array.isArray(examenOmrActivo.paginas) || examenOmrActivo.paginas.length === 0) {
+      return resultadoOmr;
+    }
+    return consolidarResultadoOmrExamen(examenOmrActivo.paginas) ?? resultadoOmr;
+  }, [examenOmrActivo, resultadoOmr]);
+  const ordenPreguntasCalificarOmrActiva = useMemo(() => {
+    const numeros = new Set(
+      respuestasParaCalificarOmrActiva
+        .map((item) => Number(item.numeroPregunta))
+        .filter((numero) => Number.isFinite(numero))
+    );
+    const filtrado = ordenPreguntasClaveOmrActiva.filter((numero) => numeros.has(Number(numero)));
+    if (filtrado.length > 0) return filtrado;
+    return [...numeros].sort((a, b) => a - b);
+  }, [ordenPreguntasClaveOmrActiva, respuestasParaCalificarOmrActiva]);
+  const claveCorrectaCalificarOmrActiva = useMemo(() => {
+    const clave: Record<number, string> = {};
+    for (const numero of ordenPreguntasCalificarOmrActiva) {
+      if (claveCorrectaOmrActiva[numero]) clave[numero] = claveCorrectaOmrActiva[numero];
+    }
+    return clave;
+  }, [claveCorrectaOmrActiva, ordenPreguntasCalificarOmrActiva]);
   const hayCambiosPendientesOmrActiva = useMemo(() => {
     if (!examenOmrActivo) return false;
     const paginaActual = Number(paginaOmrActiva);
@@ -289,6 +330,29 @@ export function AppDocente() {
         .join('|');
     return firma(respuestasEditadas) !== firma(pagina.respuestas);
   }, [examenOmrActivo, paginaOmrActiva, respuestasEditadas]);
+  const normalizarRespuestasDetectadas = useCallback(
+    (
+      respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }> | undefined
+    ): Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }> => {
+      if (!Array.isArray(respuestas)) return [];
+      const normalizadas = new Map<number, { numeroPregunta: number; opcion: string | null; confianza?: number }>();
+      for (const item of respuestas) {
+        const numeroPregunta = Number(item?.numeroPregunta);
+        if (!Number.isInteger(numeroPregunta) || numeroPregunta <= 0) continue;
+        const opcionCruda = typeof item?.opcion === 'string' ? item.opcion.trim().toUpperCase() : '';
+        const opcion = opcionCruda.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(opcionCruda) ? opcionCruda : null;
+        const confianza = Number(item?.confianza);
+        normalizadas.set(numeroPregunta, {
+          numeroPregunta,
+          opcion,
+          ...(Number.isFinite(confianza) && confianza >= 0 && confianza <= 1 ? { confianza } : {})
+        });
+      }
+      return [...normalizadas.values()].sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+    },
+    []
+  );
+  const llaveBorradorOmr = useCallback((examenId: string, numeroPagina: number) => `${examenId}::${numeroPagina}`, []);
   const seleccionarRevisionOmr = useCallback(
     (examenId: string, numeroPagina: number) => {
       const examen = revisionesOmr.find((item) => item.examenId === examenId);
@@ -300,15 +364,143 @@ export function AppDocente() {
       setExamenAlumnoId(examen.alumnoId ?? null);
       setPaginaOmrActiva(Number(pagina.numeroPagina));
       setResultadoOmr(pagina.resultado);
-      setRespuestasEditadas(pagina.respuestas);
+      const llave = llaveBorradorOmr(examen.examenId, Number(pagina.numeroPagina));
+      const borrador = borradoresRespuestasOmr[llave];
+      setRespuestasEditadas(Array.isArray(borrador) ? borrador : pagina.respuestas);
       setRevisionOmrConfirmada(Boolean(examen.revisionConfirmada));
     },
-    [revisionesOmr]
+    [borradoresRespuestasOmr, llaveBorradorOmr, revisionesOmr]
+  );
+  const cargarRevisionHistoricaCalificada = useCallback(
+    (payload: {
+      examenId: string;
+      folio: string;
+      alumnoId: string | null;
+      numeroPagina: number;
+      respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+      paginas?: Array<{
+        numeroPagina: number;
+        respuestas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>;
+        resultado: ResultadoOmr;
+        imagenBase64?: string;
+      }>;
+      claveCorrectaPorNumero: Record<number, string>;
+      ordenPreguntas: number[];
+      resultado: ResultadoOmr;
+    }) => {
+      const ahora = Date.now();
+      const paginasEntrada = Array.isArray(payload.paginas) ? payload.paginas : [];
+      const paginasNormalizadas: RevisionPaginaOmr[] =
+        paginasEntrada.length > 0
+          ? paginasEntrada
+              .filter((pagina) => Number.isFinite(Number(pagina?.numeroPagina)) && Number(pagina.numeroPagina) > 0)
+              .map((pagina) => ({
+                numeroPagina: Number(pagina.numeroPagina),
+                resultado: pagina.resultado,
+                respuestas: Array.isArray(pagina.respuestas) ? pagina.respuestas : [],
+                imagenBase64: String(pagina.imagenBase64 ?? '').trim() || undefined,
+                actualizadoEn: ahora
+              }))
+          : [
+              {
+                numeroPagina: Number(payload.numeroPagina),
+                resultado: payload.resultado,
+                respuestas: Array.isArray(payload.respuestas) ? payload.respuestas : [],
+                actualizadoEn: ahora
+              }
+            ];
+      const paginaActivaInicial =
+        [...paginasNormalizadas]
+          .filter((pagina) => Number.isFinite(Number(pagina.numeroPagina)))
+          .sort((a, b) => Number(a.numeroPagina) - Number(b.numeroPagina))[0] ?? null;
+      setRevisionesOmr((prev) => {
+        const indice = prev.findIndex((item) => item.examenId === payload.examenId);
+        if (indice < 0) {
+          return [
+            {
+              examenId: payload.examenId,
+              folio: payload.folio,
+              alumnoId: payload.alumnoId,
+              paginas: paginasNormalizadas,
+              claveCorrectaPorNumero: payload.claveCorrectaPorNumero,
+              ordenPreguntas: payload.ordenPreguntas,
+              revisionConfirmada: true,
+              creadoEn: ahora,
+              actualizadoEn: ahora
+            },
+            ...prev
+          ];
+        }
+        const copia = [...prev];
+        const actual = copia[indice];
+        const paginasActuales = Array.isArray(actual.paginas) ? [...actual.paginas] : [];
+        const mapaPaginas = new Map<number, RevisionPaginaOmr>();
+        for (const pagina of paginasActuales) {
+          const numero = Number(pagina.numeroPagina);
+          if (!Number.isFinite(numero) || numero <= 0) continue;
+          mapaPaginas.set(numero, pagina);
+        }
+        for (const pagina of paginasNormalizadas) {
+          const numero = Number(pagina.numeroPagina);
+          if (!Number.isFinite(numero) || numero <= 0) continue;
+          mapaPaginas.set(numero, pagina);
+        }
+        const paginas = Array.from(mapaPaginas.values());
+        paginas.sort((a, b) => Number(a.numeroPagina) - Number(b.numeroPagina));
+        copia[indice] = {
+          ...actual,
+          folio: payload.folio || actual.folio,
+          alumnoId: payload.alumnoId ?? actual.alumnoId ?? null,
+          paginas,
+          claveCorrectaPorNumero:
+            Object.keys(payload.claveCorrectaPorNumero || {}).length > 0
+              ? payload.claveCorrectaPorNumero
+              : actual.claveCorrectaPorNumero,
+          ordenPreguntas:
+            Array.isArray(payload.ordenPreguntas) && payload.ordenPreguntas.length > 0
+              ? payload.ordenPreguntas
+              : actual.ordenPreguntas,
+          revisionConfirmada: true,
+          actualizadoEn: ahora
+        };
+        return copia;
+      });
+      setExamenIdOmr(payload.examenId);
+      setExamenAlumnoId(payload.alumnoId);
+      setPaginaOmrActiva(Number(paginaActivaInicial?.numeroPagina ?? payload.numeroPagina));
+      setResultadoOmr(paginaActivaInicial?.resultado ?? payload.resultado);
+      setRespuestasEditadas(
+        Array.isArray(paginaActivaInicial?.respuestas)
+          ? paginaActivaInicial.respuestas
+          : Array.isArray(payload.respuestas)
+            ? payload.respuestas
+            : []
+      );
+      setRevisionOmrConfirmada(true);
+      setBorradoresRespuestasOmr((prev) => {
+        const siguiente = { ...prev };
+        let huboCambios = false;
+        for (const pagina of paginasNormalizadas) {
+          const llave = llaveBorradorOmr(payload.examenId, Number(pagina.numeroPagina));
+          if (llave in siguiente) {
+            delete siguiente[llave];
+            huboCambios = true;
+          }
+        }
+        return huboCambios ? siguiente : prev;
+      });
+    },
+    [llaveBorradorOmr]
   );
   const actualizarRespuestasOmrActivas = useCallback(
     (nuevas: Array<{ numeroPregunta: number; opcion: string | null; confianza: number }>) => {
       setRespuestasEditadas(nuevas);
       if (!examenIdOmr) return;
+      const paginaObjetivo = Number(paginaOmrActiva);
+      if (Number.isFinite(paginaObjetivo)) {
+        const llave = llaveBorradorOmr(examenIdOmr, paginaObjetivo);
+        setBorradoresRespuestasOmr((prev) => ({ ...prev, [llave]: nuevas }));
+      }
       setRevisionOmrConfirmada(false);
       setRevisionesOmr((prev) =>
         prev.map((examen) => {
@@ -321,7 +513,7 @@ export function AppDocente() {
         })
       );
     },
-    [examenIdOmr]
+    [examenIdOmr, llaveBorradorOmr, paginaOmrActiva]
   );
   const actualizarRespuestaPreguntaOmrActiva = useCallback(
     (numeroPregunta: number, opcion: string | null) => {
@@ -350,10 +542,14 @@ export function AppDocente() {
           siguiente.push({ numeroPregunta: numero, opcion, confianza: 0 });
         }
         siguiente.sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+        if (examenIdOmr && Number.isFinite(Number(paginaOmrActiva))) {
+          const llave = llaveBorradorOmr(examenIdOmr, Number(paginaOmrActiva));
+          setBorradoresRespuestasOmr((actual) => ({ ...actual, [llave]: siguiente }));
+        }
         return siguiente;
       });
     },
-    [examenIdOmr]
+    [examenIdOmr, llaveBorradorOmr, paginaOmrActiva]
   );
   const confirmarRevisionOmrActiva = useCallback(
     (confirmada: boolean) => {
@@ -366,32 +562,54 @@ export function AppDocente() {
           if (!confirmada) {
             return { ...examen, revisionConfirmada: false, actualizadoEn: Date.now() };
           }
+          const ahora = Date.now();
           const paginas = examen.paginas.map((pagina) => {
-            if (!Number.isFinite(paginaObjetivo) || Number(pagina.numeroPagina) !== paginaObjetivo) return pagina;
+            const numeroPagina = Number(pagina.numeroPagina);
+            const llave = llaveBorradorOmr(examen.examenId, numeroPagina);
+            const esPaginaActiva = Number.isFinite(paginaObjetivo) && numeroPagina === paginaObjetivo;
+            const respuestasPagina = esPaginaActiva
+              ? respuestasEditadas
+              : Array.isArray(borradoresRespuestasOmr[llave])
+                ? borradoresRespuestasOmr[llave]
+                : null;
+            if (!Array.isArray(respuestasPagina)) return pagina;
             return {
               ...pagina,
-              respuestas: respuestasEditadas,
+              respuestas: respuestasPagina,
               resultado: {
                 ...pagina.resultado,
-                respuestasDetectadas: respuestasEditadas
+                respuestasDetectadas: respuestasPagina
               },
-              actualizadoEn: Date.now()
+              actualizadoEn: ahora
             };
           });
           return {
             ...examen,
             paginas,
             revisionConfirmada: true,
-            actualizadoEn: Date.now()
+            actualizadoEn: ahora
           };
         })
       );
+      if (confirmada) {
+        setBorradoresRespuestasOmr((prev) => {
+          const prefijo = `${examenIdOmr}::`;
+          const llaves = Object.keys(prev).filter((llave) => llave.startsWith(prefijo));
+          if (llaves.length === 0) return prev;
+          const siguiente = { ...prev };
+          for (const llave of llaves) {
+            delete siguiente[llave];
+          }
+          return siguiente;
+        });
+      }
     },
-    [examenIdOmr, paginaOmrActiva, respuestasEditadas]
+    [borradoresRespuestasOmr, examenIdOmr, llaveBorradorOmr, paginaOmrActiva, respuestasEditadas]
   );
   const limpiarColaEscaneosOmr = useCallback(() => {
     const habiaElementos = revisionesOmr.length > 0 || Boolean(resultadoOmr);
     setRevisionesOmr([]);
+    setBorradoresRespuestasOmr({});
     setResultadoOmr(null);
     setRespuestasEditadas([]);
     setRevisionOmrConfirmada(false);
@@ -628,7 +846,14 @@ export function AppDocente() {
                 const requiereRevisionPagina = resultadoNormalizado.estadoAnalisis !== 'ok';
                 const revisionConfirmada = requiereRevisionPagina ? false : examen.revisionConfirmada;
                 revisionExamenConfirmada = revisionConfirmada;
-                const paginaInicio = paginas.find((item) => Number(item.numeroPagina) === 1) ?? paginas[0] ?? nuevaPagina;
+                const paginaActivaActual = Number(paginaOmrActiva);
+                const conservarPaginaActiva =
+                  examenIdOmr === examen.examenId &&
+                  Number.isFinite(paginaActivaActual) &&
+                  paginas.some((item) => Number(item.numeroPagina) === paginaActivaActual);
+                const paginaInicio = conservarPaginaActiva
+                  ? (paginas.find((item) => Number(item.numeroPagina) === paginaActivaActual) ?? nuevaPagina)
+                  : (paginas.find((item) => Number(item.numeroPagina) === 1) ?? paginas[0] ?? nuevaPagina);
                 paginaInicioActiva = Number(paginaInicio.numeroPagina);
                 resultadoPaginaInicio = paginaInicio.resultado;
                 respuestasPaginaInicio = paginaInicio.respuestas;
@@ -667,6 +892,15 @@ export function AppDocente() {
             });
             setResultadoOmr(resultadoPaginaInicio);
             setRespuestasEditadas(respuestasPaginaInicio);
+            if (Number.isFinite(Number(paginaInicioActiva))) {
+              const llave = llaveBorradorOmr(respuesta.examenId, Number(paginaInicioActiva));
+              setBorradoresRespuestasOmr((prev) => {
+                if (!(llave in prev)) return prev;
+                const siguiente = { ...prev };
+                delete siguiente[llave];
+                return siguiente;
+              });
+            }
             setRevisionOmrConfirmada(revisionExamenConfirmada);
             setExamenIdOmr(respuesta.examenId);
             setExamenAlumnoId(alumnoIdActivo);
@@ -678,7 +912,31 @@ export function AppDocente() {
               avisarSinPermiso('No tienes permiso para calificar.');
               throw new Error('SIN_PERMISO');
             }
-            return clienteApi.enviar<{ preview: PreviewCalificacion }>('/calificaciones/calificar', { ...payload, soloPreview: true });
+            const examenGeneradoId = String(payload.examenGeneradoId ?? '').trim();
+            const revisionExamen = revisionesOmr.find((item) => item.examenId === examenGeneradoId);
+            const respuestasConsolidadas = revisionExamen
+              ? combinarRespuestasOmrPaginas(
+                  revisionExamen.paginas.map((pagina) => {
+                    const numeroPagina = Number(pagina.numeroPagina);
+                    const llave = `${revisionExamen.examenId}::${numeroPagina}`;
+                    const borrador = borradoresRespuestasOmr[llave];
+                    return {
+                      ...pagina,
+                      respuestas: Array.isArray(borrador) ? borrador : pagina.respuestas
+                    };
+                  })
+                )
+              : [];
+            const respuestasDetectadas = normalizarRespuestasDetectadas(
+              Array.isArray(respuestasConsolidadas) && respuestasConsolidadas.length > 0
+                ? respuestasConsolidadas
+                : payload.respuestasDetectadas
+            );
+            return clienteApi.enviar<{ preview: PreviewCalificacion }>('/calificaciones/calificar', {
+              ...payload,
+              ...(respuestasDetectadas.length > 0 ? { respuestasDetectadas } : {}),
+              soloPreview: true
+            });
           }}
           resultado={resultadoOmr}
           onActualizar={actualizarRespuestasOmrActivas}
@@ -695,14 +953,94 @@ export function AppDocente() {
           onSeleccionarRevision={seleccionarRevisionOmr}
           examenId={examenIdOmr}
           alumnoId={examenAlumnoId}
-          resultadoParaCalificar={resultadoOmrConsolidado}
-          respuestasParaCalificar={respuestasOmrConsolidadas}
-          onCalificar={(payload) => {
+          marcaActualizacionCalificados={marcaActualizacionCalificados}
+          resultadoParaCalificar={resultadoParaCalificarOmrActiva}
+          respuestasParaCalificar={respuestasParaCalificarOmrActiva}
+          respuestasCombinadasRevision={respuestasCombinadasRevisionOmrActiva}
+          claveCorrectaParaCalificar={claveCorrectaCalificarOmrActiva}
+          ordenPreguntasParaCalificar={ordenPreguntasCalificarOmrActiva}
+          onCalificar={async (payload) => {
             if (!permisosUI.calificaciones.calificar) {
               avisarSinPermiso('No tienes permiso para calificar.');
               return Promise.reject(new Error('SIN_PERMISO'));
             }
-            return clienteApi.enviar('/calificaciones/calificar', payload);
+            const examenRevision = revisionesOmr.find((item) => item.examenId === payload.examenGeneradoId);
+            const paginasOmr = (Array.isArray(examenRevision?.paginas) ? examenRevision.paginas : [])
+              .map((pagina) => {
+                const numeroPagina = Number(pagina.numeroPagina);
+                const imagenBase64 = String(pagina.imagenBase64 ?? '').trim();
+                if (!Number.isInteger(numeroPagina) || numeroPagina <= 0 || !imagenBase64) return null;
+                return {
+                  numeroPagina,
+                  imagenBase64
+                };
+              })
+              .filter(
+                (
+                  pagina
+                ): pagina is {
+                  numeroPagina: number;
+                  imagenBase64: string;
+                } => Boolean(pagina)
+              );
+            const payloadCalificacion: {
+              examenGeneradoId: string;
+              alumnoId?: string;
+              aciertos?: number;
+              totalReactivos?: number;
+              bonoSolicitado?: number;
+              evaluacionContinua?: number;
+              proyecto?: number;
+              retroalimentacion?: string;
+              respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
+              omrAnalisis?: {
+                estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
+                calidadPagina: number;
+                confianzaPromedioPagina?: number;
+                ratioAmbiguas?: number;
+                templateVersionDetectada?: 1 | 2;
+                motivosRevision?: string[];
+                revisionConfirmada?: boolean;
+              };
+              paginasOmr?: Array<{ numeroPagina: number; imagenBase64: string }>;
+            } = {
+              examenGeneradoId: String(payload.examenGeneradoId)
+            };
+            if (typeof payload.alumnoId === 'string' && payload.alumnoId.trim()) payloadCalificacion.alumnoId = payload.alumnoId.trim();
+            if (Number.isFinite(Number(payload.aciertos))) payloadCalificacion.aciertos = Number(payload.aciertos);
+            if (Number.isFinite(Number(payload.totalReactivos))) payloadCalificacion.totalReactivos = Number(payload.totalReactivos);
+            if (Number.isFinite(Number(payload.bonoSolicitado))) payloadCalificacion.bonoSolicitado = Number(payload.bonoSolicitado);
+            if (Number.isFinite(Number(payload.evaluacionContinua))) payloadCalificacion.evaluacionContinua = Number(payload.evaluacionContinua);
+            if (Number.isFinite(Number(payload.proyecto))) payloadCalificacion.proyecto = Number(payload.proyecto);
+            if (typeof payload.retroalimentacion === 'string') payloadCalificacion.retroalimentacion = payload.retroalimentacion;
+            const respuestasDetectadasNormalizadas = normalizarRespuestasDetectadas(payload.respuestasDetectadas);
+            if (respuestasDetectadasNormalizadas.length > 0) {
+              payloadCalificacion.respuestasDetectadas = respuestasDetectadasNormalizadas;
+            }
+            if (payload.omrAnalisis) {
+              const estado = payload.omrAnalisis.estadoAnalisis;
+              if (estado === 'ok' || estado === 'rechazado_calidad' || estado === 'requiere_revision') {
+                payloadCalificacion.omrAnalisis = {
+                  estadoAnalisis: estado,
+                  calidadPagina: Number(payload.omrAnalisis.calidadPagina ?? 0),
+                  confianzaPromedioPagina: Number(payload.omrAnalisis.confianzaPromedioPagina ?? 0),
+                  ratioAmbiguas: Number(payload.omrAnalisis.ratioAmbiguas ?? 0),
+                  templateVersionDetectada: payload.omrAnalisis.templateVersionDetectada === 2 ? 2 : 1,
+                  motivosRevision: Array.isArray(payload.omrAnalisis.motivosRevision)
+                    ? payload.omrAnalisis.motivosRevision
+                        .map((motivo) => String(motivo ?? '').trim())
+                        .filter((motivo) => motivo.length > 0)
+                        .slice(0, 50)
+                    : [],
+                  revisionConfirmada: Boolean(payload.omrAnalisis.revisionConfirmada)
+                };
+              }
+            }
+            if (paginasOmr.length > 0) payloadCalificacion.paginasOmr = paginasOmr;
+            const respuesta = await clienteApi.enviar('/calificaciones/calificar', payloadCalificacion);
+            setMarcaActualizacionCalificados(Date.now());
+            limpiarColaEscaneosOmr();
+            return respuesta;
           }}
           solicitudesRevision={solicitudesRevision}
           onSincronizarSolicitudesRevision={async () => {
@@ -729,6 +1067,7 @@ export function AppDocente() {
             return respuesta;
           }}
           onLimpiarColaEscaneos={limpiarColaEscaneosOmr}
+          onCargarRevisionHistoricaCalificada={cargarRevisionHistoricaCalificada}
         />
       )}
       {vista === 'publicar' && (

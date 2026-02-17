@@ -1,6 +1,6 @@
 /** Seccion de escaneo OMR y revision manual (orquestacion UI). */
 import type { ChangeEvent } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono } from '../../ui/iconos';
@@ -114,7 +114,6 @@ export function SeccionEscaneo({
   const bloqueoAnalisis = !puedeAnalizar;
   const paginaManual = Number.isFinite(numeroPagina) ? Math.max(0, Math.floor(numeroPagina)) : 0;
   const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [item._id, item.nombreCompleto])), [alumnos]);
-  const estadoAnalisisResultado = resultado?.estadoAnalisis ?? 'requiere_revision';
   const paginaDetectadaQr = useMemo(() => {
     const qrTexto = String(resultado?.qrTexto ?? '').trim();
     if (!qrTexto) return null;
@@ -123,19 +122,13 @@ export function SeccionEscaneo({
     const pagina = Number(match[1]);
     return Number.isFinite(pagina) && pagina > 0 ? pagina : null;
   }, [resultado?.qrTexto]);
-  const calidadPaginaResultado = Number.isFinite(Number(resultado?.calidadPagina)) ? Number(resultado?.calidadPagina) : 0;
-  const confianzaPromedioResultado = Number.isFinite(Number(resultado?.confianzaPromedioPagina))
-    ? Number(resultado?.confianzaPromedioPagina)
-    : 0;
-  const ratioAmbiguasResultado = Number.isFinite(Number(resultado?.ratioAmbiguas)) ? Number(resultado?.ratioAmbiguas) : 0;
   const advertenciasResultado = Array.isArray(resultado?.advertencias) ? resultado.advertencias : [];
-  const estadoAnalisisClase =
-    estadoAnalisisResultado === 'ok' ? 'ok' : estadoAnalisisResultado === 'rechazado_calidad' ? 'error' : 'warning';
   const revisionesOrdenadas = useMemo(
     () => [...revisionesSeguras].sort((a, b) => b.actualizadoEn - a.actualizadoEn),
     [revisionesSeguras]
   );
   const examenAutoInicializadoRef = useRef<string | null>(null);
+  const autoAnalisisLotePendienteRef = useRef(false);
 
   useEffect(() => {
     if (revisionesOrdenadas.length === 0) return;
@@ -185,6 +178,56 @@ export function SeccionEscaneo({
     if (!examenIdActivo) return null;
     return revisionesSeguras.find((item) => item.examenId === examenIdActivo) ?? null;
   }, [examenIdActivo, revisionesSeguras]);
+  const resumenEstadoExamen = useMemo(() => {
+    const mapearEstado = (estadoBase: 'ok' | 'rechazado_calidad' | 'requiere_revision', confirmada: boolean) => {
+      if (estadoBase === 'ok') return 'ok' as const;
+      if (confirmada) return 'revisado_manual' as const;
+      return 'requiere_revision' as const;
+    };
+    const paginas = Array.isArray(examenRevisionActivo?.paginas) ? examenRevisionActivo.paginas : [];
+    if (paginas.length === 0) {
+      const estadoBase = (resultado?.estadoAnalisis ?? 'requiere_revision') as 'ok' | 'rechazado_calidad' | 'requiere_revision';
+      const estadoEtiqueta = mapearEstado(estadoBase, revisionOmrConfirmada);
+      return {
+        estadoEtiqueta,
+        calidadPromedio: Number.isFinite(Number(resultado?.calidadPagina)) ? Number(resultado?.calidadPagina) : 0,
+        confianzaPromedio: Number.isFinite(Number(resultado?.confianzaPromedioPagina))
+          ? Number(resultado?.confianzaPromedioPagina)
+          : 0,
+        ratioAmbiguasPromedio: Number.isFinite(Number(resultado?.ratioAmbiguas)) ? Number(resultado?.ratioAmbiguas) : 0
+      };
+    }
+    const estadoBaseExamen = paginas.every((pagina) => pagina.resultado.estadoAnalisis === 'ok') ? 'ok' : 'requiere_revision';
+    const estadoEtiqueta = mapearEstado(estadoBaseExamen, Boolean(examenRevisionActivo?.revisionConfirmada));
+    const divisor = Math.max(1, paginas.length);
+    const calidadPromedio =
+      paginas.reduce(
+        (acumulado, pagina) => acumulado + (Number.isFinite(Number(pagina.resultado.calidadPagina)) ? Number(pagina.resultado.calidadPagina) : 0),
+        0
+      ) / divisor;
+    const confianzaPromedio =
+      paginas.reduce(
+        (acumulado, pagina) =>
+          acumulado +
+          (Number.isFinite(Number(pagina.resultado.confianzaPromedioPagina))
+            ? Number(pagina.resultado.confianzaPromedioPagina)
+            : 0),
+        0
+      ) / divisor;
+    const ratioAmbiguasPromedio =
+      paginas.reduce(
+        (acumulado, pagina) => acumulado + (Number.isFinite(Number(pagina.resultado.ratioAmbiguas)) ? Number(pagina.resultado.ratioAmbiguas) : 0),
+        0
+      ) / divisor;
+    return { estadoEtiqueta, calidadPromedio, confianzaPromedio, ratioAmbiguasPromedio };
+  }, [examenRevisionActivo, resultado, revisionOmrConfirmada]);
+  const estadoAnalisisTexto =
+    resumenEstadoExamen.estadoEtiqueta === 'ok'
+      ? 'OK'
+      : resumenEstadoExamen.estadoEtiqueta === 'revisado_manual'
+        ? 'Revisado manual'
+        : 'En revisión';
+  const estadoAnalisisClase = resumenEstadoExamen.estadoEtiqueta === 'ok' ? 'ok' : 'warning';
   const claveCorrectaRevision = useMemo(() => {
     const claveExamen = examenRevisionActivo?.claveCorrectaPorNumero;
     if (claveExamen && Object.keys(claveExamen).length > 0) return claveExamen;
@@ -219,24 +262,45 @@ export function SeccionEscaneo({
     () => new Map(respuestasPaginaOrdenadas.map((item) => [item.numeroPregunta, item])),
     [respuestasPaginaOrdenadas]
   );
-  const ordenRevision = useMemo(() => {
+  const respuestasExamenDinamicasOrdenadas = useMemo(() => {
+    if (respuestasCombinadasSeguras.length > 0) {
+      return [...respuestasCombinadasSeguras].sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+    }
+    if (examenRevisionActivo && Array.isArray(examenRevisionActivo.paginas)) {
+      const paginaActivaNum = Number(paginaActiva);
+      const combinadas = examenRevisionActivo.paginas.flatMap((pagina) =>
+        Number.isFinite(paginaActivaNum) && Number(pagina.numeroPagina) === paginaActivaNum
+          ? respuestasPaginaEditableSeguras
+          : Array.isArray(pagina.respuestas)
+            ? pagina.respuestas
+            : []
+      );
+      return [...combinadas].sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+    }
+    return [...respuestasCombinadasSeguras].sort((a, b) => a.numeroPregunta - b.numeroPregunta);
+  }, [examenRevisionActivo, paginaActiva, respuestasCombinadasSeguras, respuestasPaginaEditableSeguras]);
+  const respuestasExamenPorNumero = useMemo(
+    () => new Map(respuestasExamenDinamicasOrdenadas.map((item) => [item.numeroPregunta, item])),
+    [respuestasExamenDinamicasOrdenadas]
+  );
+  const ordenRevisionExamen = useMemo(() => {
     const ordenExamenActivo = Array.isArray(examenRevisionActivo?.ordenPreguntas)
       ? examenRevisionActivo.ordenPreguntas.filter((numero) => Number.isFinite(Number(numero)))
       : [];
     if (ordenExamenActivo.length > 0) return ordenExamenActivo;
     if (ordenPreguntasClaveSegura.length > 0) return ordenPreguntasClaveSegura;
-    const numerosRespuestas = respuestasCombinadasSeguras.map((item) => item.numeroPregunta);
+    const numerosRespuestas = respuestasExamenDinamicasOrdenadas.map((item) => item.numeroPregunta);
     const numerosClave = Object.keys(claveCorrectaRevision)
       .map((numero) => Number(numero))
       .filter((numero) => Number.isFinite(numero));
     return Array.from(new Set([...numerosClave, ...numerosRespuestas])).sort((a, b) => a - b);
-  }, [claveCorrectaRevision, examenRevisionActivo, ordenPreguntasClaveSegura, respuestasCombinadasSeguras]);
+  }, [claveCorrectaRevision, examenRevisionActivo, ordenPreguntasClaveSegura, respuestasExamenDinamicasOrdenadas]);
   const ordenRevisionPagina = useMemo(() => {
     const numerosPagina = new Set(respuestasPaginaOrdenadas.map((item) => item.numeroPregunta));
-    const ordenFiltrado = ordenRevision.filter((numeroPregunta) => numerosPagina.has(numeroPregunta));
+    const ordenFiltrado = ordenRevisionExamen.filter((numeroPregunta) => numerosPagina.has(numeroPregunta));
     if (ordenFiltrado.length > 0) return ordenFiltrado;
     return [...numerosPagina].sort((a, b) => a - b);
-  }, [ordenRevision, respuestasPaginaOrdenadas]);
+  }, [ordenRevisionExamen, respuestasPaginaOrdenadas]);
   const filasRevision = useMemo(
     () =>
       ordenRevisionPagina.map((numeroPregunta) => {
@@ -252,21 +316,25 @@ export function SeccionEscaneo({
   );
   const preguntasMostradas = filasRevision;
   const resumenCalificacionDinamica = useMemo(() => {
-    if (!filasRevision.length) {
+    if (!ordenRevisionExamen.length) {
       return { total: 0, aciertos: 0, contestadas: 0, notaSobre5: 0 };
     }
+    const normalizar = (valor: string | null | undefined) => {
+      const limpio = String(valor ?? '').trim().toUpperCase();
+      return limpio.length > 0 ? limpio : null;
+    };
     let aciertos = 0;
     let contestadas = 0;
-    for (const fila of filasRevision) {
-      const correcta = fila.correcta;
-      const detectada = fila.opcion;
+    for (const numeroPregunta of ordenRevisionExamen) {
+      const correcta = normalizar(claveCorrectaRevision[numeroPregunta] ?? null);
+      const detectada = normalizar(respuestasExamenPorNumero.get(numeroPregunta)?.opcion ?? null);
       if (detectada) contestadas += 1;
       if (correcta && detectada && detectada === correcta) aciertos += 1;
     }
-    const total = filasRevision.length;
+    const total = ordenRevisionExamen.length;
     const notaSobre5 = Number(((aciertos / Math.max(1, total)) * 5).toFixed(2));
     return { total, aciertos, contestadas, notaSobre5 };
-  }, [filasRevision]);
+  }, [claveCorrectaRevision, ordenRevisionExamen, respuestasExamenPorNumero]);
   const paginasPendientes = useMemo(
     () =>
       revisionesOrdenadas.reduce(
@@ -363,6 +431,7 @@ export function SeccionEscaneo({
       });
     }
     setLote((prev) => [...nuevos, ...prev]);
+    autoAnalisisLotePendienteRef.current = true;
   }
 
   async function analizar() {
@@ -404,7 +473,7 @@ export function SeccionEscaneo({
     }
   }
 
-  async function analizarLote() {
+  const analizarLote = useCallback(async () => {
     if (procesandoLote || lote.length === 0) return;
     if (!puedeAnalizar) {
       avisarSinPermiso('No tienes permiso para analizar OMR.');
@@ -455,7 +524,14 @@ export function SeccionEscaneo({
       }
     }
     setProcesandoLote(false);
-  }
+  }, [avisarSinPermiso, folio, lote, onAnalizar, onPrevisualizar, paginaManual, procesandoLote, puedeAnalizar, puedeCalificar]);
+
+  useEffect(() => {
+    if (!autoAnalisisLotePendienteRef.current) return;
+    if (procesandoLote || lote.length === 0 || bloqueoAnalisis || !puedeCalificar) return;
+    autoAnalisisLotePendienteRef.current = false;
+    void analizarLote();
+  }, [analizarLote, bloqueoAnalisis, lote.length, procesandoLote, puedeCalificar]);
 
   return (
     <div className="panel calif-omr-panel">
@@ -663,7 +739,6 @@ export function SeccionEscaneo({
               onClick={() => {
                 if (!examenIdActivo || paginaAnterior === null) return;
                 onSeleccionarRevision(examenIdActivo, paginaAnterior);
-                onConfirmarRevisionOmr(false);
               }}
             >
               Página anterior
@@ -678,7 +753,6 @@ export function SeccionEscaneo({
               onClick={() => {
                 if (!examenIdActivo || paginaSiguiente === null) return;
                 onSeleccionarRevision(examenIdActivo, paginaSiguiente);
-                onConfirmarRevisionOmr(false);
               }}
             >
               Página siguiente
@@ -698,7 +772,17 @@ export function SeccionEscaneo({
             <Boton
               type="button"
               variante={revisionOmrConfirmada ? 'secundario' : 'primario'}
-              onClick={() => onConfirmarRevisionOmr(!revisionOmrConfirmada)}
+              onClick={() => {
+                if (revisionOmrConfirmada && !hayCambiosPendientesExamen) {
+                  const confirmarModificacion = window.confirm(
+                    'La revisión ya está confirmada. ¿Deseas habilitar su modificación?'
+                  );
+                  if (!confirmarModificacion) return;
+                  onConfirmarRevisionOmr(false);
+                  return;
+                }
+                onConfirmarRevisionOmr(true);
+              }}
             >
               {revisionOmrConfirmada
                 ? hayCambiosPendientesExamen
@@ -718,9 +802,10 @@ export function SeccionEscaneo({
             {paginaRevisionActiva?.nombreArchivo ? ` · Archivo: ${paginaRevisionActiva.nombreArchivo}` : ''}
           </div>
           <div className="item-sub">
-            Estado <span className={`badge ${estadoAnalisisClase}`}>{estadoAnalisisResultado}</span> · Calidad{' '}
-            {Math.round(calidadPaginaResultado * 100)}% · Confianza media {Math.round(confianzaPromedioResultado * 100)}% · Ambiguas{' '}
-            {(ratioAmbiguasResultado * 100).toFixed(1)}%
+            Estado <span className={`badge ${estadoAnalisisClase}`}>{estadoAnalisisTexto}</span> · Calidad{' '}
+            promedio {Math.round(resumenEstadoExamen.calidadPromedio * 100)}% · Confianza media examen{' '}
+            {Math.round(resumenEstadoExamen.confianzaPromedio * 100)}% · Ambiguas promedio{' '}
+            {(resumenEstadoExamen.ratioAmbiguasPromedio * 100).toFixed(1)}%
           </div>
           {paginaDetectadaQr !== null && (
             <div className="item-sub">
@@ -732,12 +817,15 @@ export function SeccionEscaneo({
           )}
           <div className="item-sub">
             Orden de preguntas: {examenRevisionActivo?.ordenPreguntas?.length ? 'propio del examen activo' : 'referencia general'} · Reactivos en revisión:{' '}
-            {ordenRevisionPagina.length}
+            {ordenRevisionExamen.length}
           </div>
+          {revisionOmrConfirmada ? (
+            <div className="item-sub">Si modificas una revisión confirmada, se solicitará reconfirmación antes de guardar cambios.</div>
+          ) : null}
           <div className="item-meta">
-            <span>Aciertos (dinámico): {resumenCalificacionDinamica.aciertos}/{resumenCalificacionDinamica.total}</span>
+            <span>Aciertos: {resumenCalificacionDinamica.aciertos}/{resumenCalificacionDinamica.total}</span>
             <span>Contestadas: {resumenCalificacionDinamica.contestadas}</span>
-            <span>Calificación dinámica: {resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</span>
+            <span>Calificación final: {resumenCalificacionDinamica.notaSobre5.toFixed(2)} / 5.00</span>
           </div>
           <div className="omr-review-grid">
             <div className="item-glass omr-review-card omr-review-card--imagen">
@@ -752,7 +840,11 @@ export function SeccionEscaneo({
                 ) : imagenBase64 ? (
                   <img className="preview omr-review-card__image" src={imagenBase64} alt="Imagen cargada para analisis OMR" />
                 ) : (
-                  <InlineMensaje tipo="info">Selecciona una página de la revisión para ver su imagen.</InlineMensaje>
+                  <InlineMensaje tipo="info">
+                    {paginaRevisionActiva
+                      ? 'No hay imagen archivada para esta página.'
+                      : 'Selecciona una página de la revisión para ver su imagen.'}
+                  </InlineMensaje>
                 )}
               </div>
             </div>
