@@ -23,6 +23,15 @@ const exportacionesListaTotales = {
 const etapasOmrDuracionMs = new Map<string, number>();
 const etapasOmrTotales = new Map<string, number>();
 const pipelineOmrTotales = { total: 0, errores: 0, duracionAcumuladaMs: 0 };
+const resultadosOmrTotales = {
+  ok: 0,
+  requiere_revision: 0,
+  rechazado_calidad: 0,
+  confianzaAcumulada: 0,
+  ratioAmbiguasAcumulado: 0,
+  calidadAcumulada: 0,
+  muestras: 0
+};
 const esquemaVersionadoTotales = {
   fallbackReads: 0,
   v2Writes: 0
@@ -89,6 +98,19 @@ export function registrarOmrPipeline(exito: boolean, duracionMs: number, request
   if (!exito && requestId) {
     void requestId;
   }
+}
+
+export function registrarOmrResultadoAnalisis(
+  estadoAnalisis: 'ok' | 'requiere_revision' | 'rechazado_calidad',
+  confianzaPromedioPagina: number,
+  ratioAmbiguas: number,
+  calidadPagina: number
+) {
+  resultadosOmrTotales[estadoAnalisis] += 1;
+  resultadosOmrTotales.muestras += 1;
+  resultadosOmrTotales.confianzaAcumulada += Math.max(0, Math.min(1, confianzaPromedioPagina));
+  resultadosOmrTotales.ratioAmbiguasAcumulado += Math.max(0, Math.min(1, ratioAmbiguas));
+  resultadosOmrTotales.calidadAcumulada += Math.max(0, Math.min(1, calidadPagina));
 }
 
 export function registrarSchemaFallbackRead() {
@@ -179,6 +201,37 @@ export function exportarMetricasPrometheus(): string {
   const promedioPipeline =
     pipelineOmrTotales.total > 0 ? pipelineOmrTotales.duracionAcumuladaMs / pipelineOmrTotales.total : 0;
   lineas.push(`evaluapro_omr_pipeline_duration_ms ${Number(promedioPipeline.toFixed(2))}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_analysis_total Total de resultados OMR por estado de analisis');
+  lineas.push('# TYPE evaluapro_omr_analysis_total counter');
+  lineas.push(`evaluapro_omr_analysis_total{estado="ok"} ${resultadosOmrTotales.ok}`);
+  lineas.push(
+    `evaluapro_omr_analysis_total{estado="requiere_revision"} ${resultadosOmrTotales.requiere_revision}`
+  );
+  lineas.push(
+    `evaluapro_omr_analysis_total{estado="rechazado_calidad"} ${resultadosOmrTotales.rechazado_calidad}`
+  );
+
+  const muestrasOmr = Math.max(1, resultadosOmrTotales.muestras);
+  const confianzaPromedio = resultadosOmrTotales.confianzaAcumulada / muestrasOmr;
+  const ratioAmbiguasPromedio = resultadosOmrTotales.ratioAmbiguasAcumulado / muestrasOmr;
+  const calidadPromedio = resultadosOmrTotales.calidadAcumulada / muestrasOmr;
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_confianza_promedio Promedio de confianza por pagina OMR');
+  lineas.push('# TYPE evaluapro_omr_confianza_promedio gauge');
+  lineas.push(`evaluapro_omr_confianza_promedio ${Number(confianzaPromedio.toFixed(4))}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_ratio_ambiguas_promedio Promedio de ratio ambiguas por pagina OMR');
+  lineas.push('# TYPE evaluapro_omr_ratio_ambiguas_promedio gauge');
+  lineas.push(`evaluapro_omr_ratio_ambiguas_promedio ${Number(ratioAmbiguasPromedio.toFixed(4))}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_calidad_promedio Promedio de calidad de pagina OMR');
+  lineas.push('# TYPE evaluapro_omr_calidad_promedio gauge');
+  lineas.push(`evaluapro_omr_calidad_promedio ${Number(calidadPromedio.toFixed(4))}`);
 
   lineas.push('');
   lineas.push('# HELP evaluapro_schema_fallback_reads_total Total de lecturas por adaptador v1 durante migracion dual');

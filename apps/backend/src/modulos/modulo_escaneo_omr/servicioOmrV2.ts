@@ -10,6 +10,7 @@ import {
   evaluarConOffset,
   type EstadoImagenOmr
 } from './omrCore';
+import { UMBRALES_OMR_AUTO, evaluarRescateAltaPrecisionOmr } from './politicaAutoCalificacionOmr';
 import {
   calcularIntegral,
   detectarOpcion,
@@ -126,15 +127,12 @@ const OMR_MIN_FILL_DELTA = Number.parseFloat(process.env.OMR_MIN_FILL_DELTA || '
 const OMR_MIN_CENTER_GAP = Number.parseFloat(process.env.OMR_MIN_CENTER_GAP || '10');
 const OMR_MIN_HYBRID_CONF = Number.parseFloat(process.env.OMR_MIN_HYBRID_CONF || '0.35');
 const OMR_QUALITY_WARN_MIN = Number.parseFloat(process.env.OMR_QUALITY_WARN_MIN || '-1');
-const OMR_QUALITY_REJECT_MIN = Number.parseFloat(process.env.OMR_QUALITY_REJECT_MIN || '0.65');
-const OMR_QUALITY_REVIEW_MIN = Number.parseFloat(process.env.OMR_QUALITY_REVIEW_MIN || '0.8');
-const OMR_AUTO_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.82');
-const OMR_AUTO_AMBIGUAS_MAX = Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.06');
-const OMR_AUTO_DETECCION_MIN = Number.parseFloat(process.env.OMR_AUTO_DETECCION_MIN || '0.85');
+const OMR_QUALITY_REJECT_MIN = UMBRALES_OMR_AUTO.qualityRejectMin;
+const OMR_QUALITY_REVIEW_MIN = UMBRALES_OMR_AUTO.qualityReviewMin;
+const OMR_AUTO_CONF_MIN = UMBRALES_OMR_AUTO.autoConfMin;
+const OMR_AUTO_AMBIGUAS_MAX = UMBRALES_OMR_AUTO.autoAmbiguasMax;
+const OMR_AUTO_DETECCION_MIN = UMBRALES_OMR_AUTO.autoDeteccionMin;
 const OMR_RESPUESTA_CONF_MIN = Number.parseFloat(process.env.OMR_RESPUESTA_CONF_MIN || '0.78');
-const OMR_AUTO_RESCUE_QUALITY_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_QUALITY_MIN || '0.58');
-const OMR_AUTO_RESCUE_CONF_MIN = Number.parseFloat(process.env.OMR_AUTO_RESCUE_CONF_MIN || '0.84');
-const OMR_AUTO_RESCUE_AMBIG_MAX = Number.parseFloat(process.env.OMR_AUTO_RESCUE_AMBIG_MAX || '0.04');
 const OMR_EXPORT_PATCHES = String(process.env.OMR_EXPORT_PATCHES || '').toLowerCase() === 'true' || process.env.OMR_EXPORT_PATCHES === '1';
 const OMR_PATCH_DIR = process.env.OMR_PATCH_DIR || path.resolve(process.cwd(), 'storage', 'omr_patches');
 const OMR_PATCH_SIZE = Math.max(24, Number.parseInt(process.env.OMR_PATCH_SIZE || '56', 10));
@@ -386,10 +384,11 @@ function resolverEstadoAnalisis(args: {
   const advertencias: string[] = [];
   const puedeRechazarPorCalidad = totalRespuestas >= 3;
   const deteccionRatio = totalRespuestas > 0 ? respuestasContestadas / totalRespuestas : 0;
-  const rescateAltaPrecision =
-    calidadPagina >= OMR_AUTO_RESCUE_QUALITY_MIN &&
-    confianzaMedia >= OMR_AUTO_RESCUE_CONF_MIN &&
-    ratioAmbiguas <= OMR_AUTO_RESCUE_AMBIG_MAX;
+  const rescateAltaPrecision = evaluarRescateAltaPrecisionOmr({
+    calidadPagina,
+    confianzaPromedioPagina: confianzaMedia,
+    ratioAmbiguas
+  });
   let estado: ResultadoOmr['estadoAnalisis'] = 'ok';
   let anularRespuestas = false;
 

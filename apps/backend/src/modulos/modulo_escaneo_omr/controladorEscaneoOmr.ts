@@ -11,6 +11,7 @@ import { gzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
+import { registrarOmrResultadoAnalisis } from '../../compartido/observabilidad/metrics';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import { ExamenGenerado } from '../modulo_generacion_pdf/modeloExamenGenerado';
 import { ExamenPlantilla } from '../modulo_generacion_pdf/modeloExamenPlantilla';
@@ -74,6 +75,12 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   } catch {
     throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'No se pudo procesar la imagen OMR', 400);
   }
+  registrarOmrResultadoAnalisis(
+    resultado.estadoAnalisis,
+    Number(resultado.confianzaPromedioPagina ?? 0),
+    Number(resultado.ratioAmbiguas ?? 1),
+    Number(resultado.calidadPagina ?? 0)
+  );
   await archivarEscaneoOmrExitoso({
     base64: imagenBase64 ?? '',
     folio: folioNormalizado,
