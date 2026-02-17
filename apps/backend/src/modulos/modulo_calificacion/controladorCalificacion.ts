@@ -13,6 +13,7 @@ import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion
 import { BancoPregunta } from '../modulo_banco_preguntas/modeloBancoPregunta';
 import { ExamenGenerado } from '../modulo_generacion_pdf/modeloExamenGenerado';
 import { ExamenPlantilla } from '../modulo_generacion_pdf/modeloExamenPlantilla';
+import { evaluarAutoCalificableOmr } from '../modulo_escaneo_omr/politicaAutoCalificacionOmr';
 import { Calificacion } from './modeloCalificacion';
 import { SolicitudRevisionAlumno } from './modeloSolicitudRevisionAlumno';
 import { calcularCalificacion } from './servicioCalificacion';
@@ -99,11 +100,13 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const ratioAmbiguas = Number(analisisOmr?.ratioAmbiguas ?? 0);
   const totalPreguntasEsperadas = Array.isArray(ordenPreguntas) ? ordenPreguntas.length : 0;
   const coberturaDeteccion = totalPreguntasEsperadas > 0 ? respuestas.length / totalPreguntasEsperadas : 0;
-  const rescateAltaPrecision =
-    calidadPagina >= 0.58 && confianzaPromedioPagina >= 0.84 && ratioAmbiguas <= 0.04;
-  const autoCalificableOmr =
-    analisisOmr?.estadoAnalisis === 'ok' &&
-    ((calidadPagina >= 0.82 && confianzaPromedioPagina >= 0.82 && ratioAmbiguas <= 0.06 && coberturaDeteccion >= 0.85) || rescateAltaPrecision);
+  const { autoCalificableOmr } = evaluarAutoCalificableOmr({
+    estadoAnalisis: analisisOmr?.estadoAnalisis,
+    calidadPagina,
+    confianzaPromedioPagina,
+    ratioAmbiguas,
+    coberturaDeteccion
+  });
 
   if (!soloPreview && analisisOmr && !revisionConfirmada && !autoCalificableOmr) {
     throw new ErrorAplicacion(

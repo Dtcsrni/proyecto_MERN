@@ -28,7 +28,8 @@
     "dev:omr:geo-tight": "tsx scripts/omr-run-dev-profile.ts geo_tight_search",
     "dev:omr:actual": "tsx scripts/omr-run-dev-profile.ts actual",
     "omr:eval:profile": "tsx scripts/omr-eval-profile.ts",
-    "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts"
+    "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts",
+    "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

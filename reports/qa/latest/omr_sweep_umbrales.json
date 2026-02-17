@@ -1,0 +1,982 @@
+{
+  "generatedAt": "2026-02-17T00:03:09.681Z",
+  "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+  "mode": "v2",
+  "search": {
+    "algorithm": "coordinate_descent",
+    "maxPasses": 2,
+    "evaluatedConfigs": 17
+  },
+  "baseline": {
+    "thresholds": {
+      "qualityRejectMin": 0.65,
+      "qualityReviewMin": 0.8,
+      "autoConfMin": 0.82,
+      "autoAmbiguasMax": 0.06,
+      "autoDeteccionMin": 0.85,
+      "autoRescueQualityMin": 0.58,
+      "autoRescueConfMin": 0.84,
+      "autoRescueAmbigMax": 0.04
+    },
+    "score": -0.14992944,
+    "scoreParts": {
+      "precision": 0.008064516129032258,
+      "deteccion": 0.008064516129032258,
+      "okRate": 0,
+      "requiereRevisionRate": 0.03125,
+      "rechazadoRate": 0.96875,
+      "erroresRate": 0
+    },
+    "summary": {
+      "profile": "thresholds_baseline",
+      "mode": "v2",
+      "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+      "totalReactivos": 248,
+      "detectadasV2": 2,
+      "correctasV2": 2,
+      "deteccionRateV2": 0.008064516129032258,
+      "precisionSobreTotalV2": 0.008064516129032258,
+      "estadosV2": {
+        "rechazado_calidad": 31,
+        "requiere_revision": 1
+      },
+      "imagenesConError": 0
+    }
+  },
+  "best": {
+    "thresholds": {
+      "qualityRejectMin": 0.65,
+      "qualityReviewMin": 0.8,
+      "autoConfMin": 0.82,
+      "autoAmbiguasMax": 0.06,
+      "autoDeteccionMin": 0.85,
+      "autoRescueQualityMin": 0.58,
+      "autoRescueConfMin": 0.84,
+      "autoRescueAmbigMax": 0.04
+    },
+    "score": -0.14992944,
+    "scoreParts": {
+      "precision": 0.008064516129032258,
+      "deteccion": 0.008064516129032258,
+      "okRate": 0,
+      "requiereRevisionRate": 0.03125,
+      "rechazadoRate": 0.96875,
+      "erroresRate": 0
+    },
+    "summary": {
+      "profile": "thresholds_baseline",
+      "mode": "v2",
+      "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+      "totalReactivos": 248,
+      "detectadasV2": 2,
+      "correctasV2": 2,
+      "deteccionRateV2": 0.008064516129032258,
+      "precisionSobreTotalV2": 0.008064516129032258,
+      "estadosV2": {
+        "rechazado_calidad": 31,
+        "requiere_revision": 1
+      },
+      "imagenesConError": 0
+    },
+    "deltaVsBaseline": {
+      "score": 0,
+      "detectadasV2": 0,
+      "correctasV2": 0,
+      "deteccionRateV2": 0,
+      "precisionSobreTotalV2": 0,
+      "imagenesConError": 0
+    }
+  },
+  "trace": [
+    {
+      "pass": 1,
+      "key": "qualityRejectMin",
+      "from": 0.65,
+      "to": 0.65,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "qualityReviewMin",
+      "from": 0.8,
+      "to": 0.8,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoConfMin",
+      "from": 0.82,
+      "to": 0.82,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoAmbiguasMax",
+      "from": 0.06,
+      "to": 0.06,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoDeteccionMin",
+      "from": 0.85,
+      "to": 0.85,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoRescueQualityMin",
+      "from": 0.58,
+      "to": 0.58,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoRescueConfMin",
+      "from": 0.84,
+      "to": 0.84,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    },
+    {
+      "pass": 1,
+      "key": "autoRescueAmbigMax",
+      "from": 0.04,
+      "to": 0.04,
+      "scoreBefore": -0.14992944,
+      "scoreAfter": -0.14992944,
+      "improved": false
+    }
+  ],
+  "top5": [
+    {
+      "name": "thresholds_baseline",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_baseline",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityRejectMin_0.62",
+      "thresholds": {
+        "qualityRejectMin": 0.62,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityRejectMin_0.62",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityRejectMin_0.68",
+      "thresholds": {
+        "qualityRejectMin": 0.68,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityRejectMin_0.68",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityReviewMin_0.77",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.77,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityReviewMin_0.77",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityReviewMin_0.83",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.83,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityReviewMin_0.83",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    }
+  ],
+  "runs": [
+    {
+      "name": "thresholds_baseline",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_baseline",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityRejectMin_0.62",
+      "thresholds": {
+        "qualityRejectMin": 0.62,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityRejectMin_0.62",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityRejectMin_0.68",
+      "thresholds": {
+        "qualityRejectMin": 0.68,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityRejectMin_0.68",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityReviewMin_0.77",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.77,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityReviewMin_0.77",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_qualityReviewMin_0.83",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.83,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_qualityReviewMin_0.83",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoConfMin_0.78",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.78,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoConfMin_0.78",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoConfMin_0.86",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.86,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoConfMin_0.86",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoAmbiguasMax_0.05",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.05,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoAmbiguasMax_0.05",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoAmbiguasMax_0.07",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.07,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoAmbiguasMax_0.07",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoDeteccionMin_0.81",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.81,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoDeteccionMin_0.81",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoDeteccionMin_0.89",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.89,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoDeteccionMin_0.89",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueQualityMin_0.54",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.54,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueQualityMin_0.54",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueQualityMin_0.62",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.62,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueQualityMin_0.62",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueConfMin_0.8",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.8,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueConfMin_0.8",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueConfMin_0.88",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.88,
+        "autoRescueAmbigMax": 0.04
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueConfMin_0.88",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueAmbigMax_0.03",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.03
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueAmbigMax_0.03",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    },
+    {
+      "name": "thresholds_pass1_autoRescueAmbigMax_0.05",
+      "thresholds": {
+        "qualityRejectMin": 0.65,
+        "qualityReviewMin": 0.8,
+        "autoConfMin": 0.82,
+        "autoAmbiguasMax": 0.06,
+        "autoDeteccionMin": 0.85,
+        "autoRescueQualityMin": 0.58,
+        "autoRescueConfMin": 0.84,
+        "autoRescueAmbigMax": 0.05
+      },
+      "score": -0.14992944,
+      "scoreParts": {
+        "precision": 0.008064516129032258,
+        "deteccion": 0.008064516129032258,
+        "okRate": 0,
+        "requiereRevisionRate": 0.03125,
+        "rechazadoRate": 0.96875,
+        "erroresRate": 0
+      },
+      "summary": {
+        "profile": "thresholds_pass1_autoRescueAmbigMax_0.05",
+        "mode": "v2",
+        "dataset": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples",
+        "totalReactivos": 248,
+        "detectadasV2": 2,
+        "correctasV2": 2,
+        "deteccionRateV2": 0.008064516129032258,
+        "precisionSobreTotalV2": 0.008064516129032258,
+        "estadosV2": {
+          "rechazado_calidad": 31,
+          "requiere_revision": 1
+        },
+        "imagenesConError": 0
+      }
+    }
+  ]
+}
