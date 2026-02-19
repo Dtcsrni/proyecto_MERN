@@ -28,7 +28,19 @@ const comprimirGzip = promisify(gzip);
 
 type RespuestaDetectada = {
   numeroPregunta: number;
-  opcion: string | null;
+  opcion: 'A' | 'B' | 'C' | 'D' | 'E' | null;
+  confianza?: number;
+  scoresPorOpcion?: Array<{
+    opcion: 'A' | 'B' | 'C' | 'D' | 'E';
+    score: number;
+    fillRatioCore: number;
+    fillRatioRing: number;
+    centerDarknessDelta: number;
+    strokeLeakPenalty: number;
+    shapeCompactness: number;
+    markConfidence: number;
+  }>;
+  flags?: Array<'doble_marca' | 'bajo_contraste' | 'fuera_roi'>;
 };
 
 type AnalisisOmrCalificacion = {
@@ -36,16 +48,24 @@ type AnalisisOmrCalificacion = {
   calidadPagina: number;
   confianzaPromedioPagina?: number;
   ratioAmbiguas?: number;
-  templateVersionDetectada?: 1 | 2;
+  templateVersionDetectada?: 3;
   motivosRevision?: string[];
   revisionConfirmada?: boolean;
+  usuarioRevisor?: string;
+  revisionTimestamp?: string;
+  motivoRevisionManual?: string;
+  engineVersion?: string;
+  engineUsed?: 'cv' | 'legacy';
+  geomQuality?: number;
+  photoQuality?: number;
+  decisionPolicy?: string;
 };
 
 type PaginaOmrCalificacionEntrada = {
   numeroPagina: number;
   imagenBase64: string;
   estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
-  templateVersionDetectada?: 1 | 2;
+  templateVersionDetectada?: 3;
 };
 
 function extraerBase64Imagen(base64: string): { mimeType: string; contenido: string } {
@@ -69,7 +89,10 @@ async function archivarPaginasOmrEnCalificacion({
   examen,
   folio,
   estadoAnalisisDefault,
-  templateVersionDetectadaDefault
+  templateVersionDetectadaDefault,
+  engineUsedDefault,
+  engineVersionDefault,
+  motivosRevisionDefault
 }: {
   paginasOmr: PaginaOmrCalificacionEntrada[];
   docenteId: string;
@@ -81,7 +104,10 @@ async function archivarPaginasOmrEnCalificacion({
   };
   folio: string;
   estadoAnalisisDefault?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
-  templateVersionDetectadaDefault?: 1 | 2;
+  templateVersionDetectadaDefault?: 3;
+  engineUsedDefault?: 'cv' | 'legacy';
+  engineVersionDefault?: string;
+  motivosRevisionDefault?: string[];
 }) {
   const paginasValidas = (Array.isArray(paginasOmr) ? paginasOmr : []).filter((pagina) => {
     const numeroPagina = Number(pagina?.numeroPagina ?? 0);
@@ -99,6 +125,19 @@ async function archivarPaginasOmrEnCalificacion({
       (Array.isArray(plantilla?.temas) && plantilla.temas.length > 0 ? plantilla.temas.join(' · ') : plantilla?.titulo ?? '')
   ).trim();
 
+  const esErrorDuplicadoMongo = (error: unknown) => Number((error as { code?: unknown } | null)?.code ?? 0) === 11000;
+  const calcularSiguienteIntentoOmr = async (numeroPagina: number) => {
+    const ultimo = await EscaneoOmrArchivado.findOne({
+      examenGeneradoId: examen._id,
+      numeroPagina
+    })
+      .sort({ intento: -1, createdAt: -1 })
+      .select({ intento: 1 })
+      .lean();
+    const intentoActual = Number((ultimo as { intento?: unknown } | null)?.intento ?? 0);
+    return Number.isFinite(intentoActual) && intentoActual > 0 ? intentoActual + 1 : 1;
+  };
+
   for (const pagina of paginasValidas) {
     const numeroPagina = Number(pagina.numeroPagina);
     const { mimeType, contenido } = extraerBase64Imagen(String(pagina.imagenBase64 ?? ''));
@@ -112,38 +151,38 @@ async function archivarPaginasOmrEnCalificacion({
         ? pagina.estadoAnalisis
         : estadoAnalisisDefault ?? 'ok';
     const templateVersionDetectada =
-      pagina.templateVersionDetectada === 1 || pagina.templateVersionDetectada === 2
-        ? pagina.templateVersionDetectada
-        : templateVersionDetectadaDefault;
-
-    await EscaneoOmrArchivado.findOneAndUpdate(
-      {
-        examenGeneradoId: examen._id,
-        numeroPagina
-      },
-      {
-        docenteId,
-        alumnoId: examen.alumnoId ?? null,
-        periodoId: examen.periodoId ?? null,
-        plantillaId: examen.plantillaId ?? null,
-        examenGeneradoId: examen._id,
-        folio,
-        numeroPagina,
-        materia: materia || undefined,
-        mimeType,
-        algoritmoCompresion: 'gzip',
-        tamanoOriginalBytes: original.length,
-        tamanoComprimidoBytes: comprimido.length,
-        sha256Original,
-        templateVersionDetectada: templateVersionDetectada ?? undefined,
-        estadoAnalisis: estadoAnalisisPagina,
-        payloadComprimido: comprimido
-      },
-      {
-        upsert: true,
-        setDefaultsOnInsert: true
+      pagina.templateVersionDetectada === 3 ? 3 : templateVersionDetectadaDefault;
+    for (let reintento = 0; reintento < 3; reintento += 1) {
+      const intento = await calcularSiguienteIntentoOmr(numeroPagina);
+      try {
+        await EscaneoOmrArchivado.create({
+          docenteId,
+          alumnoId: examen.alumnoId ?? null,
+          periodoId: examen.periodoId ?? null,
+          plantillaId: examen.plantillaId ?? null,
+          examenGeneradoId: examen._id,
+          folio,
+          numeroPagina,
+          intento,
+          materia: materia || undefined,
+          mimeType,
+          algoritmoCompresion: 'gzip',
+          tamanoOriginalBytes: original.length,
+          tamanoComprimidoBytes: comprimido.length,
+          sha256Original,
+          templateVersionDetectada: templateVersionDetectada ?? undefined,
+          engineUsed: engineUsedDefault,
+          engineVersion: engineVersionDefault,
+          estadoAnalisis: estadoAnalisisPagina,
+          motivosRevision: Array.isArray(motivosRevisionDefault) ? motivosRevisionDefault.slice(0, 24) : [],
+          payloadComprimido: comprimido
+        });
+        break;
+      } catch (error) {
+        if (esErrorDuplicadoMongo(error) && reintento < 2) continue;
+        throw error;
       }
-    );
+    }
   }
 }
 
@@ -154,6 +193,122 @@ function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: n
   const posicion = orden.findIndex((idx) => idx === indiceCorrecto);
   if (posicion < 0) return null;
   return String.fromCharCode(65 + posicion);
+}
+
+function validarPayloadCalificacionOmr(params: {
+  folioPayload?: string;
+  folioExamen: string;
+  templateVersionOmr: number;
+  totalPreguntasEsperadas: number;
+  respuestas: RespuestaDetectada[];
+  analisisOmr?: AnalisisOmrCalificacion;
+  soloPreview?: boolean;
+}) {
+  const {
+    folioPayload,
+    folioExamen,
+    templateVersionOmr,
+    totalPreguntasEsperadas,
+    respuestas,
+    analisisOmr,
+    soloPreview
+  } = params;
+
+  const folioReq = String(folioPayload ?? '').trim().toUpperCase();
+  const folioDb = String(folioExamen ?? '').trim().toUpperCase();
+  if (folioReq && folioDb && folioReq !== folioDb) {
+    throw new ErrorAplicacion('OMR_FOLIO_NO_COINCIDE', 'El folio del payload no coincide con el examen', 409, {
+      folioPayload: folioReq,
+      folioExamen: folioDb
+    });
+  }
+
+  if (respuestas.length > 0 && templateVersionOmr !== 3) {
+    throw new ErrorAplicacion('OMR_TEMPLATE_NO_COMPATIBLE', 'Solo TV3 puede guardar calificación OMR automática', 422);
+  }
+  if (respuestas.length > 0 && totalPreguntasEsperadas <= 0) {
+    throw new ErrorAplicacion(
+      'OMR_MAPA_VARIANTE_INVALIDO',
+      'No existe un mapa de preguntas válido para validar respuestas OMR',
+      409
+    );
+  }
+
+  if (respuestas.length > 0) {
+    if (totalPreguntasEsperadas > 0 && respuestas.length !== totalPreguntasEsperadas) {
+      throw new ErrorAplicacion(
+        'OMR_PAYLOAD_INCOMPLETO',
+        'La cantidad de respuestas detectadas no coincide con el total esperado',
+        422,
+        { totalEsperado: totalPreguntasEsperadas, totalRecibido: respuestas.length }
+      );
+    }
+    const vistos = new Set<number>();
+    for (const respuesta of respuestas) {
+      const numero = Number(respuesta.numeroPregunta ?? 0);
+      if (!Number.isInteger(numero) || numero <= 0 || numero > totalPreguntasEsperadas) {
+        throw new ErrorAplicacion('OMR_PREGUNTA_FUERA_RANGO', 'Existe una pregunta fuera del rango del examen', 422, {
+          numeroPregunta: respuesta.numeroPregunta,
+          totalPreguntasEsperadas
+        });
+      }
+      if (vistos.has(numero)) {
+        throw new ErrorAplicacion('OMR_PREGUNTA_DUPLICADA', 'Hay preguntas repetidas en respuestasDetectadas', 422, {
+          numeroPregunta: numero
+        });
+      }
+      vistos.add(numero);
+      if (respuesta.opcion !== null && !['A', 'B', 'C', 'D', 'E'].includes(respuesta.opcion)) {
+        throw new ErrorAplicacion('OMR_OPCION_INVALIDA', 'La opción detectada no es válida', 422, {
+          numeroPregunta: numero,
+          opcion: respuesta.opcion
+        });
+      }
+      if (
+        respuesta.confianza !== undefined &&
+        (!Number.isFinite(respuesta.confianza) || respuesta.confianza < 0 || respuesta.confianza > 1)
+      ) {
+        throw new ErrorAplicacion('OMR_CONFIANZA_INVALIDA', 'La confianza de respuesta está fuera de rango [0,1]', 422, {
+          numeroPregunta: numero,
+          confianza: respuesta.confianza
+        });
+      }
+    }
+  }
+
+  if (respuestas.length > 0 && !analisisOmr) {
+    throw new ErrorAplicacion('OMR_ANALISIS_REQUERIDO', 'Se requiere omrAnalisis cuando se envían respuestasDetectadas', 422);
+  }
+  if (!analisisOmr) return;
+  if (analisisOmr.templateVersionDetectada !== undefined && analisisOmr.templateVersionDetectada !== 3) {
+    throw new ErrorAplicacion('OMR_TEMPLATE_NO_COMPATIBLE', 'El análisis OMR recibido no corresponde a TV3', 422);
+  }
+  if (analisisOmr.estadoAnalisis !== 'ok' && analisisOmr.revisionConfirmada) {
+    const usuarioRevisor = String(analisisOmr.usuarioRevisor ?? '').trim();
+    const revisionTimestamp = String(analisisOmr.revisionTimestamp ?? '').trim();
+    const motivoRevisionManual = String(analisisOmr.motivoRevisionManual ?? '').trim();
+    if (!usuarioRevisor || !revisionTimestamp || !motivoRevisionManual) {
+      throw new ErrorAplicacion(
+        'OMR_REVISION_METADATA_OBLIGATORIA',
+        'Para confirmar revisión se requiere usuarioRevisor, revisionTimestamp y motivoRevisionManual',
+        422
+      );
+    }
+  }
+  if (!soloPreview && analisisOmr.estadoAnalisis === 'rechazado_calidad' && !analisisOmr.revisionConfirmada) {
+    throw new ErrorAplicacion(
+      'OMR_RECHAZADO_CALIDAD',
+      'La captura fue rechazada por calidad y no puede guardarse en calificación final automática',
+      409
+    );
+  }
+  if (!soloPreview && analisisOmr.estadoAnalisis !== 'ok' && !analisisOmr.revisionConfirmada) {
+    throw new ErrorAplicacion(
+      'OMR_ESTADO_ANALISIS_BLOQUEANTE',
+      'La calificación final automática está bloqueada mientras estadoAnalisis no sea ok',
+      409
+    );
+  }
 }
 
 /**
@@ -167,6 +322,7 @@ function obtenerLetraCorrecta(opciones: Array<{ esCorrecta: boolean }>, orden: n
 export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const {
     examenGeneradoId,
+    folio,
     alumnoId,
     aciertos,
     totalReactivos,
@@ -204,9 +360,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const mapaPreguntas = new Map(preguntasDb.map((pregunta) => [String(pregunta._id), pregunta]));
 
   const respuestas = Array.isArray(respuestasDetectadas) ? (respuestasDetectadas as RespuestaDetectada[]) : [];
-  const respuestasPorNumero = new Map(
-    respuestas.map((item) => [item.numeroPregunta, item.opcion ? item.opcion.toUpperCase() : null])
-  );
+  const respuestasPorNumero = new Map(respuestas.map((item) => [item.numeroPregunta, item.opcion]));
 
   const analisisOmr = omrAnalisis as AnalisisOmrCalificacion | undefined;
   const paginasOmrEntrada = Array.isArray(paginasOmr) ? (paginasOmr as PaginaOmrCalificacionEntrada[]) : [];
@@ -215,6 +369,15 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
   const confianzaPromedioPagina = Number(analisisOmr?.confianzaPromedioPagina ?? 1);
   const ratioAmbiguas = Number(analisisOmr?.ratioAmbiguas ?? 0);
   const totalPreguntasEsperadas = Array.isArray(ordenPreguntas) ? ordenPreguntas.length : 0;
+  validarPayloadCalificacionOmr({
+    folioPayload: String(folio ?? ''),
+    folioExamen: String(examen.folio ?? ''),
+    templateVersionOmr: Number(examen.mapaOmr?.templateVersion ?? 0),
+    totalPreguntasEsperadas,
+    respuestas,
+    analisisOmr,
+    soloPreview: Boolean(soloPreview)
+  });
   const coberturaDeteccion = totalPreguntasEsperadas > 0 ? respuestas.length / totalPreguntasEsperadas : 0;
   const { autoCalificableOmr } = evaluarAutoCalificableOmr({
     estadoAnalisis: analisisOmr?.estadoAnalisis,
@@ -256,7 +419,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     const estaContestada = Boolean(respuesta);
     if (estaContestada) contestadasTotal += 1;
 
-    if (letraCorrecta && respuesta && letraCorrecta === respuesta.toUpperCase()) {
+    if (letraCorrecta && respuesta && letraCorrecta === respuesta) {
       aciertosCalculados += 1;
       contestadasCorrectas += 1;
     }
@@ -303,7 +466,10 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     examen,
     folio: String(examen.folio ?? '').trim().toUpperCase(),
     estadoAnalisisDefault: analisisOmr?.estadoAnalisis,
-    templateVersionDetectadaDefault: analisisOmr?.templateVersionDetectada
+    templateVersionDetectadaDefault: analisisOmr?.templateVersionDetectada,
+    engineUsedDefault: analisisOmr?.engineUsed,
+    engineVersionDefault: analisisOmr?.engineVersion,
+    motivosRevisionDefault: analisisOmr?.motivosRevision
   });
 
   const calificacion = await Calificacion.create({
@@ -335,6 +501,15 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
           ratioAmbiguas,
           templateVersionDetectada: analisisOmr.templateVersionDetectada ?? null,
           revisionConfirmada,
+          usuarioRevisor: analisisOmr.usuarioRevisor ?? null,
+          revisionTimestamp: analisisOmr.revisionTimestamp ?? null,
+          motivoRevisionManual: analisisOmr.motivoRevisionManual ?? null,
+          engineVersion: analisisOmr.engineVersion ?? null,
+          engineUsed: analisisOmr.engineUsed ?? null,
+          geomQuality: analisisOmr.geomQuality ?? null,
+          photoQuality: analisisOmr.photoQuality ?? null,
+          decisionPolicy: analisisOmr.decisionPolicy ?? null,
+          motivosRevision: analisisOmr.motivosRevision ?? [],
           autoCalificableOmr,
           contestadasTotal,
           contestadasCorrectas,
@@ -373,10 +548,21 @@ export async function obtenerCalificacionPorExamen(req: SolicitudDocente, res: R
     throw new ErrorAplicacion('CALIFICACION_NO_ENCONTRADA', 'No hay calificación registrada para este examen', 404);
   }
 
-  const capturasArchivadas = await EscaneoOmrArchivado.find({ docenteId, examenGeneradoId })
-    .sort({ numeroPagina: 1 })
-    .select({ numeroPagina: 1, mimeType: 1, payloadComprimido: 1 })
+  const capturasArchivadasRaw = await EscaneoOmrArchivado.find({ docenteId, examenGeneradoId })
+    .sort({ numeroPagina: 1, intento: -1, createdAt: -1 })
+    .select({ numeroPagina: 1, intento: 1, mimeType: 1, payloadComprimido: 1 })
     .lean();
+  const capturasPorPagina = new Map<number, (typeof capturasArchivadasRaw)[number]>();
+  for (const captura of Array.isArray(capturasArchivadasRaw) ? capturasArchivadasRaw : []) {
+    const numeroPagina = Number((captura as { numeroPagina?: unknown })?.numeroPagina ?? 0);
+    if (!Number.isFinite(numeroPagina) || numeroPagina <= 0) continue;
+    if (!capturasPorPagina.has(numeroPagina)) {
+      capturasPorPagina.set(numeroPagina, captura);
+    }
+  }
+  const capturasArchivadas = Array.from(capturasPorPagina.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, captura]) => captura);
   const paginasOmr = (Array.isArray(capturasArchivadas) ? capturasArchivadas : [])
     .map((captura) => {
       try {

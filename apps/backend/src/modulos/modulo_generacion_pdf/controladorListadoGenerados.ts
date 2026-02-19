@@ -249,10 +249,7 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
   const numeroPaginas = resolverNumeroPaginasPlantilla(
     plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown }
   );
-  const templateVersion = (() => {
-    const tv = Number((examen as unknown as { mapaOmr?: { templateVersion?: unknown } })?.mapaOmr?.templateVersion);
-    return tv === 2 ? 2 : 1;
-  })();
+  const templateVersion = 3;
 
   const { pdfBytes, paginas, mapaOmr, preguntasRestantes } = await generarPdfExamen({
     titulo: String(plantilla.titulo ?? ''),

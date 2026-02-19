@@ -136,26 +136,9 @@ function leerNumeroSeguro(valor: unknown, porDefecto: number, min = 0, max = 100
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
 
-function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 1 | 2 {
-  const forced = Number.parseInt(String(process.env.OMR_TEMPLATE_VERSION_FORCE ?? ''), 10);
-  if (forced === 1 || forced === 2) return forced;
-
-  const habilitado = String(process.env.OMR_V2_ENABLED ?? '')
-    .trim()
-    .toLowerCase();
-  if (!['1', 'true', 'si', 'yes', 'on'].includes(habilitado)) return 1;
-
-  const canaryPct = leerNumeroSeguro(process.env.OMR_V2_CANARY_PERCENT, 10, 0, 100);
-  if (canaryPct <= 0) return 1;
-  if (canaryPct >= 100) return 2;
-
-  const key = [
-    String(params.docenteId ?? '').trim(),
-    String(params.periodoId ?? '').trim(),
-    String(params.plantillaId ?? '').trim()
-  ].join(':');
-  const bucket = hash32(key || 'omr-v2') % 100;
-  return bucket < canaryPct ? 2 : 1;
+function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 3 {
+  void params;
+  return 3;
 }
 
 const PREVIEW_TTL_MS = 30 * 60 * 1000;

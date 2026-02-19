@@ -1,32 +1,15 @@
-/**
- * servicioGeneracionPdf.canary.test
- *
- * Cobertura de canary/fallback para la fachada PDF.
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGenerarExamenIndividual,
-  mockGenerarPdfExamenLegacy,
-  mockDecidirVersionCanary,
   mockRegistrarAdopcion
 } = vi.hoisted(() => ({
   mockGenerarExamenIndividual: vi.fn(),
-  mockGenerarPdfExamenLegacy: vi.fn(),
-  mockDecidirVersionCanary: vi.fn(),
   mockRegistrarAdopcion: vi.fn()
 }));
 
 vi.mock('../src/modulos/modulo_generacion_pdf/application/usecases/generarExamenIndividual', () => ({
   generarExamenIndividual: mockGenerarExamenIndividual
-}));
-
-vi.mock('../src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy', () => ({
-  generarPdfExamen: mockGenerarPdfExamenLegacy
-}));
-
-vi.mock('../src/compartido/observabilidad/rolloutCanary', () => ({
-  decidirVersionCanary: mockDecidirVersionCanary
 }));
 
 vi.mock('../src/compartido/observabilidad/metricsAdopcion', () => ({
@@ -35,9 +18,9 @@ vi.mock('../src/compartido/observabilidad/metricsAdopcion', () => ({
 
 import { generarPdfExamen } from '../src/modulos/modulo_generacion_pdf/servicioGeneracionPdf';
 
-describe('servicioGeneracionPdf (canary)', () => {
+describe('servicioGeneracionPdf (tv3 only)', () => {
   const paramsBase = {
-    titulo: 'Examen canary',
+    titulo: 'Examen TV3',
     folio: 'FOL-001',
     preguntas: [
       {
@@ -56,72 +39,35 @@ describe('servicioGeneracionPdf (canary)', () => {
     tipoExamen: 'parcial' as const,
     totalPaginas: 1,
     margenMm: 10,
-    templateVersion: 1 as const
+    templateVersion: 3 as const
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('usa legacy cuando canary decide v1', async () => {
-    const legacyResult = {
-      pdfBytes: Buffer.from('legacy'),
+  it('usa el caso de uso TV3 y registra adopción', async () => {
+    const resultadoEsperado = {
+      pdfBytes: Buffer.from('tv3'),
       paginas: [],
       metricasPaginas: [],
-      mapaOmr: { paginas: [] },
+      mapaOmr: { templateVersion: 3, paginas: [] },
       preguntasRestantes: 0
     };
 
-    mockDecidirVersionCanary.mockReturnValue('v1');
-    mockGenerarPdfExamenLegacy.mockResolvedValue(legacyResult);
-
-    const resultado = await generarPdfExamen(paramsBase);
-
-    expect(mockDecidirVersionCanary).toHaveBeenCalledWith('pdf', expect.any(String));
-    expect(mockGenerarPdfExamenLegacy).toHaveBeenCalledTimes(1);
-    expect(mockGenerarExamenIndividual).not.toHaveBeenCalled();
-    expect(mockRegistrarAdopcion).toHaveBeenCalledWith('pdf', '/modulo_generacion_pdf/generarPdfExamen', 'v1');
-    expect(resultado).toBe(legacyResult);
-  });
-
-  it('usa v2 cuando canary decide v2 y el use case responde', async () => {
-    const v2Result = {
-      pdfBytes: Buffer.from('v2'),
-      paginas: [],
-      metricasPaginas: [],
-      mapaOmr: { paginas: [] },
-      preguntasRestantes: 0
-    };
-
-    mockDecidirVersionCanary.mockReturnValue('v2');
-    mockGenerarExamenIndividual.mockResolvedValue(v2Result);
-
+    mockGenerarExamenIndividual.mockResolvedValue(resultadoEsperado);
     const resultado = await generarPdfExamen(paramsBase);
 
     expect(mockGenerarExamenIndividual).toHaveBeenCalledTimes(1);
-    expect(mockGenerarPdfExamenLegacy).not.toHaveBeenCalled();
+    expect(mockGenerarExamenIndividual).toHaveBeenCalledWith(expect.objectContaining({ templateVersion: 3 }));
     expect(mockRegistrarAdopcion).toHaveBeenCalledWith('pdf', '/modulo_generacion_pdf/generarPdfExamen', 'v2');
-    expect(resultado).toBe(v2Result);
+    expect(resultado).toBe(resultadoEsperado);
   });
 
-  it('hace fallback a legacy cuando v2 falla', async () => {
-    const legacyResult = {
-      pdfBytes: Buffer.from('legacy-after-error'),
-      paginas: [],
-      metricasPaginas: [],
-      mapaOmr: { paginas: [] },
-      preguntasRestantes: 0
-    };
+  it('propaga error si falla generación TV3', async () => {
+    mockGenerarExamenIndividual.mockRejectedValue(new Error('tv3 failed'));
 
-    mockDecidirVersionCanary.mockReturnValue('v2');
-    mockGenerarExamenIndividual.mockRejectedValue(new Error('v2 failed'));
-    mockGenerarPdfExamenLegacy.mockResolvedValue(legacyResult);
-
-    const resultado = await generarPdfExamen(paramsBase);
-
-    expect(mockGenerarExamenIndividual).toHaveBeenCalledTimes(1);
-    expect(mockGenerarPdfExamenLegacy).toHaveBeenCalledTimes(1);
-    expect(mockRegistrarAdopcion).toHaveBeenCalledWith('pdf', '/modulo_generacion_pdf/generarPdfExamen', 'v1');
-    expect(resultado).toBe(legacyResult);
+    await expect(generarPdfExamen(paramsBase)).rejects.toThrow('tv3 failed');
+    expect(mockRegistrarAdopcion).not.toHaveBeenCalled();
   });
 });

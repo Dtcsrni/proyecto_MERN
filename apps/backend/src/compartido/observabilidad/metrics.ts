@@ -32,6 +32,11 @@ const resultadosOmrTotales = {
   calidadAcumulada: 0,
   muestras: 0
 };
+const omrEngineTotales = {
+  cv: 0,
+  legacy: 0,
+  fallbackLegacy: 0
+};
 const esquemaVersionadoTotales = {
   fallbackReads: 0,
   v2Writes: 0
@@ -104,13 +109,21 @@ export function registrarOmrResultadoAnalisis(
   estadoAnalisis: 'ok' | 'requiere_revision' | 'rechazado_calidad',
   confianzaPromedioPagina: number,
   ratioAmbiguas: number,
-  calidadPagina: number
+  calidadPagina: number,
+  engineUsed?: 'cv' | 'legacy',
+  fallbackLegacy = false
 ) {
   resultadosOmrTotales[estadoAnalisis] += 1;
   resultadosOmrTotales.muestras += 1;
   resultadosOmrTotales.confianzaAcumulada += Math.max(0, Math.min(1, confianzaPromedioPagina));
   resultadosOmrTotales.ratioAmbiguasAcumulado += Math.max(0, Math.min(1, ratioAmbiguas));
   resultadosOmrTotales.calidadAcumulada += Math.max(0, Math.min(1, calidadPagina));
+  if (engineUsed === 'cv' || engineUsed === 'legacy') {
+    omrEngineTotales[engineUsed] += 1;
+  }
+  if (fallbackLegacy) {
+    omrEngineTotales.fallbackLegacy += 1;
+  }
 }
 
 export function registrarSchemaFallbackRead() {
@@ -232,6 +245,17 @@ export function exportarMetricasPrometheus(): string {
   lineas.push('# HELP evaluapro_omr_calidad_promedio Promedio de calidad de pagina OMR');
   lineas.push('# TYPE evaluapro_omr_calidad_promedio gauge');
   lineas.push(`evaluapro_omr_calidad_promedio ${Number(calidadPromedio.toFixed(4))}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_engine_usage_total Total de análisis OMR por engine');
+  lineas.push('# TYPE evaluapro_omr_engine_usage_total counter');
+  lineas.push(`evaluapro_omr_engine_usage_total{engine="cv"} ${omrEngineTotales.cv}`);
+  lineas.push(`evaluapro_omr_engine_usage_total{engine="legacy"} ${omrEngineTotales.legacy}`);
+
+  lineas.push('');
+  lineas.push('# HELP evaluapro_omr_fallback_legacy_total Total de fallbacks a engine legacy');
+  lineas.push('# TYPE evaluapro_omr_fallback_legacy_total counter');
+  lineas.push(`evaluapro_omr_fallback_legacy_total ${omrEngineTotales.fallbackLegacy}`);
 
   lineas.push('');
   lineas.push('# HELP evaluapro_schema_fallback_reads_total Total de lecturas por adaptador v1 durante migracion dual');

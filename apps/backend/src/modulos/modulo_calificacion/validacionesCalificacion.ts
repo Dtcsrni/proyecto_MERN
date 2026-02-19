@@ -4,11 +4,26 @@
 import { z } from 'zod';
 import { esquemaObjectId } from '../../compartido/validaciones/esquemas';
 
+const esquemaScorePorOpcion = z
+  .object({
+    opcion: z.enum(['A', 'B', 'C', 'D', 'E']),
+    score: z.number().finite(),
+    fillRatioCore: z.number().min(0).max(1),
+    fillRatioRing: z.number().min(0).max(1),
+    centerDarknessDelta: z.number().min(0).max(1),
+    strokeLeakPenalty: z.number().min(0).max(1),
+    shapeCompactness: z.number().min(0).max(1),
+    markConfidence: z.number().min(0).max(1)
+  })
+  .strict();
+
 const esquemaRespuestaDetectada = z
   .object({
     numeroPregunta: z.number().int().positive(),
-    opcion: z.string().trim().min(1).max(1).nullable(),
-    confianza: z.number().min(0).max(1).optional()
+    opcion: z.enum(['A', 'B', 'C', 'D', 'E']).nullable(),
+    confianza: z.number().min(0).max(1).optional(),
+    scoresPorOpcion: z.array(esquemaScorePorOpcion).max(5).optional(),
+    flags: z.array(z.enum(['doble_marca', 'bajo_contraste', 'fuera_roi'])).max(3).optional()
   })
   .strict();
 
@@ -18,9 +33,17 @@ const esquemaAnalisisOmr = z
     calidadPagina: z.number().min(0).max(1),
     confianzaPromedioPagina: z.number().min(0).max(1).optional(),
     ratioAmbiguas: z.number().min(0).max(1).optional(),
-    templateVersionDetectada: z.union([z.literal(1), z.literal(2)]).optional(),
+    templateVersionDetectada: z.literal(3).optional(),
     motivosRevision: z.array(z.string().min(1).max(200)).max(50).optional(),
-    revisionConfirmada: z.boolean().optional()
+    revisionConfirmada: z.boolean().optional(),
+    usuarioRevisor: z.string().trim().min(3).max(120).optional(),
+    revisionTimestamp: z.string().trim().datetime().optional(),
+    motivoRevisionManual: z.string().trim().min(8).max(300).optional(),
+    engineVersion: z.string().trim().min(3).max(40).optional(),
+    engineUsed: z.enum(['cv', 'legacy']).optional(),
+    geomQuality: z.number().min(0).max(1).optional(),
+    photoQuality: z.number().min(0).max(1).optional(),
+    decisionPolicy: z.string().trim().min(3).max(80).optional()
   })
   .strict();
 
@@ -29,24 +52,77 @@ const esquemaPaginaOmrCalificacion = z
     numeroPagina: z.number().int().positive(),
     imagenBase64: z.string().trim().min(1),
     estadoAnalisis: z.enum(['ok', 'rechazado_calidad', 'requiere_revision']).optional(),
-    templateVersionDetectada: z.union([z.literal(1), z.literal(2)]).optional()
+    templateVersionDetectada: z.literal(3).optional()
   })
   .strict();
 
-export const esquemaCalificarExamen = z.object({
-  examenGeneradoId: esquemaObjectId,
-  alumnoId: esquemaObjectId.optional(),
-  aciertos: z.number().int().min(0).optional(),
-  totalReactivos: z.number().int().positive().optional(),
-  bonoSolicitado: z.number().min(0).optional(),
-  evaluacionContinua: z.number().min(0).optional(),
-  proyecto: z.number().min(0).optional(),
-  retroalimentacion: z.string().optional(),
-  respuestasDetectadas: z.array(esquemaRespuestaDetectada).max(500).optional(),
-  omrAnalisis: esquemaAnalisisOmr.optional(),
-  paginasOmr: z.array(esquemaPaginaOmrCalificacion).max(100).optional(),
-  soloPreview: z.boolean().optional()
-});
+export const esquemaCalificarExamen = z
+  .object({
+    examenGeneradoId: esquemaObjectId,
+    folio: z.string().trim().min(4).max(60).optional(),
+    alumnoId: esquemaObjectId.optional(),
+    aciertos: z.number().int().min(0).optional(),
+    totalReactivos: z.number().int().positive().optional(),
+    bonoSolicitado: z.number().min(0).optional(),
+    evaluacionContinua: z.number().min(0).optional(),
+    proyecto: z.number().min(0).optional(),
+    retroalimentacion: z.string().optional(),
+    respuestasDetectadas: z.array(esquemaRespuestaDetectada).max(500).optional(),
+    omrAnalisis: esquemaAnalisisOmr.optional(),
+    paginasOmr: z.array(esquemaPaginaOmrCalificacion).max(100).optional(),
+    soloPreview: z.boolean().optional()
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const respuestas = Array.isArray(data.respuestasDetectadas) ? data.respuestasDetectadas : [];
+    const paginasOmr = Array.isArray(data.paginasOmr) ? data.paginasOmr : [];
+    const requiereAuditoriaOmr = respuestas.length > 0 || paginasOmr.length > 0;
+
+    if (requiereAuditoriaOmr && !data.omrAnalisis) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Se requiere omrAnalisis cuando se envian respuestasDetectadas o paginasOmr',
+        path: ['omrAnalisis']
+      });
+      return;
+    }
+    if (!data.omrAnalisis) return;
+
+    const faltantes = [
+      data.omrAnalisis.confianzaPromedioPagina === undefined ? 'confianzaPromedioPagina' : null,
+      data.omrAnalisis.ratioAmbiguas === undefined ? 'ratioAmbiguas' : null,
+      data.omrAnalisis.templateVersionDetectada === undefined ? 'templateVersionDetectada' : null,
+      data.omrAnalisis.engineVersion === undefined ? 'engineVersion' : null,
+      data.omrAnalisis.engineUsed === undefined ? 'engineUsed' : null,
+      data.omrAnalisis.geomQuality === undefined ? 'geomQuality' : null,
+      data.omrAnalisis.photoQuality === undefined ? 'photoQuality' : null,
+      data.omrAnalisis.decisionPolicy === undefined ? 'decisionPolicy' : null,
+      data.omrAnalisis.motivosRevision === undefined ? 'motivosRevision' : null
+    ].filter((item): item is string => Boolean(item));
+
+    if (faltantes.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `omrAnalisis incompleto: faltan campos requeridos (${faltantes.join(', ')})`,
+        path: ['omrAnalisis']
+      });
+    }
+
+    if (data.omrAnalisis.estadoAnalisis !== 'ok' && data.omrAnalisis.revisionConfirmada) {
+      const faltantesRevision = [
+        data.omrAnalisis.usuarioRevisor ? null : 'usuarioRevisor',
+        data.omrAnalisis.revisionTimestamp ? null : 'revisionTimestamp',
+        data.omrAnalisis.motivoRevisionManual ? null : 'motivoRevisionManual'
+      ].filter((item): item is string => Boolean(item));
+      if (faltantesRevision.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `revisionConfirmada requiere metadata completa (${faltantesRevision.join(', ')})`,
+          path: ['omrAnalisis']
+        });
+      }
+    }
+  });
 
 export const esquemaResolverSolicitudRevision = z
   .object({

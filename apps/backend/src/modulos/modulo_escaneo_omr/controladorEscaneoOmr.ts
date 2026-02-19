@@ -61,9 +61,15 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   }
 
   const templateMapa = Number(examen.mapaOmr?.templateVersion);
-  const templateVersionDetectada = templateQr === 2 || templateQr === 1 ? (templateQr as 1 | 2) : templateMapa === 2 ? 2 : 1;
-  const qrLegacy = `EXAMEN:${String(examen.folio ?? '')}:P${pagina}`;
-  const qrEsperado = [qrLegacy, `${qrLegacy}:TV${templateVersionDetectada}`];
+  const templateVersionDetectada = templateQr === 3 ? 3 : templateMapa === 3 ? 3 : null;
+  if (templateVersionDetectada !== 3) {
+    throw new ErrorAplicacion(
+      'OMR_TEMPLATE_NO_COMPATIBLE',
+      'Solo la plantilla TV3 es compatible con el motor OMR actual',
+      422
+    );
+  }
+  const qrEsperado = `EXAMEN:${String(examen.folio ?? '')}:P${pagina}:TV${templateVersionDetectada}`;
   const margenMm = examen.mapaOmr?.margenMm ?? 10;
   const requestId = (req as SolicitudDocente & { requestId?: string }).requestId;
   let resultado;
@@ -80,16 +86,23 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
     resultado.estadoAnalisis,
     Number(resultado.confianzaPromedioPagina ?? 0),
     Number(resultado.ratioAmbiguas ?? 1),
-    Number(resultado.calidadPagina ?? 0)
+    Number(resultado.calidadPagina ?? 0),
+    resultado.engineUsed,
+    Array.isArray(resultado.motivosRevision)
+      ? resultado.motivosRevision.some((motivo) => String(motivo).startsWith('FALLBACK_LEGACY_CV:'))
+      : false
   );
-  await archivarEscaneoOmrExitoso({
+  await archivarEscaneoOmrIntento({
     base64: imagenBase64 ?? '',
     folio: folioNormalizado,
     numeroPagina: pagina,
     docenteId,
     examen,
     estadoAnalisis: resultado?.estadoAnalisis,
-    templateVersionDetectada
+    templateVersionDetectada,
+    engineUsed: resultado?.engineUsed,
+    engineVersion: resultado?.engineVersion,
+    motivosRevision: resultado?.motivosRevision
   });
   res.json({
     resultado,
@@ -215,14 +228,33 @@ function extraerBase64Imagen(base64: string): { mimeType: string; contenido: str
   };
 }
 
-async function archivarEscaneoOmrExitoso({
+async function calcularSiguienteIntentoOmr(examenGeneradoId: unknown, numeroPagina: number) {
+  const ultimo = await EscaneoOmrArchivado.findOne({
+    examenGeneradoId,
+    numeroPagina
+  })
+    .sort({ intento: -1, createdAt: -1 })
+    .select({ intento: 1 })
+    .lean();
+  const intentoActual = Number((ultimo as { intento?: unknown } | null)?.intento ?? 0);
+  return Number.isFinite(intentoActual) && intentoActual > 0 ? intentoActual + 1 : 1;
+}
+
+function esErrorDuplicadoMongo(error: unknown) {
+  return Number((error as { code?: unknown } | null)?.code ?? 0) === 11000;
+}
+
+async function archivarEscaneoOmrIntento({
   base64,
   folio,
   numeroPagina,
   docenteId,
   examen,
   estadoAnalisis,
-  templateVersionDetectada
+  templateVersionDetectada,
+  engineUsed,
+  engineVersion,
+  motivosRevision
 }: {
   base64: string;
   folio: string;
@@ -235,9 +267,11 @@ async function archivarEscaneoOmrExitoso({
     plantillaId?: unknown;
   };
   estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision' | string;
-  templateVersionDetectada: 1 | 2;
+  templateVersionDetectada: 3;
+  engineUsed?: 'cv' | 'legacy';
+  engineVersion?: string;
+  motivosRevision?: string[];
 }) {
-  if (estadoAnalisis !== 'ok') return;
   const { mimeType, contenido } = extraerBase64Imagen(base64);
   if (!contenido) return;
 
@@ -255,32 +289,38 @@ async function archivarEscaneoOmrExitoso({
       (Array.isArray(plantilla?.temas) && plantilla.temas.length > 0 ? plantilla.temas.join(' · ') : plantilla?.titulo ?? '')
   ).trim();
 
-  await EscaneoOmrArchivado.findOneAndUpdate(
-    {
-      examenGeneradoId: examen._id,
-      numeroPagina
-    },
-    {
-      docenteId,
-      alumnoId: examen.alumnoId ?? null,
-      periodoId: examen.periodoId ?? null,
-      plantillaId: examen.plantillaId ?? null,
-      examenGeneradoId: examen._id,
-      folio,
-      numeroPagina,
-      materia: materia || undefined,
-      mimeType,
-      algoritmoCompresion: 'gzip',
-      tamanoOriginalBytes: original.length,
-      tamanoComprimidoBytes: comprimido.length,
-      sha256Original,
-      templateVersionDetectada,
-      estadoAnalisis: 'ok',
-      payloadComprimido: comprimido
-    },
-    {
-      upsert: true,
-      setDefaultsOnInsert: true
+  for (let reintento = 0; reintento < 3; reintento += 1) {
+    const intento = await calcularSiguienteIntentoOmr(examen._id, numeroPagina);
+    try {
+      await EscaneoOmrArchivado.create({
+        docenteId,
+        alumnoId: examen.alumnoId ?? null,
+        periodoId: examen.periodoId ?? null,
+        plantillaId: examen.plantillaId ?? null,
+        examenGeneradoId: examen._id,
+        folio,
+        numeroPagina,
+        intento,
+        materia: materia || undefined,
+        mimeType,
+        algoritmoCompresion: 'gzip',
+        tamanoOriginalBytes: original.length,
+        tamanoComprimidoBytes: comprimido.length,
+        sha256Original,
+        templateVersionDetectada,
+        engineUsed,
+        engineVersion,
+        estadoAnalisis:
+          estadoAnalisis === 'ok' || estadoAnalisis === 'rechazado_calidad' || estadoAnalisis === 'requiere_revision'
+            ? estadoAnalisis
+            : 'ok',
+        motivosRevision: Array.isArray(motivosRevision) ? motivosRevision.slice(0, 24) : [],
+        payloadComprimido: comprimido
+      });
+      return;
+    } catch (error) {
+      if (esErrorDuplicadoMongo(error) && reintento < 2) continue;
+      throw error;
     }
-  );
+  }
 }
