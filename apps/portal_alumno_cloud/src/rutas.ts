@@ -342,7 +342,7 @@ router.post('/sincronizacion-docente/push', async (req, res) => {
   const docenteId = normalizarString((req.body ?? {}).docenteId);
   const paqueteBase64 = normalizarString((req.body ?? {}).paqueteBase64);
   const checksumSha256 = normalizarString((req.body ?? {}).checksumSha256);
-  const schemaVersion = Number((req.body ?? {}).schemaVersion ?? 1);
+  const schemaVersion = Number((req.body ?? {}).schemaVersion ?? 2);
 
   if (!docenteId || !paqueteBase64) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload incompleto');
@@ -352,7 +352,7 @@ router.post('/sincronizacion-docente/push', async (req, res) => {
     responderError(res, 413, 'PAQUETE_GRANDE', 'Paquete demasiado grande');
     return;
   }
-  if (schemaVersion !== 1) {
+  if (schemaVersion !== 2) {
     responderError(res, 400, 'VERSION_INVALIDA', 'Version de paquete no soportada');
     return;
   }

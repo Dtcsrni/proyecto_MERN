@@ -26,7 +26,6 @@ function crearAnalisisOmrOk() {
     templateVersionDetectada: 3 as const,
     motivosRevision: [],
     engineVersion: 'omr-v3-cv',
-    engineUsed: 'cv' as const,
     geomQuality: 0.91,
     photoQuality: 0.92,
     decisionPolicy: 'conservadora_v1'

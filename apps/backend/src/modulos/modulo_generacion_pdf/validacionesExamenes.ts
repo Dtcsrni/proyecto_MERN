@@ -45,8 +45,6 @@ export const esquemaCrearPlantilla = z
     titulo: esquemaTitulo,
     instrucciones: esquemaInstrucciones.optional(),
     numeroPaginas: z.number().int().positive().max(50),
-    // Legacy (deprecado): se acepta para compatibilidad, pero ya no se usa.
-    totalReactivos: z.number().int().positive().optional(),
     preguntasIds: z.array(esquemaObjectId).optional(),
     temas: z.array(esquemaTema).max(50).optional(),
     configuracionPdf: z
@@ -105,8 +103,6 @@ export const esquemaActualizarPlantilla = z
     titulo: esquemaTitulo.optional(),
     instrucciones: esquemaInstrucciones.optional(),
     numeroPaginas: z.number().int().positive().max(50).optional(),
-    // Legacy (deprecado)
-    totalReactivos: z.number().int().positive().optional(),
     preguntasIds: z.array(esquemaObjectId).optional(),
     temas: z.array(esquemaTema).max(50).optional(),
     configuracionPdf: z

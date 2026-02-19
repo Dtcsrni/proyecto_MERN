@@ -26,7 +26,7 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
   - seguridad por API key y middleware
 - Frontend (`apps/frontend/tests`):
   - smoke y comportamiento de cliente
-- Subproyectos Vite legacy (`client/proyectos_vite/**`):
+- Subproyectos Vite historicos (`client/proyectos_vite/**`):
   - smoke estructural por proyecto (entrypoints + scripts minimos)
 
 ## CI modular por dominio
@@ -114,11 +114,7 @@ npm -C apps/portal_alumno_cloud run test
 ```bash
 npm -C apps/frontend run test
 ```
-- Smoke legacy client:
-```bash
-npm run test:client:smoke
-```
-- Smoke subproyectos Vite legacy:
+- Smoke subproyectos Vite historicos:
 ```bash
 npm run test:client:proyectos:ci
 ```
@@ -141,3 +137,4 @@ Todo cambio en:
 - calificacion,
 - sincronizacion,
 debe acompanarse de prueba nueva o ajuste de regresion.
+

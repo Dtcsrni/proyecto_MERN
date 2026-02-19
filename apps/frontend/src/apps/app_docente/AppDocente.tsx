@@ -257,10 +257,6 @@ export function AppDocente() {
     () => revisionesOmr.find((item) => item.examenId === examenIdOmr) ?? null,
     [examenIdOmr, revisionesOmr]
   );
-  const paginaOmrConfirmadaActiva = useMemo(() => {
-    if (!examenOmrActivo || !Number.isFinite(Number(paginaOmrActiva))) return null;
-    return examenOmrActivo.paginas.find((pagina) => Number(pagina.numeroPagina) === Number(paginaOmrActiva)) ?? null;
-  }, [examenOmrActivo, paginaOmrActiva]);
   const claveCorrectaOmrActiva = useMemo(
     () => (examenOmrActivo?.claveCorrectaPorNumero ? examenOmrActivo.claveCorrectaPorNumero : {}),
     [examenOmrActivo]
@@ -785,7 +781,7 @@ export function AppDocente() {
               avisarSinPermiso('No tienes permiso para analizar OMR.');
               throw new Error('SIN_PERMISO');
             }
-            const respuesta = await clienteApi.enviar<ResultadoAnalisisOmr>('/v2/omr/analizar', {
+            const respuesta = await clienteApi.enviar<ResultadoAnalisisOmr>('/omr/analizar', {
               folio,
               numeroPagina,
               imagenBase64
@@ -998,7 +994,7 @@ export function AppDocente() {
                 calidadPagina: number;
                 confianzaPromedioPagina?: number;
                 ratioAmbiguas?: number;
-                templateVersionDetectada?: 1 | 2;
+                templateVersionDetectada?: 3;
                 motivosRevision?: string[];
                 revisionConfirmada?: boolean;
               };
@@ -1025,7 +1021,7 @@ export function AppDocente() {
                   calidadPagina: Number(payload.omrAnalisis.calidadPagina ?? 0),
                   confianzaPromedioPagina: Number(payload.omrAnalisis.confianzaPromedioPagina ?? 0),
                   ratioAmbiguas: Number(payload.omrAnalisis.ratioAmbiguas ?? 0),
-                  templateVersionDetectada: payload.omrAnalisis.templateVersionDetectada === 2 ? 2 : 1,
+                  templateVersionDetectada: 3,
                   motivosRevision: Array.isArray(payload.omrAnalisis.motivosRevision)
                     ? payload.omrAnalisis.motivosRevision
                         .map((motivo) => String(motivo ?? '').trim())

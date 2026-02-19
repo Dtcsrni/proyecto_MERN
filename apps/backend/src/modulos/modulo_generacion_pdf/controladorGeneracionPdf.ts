@@ -130,12 +130,6 @@ function formatearDocente(nombreCompleto: unknown): string {
   return `I.S.C. ${n}`;
 }
 
-function leerNumeroSeguro(valor: unknown, porDefecto: number, min = 0, max = 100) {
-  const n = Number(valor);
-  if (!Number.isFinite(n)) return porDefecto;
-  return Math.max(min, Math.min(max, Math.floor(n)));
-}
-
 function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 3 {
   void params;
   return 3;
@@ -358,9 +352,6 @@ export async function actualizarPlantilla(req: SolicitudDocente, res: Response) 
     numeroPaginas:
       (patch as { numeroPaginas?: unknown }).numeroPaginas ??
       (actual as unknown as { numeroPaginas?: unknown }).numeroPaginas,
-    totalReactivos:
-      (patch as { totalReactivos?: unknown }).totalReactivos ??
-      (actual as unknown as { totalReactivos?: unknown }).totalReactivos,
     preguntasIds: (patch as { preguntasIds?: unknown }).preguntasIds ?? actual.preguntasIds,
     temas: (patch as { temas?: unknown }).temas ?? (actual as unknown as { temas?: unknown }).temas,
     configuracionPdf: (patch as { configuracionPdf?: unknown }).configuracionPdf ?? actual.configuracionPdf
@@ -561,7 +552,7 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
   }
 
   const totalDisponibles = preguntasDb.length;
-  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -751,7 +742,7 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas disponibles para previsualizar', 400);
   }
 
-  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -936,7 +927,7 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =
@@ -1141,7 +1132,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   if (preguntasDb.length === 0) {
     throw new ErrorAplicacion('SIN_PREGUNTAS', 'La plantilla no tiene preguntas asociadas', 400);
   }
-  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown });
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
   const preguntasBase = preguntasDb.map((pregunta) => {
     const version =

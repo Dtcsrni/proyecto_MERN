@@ -4,7 +4,7 @@
 %% Backend:
 %% - prefijo: /api
 %% - montajes publicos: /autenticacion, /salud
-%% - montajes protegidos: /admin, /alumnos, /analiticas, /banco-preguntas, /calificaciones, /canary-rollout, /entregas, /examenes, /omr, /papelera, /periodos, /sincronizaciones, /v2/examenes, /v2/omr
+%% - montajes protegidos: /admin, /alumnos, /analiticas, /banco-preguntas, /calificaciones, /entregas, /examenes, /omr, /papelera, /periodos, /sincronizaciones
 %% Portal alumno cloud:
 %% - prefijo: /api/portal
 %% - GET: /examen/:folio, /metrics, /resultados, /resultados/:folio, /salud, /salud/live, /salud/ready
@@ -32,3 +32,4 @@ sequenceDiagram
     DB-->>API: Docente
     API-->>Web: JWT + perfil
   end
+

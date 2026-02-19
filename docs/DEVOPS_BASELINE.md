@@ -30,7 +30,7 @@ Fecha de baseline: 2026-02-13.
   - `.github/workflows/package.yml` (`Package Images`): empaquetado Docker + `image-digests.txt`.
   - `.github/workflows/autogen-docs.yml` (`Auto-Generate Docs`): autogeneracion y versionado de docs/diagramas.
   - `.github/workflows/ci-backend.yml` (`CI Backend Module`): pipeline aislado de backend.
-  - `.github/workflows/ci-frontend.yml` (`CI Frontend Module`): pipeline aislado de frontend + smoke legacy.
+  - `.github/workflows/ci-frontend.yml` (`CI Frontend Module`): pipeline aislado de frontend.
   - `.github/workflows/ci-portal.yml` (`CI Portal Module`): pipeline aislado de portal alumno cloud.
   - `.github/workflows/ci-docs.yml` (`CI Docs Module`): pipeline aislado de docs/diagramas/rutas.
 
@@ -92,3 +92,4 @@ Fecha de baseline: 2026-02-13.
 - Trazabilidad multi-sesion de agentes centralizada en:
   - `AGENTS.md`
   - `docs/IA_TRAZABILIDAD_AGENTES.md`
+

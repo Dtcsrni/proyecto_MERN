@@ -53,10 +53,10 @@ export function crearApp() {
 
   app.use('/api', crearRouterApi());
 
-  // Middleware de error handling robusto para v2
+  // Middleware de error handling robusto principal.
   app.use(middlewareManejadorErroresRobusto);
 
-  // Middleware de error handling antiguo (para v1 por compatibilidad)
+  // Capa final de compatibilidad de errores.
   app.use(manejadorErrores);
 
   return app;

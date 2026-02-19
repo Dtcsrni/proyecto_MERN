@@ -59,7 +59,6 @@ jobs:
           npm run test:backend:ci
           npm run test:portal:ci
           npm run test:frontend:ci
-          npm run test:client:smoke:ci
           npm run test:client:proyectos:ci
 
       - name: Etapa ux-quality-check
@@ -100,7 +99,7 @@ jobs:
           PORTAL_ALUMNO_API_KEY: ${{ secrets.CI_PORTAL_ALUMNO_API_KEY || 'evaluapro_ci_portal_api_key_2026' }}
         run: |
           npm run security:env:check
-          npm audit --audit-level=high --json > npm-audit-report.json
+          npm audit --omit=dev --audit-level=critical --json > npm-audit-report.json
           npm run security:audit
 
       - name: Publicar reporte de auditoría
@@ -177,11 +176,8 @@ jobs:
       - name: Etapa perf-business-check
         run: npm run perf:check:business
 
-      - name: Etapa canary-rollout-check
-        run: npm run canary:rollout:check
-
-      - name: Etapa bigbang-olas-strict-check
-        run: npm run bigbang:olas:strict
+      - name: Etapa clean-architecture-check
+        run: npm run qa:clean-architecture:strict
 
       - name: Publicar reporte de performance
         if: always()

@@ -142,7 +142,7 @@ export function SeccionCalificaciones({
       calidadPagina: number;
       confianzaPromedioPagina: number;
       ratioAmbiguas: number;
-      templateVersionDetectada: 1 | 2;
+      templateVersionDetectada: 3;
       motivosRevision: string[];
       revisionConfirmada: boolean;
     };
@@ -641,7 +641,7 @@ export function SeccionCalificaciones({
                 calidadPagina: 1,
                 estadoAnalisis: 'ok' as const,
                 motivosRevision: [],
-                templateVersionDetectada: 1 as const,
+                templateVersionDetectada: 3 as const,
                 confianzaPromedioPagina: confianzaPagina,
                 ratioAmbiguas: 0
               },
@@ -690,7 +690,7 @@ export function SeccionCalificaciones({
           calidadPagina: 1,
           estadoAnalisis: 'ok' as const,
           motivosRevision: [],
-          templateVersionDetectada: 1 as const,
+          templateVersionDetectada: 3 as const,
           confianzaPromedioPagina: promedioConfianza,
           ratioAmbiguas: 0
         };

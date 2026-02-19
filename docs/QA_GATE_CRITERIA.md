@@ -1,11 +1,9 @@
-# QA Gate Criteria (`1.0-beta`)
+# QA Gate Criteria (`1.0.0-beta.0`)
 
 ## Objetivo
-Definir criterios falsables para aprobar una release candidata antes de validación humana en producción.
+Definir criterios verificables para aprobar una release candidata antes de la validacion humana en produccion.
 
-## Gates bloqueantes (`1.0-beta`)
-Perfil operativo exigido para cierre beta: `core` + `extended` con excepción de bloqueo formal de canary (se exige como evidencia y pasa a bloqueo en estable).
-
+## Gates bloqueantes
 1. `npm run test:dataset-prodlike:ci`
 2. `npm run test:e2e:docente-alumno:ci`
 3. `npm run test:global-grade:ci`
@@ -15,32 +13,22 @@ Perfil operativo exigido para cierre beta: `core` + `extended` con excepción de
 7. `npm run test:flujo-docente:ci`
 8. `npm run perf:check`
 9. `npm run perf:check:business`
-10. `npm run bigbang:olas:strict`
-12. `npm run test:coverage:exclusions:debt`
-13. `npm run test:coverage:diff`
+10. `npm run qa:clean-architecture:strict`
+11. `npm run test:coverage:exclusions:debt`
+12. `npm run test:coverage:diff`
 
-## Evidencias obligatorias (`latest`)
-- `reports/qa/latest/dataset-prodlike.json`
-- `reports/qa/latest/e2e-docente-alumno.json`
-- `reports/qa/latest/global-grade.json`
-- `reports/qa/latest/pdf-print.json`
-- `reports/qa/latest/ux-visual.json`
-- `reports/qa/latest/manifest.json`
-- `reports/qa/latest/olas-bigbang.json`
+## Evidencias obligatorias (`reports/qa/latest`)
+- `dataset-prodlike.json`
+- `e2e-docente-alumno.json`
+- `global-grade.json`
+- `pdf-print.json`
+- `ux-visual.json`
+- `clean-architecture.json`
+- `manifest.json`
 
-## Evidencia de transición (beta -> estable)
-- `reports/qa/latest/canary-rollout-check.json` (obligatoria como evidencia en beta, bloqueo formal solo en estable)
-
-## Criterios de aprobación
-- Todos los comandos anteriores en verde.
-- Sin bypass manual de jobs en CI.
-- Artefactos de evidencia presentes y consistentes con la corrida.
-- `diff coverage` >= 90% en lineas modificadas de `apps/*/src`.
-- Sin deuda de exclusiones de cobertura vencida.
-
-## Criterios de rechazo
-- Cualquier hallazgo de PII/token en dataset anonimizado.
-- Cualquier falla en flujo docente->portal->alumno.
-- Cualquier incumplimiento de contrato PDF (Carta, nombre trazable, tamaño por página).
-- Regresión visual no aprobada.
-
+## Criterios de aprobacion
+- Todos los comandos en verde.
+- Sin bypass manual en CI.
+- Artefactos presentes y consistentes.
+- `diff coverage` >= 90% en lineas modificadas.
+- Sin deuda de exclusiones vencida.

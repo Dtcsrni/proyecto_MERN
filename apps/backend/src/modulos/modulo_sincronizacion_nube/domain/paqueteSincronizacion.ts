@@ -25,13 +25,13 @@ import {
   sha256HexBuffer,
   upsertLwwPorUpdatedAt,
   type ModelLike,
-  type PaqueteSincronizacionV1
+  type PaqueteSincronizacionV2
 } from '../sincronizacionInterna';
 import type { PaqueteAssembler, PaqueteProcessor, ResultadoImportacionPaquete } from '../shared/tiposSync';
 
 const MAX_PDFS = 120;
 const MAX_TOTAL_COMPRESSED_BYTES = 25 * 1024 * 1024;
-const BACKUP_LOGIC_FINGERPRINT = 'sync-v1-lww-updatedAt-schema1';
+const BACKUP_LOGIC_FINGERPRINT = 'sync-v2-lww-updatedAt-schema2';
 
 async function obtenerCorreoDocente(docenteId: string): Promise<string> {
   const docente = await Docente.findById(docenteId).select('correo').lean();
@@ -110,8 +110,8 @@ export class DefaultPaqueteAssembler implements PaqueteAssembler {
     }
 
     const exportadoEn = new Date().toISOString();
-    const paquete: PaqueteSincronizacionV1 = {
-      schemaVersion: 1,
+    const paquete: PaqueteSincronizacionV2 = {
+      schemaVersion: 2,
       exportadoEn,
       docenteId: String(docenteId),
       docenteCorreo: correo || undefined,
@@ -164,14 +164,14 @@ export class DefaultPaqueteProcessor implements PaqueteProcessor {
     const gzipBytes = Buffer.from(paqueteBase64, 'base64');
     const buffer = gunzipSync(gzipBytes);
     const json = buffer.toString('utf8');
-    const parsed = JSON.parse(json) as PaqueteSincronizacionV1;
+    const parsed = JSON.parse(json) as PaqueteSincronizacionV2;
 
     const checksumActual = sha256Hex(json);
     if (checksumEsperado && checksumEsperado.toLowerCase() !== checksumActual.toLowerCase()) {
       throw new ErrorAplicacion('SYNC_CHECKSUM', 'Checksum invalido: el paquete parece corrupto o fue modificado', 400);
     }
 
-    if (!parsed || parsed.schemaVersion !== 1) {
+    if (!parsed || parsed.schemaVersion !== 2) {
       throw new ErrorAplicacion('SYNC_VERSION', 'Version de paquete no soportada', 400);
     }
 

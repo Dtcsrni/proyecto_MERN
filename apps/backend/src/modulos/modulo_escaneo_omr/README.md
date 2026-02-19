@@ -16,7 +16,7 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - Actualizar documentación relacionada cuando cambie el comportamiento observable.
 - Respetar multi-tenancy por docente y contratos de error/validación.
 
-## Perfil geométrico operativo (local/canary)
+## Perfil geometrico operativo
 - Variable principal: `OMR_GEOMETRY_PROFILE`.
 - Valores soportados:
 	- `actual` (default)
@@ -32,7 +32,6 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - La fachada `servicioOmr.ts` ejecuta el pipeline OMR v2 de forma nominal.
 - El motor operativo se mantiene en `servicioOmrV2.ts` y módulos `omr/*`.
 - No existe fallback runtime a `servicioOmrLegacy`.
-- Registra adopción en `metricsAdopcion` para endpoint `/modulo_escaneo_omr/analizarOmr`.
 
 ## Nota
 - Este README fue generado automáticamente como base; ampliar con decisiones de diseño específicas del módulo cuando aplique.

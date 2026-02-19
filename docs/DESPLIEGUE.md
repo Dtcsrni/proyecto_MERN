@@ -79,7 +79,7 @@ Garantia de estabilidad para distribuible:
   - `test:backend:ci`
   - `test:portal:ci`
   - `test:frontend:ci`
-  - `bigbang:olas:check`
+  - `qa:clean-architecture:check`
   - `pipeline:contract:check`
 - si algun check falla, no se genera instalador.
 
@@ -116,3 +116,4 @@ npm run docs:check
 ## Notas de retencion y respaldo
 - Mantener respaldo local antes de purgas cloud.
 - Si se sincronizan PDFs comprimidos, monitorear peso y politica de almacenamiento.
+

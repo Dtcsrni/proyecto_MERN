@@ -130,7 +130,7 @@ export type ResultadoOmr = {
   calidadPagina: number;
   estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
   motivosRevision: string[];
-  templateVersionDetectada: 1 | 2;
+  templateVersionDetectada: 3;
   confianzaPromedioPagina: number;
   ratioAmbiguas: number;
 };
@@ -172,7 +172,7 @@ export type ResultadoAnalisisOmr = {
   folio: string;
   numeroPagina: number;
   alumnoId?: string | null;
-  templateVersionDetectada?: 1 | 2;
+  templateVersionDetectada?: 3;
 };
 
 export type RevisionPaginaOmr = {

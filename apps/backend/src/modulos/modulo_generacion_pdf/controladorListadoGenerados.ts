@@ -246,9 +246,7 @@ export async function regenerarPdfExamen(req: SolicitudDocente, res: Response) {
     Docente.findById(docenteId).lean()
   ]);
 
-  const numeroPaginas = resolverNumeroPaginasPlantilla(
-    plantilla as unknown as { numeroPaginas?: unknown; totalReactivos?: unknown; tipo?: unknown }
-  );
+  const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
   const templateVersion = 3;
 
   const { pdfBytes, paginas, mapaOmr, preguntasRestantes } = await generarPdfExamen({

@@ -8,7 +8,7 @@ Se promueve a estable solo si se cumplen todos:
 
 1. 10 corridas CI consecutivas en verde.
 2. Gating de calidad beta completo en verde (`lint`, `typecheck`, `tests`, `coverage`, `perf`, `security`, `docs`, `routes`, `pipeline contract`).
-3. `canary-rollout-check` en verde y evidencia `reports/qa/latest/canary-rollout-check.json` presente.
+3. `clean-architecture-check` en verde y evidencia `reports/qa/latest/clean-architecture.json` presente.
 4. Flujo docente humano en produccion completado sin fallos criticos.
 5. Evidencia versionada en `docs/release/evidencias/<version>/`.
 6. Checklist de rollback readiness validado.
@@ -63,3 +63,5 @@ Se recomienda copiar a:
 ## Criterio de seguridad operativa
 El flujo humano debe ejecutarse en ventana controlada y con plan de rollback preparado.
 No usar datos de estudiantes reales fuera de politica institucional vigente.
+
+

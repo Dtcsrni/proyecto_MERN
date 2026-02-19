@@ -24,8 +24,7 @@ Este documento resume la estructura vigente del repositorio.
   - vinculacion_entrega, escaneo_omr, calificacion,
   - analiticas, sincronizacion_nube, admin_docentes, papelera
 - Estado OMR vigente:
-  - endpoint operativo: `/api/v2/omr/*`
-  - ruta `/api/omr/*` retirada del runtime
+  - endpoint operativo: `/api/omr/*`
 - `src/infraestructura/*`: base de datos, archivos, seguridad, logging, correo
 - `src/compartido/*`: errores, validaciones, utilidades
 - `tests/*`: unitarias, contrato e integracion
@@ -55,3 +54,5 @@ Este documento resume la estructura vigente del repositorio.
 
 ## Nota
 `AUTO_DOCS_INDEX.md` y `AUTO_ENV.md` se regeneran con scripts, no editar manualmente.
+
+

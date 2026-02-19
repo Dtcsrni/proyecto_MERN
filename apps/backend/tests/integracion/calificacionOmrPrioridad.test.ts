@@ -126,7 +126,6 @@ describe('calificacion OMR prioriza respuestas detectadas', () => {
           ratioAmbiguas: 0,
           templateVersionDetectada: 3,
           engineVersion: 'omr-v3-cv',
-          engineUsed: 'cv',
           geomQuality: 0.9,
           photoQuality: 0.9,
           decisionPolicy: 'conservadora_v1',
@@ -140,3 +139,4 @@ describe('calificacion OMR prioriza respuestas detectadas', () => {
     expect(calificacionResp.body.calificacion.calificacionExamenFinalTexto).toBe('0');
   });
 });
+

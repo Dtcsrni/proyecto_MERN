@@ -129,7 +129,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
-      .post('/api/v2/omr/analizar')
+      .post('/api/omr/analizar')
       .set(auth)
       .send({
         folio,
@@ -142,7 +142,6 @@ describe('escaneo OMR: QR asociado a examen', () => {
       qrTexto?: string;
       advertencias: string[];
       engineVersion?: string;
-      engineUsed?: 'cv' | 'legacy';
       geomQuality?: number;
       photoQuality?: number;
       decisionPolicy?: string;
@@ -152,7 +151,6 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(resultado.advertencias).not.toContain('No se detecto QR en la imagen');
     expect(resultado.advertencias).not.toContain('El QR no coincide con el examen esperado');
     expect(resultado.engineVersion).toBeDefined();
-    expect(['cv', 'legacy']).toContain(resultado.engineUsed as string);
     expect(typeof resultado.geomQuality).toBe('number');
     expect(typeof resultado.photoQuality).toBe('number');
     expect(typeof resultado.decisionPolicy).toBe('string');
@@ -169,7 +167,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     const imagenBase64 = await QRCode.toDataURL(qrIncorrecto, { margin: 1, width: QR_IMAGE_WIDTH });
 
     const resp = await request(app)
-      .post('/api/v2/omr/analizar')
+      .post('/api/omr/analizar')
       .set(auth)
       .send({
         folio,
@@ -183,3 +181,4 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(resultado.advertencias).toContain('El QR no coincide con el examen esperado');
   }, TEST_TIMEOUT_QR_MS);
 });
+

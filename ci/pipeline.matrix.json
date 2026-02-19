@@ -4,6 +4,7 @@
   "profiles": {
     "core": [
       "setup",
+      "contract-check",
       "lint",
       "typecheck",
       "test",
@@ -18,14 +19,14 @@
       "setup",
       "flujo-docente-check",
       "dataset-prodlike-check",
+      "omr-tv3-extended-gate",
       "docente-alumno-e2e-check",
       "global-grade-check",
       "pdf-print-check",
       "ux-visual-check",
       "perf-check",
       "perf-business-check",
-      "canary-rollout-check",
-      "bigbang-olas-strict-check",
+      "clean-architecture-check",
       "qa-manifest"
     ],
     "package": [
@@ -37,6 +38,13 @@
       "name": "setup",
       "commands": [
         "npm ci"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "contract-check",
+      "commands": [
+        "npm run pipeline:contract:check"
       ],
       "artifacts": []
     },
@@ -60,7 +68,6 @@
         "npm run test:backend:ci",
         "npm run test:portal:ci",
         "npm run test:frontend:ci",
-        "npm run test:client:smoke:ci",
         "npm run test:client:proyectos:ci"
       ],
       "artifacts": [
@@ -96,6 +103,15 @@
       "artifacts": [
         "tests/fixtures/prodlike/prodlike-anon.json.gz",
         "reports/qa/latest/dataset-prodlike.json"
+      ]
+    },
+    {
+      "name": "omr-tv3-extended-gate",
+      "commands": [
+        "npm run test:omr:tv3:gate:ci"
+      ],
+      "artifacts": [
+        "reports/qa/latest/omr-tv3-gate-wrapper.json"
       ]
     },
     {
@@ -179,21 +195,12 @@
       ]
     },
     {
-      "name": "canary-rollout-check",
+      "name": "clean-architecture-check",
       "commands": [
-        "npm run canary:rollout:check"
+        "npm run qa:clean-architecture:strict"
       ],
       "artifacts": [
-        "reports/qa/latest/canary-rollout-check.json"
-      ]
-    },
-    {
-      "name": "bigbang-olas-strict-check",
-      "commands": [
-        "npm run bigbang:olas:strict"
-      ],
-      "artifacts": [
-        "reports/qa/latest/olas-bigbang.json"
+        "reports/qa/latest/clean-architecture.json"
       ]
     },
     {
@@ -222,7 +229,7 @@
       "name": "security-scan",
       "commands": [
         "NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check",
-        "npm audit --audit-level=high --json > npm-audit-report.json",
+        "npm audit --omit=dev --audit-level=critical --json > npm-audit-report.json",
         "npm run security:audit"
       ],
       "artifacts": [

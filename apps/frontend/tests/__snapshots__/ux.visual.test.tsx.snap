@@ -77,7 +77,9 @@ exports[`UX visual regression > alumno sin token mantiene layout de acceso 1`] =
     <div
       class="auth-grid"
     >
-      <div>
+      <div
+        class="auth-hero auth-hero--alumno"
+      >
         <p
           class="eyebrow"
         >

@@ -17,12 +17,12 @@ vi.mock('../src/modulos/modulo_escaneo_omr/infra/omrCvEngine', () => ({
 
 import { ejecutarEtapaScoring } from '../src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring';
 
-describe('etapaScoring fallback CV -> legacy', () => {
+describe('etapaScoring reintento tras fallo de preproceso CV', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('marca fallback cuando falla el backend CV', async () => {
+  it('registra motivo de reintento cuando falla el backend CV', async () => {
     mockPreprocesar.mockRejectedValue(new Error('opencv unavailable'));
     mockAnalizarOmrV2.mockResolvedValue({
       respuestasDetectadas: [],
@@ -34,7 +34,6 @@ describe('etapaScoring fallback CV -> legacy', () => {
       confianzaPromedioPagina: 0.9,
       ratioAmbiguas: 0,
       engineVersion: 'omr-v3-cv',
-      engineUsed: 'legacy',
       geomQuality: 0.9,
       photoQuality: 0.9,
       decisionPolicy: 'conservadora_v1'
@@ -46,13 +45,8 @@ describe('etapaScoring fallback CV -> legacy', () => {
       margenMm: 10
     });
 
-    const resultado = contexto.resultado as {
-      engineUsed: 'cv' | 'legacy';
-      motivosRevision: string[];
-      engineVersion: string;
-    };
-    expect(resultado.engineUsed).toBe('legacy');
+    const resultado = contexto.resultado as { motivosRevision: string[]; engineVersion: string };
     expect(resultado.engineVersion).toBe('omr-v3-cv');
-    expect(resultado.motivosRevision.some((motivo) => motivo.startsWith('FALLBACK_LEGACY_CV:'))).toBe(true);
+    expect(resultado.motivosRevision.some((motivo) => motivo.startsWith('CV_PREPROCESO_REINTENTO:'))).toBe(true);
   });
 });

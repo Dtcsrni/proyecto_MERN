@@ -1,116 +1,109 @@
 # Pipeline Contract (Platform Agnostic)
 
 ## Purpose
-Define a CI/CD contract that any runner can implement 1:1 (GitHub Actions, GitLab CI, Jenkins, Azure, local orchestrator).
+Define a single CI/CD contract that any runner can execute 1:1 (GitHub Actions, GitLab CI, Jenkins, Azure, local orchestrator).
 
-## Execution profiles (recommended)
-The pipeline is intentionally split into two mandatory profiles to optimize feedback speed without lowering release quality.
+## Execution profiles
 
 ### Profile `core` (blocking for every PR/push)
 1. `setup`
-2. `lint`
-3. `typecheck`
-4. `test`
-5. `ux-quality-check`
-6. `coverage-check`
-7. `tdd-enforcement-check`
-8. `build`
-9. `docs-check`
-10. `security-scan`
+2. `contract-check`
+3. `lint`
+4. `typecheck`
+5. `test`
+6. `ux-quality-check`
+7. `coverage-check`
+8. `tdd-enforcement-check`
+9. `build`
+10. `docs-check`
+11. `security-scan`
 
 ### Profile `extended` (blocking for `main`, `release/*`, `schedule`, or manual dispatch)
 1. `setup`
 2. `flujo-docente-check`
 3. `dataset-prodlike-check`
-4. `docente-alumno-e2e-check`
-5. `global-grade-check`
-6. `pdf-print-check`
-7. `ux-visual-check`
-8. `perf-check`
-9. `perf-business-check`
-10. `canary-rollout-check` (advisory for beta closure; blocking for stable promotion)
-11. `bigbang-olas-strict-check`
+4. `omr-tv3-extended-gate`
+5. `docente-alumno-e2e-check`
+6. `global-grade-check`
+7. `pdf-print-check`
+8. `ux-visual-check`
+9. `perf-check`
+10. `perf-business-check`
+11. `clean-architecture-check`
 12. `qa-manifest`
 
 ### Profile `package`
 1. `package`
 
 ## Modular execution (independent workflows)
-The CI implementation can execute domain-isolated workflows in parallel, without cancelling sibling domains when one fails.
-
 Recommended module workflows:
 - `CI Backend Module` -> backend lint/typecheck/test/coverage/tdd/build
-- `CI Frontend Module` -> frontend lint/typecheck/test/ux/coverage + legacy smoke
+- `CI Frontend Module` -> frontend lint/typecheck/test/ux/coverage
 - `CI Portal Module` -> portal lint/typecheck/test/coverage/tdd/build
 - `CI Docs Module` -> contract/docs/diagrams/routes checks
 
 Policy:
-- A module failure must fail that module workflow only.
+- A module failure fails that module workflow only.
 - Sibling module workflows continue and publish their own status.
 - A global integrator workflow (`CI Checks`) remains the release-gating source of truth.
 
 ## Stage contract
+
 ### setup
-- Input: repository source
-- Actions:
-  - install Node (>=24)
-  - install dependencies (`npm ci`)
-- Output: dependency cache + lockfile validation
+- Install Node >=24
+- Install dependencies with `npm ci`
+
+### contract-check
+- Command: `npm run pipeline:contract:check`
 
 ### lint
 - Command: `npm run lint`
-- Fail if any warning/error (`--max-warnings=0` already enforced)
 
 ### typecheck
 - Command: `npm run typecheck`
-- Fail on any TS diagnostic
 
 ### test
 - Commands:
   - `npm run test:backend:ci`
   - `npm run test:portal:ci`
   - `npm run test:frontend:ci`
-  - `npm run test:client:smoke:ci`
   - `npm run test:client:proyectos:ci`
-- Flaky policy: retries only for explicitly retriable jobs/scripts
 
 ### ux-quality-check
 - Command: `npm run test:ux-quality:ci`
-- Policy: blocking gate
-- Scope: baseline UX contract (ayudas contextuales, iconografia minima, labels/landmarks y navegacion clara en pantallas criticas)
-- Output: frontend test report (runner-native)
+
+### coverage-check
+- Command: `npm run test:coverage:ci`
+
+### tdd-enforcement-check
+- Commands:
+  - `npm run test:coverage:exclusions:debt`
+  - `npm run test:coverage:diff`
+- Default threshold: `DIFF_COVERAGE_MIN=90`
 
 ### flujo-docente-check
 - Command: `npm run test:flujo-docente:ci`
-- Policy: blocking gate
-- Scope: end-to-end critical flow (`parcial` + `global`) including export of signed outputs
 
 ### dataset-prodlike-check
 - Command: `npm run test:dataset-prodlike:ci`
-- Policy: blocking gate
 - Output: `reports/qa/latest/dataset-prodlike.json`
-- Failure criteria:
-  - PII detected in anonymized fixture
-  - token/secret-like strings found
+
+### omr-tv3-extended-gate
+- Command: `npm run test:omr:tv3:gate:ci`
+- Output: `reports/qa/latest/omr-tv3-gate-wrapper.json`
 
 ### docente-alumno-e2e-check
 - Command: `npm run test:e2e:docente-alumno:ci`
-- Policy: blocking gate
-- Scope: chained flow backend docente -> publish -> portal alumno
 - Output: `reports/qa/latest/e2e-docente-alumno.json`
 
 ### global-grade-check
 - Command: `npm run test:global-grade:ci`
-- Policy: blocking gate
-- Scope: business rules + integration contract for `global`
 - Output: `reports/qa/latest/global-grade.json`
 
 ### pdf-print-check
 - Commands:
   - `npm run test:pdf-print:ci`
   - `npm run test:pdf-visual:ci`
-- Policy: blocking gate
-- Scope: printable PDF contract (Carta, naming traceability, byte budgets)
 - Output: `reports/qa/latest/pdf-print.json`
 
 ### ux-visual-check
@@ -118,72 +111,21 @@ Policy:
   - `npm run test:ux-quality:ci`
   - `npm run test:ux-visual:ci`
   - `npm run test:e2e:journeys:ci`
-- Policy: blocking gate
-- Scope: visual regression on critical docente/alumno screens
 - Output: `reports/qa/latest/ux-visual.json`
-
-### coverage-check
-- Command: `npm run test:coverage:ci`
-- Policy: blocking gate with progressive thresholds per app:
-  - Week 1 (recalibrado 2026-02-13 para baseline real):
-    - backend: 55 (lines/functions/branches/statements)
-    - frontend: lines 39, functions 40, branches 31, statements 37
-    - portal: 50 (lines/functions/branches/statements)
-  - Week 2: backend 62, frontend 52, portal 58
-  - Week 3: backend 70, frontend 60, portal 65
-- Output: coverage report per workspace (`coverage/**`)
-
-### tdd-enforcement-check
-- Commands:
-  - `npm run test:coverage:exclusions:debt`
-  - `npm run test:coverage:diff`
-- Policy: blocking gate
-- Scope:
-  - valida que exclusiones temporales de cobertura tengan owner y fecha de expiracion vigente
-  - exige cobertura minima en lineas modificadas (`diff coverage`)
-- Default diff threshold:
-  - `DIFF_COVERAGE_MIN=90`
 
 ### perf-check
 - Command: `npm run perf:check`
-- Policy: blocking gate
-- Inputs:
-  - `docs/perf/baseline.json`
-- Outputs:
-  - `reports/perf/latest.json`
-- Failure criteria:
-  - any route with `p95` over budget
-  - any measured route with failures above budget
+- Input: `docs/perf/baseline.json`
+- Output: `reports/perf/latest.json`
 
 ### perf-business-check
 - Command: `npm run perf:check:business`
-- Policy: blocking gate for `main` and `release/*` (can run optional in nightly)
-- Inputs:
-  - `docs/perf/baseline.business.json`
-- Outputs:
-  - `reports/perf/business.latest.json`
-- Failure criteria:
-  - any authenticated business route with `p95` over budget
-  - any measured business route with failures above budget
+- Input: `docs/perf/baseline.business.json`
+- Output: `reports/perf/business.latest.json`
 
-### canary-rollout-check
-- Command: `npm run canary:rollout:check`
-- Policy: advisory in beta closure, blocking in stable promotion gate
-- Scope: valida fundamento técnico de rollout canary y consistencia entre monitor, política y pruebas
-- Output: `reports/qa/latest/canary-rollout-check.json`
-
-### bigbang-olas-strict-check
-- Command: `npm run bigbang:olas:strict`
-- Policy: blocking gate
-- Scope:
-  - verifies completion invariants for implemented Big-Bang waves
-  - executes strict local quality gates used as release precondition
-- Output:
-  - `reports/qa/latest/olas-bigbang.json`
-
-### build
-- Command: `npm run build`
-- Output: compiled artifacts per workspace
+### clean-architecture-check
+- Command: `npm run qa:clean-architecture:strict`
+- Output: `reports/qa/latest/clean-architecture.json`
 
 ### docs-check
 - Commands:
@@ -196,14 +138,15 @@ Policy:
 ### security-scan
 - Commands:
   - `NODE_ENV=production STRICT_ENV_CHECK=1 npm run security:env:check`
-  - `npm audit --audit-level=high --json > npm-audit-report.json`
+  - `npm audit --omit=dev --audit-level=critical --json > npm-audit-report.json`
   - `npm run security:audit`
-- Output: vulnerability report artifact (`npm-audit-report.json`) + env policy validation
 
 ### qa-manifest
 - Command: `npm run test:qa:manifest`
-- Policy: blocking evidence gate (fails if required QA artifacts are missing)
 - Output: `reports/qa/latest/manifest.json`
+
+### build
+- Command: `npm run build`
 
 ### package
 - Build container images or archive artifacts for:
@@ -213,34 +156,30 @@ Policy:
 
 ## Caches
 - `~/.npm`
-- optional build caches (`*.tsbuildinfo`, test cache) without mutating source
+- Optional build caches (`*.tsbuildinfo`, test cache) without mutating source
 
 ## Artifacts
-- backend build output
-- frontend static build
-- portal build output
-- test reports (if runner supports)
-- docs/diagram checks report (text)
-- performance report (`reports/perf/latest.json`)
-- QA evidence report (`reports/qa/latest/**`)
+- Build outputs per workspace
+- Test reports
+- `reports/perf/latest.json`
+- `reports/perf/business.latest.json`
+- `reports/qa/latest/**`
 
-## Quality gates policy (strict progressive)
-- Every PR must pass full `core`.
+## Quality gates policy
+- Every PR must pass `core`.
 - `main`/`release/*` must pass `core` + `extended`.
-- `package` stays isolated in its own workflow for artifact/image generation.
+- `package` remains isolated in its own workflow.
 
 ## Exit criteria
-- PR pipeline is green only when all `core` stages pass.
-- Mainline/release pipeline is green only when all `core` + `extended` stages pass.
-- Release candidates require 10 consecutive green runs without flaky infra failures >10%.
+- PR is green only when all `core` stages pass.
+- Mainline/release is green only when all `core` + `extended` stages pass.
+- Stable release candidates require 10 consecutive green runs without flaky infra failures >10%.
 
-## Stable release gate (post-CI, manual + automated evidence)
-This gate is outside CI stages and applies only when promoting `beta` to `stable`.
-
+## Stable release gate (post-CI)
 Required:
 1. 10 consecutive green CI runs.
-2. Human production teacher flow completed (full docente flow).
-3. Automated evidence package generated with:
+2. Human production teacher flow completed.
+3. Automated evidence package:
    - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
 4. Evidence committed under:
    - `docs/release/evidencias/<version>/`

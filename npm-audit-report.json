@@ -1,22 +1,149 @@
 {
   "auditReportVersion": 2,
-  "vulnerabilities": {},
+  "vulnerabilities": {
+    "archiver": {
+      "name": "archiver",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "archiver-utils",
+        "glob",
+        "zip-stream"
+      ],
+      "effects": [
+        "exceljs"
+      ],
+      "range": ">=0.11.0-alpha",
+      "nodes": [
+        "apps/backend/node_modules/archiver"
+      ],
+      "fixAvailable": true
+    },
+    "archiver-utils": {
+      "name": "archiver-utils",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "glob"
+      ],
+      "effects": [
+        "archiver",
+        "zip-stream"
+      ],
+      "range": ">=0.2.0",
+      "nodes": [
+        "node_modules/archiver-utils"
+      ],
+      "fixAvailable": true
+    },
+    "exceljs": {
+      "name": "exceljs",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "archiver"
+      ],
+      "effects": [],
+      "range": "0.1.10 - 4.1.1",
+      "nodes": [
+        "apps/backend/node_modules/exceljs"
+      ],
+      "fixAvailable": true
+    },
+    "glob": {
+      "name": "glob",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "minimatch"
+      ],
+      "effects": [
+        "archiver",
+        "archiver-utils",
+        "rimraf"
+      ],
+      "range": "3.0.0 - 10.5.0",
+      "nodes": [
+        "node_modules/glob"
+      ],
+      "fixAvailable": true
+    },
+    "minimatch": {
+      "name": "minimatch",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1113296,
+          "name": "minimatch",
+          "dependency": "minimatch",
+          "title": "minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern",
+          "url": "https://github.com/advisories/GHSA-3ppc-4f35-3m26",
+          "severity": "high",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<10.2.1"
+        }
+      ],
+      "effects": [
+        "glob"
+      ],
+      "range": "<10.2.1",
+      "nodes": [
+        "node_modules/minimatch"
+      ],
+      "fixAvailable": true
+    },
+    "rimraf": {
+      "name": "rimraf",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "glob"
+      ],
+      "effects": [],
+      "range": "2.3.0 - 3.0.2 || 4.2.0 - 5.0.10",
+      "nodes": [
+        "node_modules/fstream/node_modules/rimraf"
+      ],
+      "fixAvailable": true
+    },
+    "zip-stream": {
+      "name": "zip-stream",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "archiver-utils"
+      ],
+      "effects": [],
+      "range": "0.8.0 - 6.0.1",
+      "nodes": [
+        "apps/backend/node_modules/zip-stream"
+      ],
+      "fixAvailable": true
+    }
+  },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
       "low": 0,
       "moderate": 0,
-      "high": 0,
+      "high": 7,
       "critical": 0,
-      "total": 0
+      "total": 7
     },
     "dependencies": {
-      "prod": 314,
-      "dev": 832,
-      "optional": 61,
+      "prod": 311,
+      "dev": 836,
+      "optional": 62,
       "peer": 62,
       "peerOptional": 0,
-      "total": 1146
+      "total": 1147
     }
   }
 }

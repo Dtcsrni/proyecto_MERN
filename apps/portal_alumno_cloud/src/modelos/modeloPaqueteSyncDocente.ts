@@ -8,7 +8,7 @@ const PaqueteSyncDocenteSchema = new Schema(
     docenteId: { type: Schema.Types.ObjectId, required: true, index: true },
     paqueteBase64: { type: String, required: true },
     checksumSha256: { type: String },
-    schemaVersion: { type: Number, default: 1 },
+    schemaVersion: { type: Number, default: 2 },
     exportadoEn: { type: Date },
     desde: { type: Date },
     periodoId: { type: Schema.Types.ObjectId },
