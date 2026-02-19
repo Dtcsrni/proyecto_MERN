@@ -17,6 +17,22 @@ function crearRespuesta() {
   } as unknown as Response;
 }
 
+function crearAnalisisOmrOk() {
+  return {
+    estadoAnalisis: 'ok' as const,
+    calidadPagina: 0.95,
+    confianzaPromedioPagina: 0.93,
+    ratioAmbiguas: 0,
+    templateVersionDetectada: 3 as const,
+    motivosRevision: [],
+    engineVersion: 'omr-v3-cv',
+    engineUsed: 'cv' as const,
+    geomQuality: 0.91,
+    photoQuality: 0.92,
+    decisionPolicy: 'conservadora_v1'
+  };
+}
+
 describe('calificaciones persistencia', () => {
   beforeAll(async () => {
     await conectarMongoTest();
@@ -77,6 +93,10 @@ describe('calificaciones persistencia', () => {
         ordenOpcionesPorPregunta: {
           [String(pregunta._id)]: [0, 1, 2, 3, 4]
         }
+      },
+      mapaOmr: {
+        templateVersion: 3,
+        paginas: []
       }
     });
 
@@ -85,6 +105,7 @@ describe('calificaciones persistencia', () => {
       body: {
         examenGeneradoId: String(examen._id),
         respuestasDetectadas: [{ numeroPregunta: 1, opcion: 'A' }],
+        omrAnalisis: crearAnalisisOmrOk(),
         bonoSolicitado: 0,
         retroalimentacion: 'Correcto'
       }
@@ -167,6 +188,10 @@ describe('calificaciones persistencia', () => {
         ordenOpcionesPorPregunta: {
           [String(pregunta._id)]: [0, 1, 2, 3, 4]
         }
+      },
+      mapaOmr: {
+        templateVersion: 3,
+        paginas: []
       }
     });
 
@@ -175,6 +200,7 @@ describe('calificaciones persistencia', () => {
       body: {
         examenGeneradoId: String(examen._id),
         respuestasDetectadas: [{ numeroPregunta: 1, opcion: 'A' }],
+        omrAnalisis: crearAnalisisOmrOk(),
         paginasOmr: [
           {
             numeroPagina: 1,
@@ -224,5 +250,110 @@ describe('calificaciones persistencia', () => {
     expect(payloadRecuperado.calificacion.paginasOmr[1]?.numeroPagina).toBe(2);
     expect(payloadRecuperado.calificacion.paginasOmr[0]?.imagenBase64.startsWith('data:image/png;base64,')).toBe(true);
     expect(payloadRecuperado.calificacion.paginasOmr[1]?.imagenBase64.startsWith('data:image/jpeg;base64,')).toBe(true);
+  });
+
+  it('conserva historial por intento y expone solo la última captura por página', async () => {
+    const docenteId = new Types.ObjectId();
+    const periodoId = new Types.ObjectId();
+    const alumnoId = new Types.ObjectId();
+
+    const pregunta = await BancoPregunta.create({
+      docenteId,
+      periodoId,
+      tema: 'Historia',
+      versionActual: 1,
+      versiones: [
+        {
+          numeroVersion: 1,
+          enunciado: 'Capital de Francia',
+          opciones: [
+            { texto: 'Paris', esCorrecta: true },
+            { texto: 'Roma', esCorrecta: false },
+            { texto: 'Madrid', esCorrecta: false },
+            { texto: 'Berlin', esCorrecta: false },
+            { texto: 'Lisboa', esCorrecta: false }
+          ]
+        }
+      ]
+    });
+
+    const plantilla = await ExamenPlantilla.create({
+      docenteId,
+      periodoId,
+      tipo: 'parcial',
+      titulo: 'Parcial intentos OMR',
+      numeroPaginas: 1,
+      preguntasIds: [pregunta._id]
+    });
+
+    const examen = await ExamenGenerado.create({
+      docenteId,
+      periodoId,
+      plantillaId: plantilla._id,
+      alumnoId,
+      folio: 'FOL-PERSIST-OMR-ATTEMPT',
+      estado: 'entregado',
+      preguntasIds: [pregunta._id],
+      mapaVariante: {
+        ordenPreguntas: [String(pregunta._id)],
+        ordenOpcionesPorPregunta: {
+          [String(pregunta._id)]: [0, 1, 2, 3, 4]
+        }
+      },
+      mapaOmr: {
+        templateVersion: 3,
+        paginas: []
+      }
+    });
+
+    const cuerpoBase = {
+      examenGeneradoId: String(examen._id),
+      respuestasDetectadas: [{ numeroPregunta: 1, opcion: 'A' }],
+      omrAnalisis: crearAnalisisOmrOk()
+    };
+
+    await calificarExamen(
+      {
+        docenteId: String(docenteId),
+        body: {
+          ...cuerpoBase,
+          paginasOmr: [{ numeroPagina: 1, imagenBase64: 'data:image/png;base64,AQIDBA==' }]
+        }
+      } as unknown as SolicitudDocente,
+      crearRespuesta()
+    );
+
+    await calificarExamen(
+      {
+        docenteId: String(docenteId),
+        body: {
+          ...cuerpoBase,
+          paginasOmr: [{ numeroPagina: 1, imagenBase64: 'data:image/png;base64,BQYHCA==' }]
+        }
+      } as unknown as SolicitudDocente,
+      crearRespuesta()
+    );
+
+    const capturas = await EscaneoOmrArchivado.find({ docenteId, examenGeneradoId: examen._id })
+      .sort({ numeroPagina: 1, intento: 1 })
+      .lean();
+    expect(capturas).toHaveLength(2);
+    expect(capturas[0]?.intento).toBe(1);
+    expect(capturas[1]?.intento).toBe(2);
+
+    const resRecuperar = crearRespuesta();
+    await obtenerCalificacionPorExamen(
+      {
+        docenteId: String(docenteId),
+        params: { examenGeneradoId: String(examen._id) }
+      } as unknown as SolicitudDocente,
+      resRecuperar
+    );
+    const payload = (resRecuperar.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      calificacion: { paginasOmr: Array<{ numeroPagina: number; imagenBase64: string }> };
+    };
+    expect(payload.calificacion.paginasOmr).toHaveLength(1);
+    expect(payload.calificacion.paginasOmr[0]?.numeroPagina).toBe(1);
+    expect(payload.calificacion.paginasOmr[0]?.imagenBase64).toContain('data:image/png;base64,');
   });
 });

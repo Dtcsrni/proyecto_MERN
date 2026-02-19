@@ -4,7 +4,7 @@
  * Define DTOs, types y constantes compartidas entre capas del modulo.
  */
 
-export type TemplateVersion = 1 | 2;
+export type TemplateVersion = 3;
 export type TipoExamen = 'parcial' | 'global';
 
 export interface EncabezadoExamen {
@@ -62,9 +62,40 @@ export interface ResultadoGeneracionPdf {
 export interface MapaOmr {
   margenMm: number;
   templateVersion: number;
+  markerSpec?: MarkerSpecOmr;
+  blockSpec?: BlockSpecOmr;
+  engineHints?: EngineHintsOmr;
   perfilLayout: PerfilLayoutImpresion;
   perfil: PerfilPlantillaOmr;
   paginas: PaginaOmr[];
+}
+
+export interface MarkerSpecOmr {
+  family: 'aruco_4x4_50';
+  sizeMm: number;
+  quietZoneMm: number;
+  ids?: {
+    tl: number;
+    tr: number;
+    bl: number;
+    br: number;
+  };
+}
+
+export interface BlockSpecOmr {
+  preguntasPorBloque: number;
+  opcionesPorPregunta: number;
+  bubbleDiameterMm: number;
+  bubblePitchYmm: number;
+  labelToBubbleMm: number;
+  bubbleStrokePt: number;
+}
+
+export interface EngineHintsOmr {
+  preferredEngine: 'cv';
+  enableClahe: boolean;
+  adaptiveThreshold: boolean;
+  conservativeDecision: boolean;
 }
 
 export interface PerfilLayoutImpresion {
@@ -87,6 +118,10 @@ export interface PerfilPlantillaOmr {
   burbujaPasoY: number;
   cajaOmrAncho: number;
   fiducialSize: number;
+  bubbleStrokePt?: number;
+  labelToBubbleMm?: number;
+  preguntasPorBloque?: number;
+  opcionesPorPregunta?: number;
 }
 
 export interface PaginaOmr {

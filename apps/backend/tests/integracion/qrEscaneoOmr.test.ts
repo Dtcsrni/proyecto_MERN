@@ -123,7 +123,7 @@ describe('escaneo OMR: QR asociado a examen', () => {
     expect(paginas[0].numero).toBe(1);
 
     const qrEsperado = `EXAMEN:${folio}:P1`;
-    expect(String(paginas[0].qrTexto || '')).toMatch(new RegExp(`^EXAMEN:${folio}:P1(?::TV[12])?$`));
+    expect(String(paginas[0].qrTexto || '')).toMatch(new RegExp(`^EXAMEN:${folio}:P1:TV3$`));
 
     const qrParaImagen = String(paginas[0].qrTexto || qrEsperado);
     const imagenBase64 = await QRCode.toDataURL(qrParaImagen, { margin: 1, width: QR_IMAGE_WIDTH });

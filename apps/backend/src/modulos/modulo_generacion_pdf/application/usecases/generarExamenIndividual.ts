@@ -53,7 +53,7 @@ export async function generarExamenIndividual(
           )
         };
 
-  const templateVersion = params.templateVersion === 2 ? 2 : 1;
+  const templateVersion = 3;
   const totalPaginas = Number.isFinite(params.totalPaginas)
     ? Math.max(1, Math.floor(params.totalPaginas))
     : 1;

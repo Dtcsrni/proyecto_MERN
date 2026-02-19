@@ -124,7 +124,7 @@ describe('calificacion OMR prioriza respuestas detectadas', () => {
           calidadPagina: 0.95,
           confianzaPromedioPagina: 0.92,
           ratioAmbiguas: 0,
-          templateVersionDetectada: 1
+          templateVersionDetectada: 3
         }
       })
       .expect(201);

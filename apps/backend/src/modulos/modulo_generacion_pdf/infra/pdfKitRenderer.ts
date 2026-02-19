@@ -7,6 +7,9 @@ import {
   ALTO_CARTA,
   ANCHO_CARTA,
   MM_A_PUNTOS,
+  type BlockSpecOmr,
+  type EngineHintsOmr,
+  type MarkerSpecOmr,
   type PaginaOmr,
   type PerfilLayoutImpresion,
   type PerfilPlantillaOmr,
@@ -14,7 +17,7 @@ import {
 } from '../shared/tiposPdf';
 
 type PerfilPlantillaRender = PerfilPlantillaOmr & {
-  version: 1 | 2;
+  version: 3;
   qrRasterWidth: number;
   burbujaStroke: number;
   burbujaOffsetX: number;
@@ -38,56 +41,34 @@ type LogoEmbed = {
 type SegmentoTexto = { texto: string; font: PDFFont; size: number; esCodigo?: boolean };
 type LineaSegmentos = { segmentos: SegmentoTexto[]; lineHeight: number };
 
-const PERFIL_OMR_V1_RENDER: PerfilPlantillaRender = {
-  version: 1,
-  qrSize: 68,
-  qrPadding: 2,
-  qrMarginModulos: 4,
-  qrRasterWidth: 520,
-  marcasEsquina: 'lineas',
-  marcaCuadradoSize: 12,
-  marcaCuadradoQuietZone: 4,
-  burbujaRadio: 3.4,
-  burbujaPasoY: 8.4,
-  burbujaStroke: 1.2,
-  burbujaOffsetX: 9.2,
-  omrHeaderGap: 12,
-  omrTagWidth: 26,
-  omrTagHeight: 11,
-  omrTagFontSize: 7.4,
-  omrLabelFontSize: 5.8,
-  omrBoxBorderWidth: 1.4,
-  omrPanelPadding: 0,
-  cajaOmrAncho: 42,
-  fiducialSize: 5,
-  fiducialMargin: 6,
-  fiducialQuietZone: 0
-};
-
-const PERFIL_OMR_V2_RENDER: PerfilPlantillaRender = {
-  version: 2,
-  qrSize: 88,
-  qrPadding: 4,
-  qrMarginModulos: 6,
-  qrRasterWidth: 620,
+const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
+  version: 3,
+  qrSize: 30 * MM_A_PUNTOS,
+  qrPadding: 4 * MM_A_PUNTOS,
+  qrMarginModulos: 8,
+  qrRasterWidth: 780,
   marcasEsquina: 'cuadrados',
-  marcaCuadradoSize: 12,
-  marcaCuadradoQuietZone: 4,
-  burbujaRadio: 5,
-  burbujaPasoY: 14,
-  burbujaStroke: 1.25,
-  burbujaOffsetX: 11,
-  omrHeaderGap: 14,
-  omrTagWidth: 28,
+  marcaCuadradoSize: 18 * MM_A_PUNTOS,
+  marcaCuadradoQuietZone: 3 * MM_A_PUNTOS,
+  burbujaRadio: (6.2 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 10.5 * MM_A_PUNTOS,
+  burbujaStroke: 0.9,
+  burbujaOffsetX: 14.2,
+  omrHeaderGap: 16,
+  omrTagWidth: 30,
   omrTagHeight: 12,
-  omrTagFontSize: 7.8,
-  omrLabelFontSize: 6.1,
-  omrBoxBorderWidth: 1.75,
-  omrPanelPadding: 3.2,
-  cajaOmrAncho: 60,
-  fiducialSize: 7,
-  fiducialMargin: 7.5,
-  fiducialQuietZone: 2.2
+  omrTagFontSize: 7.6,
+  omrLabelFontSize: 6.2,
+  omrBoxBorderWidth: 1.45,
+  omrPanelPadding: 4.5,
+  cajaOmrAncho: 84,
+  fiducialSize: 18 * MM_A_PUNTOS,
+  fiducialMargin: 5.6,
+  fiducialQuietZone: 3 * MM_A_PUNTOS,
+  bubbleStrokePt: 0.9,
+  labelToBubbleMm: 5,
+  preguntasPorBloque: 10,
+  opcionesPorPregunta: 5
 };
 
 function mmAPuntos(mm: number) {
@@ -414,8 +395,9 @@ function partirEnLineas({
   return lineas.length > 0 ? lineas : [''];
 }
 
-function resolverPerfilRender(templateVersion: 1 | 2, perfilBase: PerfilPlantillaOmr): PerfilPlantillaRender {
-  const base = templateVersion === 2 ? PERFIL_OMR_V2_RENDER : PERFIL_OMR_V1_RENDER;
+function resolverPerfilRender(templateVersion: 3, perfilBase: PerfilPlantillaOmr): PerfilPlantillaRender {
+  void templateVersion;
+  const base = PERFIL_OMR_V3_RENDER;
   return {
     ...base,
     qrSize: perfilBase.qrSize,
@@ -427,29 +409,15 @@ function resolverPerfilRender(templateVersion: 1 | 2, perfilBase: PerfilPlantill
     burbujaRadio: perfilBase.burbujaRadio,
     burbujaPasoY: perfilBase.burbujaPasoY,
     cajaOmrAncho: perfilBase.cajaOmrAncho,
-    fiducialSize: perfilBase.fiducialSize
+    fiducialSize: perfilBase.fiducialSize,
+    bubbleStrokePt: perfilBase.bubbleStrokePt ?? base.bubbleStrokePt,
+    labelToBubbleMm: perfilBase.labelToBubbleMm ?? base.labelToBubbleMm,
+    preguntasPorBloque: perfilBase.preguntasPorBloque ?? base.preguntasPorBloque,
+    opcionesPorPregunta: perfilBase.opcionesPorPregunta ?? base.opcionesPorPregunta
   };
 }
 
 function agregarMarcasRegistro(page: PDFPage, margen: number, perfil: PerfilPlantillaRender) {
-  if (perfil.marcasEsquina === 'lineas') {
-    const largo = 12;
-    const color = rgb(0, 0, 0);
-
-    page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen + largo, y: ALTO_CARTA - margen }, color });
-    page.drawLine({ start: { x: margen, y: ALTO_CARTA - margen }, end: { x: margen, y: ALTO_CARTA - margen - largo }, color });
-
-    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen - largo, y: ALTO_CARTA - margen }, color });
-    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen }, end: { x: ANCHO_CARTA - margen, y: ALTO_CARTA - margen - largo }, color });
-
-    page.drawLine({ start: { x: margen, y: margen }, end: { x: margen + largo, y: margen }, color });
-    page.drawLine({ start: { x: margen, y: margen }, end: { x: margen, y: margen + largo }, color });
-
-    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen - largo, y: margen }, color });
-    page.drawLine({ start: { x: ANCHO_CARTA - margen, y: margen }, end: { x: ANCHO_CARTA - margen, y: margen + largo }, color });
-    return;
-  }
-
   const quiet = perfil.marcaCuadradoQuietZone;
   const tam = perfil.marcaCuadradoSize;
   const mitad = tam / 2;
@@ -618,6 +586,7 @@ export class PdfKitRenderer {
 
     const templateVersion = examen.layout.templateVersion;
     const perfilOmr = resolverPerfilRender(templateVersion, this.perfilOmr);
+    const esTv3 = true;
     const margenMm = examen.layout.margenMm;
     const margen = mmAPuntos(margenMm);
     const paginasObjetivo = Number.isFinite(examen.layout.totalPaginas)
@@ -626,7 +595,7 @@ export class PdfKitRenderer {
 
     const colorPrimario = rgb(0.1, 0.1, 0.1);
     const colorGris = rgb(0.33, 0.33, 0.33);
-    const colorLinea = rgb(0.58, 0.6, 0.64);
+    const colorLinea = rgb(0.2, 0.2, 0.2);
 
     const sizeTitulo = 12.2;
     const sizeMeta = 7.4;
@@ -643,11 +612,11 @@ export class PdfKitRenderer {
     const omrTotalLetras = 5;
     const omrRadio = perfilOmr.burbujaRadio;
     const omrPasoY = perfilOmr.burbujaPasoY;
-    const omrPadding = perfilOmr.version === 2 ? 3.1 : 2.2;
-    const omrExtraTitulo = perfilOmr.version === 2 ? 10.5 : 9.5;
+    const omrPadding = 5.6;
+    const omrExtraTitulo = 14;
 
     const anchoColRespuesta = perfilOmr.cajaOmrAncho;
-    const gutterRespuesta = 10;
+    const gutterRespuesta = 14;
     const xColRespuesta = ANCHO_CARTA - margen - anchoColRespuesta;
     const xDerechaTexto = xColRespuesta - gutterRespuesta;
 
@@ -692,6 +661,27 @@ export class PdfKitRenderer {
     const GRID_STEP = this.perfilLayout.gridStepPt;
     const snapToGrid = (y: number) => Math.floor(y / GRID_STEP) * GRID_STEP;
 
+    const markerSpec: MarkerSpecOmr = {
+      family: 'aruco_4x4_50',
+      sizeMm: 18,
+      quietZoneMm: 3,
+      ids: { tl: 7, tr: 11, bl: 19, br: 23 }
+    };
+    const blockSpec: BlockSpecOmr = {
+      preguntasPorBloque: perfilOmr.preguntasPorBloque ?? 10,
+      opcionesPorPregunta: perfilOmr.opcionesPorPregunta ?? 5,
+      bubbleDiameterMm: Number((omrRadio * 2 / MM_A_PUNTOS).toFixed(2)),
+      bubblePitchYmm: Number((omrPasoY / MM_A_PUNTOS).toFixed(2)),
+      labelToBubbleMm: Number((perfilOmr.labelToBubbleMm ?? 5).toFixed(2)),
+      bubbleStrokePt: Number((perfilOmr.bubbleStrokePt ?? perfilOmr.burbujaStroke).toFixed(2))
+    };
+    const engineHints: EngineHintsOmr = {
+      preferredEngine: 'cv',
+      enableClahe: true,
+      adaptiveThreshold: true,
+      conservativeDecision: true
+    };
+
     const paginasMeta: ResultadoGeneracionPdf['paginas'] = [];
     const metricasPaginas: ResultadoGeneracionPdf['metricasPaginas'] = [];
     const paginasOmr: PaginaOmr[] = [];
@@ -722,7 +712,7 @@ export class PdfKitRenderer {
       const yCaja = yTop - altoEncabezado;
 
       if (esPrimera) {
-        if (this.perfilLayout.usarRellenosDecorativos) {
+        if (this.perfilLayout.usarRellenosDecorativos && !esTv3) {
           page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: rgb(0.97, 0.98, 0.99) });
         }
 
@@ -1111,7 +1101,7 @@ export class PdfKitRenderer {
         const yPrimeraBurbuja = yInicioOpciones - perfilOmr.omrHeaderGap;
         const top = yPrimeraBurbuja + omrRadio + omrExtraTitulo + 8;
         const yUltimaBurbuja = yPrimeraBurbuja - (omrTotalLetras - 1) * omrPasoY;
-        const omrExtraBottom = perfilOmr.version === 2 ? 7 : 6;
+        const omrExtraBottom = 6;
         const bottom = yUltimaBurbuja - omrRadio - 4 - omrExtraBottom;
         const hCaja = Math.max(40, top - bottom);
         const panelPad = perfilOmr.omrPanelPadding;
@@ -1135,17 +1125,6 @@ export class PdfKitRenderer {
           borderColor: rgb(0, 0, 0),
           color: rgb(1, 1, 1)
         });
-
-        if (perfilOmr.version === 2) {
-          page.drawRectangle({
-            x: xColRespuesta + 1.5,
-            y: bottom + 1.5,
-            width: Math.max(8, anchoColRespuesta - 3),
-            height: Math.max(8, hCaja - 3),
-            borderWidth: 0.8,
-            borderColor: rgb(0.78, 0.82, 0.86)
-          });
-        }
 
         const hTag = perfilOmr.omrTagHeight;
         const wTag = perfilOmr.omrTagWidth;
@@ -1178,15 +1157,17 @@ export class PdfKitRenderer {
         for (let idx = 0; idx < letras.length; idx += 1) {
           const letra = letras[idx];
           const yBurbuja = yPrimeraBurbuja - idx * omrPasoY;
-          page.drawCircle({ x: xBurbuja, y: yBurbuja, size: omrRadio, borderWidth: perfilOmr.burbujaStroke, borderColor: rgb(0, 0, 0) });
-          if (perfilOmr.version === 2) {
-            page.drawCircle({ x: xBurbuja, y: yBurbuja, size: Math.max(0.8, omrRadio - 1.6), borderWidth: 0.35, borderColor: rgb(0.7, 0.72, 0.76) });
-            page.drawCircle({ x: xColRespuesta + anchoColRespuesta - 6, y: yBurbuja, size: 0.8, color: rgb(0.76, 0.78, 0.82) });
-          }
+          page.drawCircle({
+            x: xBurbuja,
+            y: yBurbuja,
+            size: omrRadio,
+            borderWidth: perfilOmr.bubbleStrokePt ?? perfilOmr.burbujaStroke,
+            borderColor: rgb(0, 0, 0)
+          });
           page.drawText(letra, {
-            x: xBurbuja + omrRadio + (perfilOmr.version === 2 ? 4.6 : 5.1),
-            y: yBurbuja - (perfilOmr.version === 2 ? 3.4 : 3),
-            size: perfilOmr.version === 2 ? 7.7 : 7.4,
+            x: xBurbuja + omrRadio + mmAPuntos(perfilOmr.labelToBubbleMm ?? 5),
+            y: yBurbuja - 3,
+            size: 8.3,
             font: fuente,
             color: rgb(0.12, 0.12, 0.12)
           });
@@ -1251,6 +1232,9 @@ export class PdfKitRenderer {
       mapaOmr: {
         margenMm,
         templateVersion: perfilOmr.version,
+        markerSpec,
+        blockSpec,
+        engineHints,
         perfilLayout: {
           gridStepPt: this.perfilLayout.gridStepPt,
           headerHeightFirst: this.perfilLayout.headerHeightFirst,
@@ -1269,7 +1253,11 @@ export class PdfKitRenderer {
           burbujaRadio: perfilOmr.burbujaRadio,
           burbujaPasoY: perfilOmr.burbujaPasoY,
           cajaOmrAncho: perfilOmr.cajaOmrAncho,
-          fiducialSize: perfilOmr.fiducialSize
+          fiducialSize: perfilOmr.fiducialSize,
+          bubbleStrokePt: perfilOmr.bubbleStrokePt,
+          labelToBubbleMm: perfilOmr.labelToBubbleMm,
+          preguntasPorBloque: perfilOmr.preguntasPorBloque,
+          opcionesPorPregunta: perfilOmr.opcionesPorPregunta
         },
         paginas: paginasOmr
       },

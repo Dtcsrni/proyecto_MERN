@@ -39,9 +39,14 @@ describe('servicioOmr (v2-only)', () => {
     calidadPagina: 0.7,
     estadoAnalisis: 'ok',
     motivosRevision: [],
-    templateVersionDetectada: 1,
+    templateVersionDetectada: 3,
     confianzaPromedioPagina: 0.9,
-    ratioAmbiguas: 0
+    ratioAmbiguas: 0,
+    engineVersion: 'omr-v3-cv',
+    engineUsed: 'legacy',
+    geomQuality: 0.8,
+    photoQuality: 0.8,
+    decisionPolicy: 'conservadora_v1'
   };
 
   beforeEach(() => {
@@ -52,7 +57,7 @@ describe('servicioOmr (v2-only)', () => {
     const pipelineResult = {
       requestId: 'req-omr-1',
       exito: true,
-      resultado: { ...resultadoOmr, templateVersionDetectada: 2 },
+      resultado: { ...resultadoOmr, templateVersionDetectada: 3 },
       etapas: []
     };
 
