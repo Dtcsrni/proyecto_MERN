@@ -124,7 +124,13 @@ describe('calificación OMR payload estricto', () => {
           calidadPagina: 0.9,
           confianzaPromedioPagina: 0.89,
           ratioAmbiguas: 0,
-          templateVersionDetectada: 3
+          templateVersionDetectada: 3,
+          engineVersion: 'omr-v3-cv',
+          engineUsed: 'cv',
+          geomQuality: 0.91,
+          photoQuality: 0.92,
+          decisionPolicy: 'conservadora_v1',
+          motivosRevision: []
         }
       })
       .expect(422);
@@ -148,7 +154,13 @@ describe('calificación OMR payload estricto', () => {
           calidadPagina: 0.9,
           confianzaPromedioPagina: 0.9,
           ratioAmbiguas: 0,
-          templateVersionDetectada: 3
+          templateVersionDetectada: 3,
+          engineVersion: 'omr-v3-cv',
+          engineUsed: 'cv',
+          geomQuality: 0.91,
+          photoQuality: 0.92,
+          decisionPolicy: 'conservadora_v1',
+          motivosRevision: []
         }
       })
       .expect(409);
@@ -173,11 +185,69 @@ describe('calificación OMR payload estricto', () => {
           confianzaPromedioPagina: 0.65,
           ratioAmbiguas: 0.15,
           templateVersionDetectada: 3,
-          revisionConfirmada: true
+          revisionConfirmada: true,
+          engineVersion: 'omr-v3-cv',
+          engineUsed: 'cv',
+          geomQuality: 0.71,
+          photoQuality: 0.74,
+          decisionPolicy: 'conservadora_v1',
+          motivosRevision: ['bajo_contraste']
         }
       })
       .expect(422);
 
     expect(respuesta.body.error.codigo).toBe('OMR_REVISION_METADATA_OBLIGATORIA');
+  });
+
+  it('bloquea guardado final cuando estadoAnalisis!=ok y no hay revisionConfirmada', async () => {
+    const base = await crearEscenarioBase(app);
+
+    const respuesta = await request(app)
+      .post('/api/calificaciones/calificar')
+      .set(base.auth)
+      .send({
+        examenGeneradoId: base.examenGeneradoId,
+        folio: base.folio,
+        alumnoId: base.alumnoId,
+        respuestasDetectadas: [{ numeroPregunta: 1, opcion: 'A', confianza: 0.72 }],
+        omrAnalisis: {
+          estadoAnalisis: 'requiere_revision',
+          calidadPagina: 0.75,
+          confianzaPromedioPagina: 0.72,
+          ratioAmbiguas: 0.2,
+          templateVersionDetectada: 3,
+          engineVersion: 'omr-v3-cv',
+          engineUsed: 'cv',
+          geomQuality: 0.79,
+          photoQuality: 0.73,
+          decisionPolicy: 'conservadora_v1',
+          motivosRevision: ['bajo_contraste']
+        }
+      })
+      .expect(409);
+
+    expect(respuesta.body.error.codigo).toBe('OMR_ESTADO_ANALISIS_BLOQUEANTE');
+  });
+
+  it('rechaza paginasOmr sin omrAnalisis completo', async () => {
+    const base = await crearEscenarioBase(app);
+
+    const respuesta = await request(app)
+      .post('/api/calificaciones/calificar')
+      .set(base.auth)
+      .send({
+        examenGeneradoId: base.examenGeneradoId,
+        folio: base.folio,
+        alumnoId: base.alumnoId,
+        paginasOmr: [
+          {
+            numeroPagina: 1,
+            imagenBase64: 'data:image/png;base64,AQIDBA=='
+          }
+        ]
+      })
+      .expect(400);
+
+    expect(respuesta.body.error.codigo).toBe('VALIDACION');
   });
 });

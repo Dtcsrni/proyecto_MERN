@@ -4,6 +4,13 @@ export class ErrorOmrCvNoDisponible extends Error {
   code = 'OMR_CV_NO_DISPONIBLE' as const;
 }
 
+type EstadoSmokeOmrCv = {
+  enabled: boolean;
+  backend: 'opencv' | 'simple';
+  cvDisponible: boolean;
+  motivo?: string;
+};
+
 function limpiarBase64(entrada: string) {
   return String(entrada ?? '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '').trim();
 }
@@ -19,6 +26,11 @@ async function validarBackendOpenCv() {
   }
 }
 
+function resolverBackendCv(): 'opencv' | 'simple' {
+  const backend = String(process.env.OMR_CV_BACKEND ?? 'simple').trim().toLowerCase();
+  return backend === 'opencv' ? 'opencv' : 'simple';
+}
+
 export function debeIntentarMotorCv(templateVersion?: number) {
   const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
   const enabled = !['0', 'false', 'off', 'no'].includes(enabledRaw);
@@ -30,8 +42,45 @@ export function describirErrorCv(error: unknown) {
   return 'fallo desconocido';
 }
 
+export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
+  const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
+  const enabled = !['0', 'false', 'off', 'no'].includes(enabledRaw);
+  const backend = resolverBackendCv();
+  if (!enabled) {
+    return {
+      enabled,
+      backend,
+      cvDisponible: false,
+      motivo: 'OMR_CV_ENGINE_ENABLED desactivado'
+    };
+  }
+  if (backend !== 'opencv') {
+    return {
+      enabled,
+      backend,
+      cvDisponible: false,
+      motivo: 'OMR_CV_BACKEND=simple (modo fallback explícito)'
+    };
+  }
+  try {
+    await validarBackendOpenCv();
+    return {
+      enabled,
+      backend,
+      cvDisponible: true
+    };
+  } catch (error) {
+    return {
+      enabled,
+      backend,
+      cvDisponible: false,
+      motivo: describirErrorCv(error)
+    };
+  }
+}
+
 export async function preprocesarImagenOmrCv(imagenBase64: string) {
-  const backend = String(process.env.OMR_CV_BACKEND ?? 'simple').trim().toLowerCase();
+  const backend = resolverBackendCv();
   if (backend === 'opencv') {
     await validarBackendOpenCv();
   }

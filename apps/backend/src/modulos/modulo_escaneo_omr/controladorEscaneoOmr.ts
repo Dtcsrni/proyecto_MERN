@@ -41,7 +41,7 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
       throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'Imagen OMR invalida o corrupta', 400);
     }
   }
-  const match = textoQr ? /EXAMEN:([A-Z0-9-]+):P(\d+)(?::TV(\d+))?/i.exec(textoQr) : null;
+  const match = textoQr ? /EXAMEN:([A-Z0-9-]+):P(\d+):TV(3)/i.exec(textoQr) : null;
   const folioDetectado = match?.[1]?.toUpperCase() ?? '';
   const paginaDetectada = match?.[2] ? Number(match[2]) : undefined;
   const templateQr = match?.[3] ? Number(match[3]) : undefined;

@@ -35,3 +35,12 @@ EscaneoOmrArchivadoSchema.index({ docenteId: 1, alumnoId: 1, materia: 1, created
 
 export const EscaneoOmrArchivado =
   models.EscaneoOmrArchivado ?? model('EscaneoOmrArchivado', EscaneoOmrArchivadoSchema);
+
+export async function asegurarIndicesEscaneoOmrArchivado() {
+  try {
+    await EscaneoOmrArchivado.collection.dropIndex('examenGeneradoId_1_numeroPagina_1');
+  } catch {
+    // Índice legacy puede no existir; no bloquear arranque.
+  }
+  await EscaneoOmrArchivado.syncIndexes();
+}

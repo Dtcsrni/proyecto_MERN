@@ -57,7 +57,7 @@ FEATURE_PDF_BUILDER_V2=25    // Equivalente en porcentaje
 - Genera texto QR por página
 
 **LayoutExamen** (domain/layoutExamen.ts):
-- Value objects para perfiles OMR (v1/v2)
+- Value objects para perfil OMR TV3
 - Configuración de posiciones de burbujas
 - Resolver de perfil según env vars
 
@@ -65,7 +65,7 @@ FEATURE_PDF_BUILDER_V2=25    // Equivalente en porcentaje
 
 **ConfiguracionLayoutEnv** (infra/configuracionLayoutEnv.ts):
 - Parser de variables de entorno:
-  - `EXAMEN_LAYOUT_VERSION` (1|2)
+  - `EXAMEN_LAYOUT_VERSION` (3)
   - `EXAMEN_LAYOUT_CONFIGURACION` (JSON opcional)
 - Defaults seguros
 
@@ -102,7 +102,7 @@ FEATURE_PDF_BUILDER_V2=25    // Equivalente en porcentaje
 FEATURE_PDF_BUILDER_V2=0  # 0..1 o 0..100 (default: 0)
 
 # Configuración de layout OMR
-EXAMEN_LAYOUT_VERSION=2           # Versión plantilla (1|2)
+EXAMEN_LAYOUT_VERSION=3           # Versión plantilla (TV3-only)
 EXAMEN_LAYOUT_CONFIGURACION='{}'  # JSON opcional con overrides
 ```
 
@@ -135,7 +135,7 @@ interface ParametrosGeneracionPdf {
   respuestasClave?: RespuestasClave;
   variante?: string; // A, B, C, D
   folio?: string;
-  templateVersion?: TemplateVersion; // 'v1' | 'v2'
+  templateVersion?: TemplateVersion; // 3
 }
 
 interface ResultadoGeneracionPdf {
@@ -157,7 +157,7 @@ POST /api/examenes/:id/pdf
 Body: {
   variante?: string,
   folio?: string,
-  templateVersion?: 'v1' | 'v2'
+  templateVersion?: 3
 }
 Response: PDF buffer (Content-Type: application/pdf)
 ```
@@ -171,7 +171,7 @@ Response: PDF buffer (Content-Type: application/pdf)
 - ✅ Generación de códigos QR
 
 **TODO (Ola 2B completa):**
-- Tests de paridad v1 vs v2 (comparación de output)
+- Tests de transición histórica (comparación de output legacy vs TV3)
 - Tests unitarios de domain entities
 - Tests de integración PDFKit renderer
 - Performance tests (latency p95 <500ms)
@@ -197,7 +197,6 @@ Response: PDF buffer (Content-Type: application/pdf)
 - Todos los tests pasando
 
 **⏳ Pendiente (Implementación completa):**
-- Tests de paridad v1/v2
 - Métricas de observabilidad v2
 - Canary rollout gradual en producción
 
@@ -217,7 +216,7 @@ npm run bigbang:olas:strict  # ✅ PASSED
 2. **Preservación legacy completa:**
    - Cero risk en producción
    - Fallback inmediato
-   - Permite comparación v1/v2 en tests
+   - Permite comparación histórica en tests
 
 3. **DDD/Clean Architecture:**
    - Separación domain/infra para testability
@@ -227,7 +226,7 @@ npm run bigbang:olas:strict  # ✅ PASSED
 4. **Configuración desde env vars:**
    - Flexibilidad por ambiente (dev/staging/prod)
    - Sin hardcode de perfiles OMR
-   - Defaults seguros (v2, PERFIL_OMR_V2)
+   - Defaults seguros (TV3)
 
 5. **PDFKit sobre otras librerías:**
    - Ya usado en legacy (cero learning curve)

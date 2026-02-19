@@ -18,7 +18,7 @@
       "owner": "@backend-pdf",
       "dueDate": "2026-03-31",
       "status": "temporary",
-      "reason": "Migración progresiva v1/v2 con paridad en curso."
+      "reason": "Migración progresiva de versionado histórico con paridad en curso."
     },
     {
       "id": "backend-sync",

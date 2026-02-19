@@ -108,20 +108,6 @@ export const esquemaCalificarExamen = z
       });
     }
 
-    if (data.omrAnalisis.estadoAnalisis !== 'ok' && data.omrAnalisis.revisionConfirmada) {
-      const faltantesRevision = [
-        data.omrAnalisis.usuarioRevisor ? null : 'usuarioRevisor',
-        data.omrAnalisis.revisionTimestamp ? null : 'revisionTimestamp',
-        data.omrAnalisis.motivoRevisionManual ? null : 'motivoRevisionManual'
-      ].filter((item): item is string => Boolean(item));
-      if (faltantesRevision.length > 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `revisionConfirmada requiere metadata completa (${faltantesRevision.join(', ')})`,
-          path: ['omrAnalisis']
-        });
-      }
-    }
   });
 
 export const esquemaResolverSolicitudRevision = z

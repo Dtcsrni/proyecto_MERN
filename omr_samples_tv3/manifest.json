@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "datasetType": "real_tv3",
+  "hash": "pending-real-tv3-dataset-hash",
+  "thresholds": {
+    "recall_marked": 0.97,
+    "precision_marked": 0.98,
+    "false_positive_marked": 0.003,
+    "auto_grade_wrong": 0
+  },
+  "capturas": []
+}

@@ -19,22 +19,19 @@ Commit de referencia: `15f7d35`.
 - API v2 activa para OMR/PDF:
   - `/api/v2/omr/*`
   - `/api/v2/examenes/*`
-  - adaptación v1->v2 instrumentada en rutas v1 de exámenes (`/api/examenes`).
-  - OMR opera en modo v2-only (sin ruta `/api/omr/*` ni fallback runtime a legacy).
+  - OMR/PDF operan en contrato TV3-only para auto-calificación.
 - Gate dual de performance activo:
   - rápido PR: `npm run perf:check`
   - negocio autenticado: `npm run perf:check:business`
 - Frontend docente con cierre de Ola 1 en estado operativo.
 
-## Actualización 2026-02-16 (estado vigente OMR)
-- OMR backend en modo v2-only:
+## Actualización 2026-02-19 (estado vigente OMR)
+- OMR backend en modo TV3-only:
   - fachada: `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts`
   - motor operativo: `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts`
   - endpoint vigente: `/api/v2/omr/analizar`
 - Retirado del runtime:
-  - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
-  - ruta `/api/omr/*`
-  - fallback explícito OMR v1 en fachada.
+  - compatibilidad operativa de plantillas previas para auto-calificación.
 - Nota: las secciones de cortes 2026-02-13 y 2026-02-14 se mantienen como registro histórico de migración.
 
 ## Corte de modularización docente (real)
@@ -103,7 +100,7 @@ Commit de referencia: `15f7d35`.
   - Estructura de capas creada:
     - `application/usecases/generarExamenIndividual.ts` (stub con delegación a legado)
     - `domain/examenPdf.ts` (entidad con validaciones)
-    - `domain/layoutExamen.ts` (value objects para perfiles OMR v1/v2)
+    - `domain/layoutExamen.ts` (value objects de layout OMR TV3)
     - `infra/configuracionLayoutEnv.ts` (parsing de vars `EXAMEN_LAYOUT_*`)
     - `infra/pdfKitRenderer.ts` (stub para rendering completo)
     - `shared/tiposPdf.ts` (tipos, DTOs, constantes compartidas)
@@ -143,7 +140,7 @@ Commit de referencia: `15f7d35`.
 - Validación completa post-reconocimiento:
   - `npm run bigbang:olas:check`: verde (ola0 OK, ola1 OK, ola2-ready OK)
   - `npm run bigbang:olas:strict`: verde (todas las gates strict OK)
-- Tests de paridad v1/v2 implementados (histórico):
+- Tests de transición histórica implementados (histórico, no operativos):
   - `apps/backend/tests/omr.paridad.test.ts`: 5 tests validando equivalencia OMR legacy vs pipeline v2
   - `apps/backend/tests/pdf.paridad.test.ts`: 8 tests validando equivalencia PDF legacy vs DDD v2
   - Gate de calidad para habilitar feature flags en producción
@@ -221,7 +218,7 @@ Commit de referencia: `15f7d35`.
     - `apps/backend/src/modulos/modulo_escaneo_omr/infra/`
   - meta técnica del sprint cumplida: `servicioOmrLegacy.ts` = 1400 líneas (histórico).
 - Ola 3 mínima OMR validada:
-  - paridad v1/v2 y métricas de transición validadas en:
+- paridad histórica y métricas de transición validadas en:
     - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
 - Validación completa del sprint (verde):
   - `npm -C apps/backend run lint`
@@ -422,7 +419,7 @@ Commit de referencia: `15f7d35`.
 | RF-09 | Funcional | Sincronizacion entre equipos por paquete export/import | Exportar/importar/listar mantiene shape contractual y checksums | `apps/backend/tests/sincronizacion.contrato.test.ts` | `npm -C apps/backend run test -- tests/sincronizacion.contrato.test.ts` | cumple |
 | RF-10 | Funcional | Publicacion y consulta de analiticas academicas | Exportes academicos existen con integridad SHA-256 verificable | `docs/INVENTARIO_PROYECTO.md` (seccion salida academica), `docs/RUNBOOK_OPERACION.md` | `npm run test:flujo-docente:ci` | cumple |
 | RF-11 | Funcional | UX docente/alumno en secciones criticas | Pantallas clave renderizan ayudas, navegacion y acciones minimas | `apps/frontend/tests/ux.quality.test.tsx`, `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx` | `npm run test:ux-quality:ci` | cumple |
-| RF-12 | Funcional | Versionado de API v1/v2 en dominios OMR/PDF | Contratos v2 y coexistencia con v1 se validan sin ruptura funcional | `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts` | `npm -C apps/backend run test -- tests/integracion/versionadoApiV2Contratos.test.ts` | cumple |
+| RF-12 | Funcional | Contrato TV3-only en OMR/PDF productivo | Contratos OMR/PDF validan formato TV3 y bloquean auto-calificacion fuera de TV3 | `apps/backend/tests/integracion/qrEscaneoOmr.test.ts`, `apps/backend/tests/calificacion.omr.payload.test.ts` | `npm -C apps/backend run test -- tests/integracion/qrEscaneoOmr.test.ts tests/calificacion.omr.payload.test.ts` | cumple |
 | RNF-01 | No funcional | Seguridad de entradas (sanitizacion) | Claves peligrosas `$` y con `.` se eliminan en body/query/params | `apps/backend/tests/sanitizarMongo.test.ts` | `npm -C apps/backend run test -- tests/sanitizarMongo.test.ts` | cumple |
 | RNF-02 | No funcional | Proteccion contra abuso por rate limiting | Exceso de solicitudes devuelve `429` con `retry-after` | `apps/backend/tests/rateLimit.test.ts` | `npm -C apps/backend run test -- tests/rateLimit.test.ts` | cumple |
 | RNF-03 | No funcional | Seguridad de sincronizacion cloud por API key | Endpoints sensibles del portal rechazan sin/invalid `x-api-key` | `apps/portal_alumno_cloud/tests/apiKey.test.ts` | `npm -C apps/portal_alumno_cloud run test -- tests/apiKey.test.ts` | cumple |
