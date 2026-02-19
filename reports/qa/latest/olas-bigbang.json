@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-16T21:54:54.423Z",
-  "strict": false,
+  "generatedAt": "2026-02-19T03:54:32.669Z",
+  "strict": true,
   "completion": true,
   "model": {
     "readinessVsCompletion": "Este reporte valida readiness tecnico; completitud funcional requiere retiro/encapsulado final de legado.",
@@ -11,9 +11,9 @@
     "ola0Passed": true,
     "ola1Passed": false,
     "ola2Ready": true,
-    "ola2Completed": false,
+    "ola2Completed": true,
     "ola3Ready": true,
-    "strictPassed": null,
+    "strictPassed": false,
     "previousWavesGuaranteed": false,
     "nextWaveReadyToExecute": false
   },
@@ -46,7 +46,7 @@
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/AppDocente.tsx",
       "ok": false,
-      "detail": "apps/frontend/src/apps/app_docente/AppDocente.tsx: 810 lineas"
+      "detail": "apps/frontend/src/apps/app_docente/AppDocente.tsx: 1162 lineas"
     },
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/SeccionPlantillas.tsx",
@@ -61,7 +61,7 @@
     {
       "id": "ola1.size.apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx",
       "ok": false,
-      "detail": "apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx: 858 lineas"
+      "detail": "apps/frontend/src/apps/app_docente/SeccionEscaneo.tsx: 931 lineas"
     },
     {
       "id": "ola1.legacy.folder.removed",
@@ -83,17 +83,17 @@
       "ok": true,
       "detail": {
         "fachada": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts: 35",
-        "motorV2": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts: 1532",
+        "motorV2": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts: 1783",
         "pipeline": "omr/pipeline exists: true"
       }
     },
     {
       "id": "ola2b.pdf.segmented",
-      "ok": false,
+      "ok": true,
       "detail": {
-        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 128",
+        "fachada": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts: 60",
         "legado": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts: 1402",
-        "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1365",
+        "controller": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts: 1348",
         "capas": [
           {
             "dir": "application/usecases",
@@ -163,15 +163,13 @@
       "ok": true,
       "detail": {
         "criterio": "referencias a servicioGeneracionPdfLegacy solo en fachada/use case puente",
-        "refsEncontradas": [
-          "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts:7:import { generarPdfExamen as generarPdfExamenLegacy } from './servicioGeneracionPdfLegacy';"
-        ],
+        "refsEncontradas": [],
         "refsFueraDeAllowlist": []
       }
     },
     {
       "id": "ola2b.completion.no.v1.fallback",
-      "ok": false,
+      "ok": true,
       "detail": "servicioGeneracionPdf.ts sin fallback explicito al motor legado"
     },
     {
@@ -230,7 +228,50 @@
       "detail": "scripts de gates requeridos para ola 3 estan definidos"
     }
   ],
-  "strictResults": [],
+  "strictResults": [
+    {
+      "ok": false,
+      "command": "npm run lint",
+      "error": "Command failed: npm run lint"
+    },
+    {
+      "ok": true,
+      "command": "npm run typecheck"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:backend:ci"
+    },
+    {
+      "ok": true,
+      "command": "npm run test:portal:ci"
+    },
+    {
+      "ok": false,
+      "command": "npm run test:frontend:ci",
+      "error": "Command failed: npm run test:frontend:ci"
+    },
+    {
+      "ok": false,
+      "command": "npm run test:coverage:ci",
+      "error": "Command failed: npm run test:coverage:ci"
+    },
+    {
+      "ok": false,
+      "command": "npm run perf:check",
+      "error": "Command failed: npm run perf:check"
+    },
+    {
+      "ok": false,
+      "command": "npm run canary:rollout:check",
+      "error": "Command failed: npm run canary:rollout:check"
+    },
+    {
+      "ok": false,
+      "command": "npm run pipeline:contract:check",
+      "error": "Command failed: npm run pipeline:contract:check"
+    }
+  ],
   "ola2Targets": [
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts",
@@ -238,11 +279,11 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts",
-      "lines": 1532
+      "lines": 1783
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/controladorGeneracionPdf.ts",
-      "lines": 1365
+      "lines": 1348
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdfLegacy.ts",
@@ -250,7 +291,7 @@
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts",
-      "lines": 128
+      "lines": 60
     },
     {
       "filePath": "apps/backend/src/modulos/modulo_sincronizacion_nube/controladorSincronizacion.ts",

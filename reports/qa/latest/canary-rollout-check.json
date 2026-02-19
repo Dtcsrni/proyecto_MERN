@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-16T00:45:14.648Z",
+  "generatedAt": "2026-02-19T03:55:34.924Z",
   "checks": [
     {
       "id": "exists:apps/backend/src/compartido/observabilidad/rolloutCanary.ts",
@@ -44,7 +44,7 @@
       "command": "npm -C apps/backend run test -- tests/canaryRollout.policy.test.ts",
       "ok": true,
       "code": 0,
-      "stdout": "> backend@0.2.0-beta.1 test\n> vitest run tests/canaryRollout.policy.test.ts\n\n\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mV:/Software/Generador_Examenes_Universitarios_MERN/sistema-evaluacion-universitaria/apps/backend\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/canaryRollout.policy.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m8 passed\u001b[39m\u001b[22m\u001b[90m (8)\u001b[39m\n\u001b[2m   Start at \u001b[22m 18:45:14\n\u001b[2m   Duration \u001b[22m 186ms\u001b[2m (transform 44ms, setup 42ms, import 16ms, tests 5ms, environment 0ms)\u001b[22m",
+      "stdout": "> backend@0.2.0-beta.1 test\n> vitest run tests/canaryRollout.policy.test.ts\n\n\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mV:/Software/Generador_Examenes_Universitarios_MERN/sistema-evaluacion-universitaria/apps/backend\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/canaryRollout.policy.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m8 passed\u001b[39m\u001b[22m\u001b[90m (8)\u001b[39m\n\u001b[2m   Start at \u001b[22m 21:55:34\n\u001b[2m   Duration \u001b[22m 801ms\u001b[2m (transform 399ms, setup 264ms, import 162ms, tests 9ms, environment 0ms)\u001b[22m",
       "stderr": ""
     }
   ],

@@ -1,9 +1,0 @@
-# [BLOQUE DIDACTICO] server/.dockerignore
-# Que es: Filtro de contexto de build Docker del backend.
-# Que hace: Evita enviar archivos innecesarios al construir la imagen.
-# Como lo hace: Excluye node_modules, dist y artefactos locales no requeridos.
-
-node_modules
-dist
-npm-debug.log*
-.env
