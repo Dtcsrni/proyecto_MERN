@@ -18,7 +18,7 @@ import {
   extraerSubimagenRgba,
   mediaEnVentana,
   obtenerTransformacion
-} from './infra/imagenProcesamientoLegacy';
+} from './infra/imagenProcesamientoCv';
 
 type OpcionRespuestaOmr = 'A' | 'B' | 'C' | 'D' | 'E';
 
@@ -52,7 +52,6 @@ export type ResultadoOmr = {
   confianzaPromedioPagina: number;
   ratioAmbiguas: number;
   engineVersion: 'omr-v3-cv';
-  engineUsed: 'cv' | 'legacy';
   geomQuality: number;
   photoQuality: number;
   decisionPolicy: 'conservadora_v1';
@@ -156,9 +155,7 @@ const OMR_VERT_STEP = Number.parseFloat(process.env.OMR_VERT_STEP || '2');
 const OMR_OFFSET_X = Number.parseFloat(process.env.OMR_OFFSET_X || String(GEOMETRIA_OMR_DEFAULT.offsetX));
 const OMR_OFFSET_Y = Number.parseFloat(process.env.OMR_OFFSET_Y || String(GEOMETRIA_OMR_DEFAULT.offsetY));
 const OMR_FID_RIGHT_OFFSET_PTS = Number.parseFloat(process.env.OMR_FID_RIGHT_OFFSET_PTS || '30');
-const OMR_BUBBLE_RADIUS_PTS = Number.parseFloat(process.env.OMR_BUBBLE_RADIUS_PTS || '3.4');
 const OMR_BOX_WIDTH_PTS = Number.parseFloat(process.env.OMR_BOX_WIDTH_PTS || '42');
-const OMR_CENTER_TO_LEFT_PTS = Number.parseFloat(process.env.OMR_CENTER_TO_LEFT_PTS || '9.2');
 const OMR_LOCAL_DRIFT_PENALTY = Number.parseFloat(process.env.OMR_LOCAL_DRIFT_PENALTY || '0.08');
 const OMR_LOCAL_SEARCH_RATIO = Number.parseFloat(process.env.OMR_LOCAL_SEARCH_RATIO || String(GEOMETRIA_OMR_DEFAULT.localSearchRatio));
 const OMR_MAX_CENTER_DRIFT_RATIO = Number.parseFloat(process.env.OMR_MAX_CENTER_DRIFT_RATIO || '0.42');
@@ -1324,7 +1321,6 @@ function fusionarResultadosOmr(base: ResultadoOmr, rescate: ResultadoOmr): Resul
     confianzaPromedioPagina,
     ratioAmbiguas,
     engineVersion: principal.engineVersion,
-    engineUsed: principal.engineUsed,
     geomQuality: Math.max(base.geomQuality, rescate.geomQuality),
     photoQuality: Math.max(base.photoQuality, rescate.photoQuality),
     decisionPolicy: 'conservadora_v1'
@@ -1750,7 +1746,6 @@ export async function analizarOmr(
     confianzaPromedioPagina: confianzaMedia,
     ratioAmbiguas,
     engineVersion: 'omr-v3-cv',
-    engineUsed: 'legacy',
     geomQuality,
     photoQuality: clamp01(photoQuality),
     decisionPolicy: 'conservadora_v1'

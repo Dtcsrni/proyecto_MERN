@@ -7,7 +7,7 @@ import { clienteApi } from '../src/apps/app_docente/clienteApiDocente';
 
 vi.mock('../src/apps/app_docente/clienteApiDocente', () => {
   const enviar = vi.fn(async (ruta: string, payload: unknown) => {
-    if (ruta === '/v2/omr/analizar') {
+    if (ruta === '/omr/analizar') {
       const body = payload as { numeroPagina?: number };
       if (Number(body?.numeroPagina) === 1) {
         return {

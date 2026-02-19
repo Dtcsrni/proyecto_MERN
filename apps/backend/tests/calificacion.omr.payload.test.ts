@@ -126,7 +126,6 @@ describe('calificación OMR payload estricto', () => {
           ratioAmbiguas: 0,
           templateVersionDetectada: 3,
           engineVersion: 'omr-v3-cv',
-          engineUsed: 'cv',
           geomQuality: 0.91,
           photoQuality: 0.92,
           decisionPolicy: 'conservadora_v1',
@@ -156,7 +155,6 @@ describe('calificación OMR payload estricto', () => {
           ratioAmbiguas: 0,
           templateVersionDetectada: 3,
           engineVersion: 'omr-v3-cv',
-          engineUsed: 'cv',
           geomQuality: 0.91,
           photoQuality: 0.92,
           decisionPolicy: 'conservadora_v1',
@@ -187,7 +185,6 @@ describe('calificación OMR payload estricto', () => {
           templateVersionDetectada: 3,
           revisionConfirmada: true,
           engineVersion: 'omr-v3-cv',
-          engineUsed: 'cv',
           geomQuality: 0.71,
           photoQuality: 0.74,
           decisionPolicy: 'conservadora_v1',
@@ -217,7 +214,6 @@ describe('calificación OMR payload estricto', () => {
           ratioAmbiguas: 0.2,
           templateVersionDetectada: 3,
           engineVersion: 'omr-v3-cv',
-          engineUsed: 'cv',
           geomQuality: 0.79,
           photoQuality: 0.73,
           decisionPolicy: 'conservadora_v1',
@@ -251,3 +247,4 @@ describe('calificación OMR payload estricto', () => {
     expect(respuesta.body.error.codigo).toBe('VALIDACION');
   });
 });
+

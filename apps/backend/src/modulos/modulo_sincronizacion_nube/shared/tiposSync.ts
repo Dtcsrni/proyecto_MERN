@@ -1,7 +1,7 @@
 /**
  * Tipos internos del modulo de sincronizacion nube.
  */
-import type { PaqueteSincronizacionV1 } from '../sincronizacionInterna';
+import type { PaqueteSincronizacionV2 } from '../sincronizacionInterna';
 
 export type ContextoSyncDocente = {
   docenteId: string;
@@ -66,7 +66,7 @@ export interface PaqueteAssembler {
     desde?: Date | null;
     incluirPdfs: boolean;
   }): Promise<{
-    paquete: PaqueteSincronizacionV1;
+    paquete: PaqueteSincronizacionV2;
     paqueteBase64: string;
     checksumSha256: string;
     checksumGzipSha256: string;

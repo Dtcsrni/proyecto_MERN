@@ -151,7 +151,7 @@ export function consolidarResultadoOmrExamen(paginas: RevisionPaginaOmr[]): Resu
   const calidadPagina = promedio(paginas.map((pagina) => Number(pagina.resultado.calidadPagina || 0)));
   const confianzaPromedioPagina = promedio(paginas.map((pagina) => Number(pagina.resultado.confianzaPromedioPagina || 0)));
   const ratioAmbiguas = promedio(paginas.map((pagina) => Number(pagina.resultado.ratioAmbiguas || 0)));
-  const templateVersionDetectada: 1 | 2 = paginas.some((pagina) => pagina.resultado.templateVersionDetectada === 2) ? 2 : 1;
+  const templateVersionDetectada = 3 as const;
   const qrTextos = paginas.map((pagina) => pagina.resultado.qrTexto).filter((valor): valor is string => typeof valor === 'string' && valor.length > 0);
 
   return {
@@ -185,7 +185,7 @@ export function normalizarResultadoOmr(entrada: Partial<ResultadoOmr> | null | u
         ? entrada.estadoAnalisis
         : 'requiere_revision',
     motivosRevision: Array.isArray(entrada?.motivosRevision) ? entrada!.motivosRevision : [],
-    templateVersionDetectada: entrada?.templateVersionDetectada === 2 ? 2 : 1,
+    templateVersionDetectada: 3,
     confianzaPromedioPagina: Number.isFinite(Number(entrada?.confianzaPromedioPagina)) ? Number(entrada?.confianzaPromedioPagina) : 0,
     ratioAmbiguas: Number.isFinite(Number(entrada?.ratioAmbiguas)) ? Number(entrada?.ratioAmbiguas) : 0
   };

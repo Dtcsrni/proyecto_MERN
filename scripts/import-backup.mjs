@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { createHmac } from 'node:crypto';
 
-const BACKUP_LOGIC_FINGERPRINT = 'sync-v1-lww-updatedAt-schema1';
+const BACKUP_LOGIC_FINGERPRINT = 'sync-v2-lww-updatedAt-schema2';
 
 function parseEnvFile(ruta) {
   const contenido = readFileSync(ruta, 'utf8');

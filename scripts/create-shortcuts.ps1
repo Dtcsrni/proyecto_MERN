@@ -29,7 +29,7 @@ if (-not (Test-Path $outPath)) {
 }
 
 if ($Force) {
-  # Limpia accesos previos para evitar duplicados (incluye "Bandeja" y legacy).
+  # Limpia accesos previos para evitar duplicados (incluye "Bandeja" y accesos antiguos).
   foreach ($pattern in @('Sistema Evaluacion - *.lnk', 'EvaluaPro - *.lnk', 'Sistema EvaluaPro - *.lnk')) {
     Get-ChildItem -Path $outPath -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
       try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue } catch {}

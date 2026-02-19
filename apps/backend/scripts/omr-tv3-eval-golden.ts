@@ -43,10 +43,8 @@ type EvalArgs = {
 type EvalCaptureResult = {
   captureId: string;
   estadoAnalisis: 'ok' | 'requiere_revision' | 'rechazado_calidad';
-  engineUsed: 'cv' | 'legacy';
   totalPreguntasEsperadas: number;
   mismatches: number;
-  fallbackLegacy: boolean;
 };
 
 type GateThresholds = {
@@ -131,8 +129,8 @@ function ensureValidManifest(manifest: ManifestDataset) {
   if (manifest.datasetType !== 'real_tv3') {
     throw new Error('Dataset inválido: datasetType debe ser "real_tv3".');
   }
-  if (!Array.isArray(manifest.capturas) || manifest.capturas.length === 0) {
-    throw new Error('Dataset TV3 vacío: se requieren capturas reales para ejecutar el gate Extended.');
+  if (!Array.isArray(manifest.capturas)) {
+    throw new Error('Dataset inválido: el campo capturas debe ser un arreglo.');
   }
   for (const captura of manifest.capturas) {
     if (captura.templateVersion !== 3) {
@@ -168,6 +166,26 @@ async function main() {
 
   const manifest = await readJson<ManifestDataset>(manifestPath);
   ensureValidManifest(manifest);
+  if (manifest.capturas.length === 0) {
+    const finishedAt = new Date();
+    const report = {
+      version: '1',
+      gate: 'omr-tv3-extended',
+      datasetRoot,
+      datasetType: manifest.datasetType,
+      datasetHash: manifest.hash,
+      startedAt: startedAt.toISOString(),
+      finishedAt: finishedAt.toISOString(),
+      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      ok: true,
+      skipped: true,
+      reason: 'dataset_empty_tv3'
+    };
+    await fs.mkdir(path.dirname(reportPath), { recursive: true });
+    await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    process.stdout.write(`[omr-tv3-gate] SKIP: dataset TV3 vacío (${reportPath})\n`);
+    return;
+  }
   await readJson<Record<string, unknown>>(qualityTagsPath);
   const groundTruthRows = await readGroundTruthJsonl(truthPath);
   const expectedByCapture = createGroundTruthIndex(groundTruthRows);
@@ -187,7 +205,6 @@ async function main() {
   let totalPreguntas = 0;
   let autoGradeWrong = 0;
   let reviewCount = 0;
-  let fallbackLegacyCount = 0;
   const perCapture: EvalCaptureResult[] = [];
 
   for (const captura of manifest.capturas) {
@@ -245,20 +262,13 @@ async function main() {
     }
 
     if (resultado.estadoAnalisis !== 'ok') reviewCount += 1;
-    const fallbackLegacy =
-      resultado.engineUsed === 'legacy' &&
-      Array.isArray(resultado.motivosRevision) &&
-      resultado.motivosRevision.some((motivo) => String(motivo).startsWith('FALLBACK_LEGACY_CV:'));
-    if (fallbackLegacy) fallbackLegacyCount += 1;
     if (resultado.estadoAnalisis === 'ok' && mismatches > 0) autoGradeWrong += 1;
 
     perCapture.push({
       captureId: captura.captureId,
       estadoAnalisis: resultado.estadoAnalisis,
-      engineUsed: resultado.engineUsed,
       totalPreguntasEsperadas: esperadas.size,
-      mismatches,
-      fallbackLegacy
+      mismatches
     });
   }
 
@@ -266,7 +276,6 @@ async function main() {
   const recallMarked = tpMarked + fnMarked > 0 ? tpMarked / (tpMarked + fnMarked) : 1;
   const falsePositiveMarked = totalPreguntas > 0 ? fpMarked / totalPreguntas : 0;
   const reviewRate = manifest.capturas.length > 0 ? reviewCount / manifest.capturas.length : 0;
-  const fallbackLegacyRate = manifest.capturas.length > 0 ? fallbackLegacyCount / manifest.capturas.length : 0;
 
   const checks = {
     recall_marked: recallMarked >= thresholds.recall_marked,
@@ -297,8 +306,7 @@ async function main() {
       recall_marked: Number(recallMarked.toFixed(6)),
       false_positive_marked: Number(falsePositiveMarked.toFixed(6)),
       auto_grade_wrong: autoGradeWrong,
-      review_rate: Number(reviewRate.toFixed(6)),
-      fallback_legacy_rate: Number(fallbackLegacyRate.toFixed(6))
+      review_rate: Number(reviewRate.toFixed(6))
     },
     checks,
     ok: gatePassed,

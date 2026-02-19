@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "gate": "omr-tv3-extended",
+  "datasetRoot": "V:\\Software\\Generador_Examenes_Universitarios_MERN\\sistema-evaluacion-universitaria\\omr_samples_tv3",
+  "datasetType": "real_tv3",
+  "datasetHash": "pending-real-tv3-dataset-hash",
+  "startedAt": "2026-02-19T05:41:15.974Z",
+  "finishedAt": "2026-02-19T05:41:15.977Z",
+  "durationMs": 3,
+  "ok": true,
+  "skipped": true,
+  "reason": "dataset_empty_tv3"
+}

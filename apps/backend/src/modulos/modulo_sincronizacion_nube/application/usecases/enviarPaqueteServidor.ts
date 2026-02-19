@@ -57,7 +57,7 @@ export async function enviarPaqueteServidorUseCase(params: {
         docenteId: String(docenteId),
         paqueteBase64,
         checksumSha256,
-        schemaVersion: 1,
+        schemaVersion: 2,
         exportadoEn,
         ...(desde ? { desde: desde.toISOString() } : {}),
         ...(periodoId ? { periodoId } : {}),

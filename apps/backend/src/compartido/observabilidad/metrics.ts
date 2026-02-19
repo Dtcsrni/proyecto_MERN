@@ -4,9 +4,7 @@
  * Responsabilidad: Punto comun de metricas/logs/correlacion para operacion.
  * Limites: Evitar romper nombres de metricas o formato de log en produccion.
  */
-import { exportarMetricasAdopcion } from './metricsAdopcion';
 import { exportarEstadosCircuitBreaker } from '../robustez/circuitBreaker';
-import { exportarMetricasObjetivoCanary } from './rolloutCanary';
 
 const inicioDelProceso = Date.now();
 
@@ -30,16 +28,8 @@ const resultadosOmrTotales = {
   confianzaAcumulada: 0,
   ratioAmbiguasAcumulado: 0,
   calidadAcumulada: 0,
-  muestras: 0
-};
-const omrEngineTotales = {
-  cv: 0,
-  legacy: 0,
-  fallbackLegacy: 0
-};
-const esquemaVersionadoTotales = {
-  fallbackReads: 0,
-  v2Writes: 0
+  muestras: 0,
+  cv: 0
 };
 
 const cubetasMs = [25, 50, 100, 250, 500, 1000, 2500, 5000];
@@ -90,8 +80,6 @@ export function registrarOmrEtapa(
   etapasOmrTotales.set(claveTotal, (etapasOmrTotales.get(claveTotal) ?? 0) + 1);
   etapasOmrDuracionMs.set(etapa, (etapasOmrDuracionMs.get(etapa) ?? 0) + Math.max(0, duracionMs));
   if (!exito && requestId) {
-    // requestId queda disponible para correlacion en logs del middleware;
-    // aqui solo contabilizamos sin exponer datos sensibles.
     void requestId;
   }
 }
@@ -105,33 +93,19 @@ export function registrarOmrPipeline(exito: boolean, duracionMs: number, request
   }
 }
 
-export function registrarOmrResultadoAnalisis(
-  estadoAnalisis: 'ok' | 'requiere_revision' | 'rechazado_calidad',
-  confianzaPromedioPagina: number,
-  ratioAmbiguas: number,
-  calidadPagina: number,
-  engineUsed?: 'cv' | 'legacy',
-  fallbackLegacy = false
-) {
+export function registrarOmrResultadoAnalisis(args: {
+  estadoAnalisis: 'ok' | 'requiere_revision' | 'rechazado_calidad';
+  confianzaPromedioPagina: number;
+  ratioAmbiguas: number;
+  calidadPagina: number;
+}) {
+  const { estadoAnalisis, confianzaPromedioPagina, ratioAmbiguas, calidadPagina } = args;
   resultadosOmrTotales[estadoAnalisis] += 1;
   resultadosOmrTotales.muestras += 1;
+  resultadosOmrTotales.cv += 1;
   resultadosOmrTotales.confianzaAcumulada += Math.max(0, Math.min(1, confianzaPromedioPagina));
   resultadosOmrTotales.ratioAmbiguasAcumulado += Math.max(0, Math.min(1, ratioAmbiguas));
   resultadosOmrTotales.calidadAcumulada += Math.max(0, Math.min(1, calidadPagina));
-  if (engineUsed === 'cv' || engineUsed === 'legacy') {
-    omrEngineTotales[engineUsed] += 1;
-  }
-  if (fallbackLegacy) {
-    omrEngineTotales.fallbackLegacy += 1;
-  }
-}
-
-export function registrarSchemaFallbackRead() {
-  esquemaVersionadoTotales.fallbackReads += 1;
-}
-
-export function registrarSchemaV2Write() {
-  esquemaVersionadoTotales.v2Writes += 1;
 }
 
 export function exportarMetricasPrometheus(): string {
@@ -249,31 +223,7 @@ export function exportarMetricasPrometheus(): string {
   lineas.push('');
   lineas.push('# HELP evaluapro_omr_engine_usage_total Total de análisis OMR por engine');
   lineas.push('# TYPE evaluapro_omr_engine_usage_total counter');
-  lineas.push(`evaluapro_omr_engine_usage_total{engine="cv"} ${omrEngineTotales.cv}`);
-  lineas.push(`evaluapro_omr_engine_usage_total{engine="legacy"} ${omrEngineTotales.legacy}`);
-
-  lineas.push('');
-  lineas.push('# HELP evaluapro_omr_fallback_legacy_total Total de fallbacks a engine legacy');
-  lineas.push('# TYPE evaluapro_omr_fallback_legacy_total counter');
-  lineas.push(`evaluapro_omr_fallback_legacy_total ${omrEngineTotales.fallbackLegacy}`);
-
-  lineas.push('');
-  lineas.push('# HELP evaluapro_schema_fallback_reads_total Total de lecturas por adaptador v1 durante migracion dual');
-  lineas.push('# TYPE evaluapro_schema_fallback_reads_total counter');
-  lineas.push(`evaluapro_schema_fallback_reads_total ${esquemaVersionadoTotales.fallbackReads}`);
-
-  lineas.push('');
-  lineas.push('# HELP evaluapro_schema_v2_writes_total Total de escrituras procesadas en handlers v2');
-  lineas.push('# TYPE evaluapro_schema_v2_writes_total counter');
-  lineas.push(`evaluapro_schema_v2_writes_total ${esquemaVersionadoTotales.v2Writes}`);
-
-  // Agregar métrica de adopción canary
-  lineas.push('');
-  lineas.push(exportarMetricasAdopcion());
-
-  // Agregar objetivos actuales de rollout canary
-  lineas.push('');
-  lineas.push(exportarMetricasObjetivoCanary());
+  lineas.push(`evaluapro_omr_engine_usage_total{engine="cv"} ${resultadosOmrTotales.cv}`);
 
   // Agregar estados de circuit breaker
   lineas.push('');

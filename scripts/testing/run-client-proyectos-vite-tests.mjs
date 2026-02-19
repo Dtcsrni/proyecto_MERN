@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -21,10 +22,10 @@ function runTest(projectPath) {
     const absolute = path.join(rootDir, projectPath);
     console.log(`[client-proyectos-vite] test -> ${projectPath}`);
 
-    const child = spawn('npm test', {
+    const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const child = spawn(npmCommand, ['test'], {
       cwd: absolute,
       stdio: 'inherit',
-      shell: true,
       env: process.env
     });
 
@@ -43,6 +44,12 @@ function runTest(projectPath) {
 }
 
 for (const project of projects) {
+  const absolute = path.join(rootDir, project);
+  if (!existsSync(absolute)) {
+    console.warn(`[client-proyectos-vite] omitido (no existe): ${project}`);
+    continue;
+  }
+
   await runTest(project);
 }
 

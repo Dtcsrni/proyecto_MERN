@@ -13,7 +13,7 @@ describe('validarBackupMetaImportacion', () => {
       createdAt: '2026-01-01T00:00:00.000Z',
       ttlMs: 86_400_000,
       expiresAt: '2026-01-02T00:00:00.000Z',
-      businessLogicFingerprint: 'sync-v1-lww-updatedAt-schema1'
+      businessLogicFingerprint: 'sync-v2-lww-updatedAt-schema2'
     };
 
     expect(() => validarBackupMetaImportacion(meta, new Date('2026-01-03T00:00:00.000Z').getTime())).toThrowError(ErrorAplicacion);
@@ -45,3 +45,4 @@ describe('validarBackupMetaImportacion', () => {
     }
   });
 });
+

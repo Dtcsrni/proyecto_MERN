@@ -56,7 +56,7 @@ if (-not $SkipStabilityChecks) {
     @{ Title = "Tests backend CI"; Cmd = "npm run test:backend:ci" },
     @{ Title = "Tests portal CI"; Cmd = "npm run test:portal:ci" },
     @{ Title = "Tests frontend CI"; Cmd = "npm run test:frontend:ci" },
-    @{ Title = "BigBang olas check"; Cmd = "npm run bigbang:olas:check" },
+    @{ Title = "Clean architecture check"; Cmd = "npm run qa:clean-architecture:check" },
     @{ Title = "Pipeline contract check"; Cmd = "npm run pipeline:contract:check" }
   )
 }

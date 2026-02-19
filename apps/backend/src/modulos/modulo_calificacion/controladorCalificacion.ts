@@ -55,7 +55,6 @@ type AnalisisOmrCalificacion = {
   revisionTimestamp?: string;
   motivoRevisionManual?: string;
   engineVersion?: string;
-  engineUsed?: 'cv' | 'legacy';
   geomQuality?: number;
   photoQuality?: number;
   decisionPolicy?: string;
@@ -90,7 +89,6 @@ async function archivarPaginasOmrEnCalificacion({
   folio,
   estadoAnalisisDefault,
   templateVersionDetectadaDefault,
-  engineUsedDefault,
   engineVersionDefault,
   motivosRevisionDefault
 }: {
@@ -105,7 +103,6 @@ async function archivarPaginasOmrEnCalificacion({
   folio: string;
   estadoAnalisisDefault?: 'ok' | 'rechazado_calidad' | 'requiere_revision';
   templateVersionDetectadaDefault?: 3;
-  engineUsedDefault?: 'cv' | 'legacy';
   engineVersionDefault?: string;
   motivosRevisionDefault?: string[];
 }) {
@@ -171,7 +168,6 @@ async function archivarPaginasOmrEnCalificacion({
           tamanoComprimidoBytes: comprimido.length,
           sha256Original,
           templateVersionDetectada: templateVersionDetectada ?? undefined,
-          engineUsed: engineUsedDefault,
           engineVersion: engineVersionDefault,
           estadoAnalisis: estadoAnalisisPagina,
           motivosRevision: Array.isArray(motivosRevisionDefault) ? motivosRevisionDefault.slice(0, 24) : [],
@@ -467,7 +463,6 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     folio: String(examen.folio ?? '').trim().toUpperCase(),
     estadoAnalisisDefault: analisisOmr?.estadoAnalisis,
     templateVersionDetectadaDefault: analisisOmr?.templateVersionDetectada,
-    engineUsedDefault: analisisOmr?.engineUsed,
     engineVersionDefault: analisisOmr?.engineVersion,
     motivosRevisionDefault: analisisOmr?.motivosRevision
   });
@@ -505,7 +500,6 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
           revisionTimestamp: analisisOmr.revisionTimestamp ?? null,
           motivoRevisionManual: analisisOmr.motivoRevisionManual ?? null,
           engineVersion: analisisOmr.engineVersion ?? null,
-          engineUsed: analisisOmr.engineUsed ?? null,
           geomQuality: analisisOmr.geomQuality ?? null,
           photoQuality: analisisOmr.photoQuality ?? null,
           decisionPolicy: analisisOmr.decisionPolicy ?? null,

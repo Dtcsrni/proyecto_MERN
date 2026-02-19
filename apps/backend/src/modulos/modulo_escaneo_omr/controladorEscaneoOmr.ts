@@ -82,16 +82,12 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
   } catch {
     throw new ErrorAplicacion('OMR_IMAGEN_INVALIDA', 'No se pudo procesar la imagen OMR', 400);
   }
-  registrarOmrResultadoAnalisis(
-    resultado.estadoAnalisis,
-    Number(resultado.confianzaPromedioPagina ?? 0),
-    Number(resultado.ratioAmbiguas ?? 1),
-    Number(resultado.calidadPagina ?? 0),
-    resultado.engineUsed,
-    Array.isArray(resultado.motivosRevision)
-      ? resultado.motivosRevision.some((motivo) => String(motivo).startsWith('FALLBACK_LEGACY_CV:'))
-      : false
-  );
+  registrarOmrResultadoAnalisis({
+    estadoAnalisis: resultado.estadoAnalisis,
+    confianzaPromedioPagina: Number(resultado.confianzaPromedioPagina ?? 0),
+    ratioAmbiguas: Number(resultado.ratioAmbiguas ?? 1),
+    calidadPagina: Number(resultado.calidadPagina ?? 0)
+  });
   await archivarEscaneoOmrIntento({
     base64: imagenBase64 ?? '',
     folio: folioNormalizado,
@@ -100,7 +96,6 @@ export async function analizarImagen(req: SolicitudDocente, res: Response) {
     examen,
     estadoAnalisis: resultado?.estadoAnalisis,
     templateVersionDetectada,
-    engineUsed: resultado?.engineUsed,
     engineVersion: resultado?.engineVersion,
     motivosRevision: resultado?.motivosRevision
   });
@@ -252,7 +247,6 @@ async function archivarEscaneoOmrIntento({
   examen,
   estadoAnalisis,
   templateVersionDetectada,
-  engineUsed,
   engineVersion,
   motivosRevision
 }: {
@@ -268,7 +262,6 @@ async function archivarEscaneoOmrIntento({
   };
   estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision' | string;
   templateVersionDetectada: 3;
-  engineUsed?: 'cv' | 'legacy';
   engineVersion?: string;
   motivosRevision?: string[];
 }) {
@@ -308,7 +301,6 @@ async function archivarEscaneoOmrIntento({
         tamanoComprimidoBytes: comprimido.length,
         sha256Original,
         templateVersionDetectada,
-        engineUsed,
         engineVersion,
         estadoAnalisis:
           estadoAnalisis === 'ok' || estadoAnalisis === 'rechazado_calidad' || estadoAnalisis === 'requiere_revision'

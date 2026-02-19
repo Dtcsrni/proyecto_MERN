@@ -40,7 +40,6 @@ const esquemaAnalisisOmr = z
     revisionTimestamp: z.string().trim().datetime().optional(),
     motivoRevisionManual: z.string().trim().min(8).max(300).optional(),
     engineVersion: z.string().trim().min(3).max(40).optional(),
-    engineUsed: z.enum(['cv', 'legacy']).optional(),
     geomQuality: z.number().min(0).max(1).optional(),
     photoQuality: z.number().min(0).max(1).optional(),
     decisionPolicy: z.string().trim().min(3).max(80).optional()
@@ -93,7 +92,6 @@ export const esquemaCalificarExamen = z
       data.omrAnalisis.ratioAmbiguas === undefined ? 'ratioAmbiguas' : null,
       data.omrAnalisis.templateVersionDetectada === undefined ? 'templateVersionDetectada' : null,
       data.omrAnalisis.engineVersion === undefined ? 'engineVersion' : null,
-      data.omrAnalisis.engineUsed === undefined ? 'engineUsed' : null,
       data.omrAnalisis.geomQuality === undefined ? 'geomQuality' : null,
       data.omrAnalisis.photoQuality === undefined ? 'photoQuality' : null,
       data.omrAnalisis.decisionPolicy === undefined ? 'decisionPolicy' : null,

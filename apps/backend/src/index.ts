@@ -16,7 +16,7 @@ async function iniciar() {
   await asegurarIndicesEscaneoOmrArchivado();
   const smokeCv = await ejecutarSmokeTestOmrCv();
   if (smokeCv.enabled && smokeCv.backend === 'opencv' && !smokeCv.cvDisponible) {
-    log('warn', 'OMR CV smoke test falló; se usará fallback legacy', {
+    log('warn', 'OMR CV smoke test falló; revise dependencias de visión', {
       backend: smokeCv.backend,
       motivo: smokeCv.motivo
     });

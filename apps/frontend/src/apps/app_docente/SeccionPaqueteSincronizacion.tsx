@@ -16,7 +16,7 @@ import { esMensajeError, etiquetaMateria, mensajeDeError } from './utilidades';
 
 const BACKUP_FORMAT_VERSION = 2;
 const BACKUP_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const BACKUP_LOGIC_FINGERPRINT = 'sync-v1-lww-updatedAt-schema1';
+const BACKUP_LOGIC_FINGERPRINT = 'sync-v2-lww-updatedAt-schema2';
 
 type BackupMeta = {
   schemaVersion: number;

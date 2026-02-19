@@ -20,7 +20,6 @@ const EscaneoOmrArchivadoSchema = new Schema(
     tamanoComprimidoBytes: { type: Number, required: true, min: 1 },
     sha256Original: { type: String, required: true },
     templateVersionDetectada: { type: Number, enum: [3] },
-    engineUsed: { type: String, enum: ['cv', 'legacy'] },
     engineVersion: { type: String, trim: true },
     estadoAnalisis: { type: String, enum: ['ok', 'rechazado_calidad', 'requiere_revision'], required: true },
     motivosRevision: [{ type: String, trim: true }],
@@ -40,7 +39,7 @@ export async function asegurarIndicesEscaneoOmrArchivado() {
   try {
     await EscaneoOmrArchivado.collection.dropIndex('examenGeneradoId_1_numeroPagina_1');
   } catch {
-    // Índice legacy puede no existir; no bloquear arranque.
+    // El índice anterior puede no existir; no bloquear arranque.
   }
   await EscaneoOmrArchivado.syncIndexes();
 }

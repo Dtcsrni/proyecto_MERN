@@ -18,7 +18,6 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
         contexto.margenMm,
         contexto.debugInfo
       );
-      resultado.engineUsed = 'cv';
       resultado.engineVersion = 'omr-v3-cv';
     } catch (error) {
       resultado = await analizarOmrV2(
@@ -28,10 +27,9 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
         contexto.margenMm,
         contexto.debugInfo
       );
-      resultado.engineUsed = 'legacy';
       resultado.engineVersion = 'omr-v3-cv';
       resultado.motivosRevision = Array.from(
-        new Set([...(resultado.motivosRevision ?? []), `FALLBACK_LEGACY_CV:${describirErrorCv(error)}`])
+        new Set([...(resultado.motivosRevision ?? []), `CV_PREPROCESO_REINTENTO:${describirErrorCv(error)}`])
       ).slice(0, 24);
     }
   } else {
@@ -42,7 +40,6 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
       contexto.margenMm,
       contexto.debugInfo
     );
-    resultado.engineUsed = 'legacy';
     resultado.engineVersion = 'omr-v3-cv';
   }
 

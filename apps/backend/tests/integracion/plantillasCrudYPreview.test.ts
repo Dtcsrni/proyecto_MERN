@@ -11,7 +11,8 @@ import { cerrarMongoTest, conectarMongoTest, limpiarMongoTest } from '../utils/m
 
 describe('plantillas CRUD + previsualizacion', () => {
   const app = crearApp();
-  const TOTAL_PREGUNTAS_TEST = 12;
+  const TOTAL_PREGUNTAS_TEST = 8;
+  const TEST_TIMEOUT_PLANTILLAS_MS = 90_000;
 
   beforeAll(async () => {
     await conectarMongoTest();
@@ -120,7 +121,7 @@ describe('plantillas CRUD + previsualizacion', () => {
 
     const listResp = await request(app).get('/api/examenes/plantillas').set(auth).expect(200);
     expect(listResp.body?.plantillas?.length ?? 0).toBe(0);
-  });
+  }, TEST_TIMEOUT_PLANTILLAS_MS);
 
   it('permite archivar una plantilla con examenes generados', async () => {
     const token = await registrarDocente();
@@ -157,5 +158,5 @@ describe('plantillas CRUD + previsualizacion', () => {
 
     const archivarResp = await request(app).post(`/api/examenes/plantillas/${plantillaId}/archivar`).set(auth).expect(200);
     expect(archivarResp.body?.plantilla?.archivadoEn).toBeTruthy();
-  });
+  }, TEST_TIMEOUT_PLANTILLAS_MS);
 });

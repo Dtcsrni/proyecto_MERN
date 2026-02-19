@@ -4,8 +4,8 @@ import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 
 export const MAX_BASE64_CHARS = 60_000_000; // ~45MB binario aprox
 
-export type PaqueteSincronizacionV1 = {
-  schemaVersion: 1;
+export type PaqueteSincronizacionV2 = {
+  schemaVersion: 2;
   exportadoEn: string;
   docenteId: string;
   docenteCorreo?: string;

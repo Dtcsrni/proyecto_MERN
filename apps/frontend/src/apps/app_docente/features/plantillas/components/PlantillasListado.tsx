@@ -98,7 +98,7 @@ export function PlantillasListado({
           {plantillasFiltradas.map((plantilla) => {
             const materia = periodos.find((p) => p._id === plantilla.periodoId);
             const temas = Array.isArray(plantilla.temas) ? plantilla.temas : [];
-            const modo = temas.length > 0 ? `Temas: ${temas.join(', ')}` : 'Modo legacy: preguntasIds';
+            const modo = temas.length > 0 ? `Temas: ${temas.join(', ')}` : 'Modo preguntasIds';
             const preview = previewPorPlantillaId[plantilla._id];
             const previewAbierta = plantillaPreviewId === plantilla._id;
             const pdfUrl = previewPdfUrlPorPlantillaId[plantilla._id];

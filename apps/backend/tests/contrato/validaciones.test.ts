@@ -240,7 +240,7 @@ describe('validaciones de payload', () => {
   it('rechaza analizar OMR sin folio', async () => {
     const token = tokenDocentePrueba();
     const respuesta = await request(app)
-      .post('/api/v2/omr/analizar')
+      .post('/api/omr/analizar')
       .set({ Authorization: `Bearer ${token}` })
       .send({ imagenBase64: 'x'.repeat(20) })
       .expect(400);
@@ -400,3 +400,4 @@ describe('validaciones de payload', () => {
     expect(respuesta.body.error.codigo).toBe('DATOS_INVALIDOS');
   });
 });
+

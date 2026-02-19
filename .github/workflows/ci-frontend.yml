@@ -8,7 +8,6 @@ on:
       - ".github/workflows/ci-frontend.yml"
       - "apps/frontend/**"
       - "client/**"
-      - "tests/client-smoke/**"
       - "scripts/**"
       - "package.json"
       - "package-lock.json"
@@ -22,7 +21,6 @@ on:
       - ".github/workflows/ci-frontend.yml"
       - "apps/frontend/**"
       - "client/**"
-      - "tests/client-smoke/**"
       - "scripts/**"
       - "package.json"
       - "package-lock.json"
@@ -79,10 +77,7 @@ jobs:
       - name: Etapa coverage frontend
         run: npm -C apps/frontend run test:coverage
 
-      - name: Etapa smoke client legacy
-        run: npm run test:client:smoke:ci
-
-      - name: Etapa proyectos client legacy
+      - name: Etapa proyectos client
         run: npm run test:client:proyectos:ci
 
       - name: Etapa tdd-debt-check

@@ -54,7 +54,7 @@ function setNumeroOBlanco(ws: Worksheet, ref: string, valor?: number) {
 }
 
 function setFormula(ws: Worksheet, ref: string, formula: string) {
-  ws.getCell(ref).value = { formula };
+  ws.getCell(ref).value = { formula, date1904: false };
 }
 
 function porAlumno(calificaciones: CalificacionFila[], alumnoId: string) {

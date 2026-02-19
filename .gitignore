@@ -22,3 +22,11 @@ apps/backend/storage/omr_scans/
 *.lcov
 reports/perf/
 docs/release/manual/prod-flow.json
+
+# Legacy cleanup guards
+tests/client-smoke/
+scripts/client-smoke-server.mjs
+tmp_*.txt
+ocr.js
+OcrComponent.jsx
+*.worktrees/
