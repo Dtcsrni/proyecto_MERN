@@ -66,6 +66,7 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Calificacion y reglas de topes.
 - Aislamiento entre docentes.
 - Publicacion/sincronizacion hacia portal.
+- Gate Extended OMR TV3 con dataset real (`omr_samples_tv3`).
 
 ## Criterio de calidad para release
 Se considera candidato estable cuando pasan:
@@ -75,6 +76,7 @@ npm run test:flujo-docente:ci
 npm run test:coverage:ci
 npm run test:tdd:enforcement:ci
 npm run test:client:proyectos:ci
+npm run test:omr:tv3:gate:ci
 npm run perf:check
 npm run security:env:check
 npm run security:audit
@@ -129,6 +131,7 @@ npm run test:ci
 - El backend mantiene una bateria amplia de pruebas de contrato e integracion.
 - OMR tiene pruebas unitarias especificas (doble marca, burbuja hueca, trazos lineales, colorimetria).
 - Existen pruebas de integracion para QR/OMR y flujo de examen.
+- OMR en produccion se considera TV3-only para auto-calificacion.
 
 ## Regla de mantenimiento
 Todo cambio en:

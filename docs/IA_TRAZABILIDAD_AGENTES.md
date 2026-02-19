@@ -157,11 +157,11 @@ Salida automatica por sesion:
 - PDF 2B: separar controller/use-case/domain/infra.
 - Sync 2C: consolidar politicas internas restantes tras la fachada + use cases.
 2. Continuar rampa de cobertura frontend hacia 45 sin exclusiones.
-3. Completar Ola 3 de migracion dual (v1/v2) para dominios breaking pendientes.
+3. Completar Ola 3 de migracion dual histórica para dominios breaking pendientes.
 
 ## 7) Corte Sprint Big Bang (2026-02-14)
 - Gate `bigbang:olas:strict` alineado con estado real:
   - checks por dominio en `scripts/bigbang-olas-check.mjs` (`ola2a`, `ola2b`, `ola2c`).
   - reporte coherente en `reports/qa/latest/olas-bigbang.json`.
 - Ola 3 minima OMR validada por contrato:
-  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts` verifica paridad v1/v2 y metricas de fallback/writes.
+  - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts` verifica paridad histórica y metricas de fallback/writes.

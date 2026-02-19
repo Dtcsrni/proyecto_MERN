@@ -31,7 +31,8 @@
     "omr:eval:profile": "tsx scripts/omr-eval-profile.ts",
     "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts",
     "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts",
-    "omr:diagnose:rechazo": "tsx scripts/omr-diagnose-rechazo.ts"
+    "omr:diagnose:rechazo": "tsx scripts/omr-diagnose-rechazo.ts",
+    "omr:tv3:eval:golden": "tsx scripts/omr-tv3-eval-golden.ts --dataset ../../omr_samples_tv3 --report ../../reports/qa/latest/omr-tv3-gate.json"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

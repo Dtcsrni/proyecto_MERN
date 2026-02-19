@@ -7,7 +7,7 @@ Base de evidencias: `reports/qa/latest/*`, `reports/perf/*.json`, `docs/ENGINEER
 Cerrar brechas entre estado beta operativo y estado estable auditable, manteniendo trazabilidad requisito -> evidencia -> gate.
 
 ## Principios de ejecucion
-- Sin ruptura de contratos HTTP v1/v2 en dominios productivos.
+- Sin ruptura de contratos HTTP durante la transición histórica de versionado.
 - Todo cambio funcional debe venir con prueba y evidencia de gate.
 - Ningun criterio de "estable" se da por cumplido sin artefacto verificable.
 

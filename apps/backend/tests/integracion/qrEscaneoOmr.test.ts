@@ -138,10 +138,25 @@ describe('escaneo OMR: QR asociado a examen', () => {
       })
       .expect(200);
 
-    const resultado = resp.body.resultado as { qrTexto?: string; advertencias: string[] };
+    const resultado = resp.body.resultado as {
+      qrTexto?: string;
+      advertencias: string[];
+      engineVersion?: string;
+      engineUsed?: 'cv' | 'legacy';
+      geomQuality?: number;
+      photoQuality?: number;
+      decisionPolicy?: string;
+      motivosRevision?: string[];
+    };
     expect(resultado.qrTexto).toBe(qrParaImagen);
     expect(resultado.advertencias).not.toContain('No se detecto QR en la imagen');
     expect(resultado.advertencias).not.toContain('El QR no coincide con el examen esperado');
+    expect(resultado.engineVersion).toBeDefined();
+    expect(['cv', 'legacy']).toContain(resultado.engineUsed as string);
+    expect(typeof resultado.geomQuality).toBe('number');
+    expect(typeof resultado.photoQuality).toBe('number');
+    expect(typeof resultado.decisionPolicy).toBe('string');
+    expect(Array.isArray(resultado.motivosRevision)).toBe(true);
   }, TEST_TIMEOUT_QR_MS);
 
   it('si el QR corresponde a otro folio, lo detecta y advierte mismatch', async () => {

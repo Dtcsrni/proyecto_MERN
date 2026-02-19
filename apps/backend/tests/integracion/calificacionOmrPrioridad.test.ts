@@ -124,7 +124,13 @@ describe('calificacion OMR prioriza respuestas detectadas', () => {
           calidadPagina: 0.95,
           confianzaPromedioPagina: 0.92,
           ratioAmbiguas: 0,
-          templateVersionDetectada: 3
+          templateVersionDetectada: 3,
+          engineVersion: 'omr-v3-cv',
+          engineUsed: 'cv',
+          geomQuality: 0.9,
+          photoQuality: 0.9,
+          decisionPolicy: 'conservadora_v1',
+          motivosRevision: []
         }
       })
       .expect(201);
