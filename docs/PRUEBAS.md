@@ -44,7 +44,7 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
   - `CI Backend Module` prepara runtime `sharp` en linux (`npm install --no-save --include=optional --os=linux --cpu=x64 sharp`) para evitar fallos de dependencias nativas.
 
 ## Proteccion de rama main (Ruleset)
-- Ruleset activo: `main-v1b-minimo`.
+- Ruleset activo: `main-1-0-beta-minimo`.
 - Alcance: `refs/heads/main`.
 - Reglas activas:
   - bloqueo de borrado de rama (`deletion`),
@@ -93,8 +93,8 @@ Adicional obligatorio para promover a estable:
 - 10 corridas CI consecutivas en verde.
 - evidencia de flujo docente humano en producción (`docs/release/evidencias/<version>/`).
 
-## Criterio candidato v1b
-Se considera candidato `v1b` cuando ademas de los gates funcionales se cumple:
+## Criterio candidato beta 1.0.0
+Se considera candidato `1.0.0-beta.0` cuando ademas de los gates funcionales se cumple:
 - `CI Backend Module` en verde.
 - `CI Frontend Module` en verde.
 - `CI Portal Module` en verde.

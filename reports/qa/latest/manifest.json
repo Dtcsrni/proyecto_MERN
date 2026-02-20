@@ -1,41 +1,47 @@
 {
   "version": "1",
-  "generadoEn": "2026-02-19T05:40:25.476Z",
+  "generadoEn": "2026-02-20T09:01:43.116Z",
   "artefactos": [
     {
       "archivo": "reports/qa/latest/dataset-prodlike.json",
       "existe": true,
-      "bytes": 262,
-      "actualizadoEn": "2026-02-19T05:40:06.789Z"
+      "bytes": 275,
+      "actualizadoEn": "2026-02-20T05:33:36.991Z"
     },
     {
       "archivo": "reports/qa/latest/e2e-docente-alumno.json",
       "existe": true,
-      "bytes": 340,
-      "actualizadoEn": "2026-02-19T05:40:13.387Z"
+      "bytes": 351,
+      "actualizadoEn": "2026-02-20T05:33:36.991Z"
     },
     {
       "archivo": "reports/qa/latest/global-grade.json",
       "existe": true,
-      "bytes": 369,
-      "actualizadoEn": "2026-02-19T05:40:17.918Z"
+      "bytes": 380,
+      "actualizadoEn": "2026-02-20T05:33:36.992Z"
     },
     {
       "archivo": "reports/qa/latest/pdf-print.json",
       "existe": true,
-      "bytes": 316,
-      "actualizadoEn": "2026-02-19T05:40:22.562Z"
+      "bytes": 327,
+      "actualizadoEn": "2026-02-20T05:33:36.993Z"
     },
     {
       "archivo": "reports/qa/latest/ux-visual.json",
       "existe": true,
-      "bytes": 295,
-      "actualizadoEn": "2026-02-19T05:40:25.266Z"
+      "bytes": 306,
+      "actualizadoEn": "2026-02-20T05:33:36.994Z"
+    },
+    {
+      "archivo": "reports/qa/latest/clean-architecture.json",
+      "existe": true,
+      "bytes": 2095,
+      "actualizadoEn": "2026-02-20T08:56:42.301Z"
     }
   ],
   "resumen": {
-    "total": 5,
-    "presentes": 5,
+    "total": 6,
+    "presentes": 6,
     "faltantes": 0,
     "estado": "ok"
   }

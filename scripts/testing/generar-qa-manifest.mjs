@@ -9,7 +9,8 @@ const artefactos = [
   'reports/qa/latest/e2e-docente-alumno.json',
   'reports/qa/latest/global-grade.json',
   'reports/qa/latest/pdf-print.json',
-  'reports/qa/latest/ux-visual.json'
+  'reports/qa/latest/ux-visual.json',
+  'reports/qa/latest/clean-architecture.json'
 ];
 
 async function getInfo(file) {
@@ -61,4 +62,3 @@ main().catch((error) => {
   process.stderr.write(`[qa-manifest] ERROR: ${String(error?.message || error)}\n`);
   process.exit(1);
 });
-

@@ -7,6 +7,14 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ### Added
 - Documentacion formal de requisitos verificables (RF/RNF) con matriz de trazabilidad (requisito -> evidencia -> gate) en:
   - `docs/ENGINEERING_BASELINE.md` (seccion "Requisitos verificables").
+- Normalizacion contractual de plataforma:
+  - API canonica unificada en `/api/*`.
+  - Rutas `/api/v2/*` retiradas (404 esperado).
+  - OMR operativo TV3-only.
+  - baseline de version consolidado en `1.0.0-beta.0`.
+- Trazabilidad historica de release:
+  - el tag `v1b` se conserva como hito historico de transicion.
+  - `1.0.0-beta.0` queda como baseline operativo actual.
 - Roadmap separado de cierre de brechas de requisitos beta -> estable:
   - `docs/ROADMAP_REQUISITOS.md`.
 - Reparación operativa desde Dashboard (pestaña Configuración):
@@ -20,12 +28,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/perf-collect-business.ts`
   - `scripts/perf-check-business.mjs`
   - `docs/perf/baseline.business.json`
-- Bootstrap API v2 para dominios iniciales:
-  - `apps/backend/src/modulos/modulo_escaneo_omr/rutasEscaneoOmrV2.ts`
-  - `apps/backend/src/modulos/modulo_generacion_pdf/rutasGeneracionPdfV2.ts`
-- Middleware de observabilidad de transicion v1/v2:
-  - `apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts`
-- Prueba de contrato/paridad v2:
+- Prueba de contrato de API canonica:
   - `apps/backend/tests/integracion/versionadoApiV2Contratos.test.ts`
 - Ola 2B PDF: nueva arquitectura DDD/Clean Architecture con feature flag:
   - `apps/backend/src/modulos/modulo_generacion_pdf/shared/tiposPdf.ts`
@@ -100,9 +103,9 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Evidencia de aislamiento CI:
   - fallo puntual en backend module no bloquea ejecucion exitosa de frontend/portal/docs/package/autogen-docs.
 
-- `apps/backend/src/rutas.ts` monta:
-  - adapters v1 instrumentados en `/api/examenes` y `/api/omr`
-  - rutas nuevas `/api/v2/examenes` y `/api/v2/omr`
+- `apps/backend/src/rutas.ts` consolida contrato unico:
+  - rutas canonicas en `/api/*`
+  - rutas `/api/v2/*` retiradas del runtime (404 esperado)
 - `apps/backend/src/compartido/observabilidad/metrics.ts` agrega contadores:
   - `evaluapro_schema_fallback_reads_total`
   - `evaluapro_schema_v2_writes_total`
@@ -147,7 +150,6 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - Pipeline v2 con etapas modulares: qr, deteccion, scoring, calidad, debug
   - Tests de paridad v1/v2: `apps/backend/tests/omr.paridad.test.ts` (5 tests)
   - Estado confirmado: todas las gates OK (ola0, ola1, ola2-ready, strict-gates)
-- Ola 2B PDF: fachada con feature flag para canary deployment:
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
   - Legacy preservado en `servicioGeneracionPdfLegacy.ts` (1396 lineas).
   - Variable de entorno `FEATURE_PDF_BUILDER_V2` (default: 0).
@@ -158,35 +160,25 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - Tests de paridad v1/v2: `apps/backend/tests/pdf.paridad.test.ts` (8 tests)
   - Documentacion completa en README.md del modulo.
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts` reducido a 1400 lineas y delegando QR/transformacion/deteccion en `infra/imagenProcesamientoLegacy.ts`.
-- Ola 3 (API v2 + métricas de adopción canary rollout):
   - Sistema de métricas de adopción: `apps/backend/src/compartido/observabilidad/metricsAdopcion.ts`
     - Rastreo de adopción v1 vs v2 por módulo y endpoint
     - Cálculo dinámico de porcentaje con estados: iniciando, canario, madurando, completado
     - Exportación de detalles top 20 endpoints por adopción
-  - Middleware de rastreo: `apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts`
-    - `middlewareAdopcionV1()` y `middlewareAdopcionV2()` para rastrear solicitudes
-    - Montado en rutas: `/api/examenes`, `/api/v2/examenes`, `/api/omr`, `/api/v2/omr`
-  - Dashboard de canary rollout: `scripts/canary-adoption-monitor.mjs`
+  - Middleware de rastreo de adopcion retirado del runtime en favor de contrato canonico sin versionado en path.
     - Monitoreo en tiempo real de adopción
     - Cálculo de recomendaciones de escalado automático
-    - Uso: `npm run canary:monitor`
-  - Tests de adopción canary: `apps/backend/tests/integracion/canaryAdopcionMonitor.test.ts` (6 tests)
     - Validación de rastreo v1 y v2
     - Validación de cálculo de porcentajes
     - Validación de formato Prometheus
     - Validación de distinción por módulo
     - Validación de consistencia de contadores
-  - Métricas Prometheus agregadas a `/api/metrics`:
-    - `evaluapro_adopcion_v2_porcentaje{modulo="..."}` gauge porcentaje
-    - `evaluapro_adopcion_v1_total{modulo="..."}` counter requisiciones v1
-    - `evaluapro_adopcion_v2_total{modulo="..."}` counter requisiciones v2
+  - El runtime actual mantiene metricas operativas generales sin exponer contadores de adopcion v1/v2 en contrato activo.
   - Todos los tests de adopción pasan (✅ 6/6)
   - Sistema completamente integrado en pipeline CI/CD
 - Validacion del sprint Big Bang + Ola 3 ejecutada en verde:
   - `npm -C apps/backend run lint` ✅
   - `npm -C apps/backend run typecheck` ✅
   - `npm -C apps/backend run test -- tests/omr.test.ts tests/omr.prevalidacion.test.ts tests/integracion/versionadoApiV2Contratos.test.ts` ✅
-  - `npm -C apps/backend run test -- tests/integracion/canaryAdopcionMonitor.test.ts` ✅ (6/6)
   - `npm -C apps/backend run test -- tests/integracion/flujoDocenteAlumnoProduccionLikeE2E.test.ts` ✅
   - `npm run bigbang:olas:check` ✅
   - `npm run bigbang:olas:strict` ✅
@@ -216,7 +208,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
     - menu inicio siempre
     - escritorio por defecto habilitado (`InstallDesktopShortcuts=1`, configurable)
 
-## [0.2.0-beta.1] - 2026-02-13
+## [1.0.0-beta.0] - 2026-02-13
 
 ### Added
 - Documento de inventario técnico integral: `docs/INVENTARIO_PROYECTO.md`.
@@ -261,7 +253,6 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Preflight operativo para generación de examen global en producción:
   - `scripts/release/preflight-global-prod.mjs`
   - `docs/OPERACION_EXAMEN_GLOBAL_PROD.md`
-- Ola 2A (OMR) iniciada con pipeline modular y canary:
   - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrLegacy.ts`
   - `apps/backend/src/modulos/modulo_escaneo_omr/omr/types.ts`
   - `apps/backend/src/modulos/modulo_escaneo_omr/omr/pipeline/ejecutorPipelineOmr.ts`
@@ -327,7 +318,6 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/README.md`
   - `docs/README.md`
 - `apps/backend/src/modulos/modulo_escaneo_omr/servicioOmr.ts` ahora es fachada compatible con feature flag:
-  - `FEATURE_OMR_PIPELINE_V2=0|1` (por defecto desactivado para rollout canary)
 - Observabilidad OMR agregada en `/api/metrics`:
   - `evaluapro_omr_stage_duration_ms`
   - `evaluapro_omr_stage_errors_total`

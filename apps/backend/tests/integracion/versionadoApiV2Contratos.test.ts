@@ -1,9 +1,9 @@
 /**
  * versionadoApiV2Contratos.test
  *
- * Verifica contrato post-migracion:
+ * Verifica contrato canonizado:
  * - API canonica /api/* operativa.
- * - Rutas legacy /api/v2/* retiradas.
+ * - Rutas no soportadas /api/v2/* retiradas (404 esperado).
  */
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

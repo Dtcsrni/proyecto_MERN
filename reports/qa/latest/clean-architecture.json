@@ -2,7 +2,7 @@
   "version": 1,
   "gate": "clean-architecture",
   "strict": true,
-  "generatedAt": "2026-02-19T05:51:29.873Z",
+  "generatedAt": "2026-02-20T09:01:43.210Z",
   "ok": true,
   "checks": [
     {
@@ -14,11 +14,6 @@
       "id": "token.api.v2",
       "ok": true,
       "detail": "/api/v2 matches=0"
-    },
-    {
-      "id": "token.canary.rollout",
-      "ok": true,
-      "detail": "canary-rollout matches=0"
     },
     {
       "id": "token.engineUsed",
@@ -36,34 +31,9 @@
       "detail": "apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts exists=false"
     },
     {
-      "id": "removed.apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts",
-      "ok": true,
-      "detail": "apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts exists=false"
-    },
-    {
       "id": "removed.apps/backend/src/compartido/observabilidad/metricsAdopcion.ts",
       "ok": true,
       "detail": "apps/backend/src/compartido/observabilidad/metricsAdopcion.ts exists=false"
-    },
-    {
-      "id": "removed.apps/backend/src/compartido/observabilidad/rolloutCanary.ts",
-      "ok": true,
-      "detail": "apps/backend/src/compartido/observabilidad/rolloutCanary.ts exists=false"
-    },
-    {
-      "id": "removed.apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts",
-      "ok": true,
-      "detail": "apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts exists=false"
-    },
-    {
-      "id": "removed.scripts/canary-adoption-monitor.mjs",
-      "ok": true,
-      "detail": "scripts/canary-adoption-monitor.mjs exists=false"
-    },
-    {
-      "id": "removed.scripts/canary-rollout-check.mjs",
-      "ok": true,
-      "detail": "scripts/canary-rollout-check.mjs exists=false"
     }
   ]
 }

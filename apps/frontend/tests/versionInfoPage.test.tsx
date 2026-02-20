@@ -13,7 +13,7 @@ describe('VersionInfoPage', () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        app: { name: 'evaluapro', version: '0.2.0-beta.1' },
+        app: { name: 'evaluapro', version: '1.0.0-beta.0' },
         repositoryUrl: 'https://github.com/Dtcsrni',
         technologies: [
           { id: 'react', label: 'React', logoUrl: 'https://cdn.simpleicons.org/react/61DAFB', website: 'https://react.dev' },
