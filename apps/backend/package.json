@@ -32,6 +32,10 @@
     "omr:sweep:geometria": "tsx scripts/omr-sweep-geometria.ts",
     "omr:sweep:umbrales": "tsx scripts/omr-sweep-umbrales.ts",
     "omr:diagnose:rechazo": "tsx scripts/omr-diagnose-rechazo.ts",
+    "omr:tv3:generate:synthetic": "tsx scripts/omr-tv3-generate-synthetic.ts --dataset ../../omr_samples_tv3",
+    "omr:tv3:eval:synthetic": "tsx scripts/omr-tv3-eval-synthetic.ts --dataset ../../omr_samples_tv3 --report ../../reports/qa/latest/omr/synthetic-eval.json",
+    "omr:tv3:optimize:synthetic": "tsx scripts/omr-tv3-optimize-synthetic.ts --dataset ../../omr_samples_tv3 --report ../../reports/qa/latest/omr/synthetic-optimization.json",
+    "omr:tv3:e2e:synthetic": "tsx scripts/omr-tv3-e2e.ts --dataset ../../omr_samples_tv3 --report ../../reports/qa/latest/omr-tv3-gate.json",
     "omr:tv3:eval:golden": "tsx scripts/omr-tv3-eval-golden.ts --dataset ../../omr_samples_tv3 --report ../../reports/qa/latest/omr-tv3-gate.json"
   },
   "dependencies": {

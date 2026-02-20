@@ -1,10 +1,10 @@
 {
-  "runId": "omr-synth-1771484547200",
+  "runId": "omr-synth-1771484546127",
   "examId": "tv3-synthetic-50q-4p",
   "templateId": "tv3",
   "datasetProfile": "synthetic_tv3",
   "noiseProfile": "realista_mixto",
-  "timestamp": "2026-02-19T07:02:27.200Z",
+  "timestamp": "2026-02-19T07:02:26.127Z",
   "thresholds": {
     "precisionMin": 0.95,
     "falsePositiveMax": 0.02,

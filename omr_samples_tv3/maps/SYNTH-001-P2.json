@@ -1,0 +1,372 @@
+{
+  "numeroPagina": 2,
+  "templateVersion": 3,
+  "qr": {
+    "texto": "EXAMEN:SYNTH-001:P2:TV3",
+    "x": 495.65,
+    "y": 675.65,
+    "size": 88,
+    "padding": 4
+  },
+  "marcasPagina": {
+    "tipo": "cuadrados",
+    "size": 18,
+    "quietZone": 8,
+    "tl": {
+      "x": 28.35,
+      "y": 763.65
+    },
+    "tr": {
+      "x": 583.65,
+      "y": 763.65
+    },
+    "bl": {
+      "x": 28.35,
+      "y": 28.35
+    },
+    "br": {
+      "x": 583.65,
+      "y": 28.35
+    }
+  },
+  "preguntas": [
+    {
+      "numeroPregunta": 14,
+      "idPregunta": "q-14",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 610
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 596
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 582
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 568
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 15,
+      "idPregunta": "q-15",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 540
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 526
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 512
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 498
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 16,
+      "idPregunta": "q-16",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 470
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 456
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 442
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 428
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 17,
+      "idPregunta": "q-17",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 400
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 386
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 372
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 358
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 18,
+      "idPregunta": "q-18",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 330
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 316
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 302
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 288
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 19,
+      "idPregunta": "q-19",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 260
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 246
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 232
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 218
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 20,
+      "idPregunta": "q-20",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 186,
+          "y": 190
+        },
+        {
+          "letra": "B",
+          "x": 186,
+          "y": 176
+        },
+        {
+          "letra": "C",
+          "x": 186,
+          "y": 162
+        },
+        {
+          "letra": "D",
+          "x": 186,
+          "y": 148
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 21,
+      "idPregunta": "q-21",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 610
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 596
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 582
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 568
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 22,
+      "idPregunta": "q-22",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 540
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 526
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 512
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 498
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 23,
+      "idPregunta": "q-23",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 470
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 456
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 442
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 428
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 24,
+      "idPregunta": "q-24",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 400
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 386
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 372
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 358
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 25,
+      "idPregunta": "q-25",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 330
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 316
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 302
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 288
+        }
+      ]
+    },
+    {
+      "numeroPregunta": 26,
+      "idPregunta": "q-26",
+      "opciones": [
+        {
+          "letra": "A",
+          "x": 426,
+          "y": 260
+        },
+        {
+          "letra": "B",
+          "x": 426,
+          "y": 246
+        },
+        {
+          "letra": "C",
+          "x": 426,
+          "y": 232
+        },
+        {
+          "letra": "D",
+          "x": 426,
+          "y": 218
+        }
+      ]
+    }
+  ]
+}

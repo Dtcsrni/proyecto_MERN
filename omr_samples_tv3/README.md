@@ -1,27 +1,23 @@
-# Dataset Golden OMR TV3 (Real)
+# Dataset OMR TV3 (Synthetic CI)
 
-Este dataset se usa para el gate bloqueante `Extended`:
+Este dataset se regenera automaticamente para el gate bloqueante TV3:
 
-- Script: `apps/backend/scripts/omr-tv3-eval-golden.ts`
-- Reporte: `reports/qa/latest/omr-tv3-gate.json`
+- Script gate: `apps/backend/scripts/omr-tv3-eval-golden.ts`
+- Pipeline e2e: `apps/backend/scripts/omr-tv3-e2e.ts`
+- Reporte canónico: `reports/qa/latest/omr-tv3-gate.json`
 - Comando raíz: `npm run test:omr:tv3:gate:ci`
 
-## Requisitos
+## Perfil canónico
 
-1. Solo capturas reales de hoja OMR TV3.
-2. Cada captura debe incluir:
-- `captureId`
-- `imagePath`
-- `mapaOmrPath`
-- `folio`
-- `numeroPagina`
-- `templateVersion: 3`
-3. `ground_truth.jsonl` debe incluir una línea por pregunta:
-- `captureId`
-- `numeroPregunta`
-- `opcionEsperada` (`A-E` o `null`)
+- Examen sintético: `50` reactivos, `4` páginas, `4` opciones por reactivo.
+- Política de inválidas: rechazo estricto (`double` y `smudge` deben detectarse como `null`).
+- Ruido: perfil `realista_mixto`.
+- Meta de gate: `precision >= 0.95` y `falsePositiveRate <= 0.02`.
 
-## Nota
+## Estructura
 
-El `manifest.json` inicial se entrega vacío para permitir versionar la estructura.
-El gate fallará hasta que se carguen capturas reales y verdad-terreno.
+- `manifest.json`: contrato del dataset generado.
+- `ground_truth.jsonl`: verdad terreno por captura y pregunta.
+- `answer_key.json`: clave oficial del examen sintético.
+- `images/*.jpg`: capturas sintéticas con ruido.
+- `maps/*.json`: mapas OMR por página.
