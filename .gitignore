@@ -30,3 +30,10 @@ tmp_*.txt
 ocr.js
 OcrComponent.jsx
 *.worktrees/
+
+# OMR synthetic artifacts
+omr_samples_tv3/images/
+omr_samples_tv3/maps/
+omr_samples_tv3/reports/
+omr_samples_tv3/answer_key.json
+reports/qa/latest/omr/
