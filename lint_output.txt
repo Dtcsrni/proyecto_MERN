@@ -1,9 +1,9 @@
 
-> evaluapro@0.2.0-beta.1 lint
+> evaluapro@1.0.0-beta.0 lint
 > npm run --workspaces --if-present lint
 
 
-> backend@0.2.0-beta.1 lint
+> backend@1.0.0-beta.0 lint
 > eslint . --ext .ts --max-warnings=0
 
 
@@ -28,16 +28,17 @@ V:\Software\Generador_Examenes_Universitarios_MERN\sistema-evaluacion-universita
 npm error Lifecycle script `lint` failed with error:
 npm error code 1
 npm error path V:\Software\Generador_Examenes_Universitarios_MERN\sistema-evaluacion-universitaria\apps\backend
-npm error workspace backend@0.2.0-beta.1
+npm error workspace backend@1.0.0-beta.0
 npm error location V:\Software\Generador_Examenes_Universitarios_MERN\sistema-evaluacion-universitaria\apps\backend
 npm error command failed
 npm error command C:\Windows\system32\cmd.exe /d /s /c eslint . --ext .ts --max-warnings=0
 
 
-> frontend@0.2.0-beta.1 lint
+> frontend@1.0.0-beta.0 lint
 > eslint . --ext .ts,.tsx --max-warnings=0
 
 
-> portal-alumno-cloud@0.2.0-beta.1 lint
+> portal-alumno-cloud@1.0.0-beta.0 lint
 > eslint . --ext .ts --max-warnings=0
+
 

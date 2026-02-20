@@ -40,7 +40,7 @@ Fecha de baseline: 2026-02-13.
 - `CI Checks` se mantiene como señal integradora global para release gating.
 
 ## Proteccion de rama main (Ruleset activo)
-- Ruleset: `main-v1b-minimo` (target `branch`, enforcement `active`).
+- Ruleset: `main-1-0-beta-minimo` (target `branch`, enforcement `active`).
 - Alcance: `refs/heads/main`.
 - Reglas vigentes:
   - bloqueo de borrado de rama (`deletion`),

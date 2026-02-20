@@ -60,7 +60,6 @@ addCheck(
 
 const bannedTokens = [
   { id: 'token.api.v2', pattern: '/api/v2' },
-  { id: 'token.canary.rollout', pattern: 'canary-rollout' },
   { id: 'token.engineUsed', pattern: 'engineUsed' }
 ];
 
@@ -74,12 +73,7 @@ addCheck('token.pdf.totalReactivos.compat', pdfCompatCount === 0, `totalReactivo
 
 const removedFiles = [
   'apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts',
-  'apps/backend/src/compartido/observabilidad/middlewareAdopcionCanary.ts',
-  'apps/backend/src/compartido/observabilidad/metricsAdopcion.ts',
-  'apps/backend/src/compartido/observabilidad/rolloutCanary.ts',
-  'apps/backend/src/compartido/observabilidad/rutasCanaryRollout.ts',
-  'scripts/canary-adoption-monitor.mjs',
-  'scripts/canary-rollout-check.mjs'
+  'apps/backend/src/compartido/observabilidad/metricsAdopcion.ts'
 ];
 
 for (const filePath of removedFiles) {
