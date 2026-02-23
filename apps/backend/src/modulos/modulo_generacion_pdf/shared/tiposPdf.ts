@@ -61,7 +61,7 @@ export interface ResultadoGeneracionPdf {
 
 export interface MapaOmr {
   margenMm: number;
-  templateVersion: number;
+  templateVersion: TemplateVersion;
   markerSpec?: MarkerSpecOmr;
   blockSpec?: BlockSpecOmr;
   engineHints?: EngineHintsOmr;

@@ -8,13 +8,17 @@
  */
 import type {
   ParametrosGeneracionPdf,
-  PreguntaBase,
   ResultadoGeneracionPdf
 } from '../../shared/tiposPdf';
 import { ExamenPdf } from '../../domain/examenPdf';
 import { obtenerPerfilPlantilla } from '../../domain/layoutExamen';
 import { resolverPerfilLayout } from '../../infra/configuracionLayoutEnv';
 import { PdfKitRenderer } from '../../infra/pdfKitRenderer';
+import {
+  normalizarMapaVarianteTv3,
+  normalizarPreguntasParaTv3,
+  TEMPLATE_VERSION_TV3
+} from '../../domain/tv3Compat';
 
 /**
  * Genera un PDF de examen individual.
@@ -24,36 +28,10 @@ import { PdfKitRenderer } from '../../infra/pdfKitRenderer';
 export async function generarExamenIndividual(
   params: ParametrosGeneracionPdf
 ): Promise<ResultadoGeneracionPdf> {
-  const preguntas: PreguntaBase[] =
-    Array.isArray(params.preguntas) && params.preguntas.length > 0
-      ? params.preguntas
-      : [
-          {
-            id: 'placeholder-1',
-            enunciado: 'Pregunta de respaldo',
-            opciones: [
-              { texto: 'A', esCorrecta: false },
-              { texto: 'B', esCorrecta: false },
-              { texto: 'C', esCorrecta: false },
-              { texto: 'D', esCorrecta: false }
-            ]
-          }
-        ];
+  const preguntas = normalizarPreguntasParaTv3(params.preguntas);
+  const mapaVariante = normalizarMapaVarianteTv3(preguntas, params.mapaVariante);
 
-  const mapaVariante =
-    params.mapaVariante && Array.isArray(params.mapaVariante.ordenPreguntas)
-      ? params.mapaVariante
-      : {
-          ordenPreguntas: preguntas.map((pregunta) => pregunta.id),
-          ordenOpcionesPorPregunta: Object.fromEntries(
-            preguntas.map((pregunta) => [
-              pregunta.id,
-              pregunta.opciones.map((_, indice) => indice)
-            ])
-          )
-        };
-
-  const templateVersion = 3;
+  const templateVersion = TEMPLATE_VERSION_TV3;
   const totalPaginas = Number.isFinite(params.totalPaginas)
     ? Math.max(1, Math.floor(params.totalPaginas))
     : 1;

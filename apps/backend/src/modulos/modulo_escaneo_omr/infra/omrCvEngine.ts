@@ -6,34 +6,44 @@ export class ErrorOmrCvNoDisponible extends Error {
 
 type EstadoSmokeOmrCv = {
   enabled: boolean;
-  backend: 'opencv' | 'simple';
+  backend: 'opencv';
   cvDisponible: boolean;
   motivo?: string;
 };
+
+let openCvLoaderForTests: (() => Promise<unknown>) | null = null;
 
 function limpiarBase64(entrada: string) {
   return String(entrada ?? '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '').trim();
 }
 
+function resolverCvHabilitado() {
+  const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
+  const enabledSolicitado = !['0', 'false', 'off', 'no'].includes(enabledRaw);
+  if (process.env.NODE_ENV === 'test') return enabledSolicitado;
+  return true;
+}
+
+export function setOpenCvLoaderForTests(loader?: (() => Promise<unknown>) | null) {
+  if (process.env.NODE_ENV !== 'test') return;
+  openCvLoaderForTests = loader ?? null;
+}
+
 async function validarBackendOpenCv() {
   try {
+    if (openCvLoaderForTests) {
+      await openCvLoaderForTests();
+      return;
+    }
     const dynamicImporter = new Function('m', 'return import(m)') as (moduleName: string) => Promise<unknown>;
     await dynamicImporter('opencv4nodejs');
   } catch {
-    throw new ErrorOmrCvNoDisponible(
-      'Backend OpenCV no disponible en runtime. Instala opencv4nodejs o cambia OMR_CV_BACKEND=simple.'
-    );
+    throw new ErrorOmrCvNoDisponible('Backend OpenCV no disponible en runtime. Instala opencv4nodejs.');
   }
 }
 
-function resolverBackendCv(): 'opencv' | 'simple' {
-  const backend = String(process.env.OMR_CV_BACKEND ?? 'simple').trim().toLowerCase();
-  return backend === 'opencv' ? 'opencv' : 'simple';
-}
-
 export function debeIntentarMotorCv(templateVersion?: number) {
-  const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
-  const enabled = !['0', 'false', 'off', 'no'].includes(enabledRaw);
+  const enabled = resolverCvHabilitado();
   return enabled && Number(templateVersion ?? 3) === 3;
 }
 
@@ -43,23 +53,14 @@ export function describirErrorCv(error: unknown) {
 }
 
 export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
-  const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
-  const enabled = !['0', 'false', 'off', 'no'].includes(enabledRaw);
-  const backend = resolverBackendCv();
+  const enabled = resolverCvHabilitado();
+  const backend = 'opencv' as const;
   if (!enabled) {
     return {
       enabled,
       backend,
       cvDisponible: false,
-      motivo: 'OMR_CV_ENGINE_ENABLED desactivado'
-    };
-  }
-  if (backend !== 'opencv') {
-    return {
-      enabled,
-      backend,
-      cvDisponible: false,
-      motivo: 'OMR_CV_BACKEND=simple (modo fallback explícito)'
+      motivo: 'OMR_CV_ENGINE_ENABLED desactivado (solo permitido en tests)'
     };
   }
   try {
@@ -80,10 +81,7 @@ export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
 }
 
 export async function preprocesarImagenOmrCv(imagenBase64: string) {
-  const backend = resolverBackendCv();
-  if (backend === 'opencv') {
-    await validarBackendOpenCv();
-  }
+  await validarBackendOpenCv();
 
   const limpio = limpiarBase64(imagenBase64);
   if (!limpio) throw new Error('Imagen base64 vacia');

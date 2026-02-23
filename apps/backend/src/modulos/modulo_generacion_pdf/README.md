@@ -21,6 +21,10 @@ Principios activos:
 - Sin motor paralelo antiguo.
 - Contrato unico para layout/paginacion TV3.
 - Sin compatibilidad de `totalReactivos` en modulo PDF.
+- Compatibilidad TV3 estricta en generacion:
+  - `templateVersion` fijo a TV3.
+  - preguntas normalizadas a 5 opciones para mapa OMR TV3.
+  - preguntas con mas de 5 opciones se rechazan (422).
 
 ## Contrato operativo
 

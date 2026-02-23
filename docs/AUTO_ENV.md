@@ -6,6 +6,10 @@ No editar a mano: los cambios se pisan al regenerar.
 Nota: esto detecta uso por texto (regex). Si agregas una variable nueva en código,
 este documento se actualiza automáticamente al regenerar.
 
+Contrato OMR CV actual:
+- `OMR_CV_BACKEND` retirado del contrato operativo.
+- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere OpenCV.
+
 ## Backend
 - `API_BASE` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `CODIGO_ACCESO_HORAS` (usado en: apps/backend/src/configuracion.ts)
@@ -41,8 +45,7 @@ este documento se actualiza automáticamente al regenerar.
 - `OMR_BOX_WIDTH_PTS` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)
 - `OMR_COLORIMETRY_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)
 - `OMR_COLORIMETRY_WHITE_PERCENTILE` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)
-- `OMR_CV_BACKEND` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/tests/omr.cv.engine.test.ts)
-- `OMR_CV_ENGINE_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/tests/omr.cv.engine.test.ts)
+- `OMR_CV_ENGINE_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/tests/omr.cv.engine.test.ts; solo tests para apagado)
 - `OMR_DEBUG` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)
 - `OMR_DEBUG_DIR` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)
 - `OMR_DELTA_MIN` (usado en: apps/backend/scripts/omr-tv3-synthetic-lib.ts, apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrV2.ts)

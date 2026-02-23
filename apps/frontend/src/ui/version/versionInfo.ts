@@ -8,3 +8,4 @@ export function abrirVentanaVersion(portal: 'docente' | 'alumno') {
   const url = `${base}#/version-info?portal=${encodeURIComponent(portal)}`;
   window.open(url, '_blank', 'noopener,noreferrer,width=1220,height=860');
 }
+

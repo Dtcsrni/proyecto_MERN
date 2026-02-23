@@ -35,6 +35,12 @@ import { generarPdfExamen } from './servicioGeneracionPdf';
 import { generarVariante } from './servicioVariantes';
 import { resolverNumeroPaginasPlantilla } from './domain/resolverNumeroPaginasPlantilla';
 import { guardarEnPapelera } from '../modulo_papelera/servicioPapelera';
+import {
+  construirMapaVarianteUsadaTv3,
+  extraerPreguntasUsadasMapaOmr,
+  normalizarPreguntasParaTv3,
+  TEMPLATE_VERSION_TV3
+} from './domain/tv3Compat';
 
 type MapaVariante = {
   ordenPreguntas: string[];
@@ -132,7 +138,15 @@ function formatearDocente(nombreCompleto: unknown): string {
 
 function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 3 {
   void params;
-  return 3;
+  return TEMPLATE_VERSION_TV3;
+}
+
+function construirMapaVarianteUsadaDesdeOmr(
+  mapaVariante: MapaVariante,
+  mapaOmr: { paginas?: Array<{ preguntas?: Array<{ idPregunta?: string }> }> }
+) {
+  const usados = extraerPreguntasUsadasMapaOmr(mapaOmr as never);
+  return construirMapaVarianteUsadaTv3(mapaVariante as never, usados);
 }
 
 const PREVIEW_TTL_MS = 30 * 60 * 1000;
@@ -554,17 +568,19 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
   const totalDisponibles = preguntasDb.length;
   const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
-  const preguntasBase = preguntasDb.map((pregunta) => {
-    const version =
-      pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
-      pregunta.versiones[0];
-    return {
-      id: String(pregunta._id),
-      enunciado: version.enunciado,
-      imagenUrl: version.imagenUrl ?? undefined,
-      opciones: version.opciones
-    };
-  });
+  const preguntasBase = normalizarPreguntasParaTv3(
+    preguntasDb.map((pregunta) => {
+      const version =
+        pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
+        pregunta.versiones[0];
+      return {
+        id: String(pregunta._id),
+        enunciado: version.enunciado,
+        imagenUrl: version.imagenUrl ?? undefined,
+        opciones: version.opciones
+      };
+    })
+  );
 
   const seed = hash32(String(plantilla._id));
   const preguntasCandidatas = barajarDeterminista(preguntasBase, seed);
@@ -617,14 +633,7 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
     (typeof preguntasCandidatas)[number]
   >;
 
-  const usadosSet = new Set<string>();
-  for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
-    for (const pr of pag.preguntas ?? []) {
-      const id = String(pr.idPregunta ?? '').trim();
-      if (id) usadosSet.add(id);
-    }
-  }
-  const totalUsados = usadosSet.size;
+  const totalUsados = extraerPreguntasUsadasMapaOmr(mapaOmr as never).size;
   const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === paginasObjetivo);
   const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
   const consumioTodas = totalUsados >= totalDisponibles;
@@ -744,17 +753,19 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
 
   const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
-  const preguntasBase = preguntasDb.map((pregunta) => {
-    const version =
-      pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
-      pregunta.versiones[0];
-    return {
-      id: String(pregunta._id),
-      enunciado: version.enunciado,
-      imagenUrl: version.imagenUrl ?? undefined,
-      opciones: version.opciones
-    };
-  });
+  const preguntasBase = normalizarPreguntasParaTv3(
+    preguntasDb.map((pregunta) => {
+      const version =
+        pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
+        pregunta.versiones[0];
+      return {
+        id: String(pregunta._id),
+        enunciado: version.enunciado,
+        imagenUrl: version.imagenUrl ?? undefined,
+        opciones: version.opciones
+      };
+    })
+  );
 
   const esDev = String(configuracion.entorno).toLowerCase() === 'development';
   if (!esDev) {
@@ -929,17 +940,19 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   }
   const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
-  const preguntasBase = preguntasDb.map((pregunta) => {
-    const version =
-      pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
-      pregunta.versiones[0];
-    return {
-      id: String(pregunta._id),
-      enunciado: version.enunciado,
-      imagenUrl: version.imagenUrl ?? undefined,
-      opciones: version.opciones
-    };
-  });
+  const preguntasBase = normalizarPreguntasParaTv3(
+    preguntasDb.map((pregunta) => {
+      const version =
+        pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
+        pregunta.versiones[0];
+      return {
+        id: String(pregunta._id),
+        enunciado: version.enunciado,
+        imagenUrl: version.imagenUrl ?? undefined,
+        opciones: version.opciones
+      };
+    })
+  );
 
   const preguntasCandidatas = barajar(preguntasBase);
   const mapaVariante = generarVariante(preguntasCandidatas);
@@ -971,21 +984,8 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     }
   });
 
-  const usadosSet = new Set<string>();
-  for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
-    for (const pr of pag.preguntas ?? []) {
-      const id = String(pr.idPregunta ?? '').trim();
-      if (id) usadosSet.add(id);
-    }
-  }
-  const ordenUsado = (mapaVariante.ordenPreguntas ?? []).filter((id) => usadosSet.has(id));
-  const ordenOpcionesPorPreguntaUsado = Object.fromEntries(
-    ordenUsado.map((id) => [id, (mapaVariante as unknown as { ordenOpcionesPorPregunta?: Record<string, number[]> }).ordenOpcionesPorPregunta?.[id]])
-  ) as Record<string, number[]>;
-  const mapaVarianteUsada = {
-    ordenPreguntas: ordenUsado,
-    ordenOpcionesPorPregunta: ordenOpcionesPorPreguntaUsado
-  };
+  const usadosSet = extraerPreguntasUsadasMapaOmr(mapaOmr as never);
+  const mapaVarianteUsada = construirMapaVarianteUsadaDesdeOmr(mapaVariante, mapaOmr);
 
   const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
   const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
@@ -1043,7 +1043,7 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     loteId,
     folio,
     estado: 'generado',
-    preguntasIds: ordenUsado,
+    preguntasIds: mapaVarianteUsada.ordenPreguntas,
     mapaVariante: mapaVarianteUsada,
     paginas,
     mapaOmr,
@@ -1134,17 +1134,19 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   }
   const numeroPaginas = resolverNumeroPaginasPlantilla(plantilla as unknown as { numeroPaginas?: unknown });
 
-  const preguntasBase = preguntasDb.map((pregunta) => {
-    const version =
-      pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
-      pregunta.versiones[0];
-    return {
-      id: String(pregunta._id),
-      enunciado: version.enunciado,
-      imagenUrl: version.imagenUrl ?? undefined,
-      opciones: version.opciones
-    };
-  });
+  const preguntasBase = normalizarPreguntasParaTv3(
+    preguntasDb.map((pregunta) => {
+      const version =
+        pregunta.versiones.find((item: { numeroVersion: number }) => item.numeroVersion === pregunta.versionActual) ??
+        pregunta.versiones[0];
+      return {
+        id: String(pregunta._id),
+        enunciado: version.enunciado,
+        imagenUrl: version.imagenUrl ?? undefined,
+        opciones: version.opciones
+      };
+    })
+  );
 
   // Pre-chequeo: si ni usando TODO el banco alcanza para llenar las paginas, bloquea el lote.
   const templateVersionOmr = resolverTemplateVersionOmr({
@@ -1170,13 +1172,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
         instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? '')
       }
     });
-    const usadosSet = new Set<string>();
-    for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
-      for (const pr of pag.preguntas ?? []) {
-        const id = String(pr.idPregunta ?? '').trim();
-        if (id) usadosSet.add(id);
-      }
-    }
+    const usadosSet = extraerPreguntasUsadasMapaOmr(mapaOmr as never);
     const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
     const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
     const consumioTodas = usadosSet.size >= preguntasDb.length;
@@ -1219,21 +1215,8 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           }
         });
 
-        const usadosSet = new Set<string>();
-        for (const pag of (mapaOmr?.paginas ?? []) as Array<{ preguntas?: Array<{ idPregunta?: string }> }>) {
-          for (const pr of pag.preguntas ?? []) {
-            const id = String(pr.idPregunta ?? '').trim();
-            if (id) usadosSet.add(id);
-          }
-        }
-        const ordenUsado = (mapaVariante.ordenPreguntas ?? []).filter((id) => usadosSet.has(id));
-        const ordenOpcionesPorPreguntaUsado = Object.fromEntries(
-          ordenUsado.map((id) => [id, (mapaVariante as unknown as { ordenOpcionesPorPregunta?: Record<string, number[]> }).ordenOpcionesPorPregunta?.[id]])
-        ) as Record<string, number[]>;
-        const mapaVarianteUsada = {
-          ordenPreguntas: ordenUsado,
-          ordenOpcionesPorPregunta: ordenOpcionesPorPreguntaUsado
-        };
+        const usadosSet = extraerPreguntasUsadasMapaOmr(mapaOmr as never);
+        const mapaVarianteUsada = construirMapaVarianteUsadaDesdeOmr(mapaVariante, mapaOmr);
 
         const ultima = (Array.isArray(metricasPaginas) ? metricasPaginas : []).find((m) => m.numero === numeroPaginas);
         const fraccionVaciaUltimaPagina = Number(ultima?.fraccionVacia ?? 0);
@@ -1266,7 +1249,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           loteId,
           folio,
           estado: 'generado',
-          preguntasIds: ordenUsado,
+          preguntasIds: mapaVarianteUsada.ordenPreguntas,
           mapaVariante: mapaVarianteUsada,
           paginas,
           mapaOmr,

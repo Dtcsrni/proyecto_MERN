@@ -15,6 +15,7 @@ import {
   type PerfilPlantillaOmr,
   type ResultadoGeneracionPdf
 } from '../shared/tiposPdf';
+import { TEMPLATE_VERSION_TV3 } from '../domain/tv3Compat';
 
 type PerfilPlantillaRender = PerfilPlantillaOmr & {
   version: 3;
@@ -396,7 +397,9 @@ function partirEnLineas({
 }
 
 function resolverPerfilRender(templateVersion: 3, perfilBase: PerfilPlantillaOmr): PerfilPlantillaRender {
-  void templateVersion;
+  if (templateVersion !== TEMPLATE_VERSION_TV3) {
+    throw new Error(`Template version ${String(templateVersion)} no compatible para renderer TV3`);
+  }
   const base = PERFIL_OMR_V3_RENDER;
   return {
     ...base,

@@ -273,7 +273,727 @@
       "templateVersion": 3,
       "seed": 20265458,
       "variantIndex": 5
+    },
+    {
+      "captureId": "SYNTH-007-P1",
+      "imagePath": "images/SYNTH-007-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-007-P1.json",
+      "folio": "SYNTH-007",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20266467,
+      "variantIndex": 6
+    },
+    {
+      "captureId": "SYNTH-007-P2",
+      "imagePath": "images/SYNTH-007-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-007-P2.json",
+      "folio": "SYNTH-007",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20266467,
+      "variantIndex": 6
+    },
+    {
+      "captureId": "SYNTH-007-P3",
+      "imagePath": "images/SYNTH-007-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-007-P3.json",
+      "folio": "SYNTH-007",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20266467,
+      "variantIndex": 6
+    },
+    {
+      "captureId": "SYNTH-007-P4",
+      "imagePath": "images/SYNTH-007-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-007-P4.json",
+      "folio": "SYNTH-007",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20266467,
+      "variantIndex": 6
+    },
+    {
+      "captureId": "SYNTH-008-P1",
+      "imagePath": "images/SYNTH-008-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-008-P1.json",
+      "folio": "SYNTH-008",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20267476,
+      "variantIndex": 7
+    },
+    {
+      "captureId": "SYNTH-008-P2",
+      "imagePath": "images/SYNTH-008-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-008-P2.json",
+      "folio": "SYNTH-008",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20267476,
+      "variantIndex": 7
+    },
+    {
+      "captureId": "SYNTH-008-P3",
+      "imagePath": "images/SYNTH-008-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-008-P3.json",
+      "folio": "SYNTH-008",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20267476,
+      "variantIndex": 7
+    },
+    {
+      "captureId": "SYNTH-008-P4",
+      "imagePath": "images/SYNTH-008-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-008-P4.json",
+      "folio": "SYNTH-008",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20267476,
+      "variantIndex": 7
+    },
+    {
+      "captureId": "SYNTH-009-P1",
+      "imagePath": "images/SYNTH-009-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-009-P1.json",
+      "folio": "SYNTH-009",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20268485,
+      "variantIndex": 8
+    },
+    {
+      "captureId": "SYNTH-009-P2",
+      "imagePath": "images/SYNTH-009-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-009-P2.json",
+      "folio": "SYNTH-009",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20268485,
+      "variantIndex": 8
+    },
+    {
+      "captureId": "SYNTH-009-P3",
+      "imagePath": "images/SYNTH-009-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-009-P3.json",
+      "folio": "SYNTH-009",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20268485,
+      "variantIndex": 8
+    },
+    {
+      "captureId": "SYNTH-009-P4",
+      "imagePath": "images/SYNTH-009-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-009-P4.json",
+      "folio": "SYNTH-009",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20268485,
+      "variantIndex": 8
+    },
+    {
+      "captureId": "SYNTH-010-P1",
+      "imagePath": "images/SYNTH-010-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-010-P1.json",
+      "folio": "SYNTH-010",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20269494,
+      "variantIndex": 9
+    },
+    {
+      "captureId": "SYNTH-010-P2",
+      "imagePath": "images/SYNTH-010-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-010-P2.json",
+      "folio": "SYNTH-010",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20269494,
+      "variantIndex": 9
+    },
+    {
+      "captureId": "SYNTH-010-P3",
+      "imagePath": "images/SYNTH-010-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-010-P3.json",
+      "folio": "SYNTH-010",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20269494,
+      "variantIndex": 9
+    },
+    {
+      "captureId": "SYNTH-010-P4",
+      "imagePath": "images/SYNTH-010-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-010-P4.json",
+      "folio": "SYNTH-010",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20269494,
+      "variantIndex": 9
+    },
+    {
+      "captureId": "SYNTH-011-P1",
+      "imagePath": "images/SYNTH-011-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-011-P1.json",
+      "folio": "SYNTH-011",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20270503,
+      "variantIndex": 10
+    },
+    {
+      "captureId": "SYNTH-011-P2",
+      "imagePath": "images/SYNTH-011-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-011-P2.json",
+      "folio": "SYNTH-011",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20270503,
+      "variantIndex": 10
+    },
+    {
+      "captureId": "SYNTH-011-P3",
+      "imagePath": "images/SYNTH-011-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-011-P3.json",
+      "folio": "SYNTH-011",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20270503,
+      "variantIndex": 10
+    },
+    {
+      "captureId": "SYNTH-011-P4",
+      "imagePath": "images/SYNTH-011-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-011-P4.json",
+      "folio": "SYNTH-011",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20270503,
+      "variantIndex": 10
+    },
+    {
+      "captureId": "SYNTH-012-P1",
+      "imagePath": "images/SYNTH-012-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-012-P1.json",
+      "folio": "SYNTH-012",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20271512,
+      "variantIndex": 11
+    },
+    {
+      "captureId": "SYNTH-012-P2",
+      "imagePath": "images/SYNTH-012-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-012-P2.json",
+      "folio": "SYNTH-012",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20271512,
+      "variantIndex": 11
+    },
+    {
+      "captureId": "SYNTH-012-P3",
+      "imagePath": "images/SYNTH-012-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-012-P3.json",
+      "folio": "SYNTH-012",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20271512,
+      "variantIndex": 11
+    },
+    {
+      "captureId": "SYNTH-012-P4",
+      "imagePath": "images/SYNTH-012-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-012-P4.json",
+      "folio": "SYNTH-012",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20271512,
+      "variantIndex": 11
+    },
+    {
+      "captureId": "SYNTH-013-P1",
+      "imagePath": "images/SYNTH-013-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-013-P1.json",
+      "folio": "SYNTH-013",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20272521,
+      "variantIndex": 12
+    },
+    {
+      "captureId": "SYNTH-013-P2",
+      "imagePath": "images/SYNTH-013-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-013-P2.json",
+      "folio": "SYNTH-013",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20272521,
+      "variantIndex": 12
+    },
+    {
+      "captureId": "SYNTH-013-P3",
+      "imagePath": "images/SYNTH-013-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-013-P3.json",
+      "folio": "SYNTH-013",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20272521,
+      "variantIndex": 12
+    },
+    {
+      "captureId": "SYNTH-013-P4",
+      "imagePath": "images/SYNTH-013-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-013-P4.json",
+      "folio": "SYNTH-013",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20272521,
+      "variantIndex": 12
+    },
+    {
+      "captureId": "SYNTH-014-P1",
+      "imagePath": "images/SYNTH-014-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-014-P1.json",
+      "folio": "SYNTH-014",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20273530,
+      "variantIndex": 13
+    },
+    {
+      "captureId": "SYNTH-014-P2",
+      "imagePath": "images/SYNTH-014-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-014-P2.json",
+      "folio": "SYNTH-014",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20273530,
+      "variantIndex": 13
+    },
+    {
+      "captureId": "SYNTH-014-P3",
+      "imagePath": "images/SYNTH-014-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-014-P3.json",
+      "folio": "SYNTH-014",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20273530,
+      "variantIndex": 13
+    },
+    {
+      "captureId": "SYNTH-014-P4",
+      "imagePath": "images/SYNTH-014-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-014-P4.json",
+      "folio": "SYNTH-014",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20273530,
+      "variantIndex": 13
+    },
+    {
+      "captureId": "SYNTH-015-P1",
+      "imagePath": "images/SYNTH-015-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-015-P1.json",
+      "folio": "SYNTH-015",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20274539,
+      "variantIndex": 14
+    },
+    {
+      "captureId": "SYNTH-015-P2",
+      "imagePath": "images/SYNTH-015-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-015-P2.json",
+      "folio": "SYNTH-015",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20274539,
+      "variantIndex": 14
+    },
+    {
+      "captureId": "SYNTH-015-P3",
+      "imagePath": "images/SYNTH-015-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-015-P3.json",
+      "folio": "SYNTH-015",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20274539,
+      "variantIndex": 14
+    },
+    {
+      "captureId": "SYNTH-015-P4",
+      "imagePath": "images/SYNTH-015-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-015-P4.json",
+      "folio": "SYNTH-015",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20274539,
+      "variantIndex": 14
+    },
+    {
+      "captureId": "SYNTH-016-P1",
+      "imagePath": "images/SYNTH-016-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-016-P1.json",
+      "folio": "SYNTH-016",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20275548,
+      "variantIndex": 15
+    },
+    {
+      "captureId": "SYNTH-016-P2",
+      "imagePath": "images/SYNTH-016-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-016-P2.json",
+      "folio": "SYNTH-016",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20275548,
+      "variantIndex": 15
+    },
+    {
+      "captureId": "SYNTH-016-P3",
+      "imagePath": "images/SYNTH-016-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-016-P3.json",
+      "folio": "SYNTH-016",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20275548,
+      "variantIndex": 15
+    },
+    {
+      "captureId": "SYNTH-016-P4",
+      "imagePath": "images/SYNTH-016-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-016-P4.json",
+      "folio": "SYNTH-016",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20275548,
+      "variantIndex": 15
+    },
+    {
+      "captureId": "SYNTH-017-P1",
+      "imagePath": "images/SYNTH-017-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-017-P1.json",
+      "folio": "SYNTH-017",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20276557,
+      "variantIndex": 16
+    },
+    {
+      "captureId": "SYNTH-017-P2",
+      "imagePath": "images/SYNTH-017-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-017-P2.json",
+      "folio": "SYNTH-017",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20276557,
+      "variantIndex": 16
+    },
+    {
+      "captureId": "SYNTH-017-P3",
+      "imagePath": "images/SYNTH-017-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-017-P3.json",
+      "folio": "SYNTH-017",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20276557,
+      "variantIndex": 16
+    },
+    {
+      "captureId": "SYNTH-017-P4",
+      "imagePath": "images/SYNTH-017-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-017-P4.json",
+      "folio": "SYNTH-017",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20276557,
+      "variantIndex": 16
+    },
+    {
+      "captureId": "SYNTH-018-P1",
+      "imagePath": "images/SYNTH-018-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-018-P1.json",
+      "folio": "SYNTH-018",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20277566,
+      "variantIndex": 17
+    },
+    {
+      "captureId": "SYNTH-018-P2",
+      "imagePath": "images/SYNTH-018-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-018-P2.json",
+      "folio": "SYNTH-018",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20277566,
+      "variantIndex": 17
+    },
+    {
+      "captureId": "SYNTH-018-P3",
+      "imagePath": "images/SYNTH-018-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-018-P3.json",
+      "folio": "SYNTH-018",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20277566,
+      "variantIndex": 17
+    },
+    {
+      "captureId": "SYNTH-018-P4",
+      "imagePath": "images/SYNTH-018-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-018-P4.json",
+      "folio": "SYNTH-018",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20277566,
+      "variantIndex": 17
+    },
+    {
+      "captureId": "SYNTH-019-P1",
+      "imagePath": "images/SYNTH-019-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-019-P1.json",
+      "folio": "SYNTH-019",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20278575,
+      "variantIndex": 18
+    },
+    {
+      "captureId": "SYNTH-019-P2",
+      "imagePath": "images/SYNTH-019-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-019-P2.json",
+      "folio": "SYNTH-019",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20278575,
+      "variantIndex": 18
+    },
+    {
+      "captureId": "SYNTH-019-P3",
+      "imagePath": "images/SYNTH-019-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-019-P3.json",
+      "folio": "SYNTH-019",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20278575,
+      "variantIndex": 18
+    },
+    {
+      "captureId": "SYNTH-019-P4",
+      "imagePath": "images/SYNTH-019-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-019-P4.json",
+      "folio": "SYNTH-019",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20278575,
+      "variantIndex": 18
+    },
+    {
+      "captureId": "SYNTH-020-P1",
+      "imagePath": "images/SYNTH-020-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-020-P1.json",
+      "folio": "SYNTH-020",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20279584,
+      "variantIndex": 19
+    },
+    {
+      "captureId": "SYNTH-020-P2",
+      "imagePath": "images/SYNTH-020-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-020-P2.json",
+      "folio": "SYNTH-020",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20279584,
+      "variantIndex": 19
+    },
+    {
+      "captureId": "SYNTH-020-P3",
+      "imagePath": "images/SYNTH-020-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-020-P3.json",
+      "folio": "SYNTH-020",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20279584,
+      "variantIndex": 19
+    },
+    {
+      "captureId": "SYNTH-020-P4",
+      "imagePath": "images/SYNTH-020-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-020-P4.json",
+      "folio": "SYNTH-020",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20279584,
+      "variantIndex": 19
+    },
+    {
+      "captureId": "SYNTH-021-P1",
+      "imagePath": "images/SYNTH-021-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-021-P1.json",
+      "folio": "SYNTH-021",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20280593,
+      "variantIndex": 20
+    },
+    {
+      "captureId": "SYNTH-021-P2",
+      "imagePath": "images/SYNTH-021-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-021-P2.json",
+      "folio": "SYNTH-021",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20280593,
+      "variantIndex": 20
+    },
+    {
+      "captureId": "SYNTH-021-P3",
+      "imagePath": "images/SYNTH-021-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-021-P3.json",
+      "folio": "SYNTH-021",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20280593,
+      "variantIndex": 20
+    },
+    {
+      "captureId": "SYNTH-021-P4",
+      "imagePath": "images/SYNTH-021-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-021-P4.json",
+      "folio": "SYNTH-021",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20280593,
+      "variantIndex": 20
+    },
+    {
+      "captureId": "SYNTH-022-P1",
+      "imagePath": "images/SYNTH-022-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-022-P1.json",
+      "folio": "SYNTH-022",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20281602,
+      "variantIndex": 21
+    },
+    {
+      "captureId": "SYNTH-022-P2",
+      "imagePath": "images/SYNTH-022-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-022-P2.json",
+      "folio": "SYNTH-022",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20281602,
+      "variantIndex": 21
+    },
+    {
+      "captureId": "SYNTH-022-P3",
+      "imagePath": "images/SYNTH-022-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-022-P3.json",
+      "folio": "SYNTH-022",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20281602,
+      "variantIndex": 21
+    },
+    {
+      "captureId": "SYNTH-022-P4",
+      "imagePath": "images/SYNTH-022-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-022-P4.json",
+      "folio": "SYNTH-022",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20281602,
+      "variantIndex": 21
+    },
+    {
+      "captureId": "SYNTH-023-P1",
+      "imagePath": "images/SYNTH-023-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-023-P1.json",
+      "folio": "SYNTH-023",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20282611,
+      "variantIndex": 22
+    },
+    {
+      "captureId": "SYNTH-023-P2",
+      "imagePath": "images/SYNTH-023-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-023-P2.json",
+      "folio": "SYNTH-023",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20282611,
+      "variantIndex": 22
+    },
+    {
+      "captureId": "SYNTH-023-P3",
+      "imagePath": "images/SYNTH-023-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-023-P3.json",
+      "folio": "SYNTH-023",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20282611,
+      "variantIndex": 22
+    },
+    {
+      "captureId": "SYNTH-023-P4",
+      "imagePath": "images/SYNTH-023-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-023-P4.json",
+      "folio": "SYNTH-023",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20282611,
+      "variantIndex": 22
+    },
+    {
+      "captureId": "SYNTH-024-P1",
+      "imagePath": "images/SYNTH-024-P1.jpg",
+      "mapaOmrPath": "maps/SYNTH-024-P1.json",
+      "folio": "SYNTH-024",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20283620,
+      "variantIndex": 23
+    },
+    {
+      "captureId": "SYNTH-024-P2",
+      "imagePath": "images/SYNTH-024-P2.jpg",
+      "mapaOmrPath": "maps/SYNTH-024-P2.json",
+      "folio": "SYNTH-024",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20283620,
+      "variantIndex": 23
+    },
+    {
+      "captureId": "SYNTH-024-P3",
+      "imagePath": "images/SYNTH-024-P3.jpg",
+      "mapaOmrPath": "maps/SYNTH-024-P3.json",
+      "folio": "SYNTH-024",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20283620,
+      "variantIndex": 23
+    },
+    {
+      "captureId": "SYNTH-024-P4",
+      "imagePath": "images/SYNTH-024-P4.jpg",
+      "mapaOmrPath": "maps/SYNTH-024-P4.json",
+      "folio": "SYNTH-024",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20283620,
+      "variantIndex": 23
     }
   ],
-  "hash": "ba6edcccc52b139442da9fd77280a118d581c4969e1b8d6e2ff70372e3eb2b37"
+  "hash": "e4b8f12640b81b4e5bee714a29dae2fba85217d1e4a7f60d5ea3e4ba32b1376b"
 }
