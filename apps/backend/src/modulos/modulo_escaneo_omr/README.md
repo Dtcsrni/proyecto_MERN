@@ -33,10 +33,10 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - El motor operativo se mantiene en `servicioOmrV2.ts` y módulos `omr/*`.
 - No existe fallback runtime a `servicioOmrLegacy`.
 
-## Runtime CV (OpenCV obligatorio)
-- El preproceso CV de OMR TV3 es `OpenCV-only`.
+## Runtime CV (backend obligatorio)
+- El preproceso CV de OMR TV3 usa backend `sharp`.
 - No existe backend `simple`.
-- Si OpenCV no está disponible, el backend falla en arranque (smoke test bloqueante).
+- Si el backend CV no está disponible, el backend falla en arranque (smoke test bloqueante).
 - Verificación local:
   - `npm -C apps/backend run omr:cv:smoke`
   - `npm -C apps/backend run omr:tv3:eval:synthetic`

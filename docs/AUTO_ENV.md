@@ -8,7 +8,7 @@ este documento se actualiza automáticamente al regenerar.
 
 Contrato OMR CV actual:
 - `OMR_CV_BACKEND` retirado del contrato operativo.
-- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere OpenCV.
+- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere backend CV (`sharp`).
 
 ## Backend
 - `API_BASE` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)

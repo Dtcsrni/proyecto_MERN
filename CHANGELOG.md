@@ -5,11 +5,11 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
-- OMR CV TV3 con OpenCV obligatorio:
+- OMR CV TV3 con backend CV obligatorio:
   - script de smoke bloqueante `apps/backend/scripts/omr-cv-smoke.ts`.
   - comando `npm -C apps/backend run omr:cv:smoke`.
 - Dependencia explícita de backend:
-  - `opencv4nodejs` en `apps/backend/package.json`.
+  - `sharp` en `apps/backend/package.json`.
 - Gate sintético TV3 operativo en CI backend:
   - ejecución bloqueante de `npm -C apps/backend run omr:tv3:eval:synthetic`.
 
@@ -77,16 +77,16 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
-- Contrato OMR CV runtime actualizado a OpenCV-only:
-  - eliminado backend alterno `simple` en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
+- Contrato OMR CV runtime actualizado a `sharp`:
+  - eliminado backend `opencv4nodejs` en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
   - `apps/backend/src/index.ts` ahora aborta arranque si el smoke CV falla.
   - `apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts` conserva reintento con imagen original y motivo `CV_PREPROCESO_REINTENTO:*`.
-- Docker backend reforzado para OpenCV nativo:
-  - `apps/backend/Dockerfile` instala toolchain + `libopencv-dev` y ejecuta smoke CV durante build/runtime image.
+- Docker backend reforzado para backend CV nativo:
+  - `apps/backend/Dockerfile` instala toolchain de compilación y ejecuta smoke CV durante build/runtime image.
 - Stack local actualizado:
   - `docker-compose.yml` fija `OMR_CV_ENGINE_ENABLED=1` en servicios backend local/prod.
 - Workflow de backend (`.github/workflows/ci-backend.yml`) endurecido:
-  - instalación de dependencias del sistema para OpenCV.
+  - preparación de runtime nativo `sharp` en Linux.
   - etapa bloqueante de smoke CV.
   - etapa bloqueante de benchmark sintético TV3.
 - Documentación operativa actualizada:
