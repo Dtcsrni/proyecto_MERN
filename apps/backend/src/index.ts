@@ -15,7 +15,7 @@ async function iniciar() {
   await seedAdminDocente();
   await asegurarIndicesEscaneoOmrArchivado();
   const smokeCv = await ejecutarSmokeTestOmrCv();
-  if (!smokeCv.cvDisponible) {
+  if (smokeCv.enabled && !smokeCv.cvDisponible) {
     throw new ErrorOmrCvNoDisponible(
       `OMR CV smoke test falló y el servidor no puede iniciar sin OpenCV: ${smokeCv.motivo ?? 'causa desconocida'}`
     );

@@ -20,8 +20,7 @@ function limpiarBase64(entrada: string) {
 function resolverCvHabilitado() {
   const enabledRaw = String(process.env.OMR_CV_ENGINE_ENABLED ?? '1').trim().toLowerCase();
   const enabledSolicitado = !['0', 'false', 'off', 'no'].includes(enabledRaw);
-  if (process.env.NODE_ENV === 'test') return enabledSolicitado;
-  return true;
+  return enabledSolicitado;
 }
 
 export function setOpenCvLoaderForTests(loader?: (() => Promise<unknown>) | null) {
@@ -60,7 +59,7 @@ export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
       enabled,
       backend,
       cvDisponible: false,
-      motivo: 'OMR_CV_ENGINE_ENABLED desactivado (solo permitido en tests)'
+      motivo: 'OMR_CV_ENGINE_ENABLED desactivado'
     };
   }
   try {
