@@ -12,7 +12,7 @@ vi.mock('../src/modulos/modulo_escaneo_omr/servicioOmrV2', () => ({
 vi.mock('../src/modulos/modulo_escaneo_omr/infra/omrCvEngine', () => ({
   debeIntentarMotorCv: () => true,
   preprocesarImagenOmrCv: mockPreprocesar,
-  describirErrorCv: () => 'opencv unavailable'
+  describirErrorCv: () => 'cv backend unavailable'
 }));
 
 import { ejecutarEtapaScoring } from '../src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring';
@@ -23,7 +23,7 @@ describe('etapaScoring reintento tras fallo de preproceso CV', () => {
   });
 
   it('registra motivo de reintento cuando falla el backend CV', async () => {
-    mockPreprocesar.mockRejectedValue(new Error('opencv unavailable'));
+    mockPreprocesar.mockRejectedValue(new Error('cv backend unavailable'));
     mockAnalizarOmrV2.mockResolvedValue({
       respuestasDetectadas: [],
       advertencias: [],

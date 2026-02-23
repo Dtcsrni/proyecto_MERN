@@ -23,7 +23,7 @@ function resolverCvHabilitado() {
   return enabledSolicitado;
 }
 
-export function setOpenCvLoaderForTests(loader?: (() => Promise<unknown>) | null) {
+export function setCvBackendCheckForTests(loader?: (() => Promise<unknown>) | null) {
   if (process.env.NODE_ENV !== 'test') return;
   cvBackendCheckForTests = loader ?? null;
 }
