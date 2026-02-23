@@ -5,6 +5,14 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- OMR CV TV3 con OpenCV obligatorio:
+  - script de smoke bloqueante `apps/backend/scripts/omr-cv-smoke.ts`.
+  - comando `npm -C apps/backend run omr:cv:smoke`.
+- Dependencia explícita de backend:
+  - `opencv4nodejs` en `apps/backend/package.json`.
+- Gate sintético TV3 operativo en CI backend:
+  - ejecución bloqueante de `npm -C apps/backend run omr:tv3:eval:synthetic`.
+
 - Documentacion formal de requisitos verificables (RF/RNF) con matriz de trazabilidad (requisito -> evidencia -> gate) en:
   - `docs/ENGINEERING_BASELINE.md` (seccion "Requisitos verificables").
 - Normalizacion contractual de plataforma:
@@ -69,6 +77,21 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
+- Contrato OMR CV runtime actualizado a OpenCV-only:
+  - eliminado backend alterno `simple` en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
+  - `apps/backend/src/index.ts` ahora aborta arranque si el smoke CV falla.
+  - `apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts` conserva reintento con imagen original y motivo `CV_PREPROCESO_REINTENTO:*`.
+- Docker backend reforzado para OpenCV nativo:
+  - `apps/backend/Dockerfile` instala toolchain + `libopencv-dev` y ejecuta smoke CV durante build/runtime image.
+- Stack local actualizado:
+  - `docker-compose.yml` fija `OMR_CV_ENGINE_ENABLED=1` en servicios backend local/prod.
+- Workflow de backend (`.github/workflows/ci-backend.yml`) endurecido:
+  - instalación de dependencias del sistema para OpenCV.
+  - etapa bloqueante de smoke CV.
+  - etapa bloqueante de benchmark sintético TV3.
+- Documentación operativa actualizada:
+  - `README.md`, `apps/backend/src/modulos/modulo_escaneo_omr/README.md`, `docs/AUTO_ENV.md`, `.env`.
+
 - Robustez del gate `test:coverage:diff` ante CI sin merge-base:
   - `scripts/testing/check-diff-coverage.mjs` ahora hace fallback de `origin/base...HEAD` a `origin/base..HEAD` cuando Git reporta `no merge base`, evitando falsos rojos de infraestructura.
 - Ola 2B PDF: extracción de política de negocio `numeroPaginas` a dominio compartido:

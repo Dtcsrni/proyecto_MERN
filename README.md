@@ -22,6 +22,28 @@ Version operativa: `1.0.0-beta.0`
 - Node.js >= 24
 - npm
 - Docker Desktop (recomendado para stack local)
+- OpenCV (requerido por OMR CV en backend)
+
+## OMR CV obligatorio (TV3)
+- El backend OMR TV3 requiere `opencv4nodejs` y librerías OpenCV del sistema.
+- Si OpenCV no está disponible, la API docente falla en arranque por diseño.
+- Verificación rápida:
+```bash
+npm -C apps/backend run omr:cv:smoke
+```
+- Gate sintético TV3 (usa umbrales del dataset en `omr_samples_tv3/manifest.json`):
+```bash
+npm -C apps/backend run omr:tv3:eval:synthetic
+```
+
+### Instalación local mínima de OpenCV
+- Windows:
+  - Instalar OpenCV y toolchain nativo (Visual Studio Build Tools, CMake, Python 3) y asegurar variables/rutas para compilación de módulos nativos de Node.
+- Linux (Debian/Ubuntu):
+```bash
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends python3 make g++ cmake pkg-config libopencv-dev
+```
 
 ## Arranque rapido
 1. Instalar dependencias:

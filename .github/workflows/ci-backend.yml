@@ -54,11 +54,25 @@ jobs:
             apps/frontend/package-lock.json
             apps/portal_alumno_cloud/package-lock.json
 
+      - name: Instalar dependencias del sistema para OpenCV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 \
+            make \
+            g++ \
+            cmake \
+            pkg-config \
+            libopencv-dev
+
       - name: Etapa setup
         run: npm ci
 
       - name: Preparar runtime sharp (linux-x64)
         run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
+
+      - name: Etapa smoke OMR CV (OpenCV obligatorio)
+        run: npm -C apps/backend run omr:cv:smoke
 
       - name: Etapa lint backend
         run: npm -C apps/backend run lint
@@ -68,6 +82,9 @@ jobs:
 
       - name: Etapa test backend
         run: npm run test:backend:ci
+
+      - name: Etapa benchmark OMR TV3 synthetic gate
+        run: npm -C apps/backend run omr:tv3:eval:synthetic
 
       - name: Etapa coverage backend
         run: npm -C apps/backend run test:coverage
