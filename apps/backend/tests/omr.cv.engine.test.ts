@@ -31,7 +31,7 @@ async function crearImagenBase64() {
 }
 
 describe('omrCvEngine', () => {
-  it('falla smoke cuando opencv no está disponible', async () => {
+  it('falla smoke cuando backend CV no está disponible', async () => {
     process.env.OMR_CV_ENGINE_ENABLED = '1';
     setOpenCvLoaderForTests(async () => {
       throw new Error('opencv missing');
@@ -39,31 +39,31 @@ describe('omrCvEngine', () => {
 
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(true);
-    expect(smoke.backend).toBe('opencv');
+    expect(smoke.backend).toBe('sharp');
     expect(smoke.cvDisponible).toBe(false);
-    expect(String(smoke.motivo ?? '')).toContain('Backend OpenCV no disponible');
+    expect(String(smoke.motivo ?? '')).toContain('Backend CV no disponible');
   });
 
-  it('permite apagar engine CV solo en tests', async () => {
+  it('permite apagar engine CV por variable de entorno', async () => {
     process.env.OMR_CV_ENGINE_ENABLED = '0';
 
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(false);
-    expect(smoke.backend).toBe('opencv');
+    expect(smoke.backend).toBe('sharp');
     expect(smoke.cvDisponible).toBe(false);
     expect(debeIntentarMotorCv(3)).toBe(false);
   });
 
-  it('reporta smoke exitoso cuando opencv está disponible', async () => {
+  it('reporta smoke exitoso cuando backend CV está disponible', async () => {
     process.env.OMR_CV_ENGINE_ENABLED = '1';
     setOpenCvLoaderForTests(async () => ({}));
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(true);
-    expect(smoke.backend).toBe('opencv');
+    expect(smoke.backend).toBe('sharp');
     expect(smoke.cvDisponible).toBe(true);
   });
 
-  it('preprocesa imagen con opencv disponible', async () => {
+  it('preprocesa imagen con backend CV disponible', async () => {
     process.env.OMR_CV_ENGINE_ENABLED = '1';
     setOpenCvLoaderForTests(async () => ({}));
     const imagen = await crearImagenBase64();

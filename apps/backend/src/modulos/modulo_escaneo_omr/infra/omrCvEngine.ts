@@ -6,12 +6,12 @@ export class ErrorOmrCvNoDisponible extends Error {
 
 type EstadoSmokeOmrCv = {
   enabled: boolean;
-  backend: 'opencv';
+  backend: 'sharp';
   cvDisponible: boolean;
   motivo?: string;
 };
 
-let openCvLoaderForTests: (() => Promise<unknown>) | null = null;
+let cvBackendCheckForTests: (() => Promise<unknown>) | null = null;
 
 function limpiarBase64(entrada: string) {
   return String(entrada ?? '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '').trim();
@@ -25,19 +25,27 @@ function resolverCvHabilitado() {
 
 export function setOpenCvLoaderForTests(loader?: (() => Promise<unknown>) | null) {
   if (process.env.NODE_ENV !== 'test') return;
-  openCvLoaderForTests = loader ?? null;
+  cvBackendCheckForTests = loader ?? null;
 }
 
-async function validarBackendOpenCv() {
+async function validarBackendCv() {
   try {
-    if (openCvLoaderForTests) {
-      await openCvLoaderForTests();
+    if (cvBackendCheckForTests) {
+      await cvBackendCheckForTests();
       return;
     }
-    const dynamicImporter = new Function('m', 'return import(m)') as (moduleName: string) => Promise<unknown>;
-    await dynamicImporter('opencv4nodejs');
+    await sharp({
+      create: {
+        width: 1,
+        height: 1,
+        channels: 3,
+        background: { r: 255, g: 255, b: 255 }
+      }
+    })
+      .png()
+      .toBuffer();
   } catch {
-    throw new ErrorOmrCvNoDisponible('Backend OpenCV no disponible en runtime. Instala opencv4nodejs.');
+    throw new ErrorOmrCvNoDisponible('Backend CV no disponible en runtime. Verifica dependencia sharp.');
   }
 }
 
@@ -53,7 +61,7 @@ export function describirErrorCv(error: unknown) {
 
 export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
   const enabled = resolverCvHabilitado();
-  const backend = 'opencv' as const;
+  const backend = 'sharp' as const;
   if (!enabled) {
     return {
       enabled,
@@ -63,7 +71,7 @@ export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
     };
   }
   try {
-    await validarBackendOpenCv();
+    await validarBackendCv();
     return {
       enabled,
       backend,
@@ -80,7 +88,7 @@ export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
 }
 
 export async function preprocesarImagenOmrCv(imagenBase64: string) {
-  await validarBackendOpenCv();
+  await validarBackendCv();
 
   const limpio = limpiarBase64(imagenBase64);
   if (!limpio) throw new Error('Imagen base64 vacia');
