@@ -1,9 +1,6 @@
 # Etapa de build: instala deps del monorepo y compila el backend.
 FROM node:24-slim AS builder
 WORKDIR /app
-ENV OPENCV4NODEJS_DISABLE_AUTOBUILD=1
-ENV OPENCV_INCLUDE_DIR=/usr/include/opencv4
-ENV OPENCV_LIB_DIR=/usr/lib/x86_64-linux-gnu
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     python3 \
@@ -11,7 +8,6 @@ RUN apt-get update \
     g++ \
     cmake \
     pkg-config \
-    libopencv-dev \
   && rm -rf /var/lib/apt/lists/*
 RUN npm install -g node-gyp
 COPY package*.json ./
@@ -29,9 +25,6 @@ RUN npm --workspace apps/backend run build
 FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV OPENCV4NODEJS_DISABLE_AUTOBUILD=1
-ENV OPENCV_INCLUDE_DIR=/usr/include/opencv4
-ENV OPENCV_LIB_DIR=/usr/lib/x86_64-linux-gnu
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     python3 \
@@ -39,7 +32,6 @@ RUN apt-get update \
     g++ \
     cmake \
     pkg-config \
-    libopencv-dev \
   && rm -rf /var/lib/apt/lists/*
 RUN npm install -g node-gyp
 COPY package*.json ./
