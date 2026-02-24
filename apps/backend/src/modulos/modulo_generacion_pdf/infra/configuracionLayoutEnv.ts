@@ -21,23 +21,26 @@ function mmAPuntos(mm: number): number {
   return mm * MM_A_PUNTOS;
 }
 
+function leerBooleanEnv(nombre: string, fallback: boolean): boolean {
+  const raw = String(process.env[nombre] ?? '').trim().toLowerCase();
+  if (!raw) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
 /**
  * Resuelve el perfil de layout basado en variables de entorno.
  * Si no estan definidas, usa valores por defecto razonables.
  */
 export function resolverPerfilLayout(): PerfilLayoutImpresion {
-  const gridMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_GRID_MM', 0.5, 0.25, 2);
-  const headerFirstMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_FIRST_MM', 19, 12, 30);
-  const headerOtherMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_OTHER_MM', 0, 0, 20);
-  const bottomSafeMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_BOTTOM_SAFE_MM', 6, 3, 16);
+  const gridMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_GRID_MM', 0.4, 0.25, 2);
+  const headerFirstMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_FIRST_MM', 15, 10, 30);
+  const headerOtherMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_HEADER_OTHER_MM', 3.5, 0, 20);
+  const bottomSafeMm = leerNumeroEnvSeguro('EXAMEN_LAYOUT_BOTTOM_SAFE_MM', 4.5, 3, 16);
 
-  const usarRellenosDecorativos =
-    String(process.env.EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS ?? '').trim() === '1' ||
-    String(process.env.EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS ?? '').toLowerCase() === 'true';
-
-  const usarEtiquetaOmrSolida =
-    String(process.env.EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA ?? '').trim() === '1' ||
-    String(process.env.EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA ?? '').toLowerCase() === 'true';
+  const usarRellenosDecorativos = leerBooleanEnv('EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS', true);
+  const usarEtiquetaOmrSolida = leerBooleanEnv('EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA', true);
 
   return {
     gridStepPt: Math.max(0.25, mmAPuntos(gridMm)),

@@ -13,18 +13,18 @@ const MM_A_PUNTOS = 72 / 25.4;
  * Perfil OMR v3 (radical): hoja de respuestas robusta para fotografía móvil.
  */
 export const PERFIL_OMR_V3: PerfilPlantillaOmr = {
-  qrSize: 30 * MM_A_PUNTOS,
-  qrPadding: 4 * MM_A_PUNTOS,
+  qrSize: 27 * MM_A_PUNTOS,
+  qrPadding: 3.8 * MM_A_PUNTOS,
   qrMarginModulos: 8,
   marcasEsquina: 'cuadrados',
-  marcaCuadradoSize: 18 * MM_A_PUNTOS,
-  marcaCuadradoQuietZone: 3 * MM_A_PUNTOS,
-  burbujaRadio: (6.2 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 10.5 * MM_A_PUNTOS,
+  marcaCuadradoSize: 14 * MM_A_PUNTOS,
+  marcaCuadradoQuietZone: 2.6 * MM_A_PUNTOS,
+  burbujaRadio: (6.6 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 10.2 * MM_A_PUNTOS,
   cajaOmrAncho: 84,
-  fiducialSize: 18 * MM_A_PUNTOS,
-  bubbleStrokePt: 0.9,
-  labelToBubbleMm: 5.0,
+  fiducialSize: 14 * MM_A_PUNTOS,
+  bubbleStrokePt: 1.2,
+  labelToBubbleMm: 5.4,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };

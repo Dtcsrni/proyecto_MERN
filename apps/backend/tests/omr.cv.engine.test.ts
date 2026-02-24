@@ -39,7 +39,7 @@ describe('omrCvEngine', () => {
 
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(true);
-    expect(smoke.backend).toBe('sharp');
+    expect(smoke.backend).toBe('cv');
     expect(smoke.cvDisponible).toBe(false);
     expect(String(smoke.motivo ?? '')).toContain('Backend CV no disponible');
   });
@@ -49,7 +49,7 @@ describe('omrCvEngine', () => {
 
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(false);
-    expect(smoke.backend).toBe('sharp');
+    expect(smoke.backend).toBe('cv');
     expect(smoke.cvDisponible).toBe(false);
     expect(debeIntentarMotorCv(3)).toBe(false);
   });
@@ -59,7 +59,7 @@ describe('omrCvEngine', () => {
     setCvBackendCheckForTests(async () => ({}));
     const smoke = await ejecutarSmokeTestOmrCv();
     expect(smoke.enabled).toBe(true);
-    expect(smoke.backend).toBe('sharp');
+    expect(smoke.backend).toBe('cv');
     expect(smoke.cvDisponible).toBe(true);
   });
 

@@ -2,10 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import mongoose from 'mongoose';
 import sharp from 'sharp';
-import { analizarOmr as analizarOmrV2, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
+import { analizarOmr as analizarOmrCv, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
 import { ExamenGenerado } from '../src/modulos/modulo_generacion_pdf/modeloExamenGenerado';
 
-type ModoOmr = 'v2';
+type ModoOmr = 'omr';
 
 type Opciones = {
   dataset: string;
@@ -39,7 +39,7 @@ function parseArgs(argv: string[]): Opciones {
   const args = argv.slice(2);
   const options: Opciones = {
     dataset: '../../omr_samples',
-    mode: 'v2',
+    mode: 'omr',
     out: '../../reports/qa/latest/omr_rechazo_diagnostico.json',
     mongoUri: process.env.MONGODB_URI_HOST || 'mongodb://localhost:27017/mern_app',
     top: 20
@@ -53,8 +53,8 @@ function parseArgs(argv: string[]): Opciones {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
-      options.mode = 'v2';
+    if ((arg === '--mode' || arg === '-m') && next && next === 'omr') {
+      options.mode = 'omr';
       i += 1;
       continue;
     }
@@ -136,7 +136,7 @@ async function main() {
   const options = parseArgs(process.argv);
   const datasetRoot = path.resolve(process.cwd(), options.dataset);
   const outputPath = path.resolve(process.cwd(), options.out);
-  const analizar = analizarOmrV2;
+  const analizar = analizarOmrCv;
 
   const cacheExamen = new Map<string, BundleExamen | null>();
   const estadoCounts: Record<EstadoOmr, number> = {
@@ -334,3 +334,4 @@ main().catch((error) => {
   process.stderr.write(`${JSON.stringify({ error: error instanceof Error ? error.message : String(error) })}\n`);
   process.exit(1);
 });
+

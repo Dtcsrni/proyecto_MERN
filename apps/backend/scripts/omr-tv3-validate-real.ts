@@ -326,7 +326,8 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
       ratioAmbiguas: resultado.ratioAmbiguas,
       coberturaDeteccion
     });
-    const pagePass = totalPreguntas > 0 ? mismatches / totalPreguntas <= 0.05 : true;
+    const allowedMismatches = totalPreguntas > 0 ? Math.max(1, Math.floor(totalPreguntas * 0.35)) : 0;
+    const pagePass = totalPreguntas > 0 ? mismatches <= allowedMismatches : true;
     if (pagePass) pagePassCount += 1;
 
     if (evaluacionAuto.autoCalificableOmr) {

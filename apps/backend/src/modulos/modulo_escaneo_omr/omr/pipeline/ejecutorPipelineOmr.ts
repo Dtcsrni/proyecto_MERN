@@ -1,4 +1,4 @@
-import type { ResultadoOmr } from '../../servicioOmrV2';
+import type { ResultadoOmr } from '../../servicioOmrCv';
 import { registrarOmrEtapa, registrarOmrPipeline } from '../../../../compartido/observabilidad/metrics';
 import { ejecutarEtapaCalidad } from '../calidad/etapaCalidad';
 import { ejecutarEtapaDebug } from '../debug/etapaDebug';

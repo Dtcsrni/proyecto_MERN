@@ -4,9 +4,10 @@ Especificacion operativa del formato de examen y su lectura OMR.
 
 ## Formato de pagina
 - Carta US (`612x792 pt`).
-- Margen configurable (default 10 mm).
+- Margen configurable (default 8 mm, minimo operativo 4.5 mm).
 - QR por pagina con texto obligatorio: `EXAMEN:<FOLIO>:P<n>:TV3`.
 - Marcas de registro/fiduciales incluidas en layout (TV3).
+- Encabezado compacto con acentos de color y alta legibilidad para maximizar area util de preguntas por cara.
 
 ## Plantilla OMR soportada
 - Unica plantilla operativa: `TV3`.

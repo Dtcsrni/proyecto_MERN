@@ -28,10 +28,10 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - `npm run dev:omr:geo-tight` inicia backend local con `geo_tight_search`.
 - `npm run dev:omr:actual` inicia backend local con perfil base.
 
-## Runtime OMR v2-only
-- La fachada `servicioOmr.ts` ejecuta el pipeline OMR v2 de forma nominal.
-- El motor operativo se mantiene en `servicioOmrV2.ts` y módulos `omr/*`.
-- No existe fallback runtime a `servicioOmrLegacy`.
+## Runtime OMR único
+- La fachada `servicioOmr.ts` ejecuta el pipeline OMR CV TV3.
+- El motor operativo se mantiene en `servicioOmrCv.ts` y módulos `omr/*`.
+- No existe fallback runtime alterno.
 
 ## Runtime CV (backend obligatorio)
 - El preproceso CV de OMR TV3 es obligatorio en runtime.

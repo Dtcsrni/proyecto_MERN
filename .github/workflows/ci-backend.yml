@@ -54,7 +54,7 @@ jobs:
             apps/frontend/package-lock.json
             apps/portal_alumno_cloud/package-lock.json
 
-      - name: Instalar dependencias del sistema para OpenCV
+      - name: Instalar dependencias nativas de build (CV/imagen)
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -62,8 +62,7 @@ jobs:
             make \
             g++ \
             cmake \
-            pkg-config \
-            libopencv-dev
+            pkg-config
 
       - name: Etapa setup
         run: npm ci
@@ -71,7 +70,7 @@ jobs:
       - name: Preparar runtime CV nativo (linux-x64)
         run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
 
-      - name: Etapa smoke OMR CV (OpenCV obligatorio)
+      - name: Etapa smoke OMR CV
         run: npm -C apps/backend run omr:cv:smoke
 
       - name: Etapa lint backend
@@ -84,7 +83,7 @@ jobs:
         run: npm run test:backend:ci
 
       - name: Etapa tests OMR criticos
-        run: npm -C apps/backend run test -- --reporter=verbose tests/omr.cv.engine.test.ts tests/omr.etapaScoring.fallback.test.ts tests/omr.prevalidacion.test.ts tests/omr.paridad.test.ts tests/integracion/qrEscaneoOmr.test.ts
+        run: npm -C apps/backend run test -- --reporter=verbose tests/omr.cv.engine.test.ts tests/omr.etapaScoring.fallback.test.ts tests/omr.prevalidacion.test.ts tests/omr.contrato.test.ts tests/integracion/qrEscaneoOmr.test.ts tests/omr.test.ts
 
       - name: Etapa benchmark OMR TV3 synthetic gate
         run: npm -C apps/backend run omr:tv3:eval:synthetic

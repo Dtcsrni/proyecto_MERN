@@ -44,16 +44,16 @@ type LineaSegmentos = { segmentos: SegmentoTexto[]; lineHeight: number };
 
 const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   version: 3,
-  qrSize: 30 * MM_A_PUNTOS,
-  qrPadding: 4 * MM_A_PUNTOS,
+  qrSize: 27 * MM_A_PUNTOS,
+  qrPadding: 3.8 * MM_A_PUNTOS,
   qrMarginModulos: 8,
   qrRasterWidth: 780,
   marcasEsquina: 'cuadrados',
-  marcaCuadradoSize: 18 * MM_A_PUNTOS,
-  marcaCuadradoQuietZone: 3 * MM_A_PUNTOS,
-  burbujaRadio: (6.2 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 10.5 * MM_A_PUNTOS,
-  burbujaStroke: 0.9,
+  marcaCuadradoSize: 14 * MM_A_PUNTOS,
+  marcaCuadradoQuietZone: 2.6 * MM_A_PUNTOS,
+  burbujaRadio: (6.6 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 10.2 * MM_A_PUNTOS,
+  burbujaStroke: 1.2,
   burbujaOffsetX: 14.2,
   omrHeaderGap: 16,
   omrTagWidth: 30,
@@ -63,11 +63,11 @@ const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   omrBoxBorderWidth: 1.45,
   omrPanelPadding: 4.5,
   cajaOmrAncho: 84,
-  fiducialSize: 18 * MM_A_PUNTOS,
+  fiducialSize: 14 * MM_A_PUNTOS,
   fiducialMargin: 5.6,
   fiducialQuietZone: 3 * MM_A_PUNTOS,
-  bubbleStrokePt: 0.9,
-  labelToBubbleMm: 5,
+  bubbleStrokePt: 1.2,
+  labelToBubbleMm: 5.4,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };
@@ -589,26 +589,28 @@ export class PdfKitRenderer {
 
     const templateVersion = examen.layout.templateVersion;
     const perfilOmr = resolverPerfilRender(templateVersion, this.perfilOmr);
-    const esTv3 = true;
     const margenMm = examen.layout.margenMm;
     const margen = mmAPuntos(margenMm);
     const paginasObjetivo = Number.isFinite(examen.layout.totalPaginas)
       ? Math.max(1, Math.floor(examen.layout.totalPaginas))
       : 1;
 
-    const colorPrimario = rgb(0.1, 0.1, 0.1);
-    const colorGris = rgb(0.33, 0.33, 0.33);
-    const colorLinea = rgb(0.2, 0.2, 0.2);
+    const colorPrimario = rgb(0.08, 0.12, 0.2);
+    const colorGris = rgb(0.28, 0.31, 0.36);
+    const colorLinea = rgb(0.18, 0.24, 0.33);
+    const colorAcento = rgb(0.05, 0.46, 0.7);
+    const colorAcentoSuave = rgb(0.93, 0.97, 1);
+    const colorSeccion = rgb(0.97, 0.98, 1);
 
-    const sizeTitulo = 12.2;
-    const sizeMeta = 7.4;
-    const sizePregunta = 8.1;
-    const sizeOpcion = 7.0;
+    const sizeTitulo = 12.4;
+    const sizeMeta = 7.6;
+    const sizePregunta = 8.2;
+    const sizeOpcion = 7.2;
     const sizeCodigoInline = 7.6;
     const sizeCodigoBloque = 7.2;
 
-    const lineaPregunta = 8.6;
-    const lineaOpcion = 7.6;
+    const lineaPregunta = 8.7;
+    const lineaOpcion = 7.8;
     const lineaCodigoBloque = 7.8;
     const separacionPregunta = 0;
 
@@ -619,7 +621,7 @@ export class PdfKitRenderer {
     const omrExtraTitulo = 14;
 
     const anchoColRespuesta = perfilOmr.cajaOmrAncho;
-    const gutterRespuesta = 14;
+    const gutterRespuesta = 11;
     const xColRespuesta = ANCHO_CARTA - margen - anchoColRespuesta;
     const xDerechaTexto = xColRespuesta - gutterRespuesta;
 
@@ -715,8 +717,15 @@ export class PdfKitRenderer {
       const yCaja = yTop - altoEncabezado;
 
       if (esPrimera) {
-        if (this.perfilLayout.usarRellenosDecorativos && !esTv3) {
-          page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: rgb(0.97, 0.98, 0.99) });
+        if (this.perfilLayout.usarRellenosDecorativos) {
+          page.drawRectangle({ x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado, color: colorSeccion });
+          page.drawRectangle({
+            x: xCaja,
+            y: yTop - 8,
+            width: wCaja,
+            height: 8,
+            color: colorAcento
+          });
         }
 
         page.drawRectangle({
@@ -726,14 +735,14 @@ export class PdfKitRenderer {
           height: altoEncabezado,
           borderWidth: 0.8,
           borderColor: colorLinea,
-          color: rgb(1, 1, 1)
+          color: this.perfilLayout.usarRellenosDecorativos ? colorAcentoSuave : rgb(1, 1, 1)
         });
 
         page.drawLine({
           start: { x: xCaja, y: yTop - 6 },
           end: { x: xCaja + wCaja, y: yTop - 6 },
           color: colorLinea,
-          thickness: 0.8
+          thickness: 0.95
         });
       }
 
@@ -765,6 +774,12 @@ export class PdfKitRenderer {
         size: 8.5,
         font: fuente,
         color: colorGris
+      });
+      page.drawLine({
+        start: { x: margen, y: margen - 6 },
+        end: { x: ANCHO_CARTA - margen, y: margen - 6 },
+        color: this.perfilLayout.usarRellenosDecorativos ? colorAcentoSuave : colorLinea,
+        thickness: 0.75
       });
 
       if (!folioEnEncabezado) {
@@ -805,8 +820,8 @@ export class PdfKitRenderer {
           : '';
 
         const yInsti = yTop - 24;
-        page.drawText(insti, { x: xTexto, y: yInsti, size: 12, font: fuenteBold, color: colorPrimario });
-        page.drawText(tit, { x: xTexto, y: yInsti - 20, size: sizeTitulo, font: fuenteBold, color: rgb(0.08, 0.08, 0.08) });
+        page.drawText(insti, { x: xTexto, y: yInsti, size: 12, font: fuenteBold, color: colorAcento });
+        page.drawText(tit, { x: xTexto, y: yInsti - 20, size: sizeTitulo, font: fuenteBold, color: colorPrimario });
         if (lem) {
           page.drawText(lem, { x: xTexto, y: yInsti - 36, size: 9, font: fuenteItalica, color: colorGris });
         }
@@ -821,23 +836,23 @@ export class PdfKitRenderer {
         });
 
         const yCampos = metaY - metaLineas.length * lineaMeta - 10;
-        page.drawText('Alumno:', { x: xTexto, y: yCampos, size: 10, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
+        page.drawText('Alumno:', { x: xTexto, y: yCampos, size: 10, font: fuenteBold, color: colorPrimario });
         const alumnoLineaEnd = Math.min(xTexto + 260, xMaxEnc - 110);
         page.drawLine({ start: { x: xTexto + 52, y: yCampos + 3 }, end: { x: alumnoLineaEnd, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
         if (alumnoNombre) {
           const maxAlumno = Math.max(40, alumnoLineaEnd - (xTexto + 56));
           const alumnoLinea = partirEnLineas({ texto: alumnoNombre, maxWidth: maxAlumno, font: fuente, size: 10 })[0] ?? '';
-          page.drawText(alumnoLinea, { x: xTexto + 56, y: yCampos, size: 10, font: fuente, color: rgb(0.1, 0.1, 0.1) });
+          page.drawText(alumnoLinea, { x: xTexto + 56, y: yCampos, size: 10, font: fuente, color: colorPrimario });
         }
 
         const xGrupo = alumnoLineaEnd + 10;
-        page.drawText('Grupo:', { x: xGrupo, y: yCampos, size: 10, font: fuenteBold, color: rgb(0.15, 0.15, 0.15) });
+        page.drawText('Grupo:', { x: xGrupo, y: yCampos, size: 10, font: fuenteBold, color: colorPrimario });
         const grupoLineaEnd = Math.min(xGrupo + 65, xMaxEnc);
         page.drawLine({ start: { x: xGrupo + 45, y: yCampos + 3 }, end: { x: grupoLineaEnd, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
         if (alumnoGrupo) {
           const maxGrupo = Math.max(40, grupoLineaEnd - (xGrupo + 50));
           const grupoLinea = partirEnLineas({ texto: alumnoGrupo, maxWidth: maxGrupo, font: fuente, size: 10 })[0] ?? '';
-          page.drawText(grupoLinea, { x: xGrupo + 50, y: yCampos, size: 10, font: fuente, color: rgb(0.1, 0.1, 0.1) });
+          page.drawText(grupoLinea, { x: xGrupo + 50, y: yCampos, size: 10, font: fuente, color: colorPrimario });
         }
       } else {
         const alumnoLinea = alumnoNombre || '-';
@@ -986,7 +1001,7 @@ export class PdfKitRenderer {
           height: hCaja,
           borderWidth: 1,
           borderColor: colorLinea,
-          color: rgb(1, 1, 1)
+          color: this.perfilLayout.usarRellenosDecorativos ? colorSeccion : rgb(1, 1, 1)
         });
 
         page.drawLine({
@@ -996,7 +1011,7 @@ export class PdfKitRenderer {
           thickness: 0.8
         });
 
-        page.drawText('Indicaciones', { x: xInd + 8, y: yTopInd - 16, size: 9, font: fuenteBold, color: colorPrimario });
+        page.drawText('Indicaciones', { x: xInd + 8, y: yTopInd - 16, size: 9, font: fuenteBold, color: colorAcento });
 
         let yLinea = yTopInd - 26;
         const yMinTexto = yTopInd - hCaja + 8;
@@ -1029,7 +1044,15 @@ export class PdfKitRenderer {
         const hNum = 14;
         const xNum = xNumeroPregunta;
         const yNum = cursorY - 1;
-        page.drawRectangle({ x: xNum, y: yNum, width: wNum, height: hNum, borderWidth: 1, borderColor: colorLinea, color: rgb(1, 1, 1) });
+        page.drawRectangle({
+          x: xNum,
+          y: yNum,
+          width: wNum,
+          height: hNum,
+          borderWidth: 1,
+          borderColor: colorLinea,
+          color: this.perfilLayout.usarRellenosDecorativos ? colorAcentoSuave : rgb(1, 1, 1)
+        });
         const sizeNum = textoNumero.length >= 3 ? 8 : 9;
         page.drawText(textoNumero, { x: xNum + 5, y: yNum + 3.2, size: sizeNum, font: fuenteBold, color: colorPrimario });
 
@@ -1126,7 +1149,7 @@ export class PdfKitRenderer {
           height: hCaja,
           borderWidth: perfilOmr.omrBoxBorderWidth,
           borderColor: rgb(0, 0, 0),
-          color: rgb(1, 1, 1)
+          color: this.perfilLayout.usarRellenosDecorativos ? colorSeccion : rgb(1, 1, 1)
         });
 
         const hTag = perfilOmr.omrTagHeight;
