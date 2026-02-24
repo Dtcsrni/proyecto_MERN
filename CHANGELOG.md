@@ -5,11 +5,21 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Cierre de confiabilidad real OMR TV3:
+  - generador de dataset golden real simulado `apps/backend/scripts/omr-tv3-generate-real-golden.ts`.
+  - baseline reproducible `apps/backend/scripts/omr-tv3-baseline-snapshot.ts`.
+  - calibración iterativa con decisión `apps/backend/scripts/omr-tv3-calibrate-real.ts`.
+  - runbook operativo `docs/OMR_TV3_REAL_GATE_RUNBOOK.md`.
+- Gate real OMR TV3 endurecido:
+  - `apps/backend/scripts/omr-tv3-validate-real.ts` exporta contrato canónico con reporte de fallas (`tv3-real-failure-analysis`).
+  - scripts backend:
+    - `omr:tv3:generate:real`
+    - `omr:tv3:baseline:snapshot`
+    - `omr:tv3:calibrate:real`
 - OMR CV TV3 con backend CV obligatorio:
   - script de smoke bloqueante `apps/backend/scripts/omr-cv-smoke.ts`.
   - comando `npm -C apps/backend run omr:cv:smoke`.
-- Dependencia explícita de backend:
-  - `sharp` en `apps/backend/package.json`.
+- Dependencia explícita de backend CV nativo en runtime OMR TV3.
 - Gate sintético TV3 operativo en CI backend:
   - ejecución bloqueante de `npm -C apps/backend run omr:tv3:eval:synthetic`.
 
@@ -77,8 +87,15 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `scripts/build-msi.ps1`
 
 ### Changed
-- Contrato OMR CV runtime actualizado a `sharp`:
-  - eliminado backend `opencv4nodejs` en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
+- Workflow backend bloquea por gate mixto OMR:
+  - mantiene smoke CV y gate sintético.
+  - agrega gate real (`omr:tv3:validate:real`) y upload de artefactos OMR QA.
+- Contrato documental OMR actualizado a “CV obligatorio” sin backend alterno operativo.
+- `test:omr:tv3:gate:ci` (raíz) ahora ejecuta wrapper sintético + wrapper real.
+- Ajuste de robustez en `servicioOmrV2.ts`:
+  - `reprojectionErrorPx=null` deja de tratarse como error geométrico fatal.
+- Contrato OMR CV runtime consolidado a backend CV nativo obligatorio:
+  - sin backend alterno operativo en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
   - `apps/backend/src/index.ts` ahora aborta arranque si el smoke CV falla.
   - `apps/backend/src/modulos/modulo_escaneo_omr/omr/scoring/etapaScoring.ts` conserva reintento con imagen original y motivo `CV_PREPROCESO_REINTENTO:*`.
 - Docker backend reforzado para backend CV nativo:
@@ -86,7 +103,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Stack local actualizado:
   - `docker-compose.yml` fija `OMR_CV_ENGINE_ENABLED=1` en servicios backend local/prod.
 - Workflow de backend (`.github/workflows/ci-backend.yml`) endurecido:
-  - preparación de runtime nativo `sharp` en Linux.
+  - preparación de runtime CV nativo en Linux.
   - etapa bloqueante de smoke CV.
   - etapa bloqueante de benchmark sintético TV3.
 - Documentación operativa actualizada:
@@ -121,8 +138,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - `.github/workflows/ci-portal.yml`
   - `.github/workflows/ci-docs.yml`
 - Filtros `paths` ajustados para autovalidar los workflows modulares cuando cambia su propio YAML.
-- Hardening de `CI Backend Module` para runtime nativo `sharp` en Linux:
-  - instalacion explicita `npm install --no-save --include=optional --os=linux --cpu=x64 sharp` antes de pruebas.
+- Hardening de `CI Backend Module` para runtime CV nativo en Linux.
 - Evidencia de aislamiento CI:
   - fallo puntual en backend module no bloquea ejecucion exitosa de frontend/portal/docs/package/autogen-docs.
 

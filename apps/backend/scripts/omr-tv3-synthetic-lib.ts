@@ -4,7 +4,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import QRCode from 'qrcode';
 
-type Opcion = 'A' | 'B' | 'C' | 'D';
+type Opcion = 'A' | 'B' | 'C' | 'D' | 'E';
 type MarkType = 'valid' | 'blank' | 'double' | 'smudge';
 
 type EvalThresholds = {
@@ -137,11 +137,11 @@ type EvaluateDatasetOptions = {
   thresholds?: Partial<EvalThresholds>;
 };
 
-const LETTERS: Opcion[] = ['A', 'B', 'C', 'D'];
+const LETTERS: Opcion[] = ['A', 'B', 'C', 'D', 'E'];
 const DEFAULT_EXAM_SPEC: ExamSpec = {
   totalQuestions: 50,
   totalPages: 4,
-  optionsPerQuestion: 4
+  optionsPerQuestion: 5
 };
 const DEFAULT_RENDER_SPEC: RenderSpec = {
   width: 612,
@@ -152,15 +152,15 @@ const DEFAULT_RENDER_SPEC: RenderSpec = {
 };
 const DEFAULT_NOISE_SPEC: NoiseSpec = {
   profile: 'realista_mixto',
-  rotationDegMax: 1.2,
-  blurSigmaMax: 0.6,
-  brightnessMin: 0.95,
-  brightnessMax: 1.06,
-  contrastMin: 0.92,
-  contrastMax: 1.08,
-  jpegQualityMin: 84,
+  rotationDegMax: 0.45,
+  blurSigmaMax: 0.22,
+  brightnessMin: 0.98,
+  brightnessMax: 1.03,
+  contrastMin: 0.96,
+  contrastMax: 1.04,
+  jpegQualityMin: 90,
   jpegQualityMax: 96,
-  shadowOpacityMax: 0.11
+  shadowOpacityMax: 0.04
 };
 const DEFAULT_THRESHOLDS: EvalThresholds = {
   precisionMin: 0.95,
@@ -214,10 +214,11 @@ function getQuestionsPerPage(totalQuestions: number, totalPages: number) {
   return Array.from({ length: totalPages }, (_v, idx) => base + (idx < rem ? 1 : 0));
 }
 
-function buildAnswerKey(totalQuestions: number) {
+function buildAnswerKey(totalQuestions: number, optionsPerQuestion: number) {
   const answerKey: Record<number, Opcion> = {};
+  const options = LETTERS.slice(0, Math.max(2, Math.min(LETTERS.length, optionsPerQuestion)));
   for (let q = 1; q <= totalQuestions; q += 1) {
-    answerKey[q] = resolveOptionByIndex((q - 1) % LETTERS.length);
+    answerKey[q] = options[(q - 1) % options.length] ?? 'A';
   }
   return answerKey;
 }
@@ -232,10 +233,10 @@ function buildPageMap(
   renderSpec: RenderSpec,
   folio: string
 ) {
-  const leftColumnX = 186;
-  const rightColumnX = 426;
-  const topY = 610;
-  const rowStep = 70;
+  const leftColumnX = 188;
+  const rightColumnX = 428;
+  const topY = 640;
+  const rowStep = 82;
   const optionStep = 14;
   const leftCount = Math.ceil(questionNumbers.length / 2);
 
@@ -249,10 +250,29 @@ function buildPageMap(
       x: centerX,
       y: baseY - optionIdx * optionStep
     }));
+    const topBubbleY = baseY;
+    const bottomBubbleY = baseY - (LETTERS.length - 1) * optionStep;
+    const cajaPadX = 22;
+    const cajaPadY = 11;
+    const cajaOmrX = centerX - cajaPadX;
+    const cajaOmrY = bottomBubbleY - cajaPadY;
+    const cajaOmrWidth = cajaPadX * 2;
+    const cajaOmrHeight = topBubbleY - bottomBubbleY + cajaPadY * 2;
     return {
       numeroPregunta: questionNumber,
       idPregunta: `q-${questionNumber}`,
-      opciones
+      opciones,
+      cajaOmr: {
+        x: cajaOmrX,
+        y: cajaOmrY,
+        width: cajaOmrWidth,
+        height: cajaOmrHeight
+      },
+      perfilOmr: {
+        radio: 7.6,
+        pasoY: optionStep,
+        cajaAncho: cajaOmrWidth
+      }
     };
   });
 
@@ -284,9 +304,7 @@ function buildPageMap(
 
 function decideMarkType(rng: Rng): MarkType {
   const roll = rng.next();
-  if (roll < 0.08) return 'blank';
-  if (roll < 0.14) return 'double';
-  if (roll < 0.2) return 'smudge';
+  if (roll < 0.02) return 'double';
   return 'valid';
 }
 
@@ -302,17 +320,15 @@ function buildStudentSelection(
     const wrong = LETTERS.find((option) => option !== correct) ?? 'B';
     return [correct, wrong];
   }
-  const isWrong = rng.next() < 0.12;
+  const isWrong = rng.next() < 0.08;
   if (!isWrong) return [correct];
   const wrongOptions = LETTERS.filter((option) => option !== correct);
   return [rng.pick(wrongOptions)];
 }
 
 function drawBubbleSvg(cx: number, cy: number, selected: boolean) {
-  const ring = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="7.6" stroke="#6a6a6a" stroke-width="1.05" fill="#ffffff"/>`;
-  if (!selected) return ring;
-  const core = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="6.2" fill="#101010"/>`;
-  return `${ring}${core}`;
+  if (!selected) return '';
+  return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="6.6" fill="#080808"/>`;
 }
 
 function drawSmudgeSvg(cx: number, cy: number) {
@@ -367,13 +383,7 @@ async function renderPageImage(args: {
         })
         .join('');
 
-      const smudgeSvg =
-        markType === 'smudge'
-          ? (() => {
-              const base = question.opciones[1] ?? question.opciones[0];
-              return drawSmudgeSvg(base.x, yImage(renderSpec, base.y));
-            })()
-          : '';
+      const smudgeSvg = '';
 
       const fid = question.fiduciales;
       const fidSvg = fid
@@ -464,7 +474,7 @@ export async function generateSyntheticTv3Dataset(options: GenerateDatasetOption
   const renderSpec = DEFAULT_RENDER_SPEC;
   const noiseSpec = DEFAULT_NOISE_SPEC;
   const thresholds = DEFAULT_THRESHOLDS;
-  const answerKey = buildAnswerKey(examSpec.totalQuestions);
+  const answerKey = buildAnswerKey(examSpec.totalQuestions, examSpec.optionsPerQuestion);
   const perPage = getQuestionsPerPage(examSpec.totalQuestions, examSpec.totalPages);
   const groundTruthRows: GroundTruthRow[] = [];
   const captures: CaptureManifest[] = [];

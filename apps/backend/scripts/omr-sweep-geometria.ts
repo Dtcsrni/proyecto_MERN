@@ -4,14 +4,14 @@ import { evaluateProfile, type EvalProfileSummary } from './omr-eval-profile';
 
 type Summary = {
   profile: string;
-  mode: 'v2';
+  mode: 'omr';
   dataset: string;
   totalReactivos: number;
-  detectadasV2: number;
-  correctasV2: number;
-  deteccionRateV2: number;
-  precisionSobreTotalV2: number;
-  estadosV2: Record<string, number>;
+  detectadas: number;
+  correctas: number;
+  deteccionRate: number;
+  precisionSobreTotal: number;
+  estados: Record<string, number>;
   imagenesConError: number;
 };
 
@@ -24,7 +24,7 @@ function parseArgs(argv: string[]) {
   const args = argv.slice(2);
   const options = {
     dataset: '../../omr_samples',
-    mode: 'v2' as const,
+    mode: 'omr' as const,
     out: '../../reports/qa/latest/omr_sweep_geometria.json'
   };
 
@@ -36,8 +36,8 @@ function parseArgs(argv: string[]) {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
-      options.mode = next;
+    if ((arg === '--mode' || arg === '-m') && next && (next === 'omr' || next === 'v2')) {
+      options.mode = 'omr';
       i += 1;
       continue;
     }
@@ -97,7 +97,7 @@ function perfilesGeometria(): Profile[] {
   ];
 }
 
-async function runProfile(profile: Profile, dataset: string, mode: 'v2'): Promise<Summary> {
+async function runProfile(profile: Profile, dataset: string, mode: 'omr'): Promise<Summary> {
   const oldEnv = {
     OMR_PROFILE_NAME: process.env.OMR_PROFILE_NAME,
     OMR_ALIGN_RANGE: process.env.OMR_ALIGN_RANGE,
@@ -136,11 +136,11 @@ async function runProfile(profile: Profile, dataset: string, mode: 'v2'): Promis
 
 function winnerByScore(rows: Array<{ profile: string; summary: Summary; deltaVsActual: Record<string, number> }>) {
   const ordered = [...rows].sort((a, b) => {
-    if (b.summary.precisionSobreTotalV2 !== a.summary.precisionSobreTotalV2) {
-      return b.summary.precisionSobreTotalV2 - a.summary.precisionSobreTotalV2;
+    if (b.summary.precisionSobreTotal !== a.summary.precisionSobreTotal) {
+      return b.summary.precisionSobreTotal - a.summary.precisionSobreTotal;
     }
-    if (b.summary.deteccionRateV2 !== a.summary.deteccionRateV2) {
-      return b.summary.deteccionRateV2 - a.summary.deteccionRateV2;
+    if (b.summary.deteccionRate !== a.summary.deteccionRate) {
+      return b.summary.deteccionRate - a.summary.deteccionRate;
     }
     return a.summary.imagenesConError - b.summary.imagenesConError;
   });
@@ -162,10 +162,10 @@ async function main() {
 
   const enriched = runs.map((run) => {
     const deltaVsActual = {
-      detectadasV2: run.summary.detectadasV2 - actual.summary.detectadasV2,
-      correctasV2: run.summary.correctasV2 - actual.summary.correctasV2,
-      deteccionRateV2: Number((run.summary.deteccionRateV2 - actual.summary.deteccionRateV2).toFixed(6)),
-      precisionSobreTotalV2: Number((run.summary.precisionSobreTotalV2 - actual.summary.precisionSobreTotalV2).toFixed(6)),
+      detectadas: run.summary.detectadas - actual.summary.detectadas,
+      correctas: run.summary.correctas - actual.summary.correctas,
+      deteccionRate: Number((run.summary.deteccionRate - actual.summary.deteccionRate).toFixed(6)),
+      precisionSobreTotal: Number((run.summary.precisionSobreTotal - actual.summary.precisionSobreTotal).toFixed(6)),
       imagenesConError: run.summary.imagenesConError - actual.summary.imagenesConError
     };
     return {
@@ -184,8 +184,8 @@ async function main() {
     baselineProfile: 'actual',
     winner: {
       profile: winner.profile,
-      precisionSobreTotalV2: winner.summary.precisionSobreTotalV2,
-      deteccionRateV2: winner.summary.deteccionRateV2,
+      precisionSobreTotal: winner.summary.precisionSobreTotal,
+      deteccionRate: winner.summary.deteccionRate,
       deltaVsActual: winner.deltaVsActual
     },
     runs: enriched
@@ -199,11 +199,11 @@ async function main() {
     perfil: run.profile,
     reactivos: run.summary.totalReactivos,
     detectadas: run.summary.detectadasV2,
-    correctas: run.summary.correctasV2,
-    detRate: Number(run.summary.deteccionRateV2.toFixed(4)),
-    precTotal: Number(run.summary.precisionSobreTotalV2.toFixed(4)),
-    dDetRate: run.deltaVsActual.deteccionRateV2,
-    dPrec: run.deltaVsActual.precisionSobreTotalV2
+    correctas: run.summary.correctas,
+    detRate: Number(run.summary.deteccionRate.toFixed(4)),
+    precTotal: Number(run.summary.precisionSobreTotal.toFixed(4)),
+    dDetRate: run.deltaVsActual.deteccionRate,
+    dPrec: run.deltaVsActual.precisionSobreTotal
   }));
 
   process.stdout.write(`${JSON.stringify({ winner: report.winner, table, outputPath })}\n`);
