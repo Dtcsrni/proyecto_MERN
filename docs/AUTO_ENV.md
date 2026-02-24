@@ -6,17 +6,6 @@ No editar a mano: los cambios se pisan al regenerar.
 Nota: esto detecta uso por texto (regex). Si agregas una variable nueva en código,
 este documento se actualiza automáticamente al regenerar.
 
-Contrato OMR CV actual:
-- `OMR_CV_BACKEND` retirado del contrato operativo.
-- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere backend CV obligatorio.
-- Para calibración/gate real se recomienda usar:
-  - `OMR_RESPUESTA_CONF_MIN`
-  - `OMR_SCORE_MIN`
-  - `OMR_DELTA_MIN`
-  - `OMR_AUTO_CONF_MIN`
-  - `OMR_AUTO_AMBIGUAS_MAX`
-  - `OMR_AUTO_DETECCION_MIN`
-
 ## Backend
 - `API_BASE` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
 - `CODIGO_ACCESO_HORAS` (usado en: apps/backend/src/configuracion.ts)
@@ -26,8 +15,6 @@ Contrato OMR CV actual:
 - `EVALUAPRO_DEVELOPER_NAME` (usado en: apps/backend/src/compartido/salud/rutasSalud.ts)
 - `EVALUAPRO_DEVELOPER_ROLE` (usado en: apps/backend/src/compartido/salud/rutasSalud.ts)
 - `EXAMEN_INSTITUCION` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts)
-- `EXAMEN_LAYOUT_USAR_ETIQUETA_OMR_SOLIDA` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/configuracionLayoutEnv.ts)
-- `EXAMEN_LAYOUT_USAR_RELLENOS_DECORATIVOS` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/configuracionLayoutEnv.ts)
 - `EXAMEN_LEMA` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts)
 - `EXAMEN_LOGO_DER_PATH` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts)
 - `EXAMEN_LOGO_IZQ_PATH` (usado en: apps/backend/src/modulos/modulo_generacion_pdf/infra/pdfKitRenderer.ts)
@@ -39,7 +26,7 @@ Contrato OMR CV actual:
 - `MONGODB_URI` (usado en: apps/backend/scripts/omr-run.ts, apps/backend/scripts/omr-validate.ts, apps/backend/src/configuracion.ts)
 - `MONGODB_URI_HOST` (usado en: apps/backend/scripts/auth-reset-password.ts, apps/backend/scripts/omr-diagnose-rechazo.ts, apps/backend/scripts/omr-eval-profile.ts, apps/backend/scripts/omr-sweep-geometria.ts, apps/backend/scripts/omr-sweep-umbrales.ts)
 - `MONGO_URI` (usado en: apps/backend/src/configuracion.ts)
-- `NODE_ENV` (usado en: apps/backend/scripts/debugCrearPeriodo.ts, apps/backend/src/compartido/errores/manejadorErrores.ts, apps/backend/src/compartido/salud/rutasSalud.ts, apps/backend/src/configuracion.ts, apps/backend/src/infraestructura/logging/logger.ts, apps/backend/src/modulos/modulo_autenticacion/rutasAutenticacion.ts, apps/backend/src/modulos/modulo_autenticacion/seedAdmin.ts, apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts, apps/backend/tests/errores.test.ts, apps/backend/tests/setup.ts)
+- `NODE_ENV` (usado en: apps/backend/scripts/debugCrearPeriodo.ts, apps/backend/src/compartido/errores/manejadorErrores.ts, apps/backend/src/compartido/salud/rutasSalud.ts, apps/backend/src/configuracion.ts, apps/backend/src/infraestructura/logging/logger.ts, apps/backend/src/modulos/modulo_autenticacion/rutasAutenticacion.ts, apps/backend/src/modulos/modulo_autenticacion/seedAdmin.ts, apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts, apps/backend/tests/errores.test.ts, apps/backend/tests/setup.ts)
 - `OMR_ALIGN_RANGE` (usado en: apps/backend/scripts/omr-sweep-geometria.ts, apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_AMBIGUITY_RATIO` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_AUTO_AMBIGUAS_MAX` (usado en: apps/backend/scripts/omr-diagnose-rechazo.ts, apps/backend/scripts/omr-sweep-umbrales.ts, apps/backend/src/modulos/modulo_escaneo_omr/politicaAutoCalificacionOmr.ts)
@@ -51,7 +38,7 @@ Contrato OMR CV actual:
 - `OMR_BOX_WIDTH_PTS` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_COLORIMETRY_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_COLORIMETRY_WHITE_PERCENTILE` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
-- `OMR_CV_ENGINE_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/tests/omr.cv.engine.test.ts; solo tests para apagado)
+- `OMR_CV_ENGINE_ENABLED` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts, apps/backend/tests/omr.cv.engine.test.ts)
 - `OMR_DEBUG` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_DEBUG_DIR` (usado en: apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
 - `OMR_DELTA_MIN` (usado en: apps/backend/scripts/omr-tv3-synthetic-lib.ts, apps/backend/src/modulos/modulo_escaneo_omr/servicioOmrCv.ts)
@@ -200,4 +187,3 @@ Contrato OMR CV actual:
 - `CI` (usado en: tests/gui-responsive/playwright.alumno.config.cjs, tests/gui-responsive/playwright.config.cjs)
 - `GUI_RESPONSIVE_ALUMNO_PORT` (usado en: tests/gui-responsive/playwright.alumno.config.cjs)
 - `GUI_RESPONSIVE_PORT` (usado en: tests/gui-responsive/playwright.config.cjs)
-
