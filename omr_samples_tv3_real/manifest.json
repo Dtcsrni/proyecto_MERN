@@ -10,7 +10,7 @@
     "width": 612,
     "height": 792,
     "marginPt": 28.35,
-    "cornerMarkerSizePt": 18,
+    "cornerMarkerSizePt": 20,
     "qrSizePt": 88
   },
   "noiseSpec": {
@@ -1092,5 +1092,9 @@
       "scenario": "jpeg_media"
     }
   ],
-  "hash": "eb6c2685d68ee22729ff8b469f191678f98ec4515032f01d446c07cf66b2793b"
+  "hash": "6ad8b74c0bba1c8268f95423629a4f8bbdf7657336b37885fd2f01f9f8675d7a",
+  "layoutMeta": {
+    "layoutRevision": "tv3_low_ink_resilient_r1",
+    "layoutHash": "69b91a043b2a842c2372ec88631057cd1097678b1ebec391f4ce33a10f0fb099"
+  }
 }

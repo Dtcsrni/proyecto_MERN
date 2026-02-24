@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockAnalizarOmrV2, mockPreprocesar } = vi.hoisted(() => ({
-  mockAnalizarOmrV2: vi.fn(),
+const { mockAnalizarOmrCv, mockPreprocesar } = vi.hoisted(() => ({
+  mockAnalizarOmrCv: vi.fn(),
   mockPreprocesar: vi.fn()
 }));
 
-vi.mock('../src/modulos/modulo_escaneo_omr/servicioOmrV2', () => ({
-  analizarOmr: mockAnalizarOmrV2
+vi.mock('../src/modulos/modulo_escaneo_omr/servicioOmrCv', () => ({
+  analizarOmr: mockAnalizarOmrCv
 }));
 
 vi.mock('../src/modulos/modulo_escaneo_omr/infra/omrCvEngine', () => ({
@@ -24,7 +24,7 @@ describe('etapaScoring reintento tras fallo de preproceso CV', () => {
 
   it('registra motivo de reintento cuando falla el backend CV', async () => {
     mockPreprocesar.mockRejectedValue(new Error('cv backend unavailable'));
-    mockAnalizarOmrV2.mockResolvedValue({
+    mockAnalizarOmrCv.mockResolvedValue({
       respuestasDetectadas: [],
       advertencias: [],
       calidadPagina: 0.8,

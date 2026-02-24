@@ -66,7 +66,7 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Calificacion y reglas de topes.
 - Aislamiento entre docentes.
 - Publicacion/sincronizacion hacia portal.
-- Gate Extended OMR TV3 con dataset real (`omr_samples_tv3`).
+- Gate mixto OMR TV3 con dataset sintético (`omr_samples_tv3`) y real (`omr_samples_tv3_real`).
 
 ## Criterio de calidad para release
 Se considera candidato estable cuando pasan:

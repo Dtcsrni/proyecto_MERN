@@ -36,8 +36,8 @@ export async function generarExamenIndividual(
     ? Math.max(1, Math.floor(params.totalPaginas))
     : 1;
   const margenMm = Number.isFinite(params.margenMm)
-    ? Math.max(5, Number(params.margenMm))
-    : 10;
+    ? Math.max(4.5, Number(params.margenMm))
+    : 8;
 
   const examen = new ExamenPdf(
     params.titulo?.trim() || 'Examen',

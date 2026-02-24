@@ -92,7 +92,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - agrega gate real (`omr:tv3:validate:real`) y upload de artefactos OMR QA.
 - Contrato documental OMR actualizado a “CV obligatorio” sin backend alterno operativo.
 - `test:omr:tv3:gate:ci` (raíz) ahora ejecuta wrapper sintético + wrapper real.
-- Ajuste de robustez en `servicioOmrV2.ts`:
+- Ajuste de robustez en `servicioOmrCv.ts`:
   - `reprojectionErrorPx=null` deja de tratarse como error geométrico fatal.
 - Contrato OMR CV runtime consolidado a backend CV nativo obligatorio:
   - sin backend alterno operativo en `apps/backend/src/modulos/modulo_escaneo_omr/infra/omrCvEngine.ts`.
@@ -181,13 +181,12 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
     - `ola2b.pdf.segmented` (actualizado desde monolith.pending)
     - `ola2c.sync.segmented`
 - Ola 2A OMR: reconocimiento formal de segmentación existente:
-  - Gate check actualizado para validar arquitectura pipeline v2:
+  - Gate check actualizado para validar arquitectura pipeline OMR CV unico:
     - Fachada compacta: `servicioOmr.ts` (31 lineas)
     - Legacy preservado: `servicioOmrLegacy.ts` (1319 lineas)
-    - Pipeline v2 modular: `omr/pipeline/ejecutorPipelineOmr.ts`
-  - Arquitectura ya implementada previamente con feature flag `FEATURE_OMR_PIPELINE_V2`
-  - Pipeline v2 con etapas modulares: qr, deteccion, scoring, calidad, debug
-  - Tests de paridad v1/v2: `apps/backend/tests/omr.paridad.test.ts` (5 tests)
+    - Pipeline modular: `omr/pipeline/ejecutorPipelineOmr.ts`
+  -   - Pipeline con etapas modulares: qr, deteccion, scoring, calidad, debug
+  - Tests de contrato unico: `apps/backend/tests/omr.contrato.test.ts` (3 tests)
   - Estado confirmado: todas las gates OK (ola0, ola1, ola2-ready, strict-gates)
   - `apps/backend/src/modulos/modulo_generacion_pdf/servicioGeneracionPdf.ts` reducido a 60 lineas (fachada delgada).
   - Legacy preservado en `servicioGeneracionPdfLegacy.ts` (1396 lineas).
@@ -386,3 +385,4 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 - Monorepo inicial (backend, frontend, portal alumno cloud)
 - Hardening base: Helmet, rate limit, sanitización NoSQL, no leakage de mensajes internos en producción
 - Pruebas robustas: `test:ci` con reintentos + harness estricto para warnings/errores
+

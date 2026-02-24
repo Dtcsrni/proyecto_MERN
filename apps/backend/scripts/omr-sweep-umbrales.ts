@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { evaluateProfile, type EvalProfileSummary } from './omr-eval-profile';
 
-type ModoOmr = 'v2';
+type ModoOmr = 'omr';
 
 type Thresholds = {
   qualityRejectMin: number;
@@ -52,7 +52,7 @@ function parseArgs(argv: string[]): SweepOptions {
   const args = argv.slice(2);
   const options: SweepOptions = {
     dataset: '../../omr_samples',
-    mode: 'v2',
+    mode: 'omr',
     out: '../../reports/qa/latest/omr_sweep_umbrales.json',
     maxPasses: 2
   };
@@ -65,8 +65,8 @@ function parseArgs(argv: string[]): SweepOptions {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
-      options.mode = 'v2';
+    if ((arg === '--mode' || arg === '-m') && next && next === 'omr') {
+      options.mode = 'omr';
       i += 1;
       continue;
     }
@@ -128,18 +128,18 @@ function totalEstados(estados: Record<string, number>) {
 }
 
 function calcularScore(summary: EvalProfileSummary) {
-  const totalPaginas = totalEstados(summary.estadosV2);
-  const ok = Number(summary.estadosV2.ok ?? 0);
-  const requiereRevision = Number(summary.estadosV2.requiere_revision ?? 0);
-  const rechazado = Number(summary.estadosV2.rechazado_calidad ?? 0);
+  const totalPaginas = totalEstados(summary.estados);
+  const ok = Number(summary.estados.ok ?? 0);
+  const requiereRevision = Number(summary.estados.requiere_revision ?? 0);
+  const rechazado = Number(summary.estados.rechazado_calidad ?? 0);
 
   const okRate = totalPaginas > 0 ? ok / totalPaginas : 0;
   const requiereRevisionRate = totalPaginas > 0 ? requiereRevision / totalPaginas : 0;
   const rechazadoRate = totalPaginas > 0 ? rechazado / totalPaginas : 0;
   const erroresRate = totalPaginas > 0 ? summary.imagenesConError / totalPaginas : 0;
 
-  const precision = summary.precisionSobreTotalV2;
-  const deteccion = summary.deteccionRateV2;
+  const precision = summary.precisionSobreTotal;
+  const deteccion = summary.deteccionRate;
 
   const score =
     precision * 0.64 +
@@ -164,11 +164,11 @@ function calcularScore(summary: EvalProfileSummary) {
 
 function mejor(a: EvaluacionPerfil, b: EvaluacionPerfil) {
   if (b.score !== a.score) return b.score > a.score;
-  if (b.summary.precisionSobreTotalV2 !== a.summary.precisionSobreTotalV2) {
-    return b.summary.precisionSobreTotalV2 > a.summary.precisionSobreTotalV2;
+  if (b.summary.precisionSobreTotal !== a.summary.precisionSobreTotal) {
+    return b.summary.precisionSobreTotal > a.summary.precisionSobreTotal;
   }
-  if (b.summary.deteccionRateV2 !== a.summary.deteccionRateV2) {
-    return b.summary.deteccionRateV2 > a.summary.deteccionRateV2;
+  if (b.summary.deteccionRate !== a.summary.deteccionRate) {
+    return b.summary.deteccionRate > a.summary.deteccionRate;
   }
   return b.summary.imagenesConError < a.summary.imagenesConError;
 }
@@ -291,10 +291,10 @@ async function main() {
 
   const delta = {
     score: Number((mejorActual.score - baseline.score).toFixed(8)),
-    detectadasV2: mejorActual.summary.detectadasV2 - baseline.summary.detectadasV2,
-    correctasV2: mejorActual.summary.correctasV2 - baseline.summary.correctasV2,
-    deteccionRateV2: Number((mejorActual.summary.deteccionRateV2 - baseline.summary.deteccionRateV2).toFixed(6)),
-    precisionSobreTotalV2: Number((mejorActual.summary.precisionSobreTotalV2 - baseline.summary.precisionSobreTotalV2).toFixed(6)),
+    detectadas: mejorActual.summary.detectadas - baseline.summary.detectadas,
+    correctas: mejorActual.summary.correctas - baseline.summary.correctas,
+    deteccionRate: Number((mejorActual.summary.deteccionRate - baseline.summary.deteccionRate).toFixed(6)),
+    precisionSobreTotal: Number((mejorActual.summary.precisionSobreTotal - baseline.summary.precisionSobreTotal).toFixed(6)),
     imagenesConError: mejorActual.summary.imagenesConError - baseline.summary.imagenesConError
   };
 
@@ -354,3 +354,4 @@ main().catch((error) => {
   process.stderr.write(`${JSON.stringify({ error: error instanceof Error ? error.message : String(error) })}\n`);
   process.exit(1);
 });
+

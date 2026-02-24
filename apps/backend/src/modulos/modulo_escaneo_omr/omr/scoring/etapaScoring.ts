@@ -1,9 +1,9 @@
 import type { ContextoPipelineOmr } from '../types';
-import { analizarOmr as analizarOmrV2, type ResultadoOmr } from '../../servicioOmrV2';
+import { analizarOmr as analizarOmrCv, type ResultadoOmr } from '../../servicioOmrCv';
 import { debeIntentarMotorCv, describirErrorCv, preprocesarImagenOmrCv } from '../../infra/omrCvEngine';
 
 export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
-  const mapaPagina = contexto.mapaPagina as Parameters<typeof analizarOmrV2>[1];
+  const mapaPagina = contexto.mapaPagina as Parameters<typeof analizarOmrCv>[1];
   const templateVersion =
     Number((mapaPagina as { templateVersion?: unknown })?.templateVersion ?? contexto.debugInfo?.templateVersionDetectada ?? 3);
 
@@ -11,7 +11,7 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
   if (debeIntentarMotorCv(templateVersion)) {
     try {
       const imagenCv = await preprocesarImagenOmrCv(contexto.imagenBase64);
-      resultado = await analizarOmrV2(
+      resultado = await analizarOmrCv(
         imagenCv,
         mapaPagina,
         contexto.qrEsperado,
@@ -20,7 +20,7 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
       );
       resultado.engineVersion = 'omr-v3-cv';
     } catch (error) {
-      resultado = await analizarOmrV2(
+      resultado = await analizarOmrCv(
         contexto.imagenBase64,
         mapaPagina,
         contexto.qrEsperado,
@@ -33,7 +33,7 @@ export async function ejecutarEtapaScoring(contexto: ContextoPipelineOmr) {
       ).slice(0, 24);
     }
   } else {
-    resultado = await analizarOmrV2(
+    resultado = await analizarOmrCv(
       contexto.imagenBase64,
       mapaPagina,
       contexto.qrEsperado,

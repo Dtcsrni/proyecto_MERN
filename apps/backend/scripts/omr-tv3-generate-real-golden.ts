@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { generateSyntheticTv3Dataset } from './omr-tv3-synthetic-lib';
 
@@ -57,6 +58,10 @@ type ManifestDataset = {
   answerKeyPath: string;
   groundTruthRef: string;
   capturas: CaptureManifest[];
+  layoutMeta?: {
+    layoutRevision: string;
+    layoutHash: string;
+  };
   hash?: string;
 };
 
@@ -118,16 +123,16 @@ async function applyScenario(imagePath: string, scenario: Scenario, variantSeed:
       pipeline = pipeline.modulate({ brightness: 1.01, saturation: 1 }).linear(1.01, -2);
       break;
     case 'luz_calida':
-      pipeline = pipeline.modulate({ brightness: 1.02, saturation: 0.99 }).tint({ r: 255, g: 236, b: 214 });
+      pipeline = pipeline.modulate({ brightness: 1.01, saturation: 0.99 }).tint({ r: 252, g: 236, b: 220 });
       break;
     case 'luz_fria':
-      pipeline = pipeline.modulate({ brightness: 0.99, saturation: 1.01 }).tint({ r: 228, g: 240, b: 255 });
+      pipeline = pipeline.modulate({ brightness: 1.0, saturation: 1.0 }).tint({ r: 236, g: 244, b: 255 });
       break;
     case 'rotacion_leve':
-      pipeline = pipeline.rotate(0.65 + rngFactor, { background: '#ffffff' });
+      pipeline = pipeline.rotate(0.28 + rngFactor * 0.6, { background: '#ffffff' });
       break;
     case 'desenfoque_leve':
-      pipeline = pipeline.blur(0.35 + rngFactor).modulate({ brightness: 1 });
+      pipeline = pipeline.blur(0.3 + rngFactor * 0.4).modulate({ brightness: 1 });
       break;
     case 'jpeg_media':
       pipeline = pipeline.modulate({ brightness: 1.0, saturation: 1.0 });
@@ -141,7 +146,7 @@ async function applyScenario(imagePath: string, scenario: Scenario, variantSeed:
           <defs>
             <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-              <stop offset="50%" stop-color="rgba(0,0,0,0.07)" />
+              <stop offset="50%" stop-color="rgba(0,0,0,0.035)" />
               <stop offset="100%" stop-color="rgba(0,0,0,0)" />
             </linearGradient>
           </defs>
@@ -155,7 +160,7 @@ async function applyScenario(imagePath: string, scenario: Scenario, variantSeed:
       break;
   }
 
-  const quality = scenario === 'jpeg_media' ? 84 : 92;
+  const quality = scenario === 'jpeg_media' ? 90 : 94;
   const out = await pipeline.jpeg({ quality, chromaSubsampling: '4:4:4' }).toBuffer();
   await fs.writeFile(imagePath, out);
 }
@@ -184,6 +189,14 @@ async function main() {
 
   manifest.datasetType = 'tv3_real_pdf_capture_simulated';
   manifest.thresholds.autoGradeTrustMin = manifest.thresholds.autoGradeTrustMin ?? 0.95;
+  const layoutSignature = manifest.capturas
+    .map((capture) => `${capture.captureId}:${capture.mapaOmrPath}`)
+    .sort((a, b) => a.localeCompare(b))
+    .join('|');
+  manifest.layoutMeta = {
+    layoutRevision: 'tv3_low_ink_resilient_r1',
+    layoutHash: crypto.createHash('sha256').update(layoutSignature).digest('hex')
+  };
   await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
   const payload = {

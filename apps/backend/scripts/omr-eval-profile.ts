@@ -3,7 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import mongoose from 'mongoose';
 import sharp from 'sharp';
-import { analizarOmr as analizarOmrV2, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
+import { analizarOmr as analizarOmrCv, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
 import { ExamenGenerado } from '../src/modulos/modulo_generacion_pdf/modeloExamenGenerado';
 import { BancoPregunta } from '../src/modulos/modulo_banco_preguntas/modeloBancoPregunta';
 
@@ -51,7 +51,7 @@ function parseArgs(argv: string[]): EvalProfileOptions {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && (next === 'omr' || next === 'v2')) {
+    if ((arg === '--mode' || arg === '-m') && next && next === 'omr') {
       options.mode = 'omr';
       i += 1;
       continue;
@@ -136,7 +136,7 @@ async function cargarBundleExamen(folio: string): Promise<BundleExamen | null> {
 
 export async function evaluateProfile(options: EvalProfileOptions): Promise<EvalProfileSummary> {
   const datasetRoot = path.resolve(process.cwd(), options.dataset);
-  const analizar = analizarOmrV2;
+  const analizar = analizarOmrCv;
 
   const cacheExamen = new Map<string, BundleExamen | null>();
   const states: Record<string, number> = {};
@@ -232,3 +232,4 @@ if (isDirectRun) {
     process.exit(1);
   });
 }
+

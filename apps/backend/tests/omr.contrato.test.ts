@@ -1,14 +1,12 @@
 /**
- * omr.paridad.test
+ * omr.contrato.test
  *
- * Smoke tests del flujo OMR v2-only.
+ * Smoke tests del contrato OMR CV único.
  */
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { analizarOmr, leerQrDesdeImagen } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
-import { analizarOmr as analizarOmrV2 } from '../src/modulos/modulo_escaneo_omr/servicioOmrV2';
-
-type MapaOmr = Parameters<typeof analizarOmrV2>[1];
+type MapaOmr = Parameters<typeof analizarOmr>[1];
 
 async function crearImagenBlancaBase64(width = 612, height = 792) {
   const buffer = await sharp({
@@ -24,7 +22,7 @@ async function crearImagenBlancaBase64(width = 612, height = 792) {
   return `data:image/png;base64,${buffer.toString('base64')}`;
 }
 
-describe('OMR v2-only smoke', () => {
+describe('OMR contrato unico smoke', () => {
   const mapaSimple: MapaOmr = {
     numeroPagina: 1,
     preguntas: [

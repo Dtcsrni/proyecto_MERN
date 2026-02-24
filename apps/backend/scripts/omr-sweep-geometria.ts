@@ -36,7 +36,7 @@ function parseArgs(argv: string[]) {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && (next === 'omr' || next === 'v2')) {
+    if ((arg === '--mode' || arg === '-m') && next && next === 'omr') {
       options.mode = 'omr';
       i += 1;
       continue;
@@ -198,7 +198,7 @@ async function main() {
   const table = enriched.map((run) => ({
     perfil: run.profile,
     reactivos: run.summary.totalReactivos,
-    detectadas: run.summary.detectadasV2,
+    detectadas: run.summary.detectadas,
     correctas: run.summary.correctas,
     detRate: Number(run.summary.deteccionRate.toFixed(4)),
     precTotal: Number(run.summary.precisionSobreTotal.toFixed(4)),
@@ -213,3 +213,4 @@ main().catch((error) => {
   process.stderr.write(`${JSON.stringify({ error: error instanceof Error ? error.message : String(error) })}\n`);
   process.exit(1);
 });
+

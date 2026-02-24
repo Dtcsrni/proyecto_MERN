@@ -71,11 +71,33 @@ function profileMatrix() {
       env: {}
     },
     {
+      profile: 'detection_permisivo_1',
+      env: {
+        OMR_RESPUESTA_CONF_MIN: '0.70',
+        OMR_SCORE_MIN: '0.09',
+        OMR_DELTA_MIN: '0.02',
+        OMR_AUTO_CONF_MIN: '0.78',
+        OMR_AUTO_AMBIGUAS_MAX: '0.08',
+        OMR_AUTO_DETECCION_MIN: '0.80'
+      }
+    },
+    {
+      profile: 'detection_permisivo_2',
+      env: {
+        OMR_RESPUESTA_CONF_MIN: '0.66',
+        OMR_SCORE_MIN: '0.08',
+        OMR_DELTA_MIN: '0.018',
+        OMR_AUTO_CONF_MIN: '0.74',
+        OMR_AUTO_AMBIGUAS_MAX: '0.10',
+        OMR_AUTO_DETECCION_MIN: '0.72'
+      }
+    },
+    {
       profile: 'scoring_conservador_1',
       env: {
-        OMR_RESPUESTA_CONF_MIN: '0.82',
-        OMR_SCORE_MIN: '0.11',
-        OMR_DELTA_MIN: '0.03'
+        OMR_RESPUESTA_CONF_MIN: '0.84',
+        OMR_SCORE_MIN: '0.12',
+        OMR_DELTA_MIN: '0.035'
       }
     },
     {
@@ -89,9 +111,18 @@ function profileMatrix() {
     {
       profile: 'scoring_conservador_3',
       env: {
-        OMR_RESPUESTA_CONF_MIN: '0.9',
-        OMR_SCORE_MIN: '0.13',
-        OMR_DELTA_MIN: '0.04'
+        OMR_RESPUESTA_CONF_MIN: '0.92',
+        OMR_SCORE_MIN: '0.14',
+        OMR_DELTA_MIN: '0.045'
+      }
+    },
+    {
+      profile: 'geometria_fiducial_tight',
+      env: {
+        OMR_ALIGN_RANGE: '18',
+        OMR_VERT_RANGE: '9',
+        OMR_LOCAL_SEARCH_RATIO: '0.28',
+        OMR_MAX_CENTER_DRIFT_RATIO: '0.34'
       }
     },
     {
@@ -113,19 +144,28 @@ function profileMatrix() {
     {
       profile: 'second_pass_restrict',
       env: {
+        OMR_SECOND_PASS_ENABLED: '1',
         OMR_SECOND_PASS_QUALITY_MAX: '0.68',
-        OMR_SECOND_PASS_CONF_MAX: '0.42'
+        OMR_SECOND_PASS_CONF_MAX: '0.38'
+      }
+    },
+    {
+      profile: 'second_pass_off',
+      env: {
+        OMR_SECOND_PASS_ENABLED: '0'
       }
     },
     {
       profile: 'mix_precision',
       env: {
-        OMR_RESPUESTA_CONF_MIN: '0.9',
-        OMR_SCORE_MIN: '0.125',
-        OMR_DELTA_MIN: '0.04',
+        OMR_RESPUESTA_CONF_MIN: '0.92',
+        OMR_SCORE_MIN: '0.14',
+        OMR_DELTA_MIN: '0.045',
         OMR_AUTO_CONF_MIN: '0.88',
-        OMR_AUTO_AMBIGUAS_MAX: '0.03',
-        OMR_AUTO_DETECCION_MIN: '0.92'
+        OMR_AUTO_AMBIGUAS_MAX: '0.025',
+        OMR_AUTO_DETECCION_MIN: '0.93',
+        OMR_ALIGN_RANGE: '18',
+        OMR_VERT_RANGE: '9'
       }
     }
   ];
@@ -133,13 +173,15 @@ function profileMatrix() {
 
 function computeScore(metrics?: IterationResult['metrics']) {
   if (!metrics) return -1;
-  // Prioriza FP bajo y confianza de autocalificación.
+  // Prioriza de forma agresiva FP bajo + confianza de autocalificación real.
+  const fpPenalty = Math.max(0, metrics.falsePositiveRate - 0.02) * 40;
   return (
-    metrics.precision * 2.8 +
-    (1 - metrics.falsePositiveRate) * 4.5 +
-    metrics.autoGradeTrustRate * 5.5 +
-    metrics.pagePassRate * 2.5 +
-    metrics.invalidDetectionRate * 2
+    metrics.precision * 3 +
+    (1 - metrics.falsePositiveRate) * 6 +
+    metrics.autoGradeTrustRate * 8 +
+    metrics.pagePassRate * 4 +
+    metrics.invalidDetectionRate * 3 -
+    fpPenalty
   );
 }
 
@@ -225,12 +267,15 @@ async function main() {
     results.push(result);
   }
 
-  const best = [...results].sort((a, b) => b.score - a.score)[0];
+  const ordered = [...results].sort((a, b) => b.score - a.score);
+  const best = ordered[0];
+  const rollback = ordered[1] ?? null;
   const payload = {
     generatedAt: new Date().toISOString(),
     dataset: path.resolve(cwd, args.dataset),
     iterations: results,
-    best
+    best,
+    rollback
   };
 
   const reportPath = path.resolve(cwd, args.report);
@@ -246,6 +291,7 @@ async function main() {
     `- Mejor perfil: \`${best?.profile ?? 'none'}\``,
     `- Score compuesto: \`${Number(best?.score ?? -1).toFixed(6)}\``,
     `- Reporte: \`${best?.reportPath ?? '-'}\``,
+    `- Perfil rollback: \`${rollback?.profile ?? 'none'}\``,
     '',
     '## Métricas del mejor perfil',
     '',

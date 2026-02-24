@@ -80,11 +80,11 @@ async function main() {
 
   const smoke = await runCmd('npm run omr:cv:smoke', cwd);
   const synthetic = await runCmd(
-    `npm run omr:tv3:eval:synthetic -- --dataset ${args.datasetSynthetic} --report ../../reports/qa/latest/omr/synthetic-eval.baseline.json`,
+    `npm run omr:tv3:eval:synthetic -- --dataset ${args.datasetSynthetic} --report ../../reports/qa/latest/omr/synthetic-eval.json`,
     cwd
   );
   const real = await runCmd(
-    `npm run omr:tv3:validate:real -- --dataset ${args.datasetReal} --report ../../reports/qa/latest/omr/tv3-real-validation.baseline.json --failure-report ../../reports/qa/latest/omr/tv3-real-failure-analysis.baseline.json`,
+    `npm run omr:tv3:validate:real -- --dataset ${args.datasetReal} --report ../../reports/qa/latest/omr/tv3-real-validation.json --failure-report ../../reports/qa/latest/omr/tv3-real-failure-analysis.json`,
     cwd
   );
 
@@ -111,9 +111,9 @@ async function main() {
 
   const repoRoot = path.resolve(cwd, '../..');
   const toRepoRelative = (targetPath: string) => path.relative(repoRoot, targetPath).replace(/\\/g, '/');
-  const syntheticReportPath = path.resolve(cwd, '../../reports/qa/latest/omr/synthetic-eval.baseline.json');
-  const realValidationPath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-validation.baseline.json');
-  const realFailurePath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-failure-analysis.baseline.json');
+  const syntheticReportPath = path.resolve(cwd, '../../reports/qa/latest/omr/synthetic-eval.json');
+  const realValidationPath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-validation.json');
+  const realFailurePath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-failure-analysis.json');
   const omrManifestPath = path.resolve(cwd, '../../reports/qa/latest/omr/manifest.json');
   const omrManifest = {
     generatedAt: payload.generatedAt,

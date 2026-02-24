@@ -12,6 +12,7 @@ type EvalThresholds = {
   falsePositiveMax: number;
   invalidDetectionMin: number;
   pagePassMin: number;
+  autoGradeTrustMin?: number;
 };
 
 type ExamSpec = {
@@ -147,7 +148,7 @@ const DEFAULT_RENDER_SPEC: RenderSpec = {
   width: 612,
   height: 792,
   marginPt: 28.35,
-  cornerMarkerSizePt: 18,
+  cornerMarkerSizePt: 20,
   qrSizePt: 88
 };
 const DEFAULT_NOISE_SPEC: NoiseSpec = {
@@ -166,7 +167,8 @@ const DEFAULT_THRESHOLDS: EvalThresholds = {
   precisionMin: 0.95,
   falsePositiveMax: 0.02,
   invalidDetectionMin: 0.8,
-  pagePassMin: 0.75
+  pagePassMin: 0.75,
+  autoGradeTrustMin: 0.95
 };
 
 class Rng {
@@ -237,7 +239,7 @@ function buildPageMap(
   const rightColumnX = 428;
   const topY = 640;
   const rowStep = 82;
-  const optionStep = 14;
+    const optionStep = 18;
   const leftCount = Math.ceil(questionNumbers.length / 2);
 
   const preguntas = questionNumbers.map((questionNumber, localIdx) => {
@@ -252,6 +254,7 @@ function buildPageMap(
     }));
     const topBubbleY = baseY;
     const bottomBubbleY = baseY - (LETTERS.length - 1) * optionStep;
+    const bubbleRadius = 7.6;
     const cajaPadX = 22;
     const cajaPadY = 11;
     const cajaOmrX = centerX - cajaPadX;
@@ -269,7 +272,7 @@ function buildPageMap(
         height: cajaOmrHeight
       },
       perfilOmr: {
-        radio: 7.6,
+        radio: bubbleRadius,
         pasoY: optionStep,
         cajaAncho: cajaOmrWidth
       }
@@ -304,7 +307,7 @@ function buildPageMap(
 
 function decideMarkType(rng: Rng): MarkType {
   const roll = rng.next();
-  if (roll < 0.02) return 'double';
+  if (roll < 0.01) return 'double';
   return 'valid';
 }
 
@@ -326,9 +329,10 @@ function buildStudentSelection(
   return [rng.pick(wrongOptions)];
 }
 
-function drawBubbleSvg(cx: number, cy: number, selected: boolean) {
-  if (!selected) return '';
-  return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="6.6" fill="#080808"/>`;
+function drawBubbleSvg(cx: number, cy: number, selected: boolean, fillOpacity: number) {
+  const ring = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="7.0" fill="none" stroke="#e2e2e2" stroke-width="0.45"/>`;
+  if (!selected) return ring;
+  return `${ring}<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="6.9" fill="#040404" fill-opacity="${Math.max(0.98, fillOpacity).toFixed(3)}"/>`;
 }
 
 function drawSmudgeSvg(cx: number, cy: number) {
@@ -367,7 +371,11 @@ async function renderPageImage(args: {
     .map((marker) => {
       const cx = marker.x;
       const cy = yImage(renderSpec, marker.y);
-      return `<rect x="${(cx - halfMarker).toFixed(2)}" y="${(cy - halfMarker).toFixed(2)}" width="${renderSpec.cornerMarkerSizePt.toFixed(2)}" height="${renderSpec.cornerMarkerSizePt.toFixed(2)}" fill="#0c0c0c"/>`;
+      const quiet = 7;
+      return [
+        `<rect x="${(cx - halfMarker - quiet).toFixed(2)}" y="${(cy - halfMarker - quiet).toFixed(2)}" width="${(renderSpec.cornerMarkerSizePt + quiet * 2).toFixed(2)}" height="${(renderSpec.cornerMarkerSizePt + quiet * 2).toFixed(2)}" fill="#ffffff"/>`,
+        `<rect x="${(cx - halfMarker).toFixed(2)}" y="${(cy - halfMarker).toFixed(2)}" width="${renderSpec.cornerMarkerSizePt.toFixed(2)}" height="${renderSpec.cornerMarkerSizePt.toFixed(2)}" fill="#0c0c0c"/>`
+      ].join('');
     })
     .join('');
 
@@ -379,7 +387,9 @@ async function renderPageImage(args: {
         .map((option) => {
           const cx = option.x;
           const cy = yImage(renderSpec, option.y);
-          return drawBubbleSvg(cx, cy, selected.includes(option.letra as Opcion));
+          const isSelected = selected.includes(option.letra as Opcion);
+          const fillOpacity = isSelected ? 0.86 + rng.next() * 0.12 : 0;
+          return drawBubbleSvg(cx, cy, isSelected, fillOpacity);
         })
         .join('');
 
@@ -631,7 +641,7 @@ async function detectSyntheticOmr(
       .map((option) => {
         const centerX = option.x;
         const centerY = height - option.y;
-        const darkness = sampleDiskDarkness(centerX, centerY, 6);
+        const darkness = sampleDiskDarkness(centerX, centerY, 4);
         return {
           option: String(option.letra).toUpperCase() as Opcion,
           darkness
@@ -641,9 +651,9 @@ async function detectSyntheticOmr(
     const top = optionScores[0];
     const second = optionScores[1];
     let selected: Opcion | null = null;
-    if (top && top.darkness >= 0.36) {
+    if (top && top.darkness >= 0.3) {
       const secondIsFar = !second || second.darkness <= top.darkness * 0.74;
-      const absoluteGapOk = !second || top.darkness - second.darkness >= 0.12;
+      const absoluteGapOk = !second || top.darkness - second.darkness >= 0.09;
       if (secondIsFar && absoluteGapOk) {
         selected = top.option;
       }

@@ -6,7 +6,7 @@ export class ErrorOmrCvNoDisponible extends Error {
 
 type EstadoSmokeOmrCv = {
   enabled: boolean;
-  backend: 'sharp';
+  backend: 'cv';
   cvDisponible: boolean;
   motivo?: string;
 };
@@ -45,7 +45,7 @@ async function validarBackendCv() {
       .png()
       .toBuffer();
   } catch {
-    throw new ErrorOmrCvNoDisponible('Backend CV no disponible en runtime. Verifica dependencia sharp.');
+    throw new ErrorOmrCvNoDisponible('Backend CV no disponible en runtime. Verifica dependencias nativas de imagen.');
   }
 }
 
@@ -61,7 +61,7 @@ export function describirErrorCv(error: unknown) {
 
 export async function ejecutarSmokeTestOmrCv(): Promise<EstadoSmokeOmrCv> {
   const enabled = resolverCvHabilitado();
-  const backend = 'sharp' as const;
+  const backend = 'cv' as const;
   if (!enabled) {
     return {
       enabled,
