@@ -1482,10 +1482,12 @@ export async function analizarOmr(
       reprojectionErrorAcumulado += prep.reprojectionErrorPx;
       reprojectionErrorConteo += 1;
     }
-    if (
-      perfil.reprojectionMaxErrorPx < Number.POSITIVE_INFINITY &&
-      (!Number.isFinite(prep.reprojectionErrorPx ?? Number.NaN) || (prep.reprojectionErrorPx ?? Infinity) > perfil.reprojectionMaxErrorPx)
-    ) {
+    const reprojectionError = prep.reprojectionErrorPx;
+    const reprojectionDisponible = typeof reprojectionError === 'number' && Number.isFinite(reprojectionError);
+    const reprojectionFueraDeRango =
+      reprojectionError === Number.POSITIVE_INFINITY ||
+      (reprojectionDisponible && reprojectionError > perfil.reprojectionMaxErrorPx);
+    if (perfil.reprojectionMaxErrorPx < Number.POSITIVE_INFINITY && reprojectionFueraDeRango) {
       if (opcionesInternas?.rescueFiduciales) {
         motivosRevision.push(`P${pregunta.numeroPregunta}: rescate fiduciales por error geométrico local`);
       } else {

@@ -34,12 +34,26 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - No existe fallback runtime a `servicioOmrLegacy`.
 
 ## Runtime CV (backend obligatorio)
-- El preproceso CV de OMR TV3 usa backend `sharp`.
-- No existe backend `simple`.
+- El preproceso CV de OMR TV3 es obligatorio en runtime.
+- No existe backend alterno ni fallback `simple`.
 - Si el backend CV no está disponible, el backend falla en arranque (smoke test bloqueante).
 - Verificación local:
   - `npm -C apps/backend run omr:cv:smoke`
   - `npm -C apps/backend run omr:tv3:eval:synthetic`
+  - `npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real`
+
+## Gate mixto (release)
+- Gate sintético: `omr:tv3:eval:synthetic` (guardrail de regresión controlada).
+- Gate real: `omr:tv3:validate:real` (criterio principal de autocalificación confiable).
+- Ambos son bloqueantes en CI backend.
+
+## Troubleshooting rápido
+- `falsePositiveRate` alto:
+  - revisar `OMR_RESPUESTA_CONF_MIN`, `OMR_SCORE_MIN`, `OMR_DELTA_MIN`.
+- `autoGradeTrustRate` bajo:
+  - revisar `OMR_AUTO_CONF_MIN`, `OMR_AUTO_AMBIGUAS_MAX`, `OMR_AUTO_DETECCION_MIN`.
+- `fuera_roi` o errores geométricos:
+  - revisar `OMR_ALIGN_RANGE`, `OMR_VERT_RANGE`, rescate de fiduciales y perfil de geometría.
 
 ## Nota
 - Este README fue generado automáticamente como base; ampliar con decisiones de diseño específicas del módulo cuando aplique.

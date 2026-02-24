@@ -25,7 +25,7 @@ Version operativa: `1.0.0-beta.0`
 - Dependencias nativas de build para modulos Node (python3, make, g++, cmake)
 
 ## OMR CV obligatorio (TV3)
-- El backend OMR TV3 usa backend CV basado en `sharp`.
+- El backend OMR TV3 requiere backend CV obligatorio en runtime.
 - Si el backend CV no está disponible, la API docente falla en arranque por diseño.
 - Verificación rápida:
 ```bash
@@ -34,6 +34,16 @@ npm -C apps/backend run omr:cv:smoke
 - Gate sintético TV3 (usa umbrales del dataset en `omr_samples_tv3/manifest.json`):
 ```bash
 npm -C apps/backend run omr:tv3:eval:synthetic
+```
+- Gate real TV3 (usa dataset golden y umbral de autocalificación):
+```bash
+npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real
+```
+- Baseline/calibración/evidencia:
+```bash
+npm -C apps/backend run omr:tv3:generate:real
+npm -C apps/backend run omr:tv3:baseline:snapshot
+npm -C apps/backend run omr:tv3:calibrate:real
 ```
 
 ### Instalación local mínima (Linux)

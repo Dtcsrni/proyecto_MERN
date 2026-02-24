@@ -14,21 +14,21 @@ type BundleExamen = {
 
 export type EvalProfileOptions = {
   dataset: string;
-  mode: 'v2';
+  mode: 'omr';
   mongoUri: string;
   profileName: string;
 };
 
 export type EvalProfileSummary = {
   profile: string;
-  mode: 'v2';
+  mode: 'omr';
   dataset: string;
   totalReactivos: number;
-  detectadasV2: number;
-  correctasV2: number;
-  deteccionRateV2: number;
-  precisionSobreTotalV2: number;
-  estadosV2: Record<string, number>;
+  detectadas: number;
+  correctas: number;
+  deteccionRate: number;
+  precisionSobreTotal: number;
+  estados: Record<string, number>;
   imagenesConError: number;
 };
 
@@ -38,7 +38,7 @@ function parseArgs(argv: string[]): EvalProfileOptions {
   const args = argv.slice(2);
   const options: EvalProfileOptions = {
     dataset: '../../omr_samples',
-    mode: 'v2',
+    mode: 'omr',
     mongoUri: process.env.MONGODB_URI_HOST || 'mongodb://localhost:27017/mern_app',
     profileName: process.env.OMR_PROFILE_NAME || 'actual'
   };
@@ -51,8 +51,8 @@ function parseArgs(argv: string[]): EvalProfileOptions {
       i += 1;
       continue;
     }
-    if ((arg === '--mode' || arg === '-m') && next && next === 'v2') {
-      options.mode = next;
+    if ((arg === '--mode' || arg === '-m') && next && (next === 'omr' || next === 'v2')) {
+      options.mode = 'omr';
       i += 1;
       continue;
     }
@@ -204,11 +204,11 @@ export async function evaluateProfile(options: EvalProfileOptions): Promise<Eval
       mode: options.mode,
       dataset: datasetRoot,
       totalReactivos,
-      detectadasV2: detectadas,
-      correctasV2: correctas,
-      deteccionRateV2: totalReactivos > 0 ? detectadas / totalReactivos : 0,
-      precisionSobreTotalV2: totalReactivos > 0 ? correctas / totalReactivos : 0,
-      estadosV2: states,
+      detectadas,
+      correctas,
+      deteccionRate: totalReactivos > 0 ? detectadas / totalReactivos : 0,
+      precisionSobreTotal: totalReactivos > 0 ? correctas / totalReactivos : 0,
+      estados: states,
       imagenesConError
     };
 

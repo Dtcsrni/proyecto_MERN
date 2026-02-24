@@ -8,7 +8,14 @@ este documento se actualiza automáticamente al regenerar.
 
 Contrato OMR CV actual:
 - `OMR_CV_BACKEND` retirado del contrato operativo.
-- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere backend CV (`sharp`).
+- `OMR_CV_ENGINE_ENABLED` solo se usa para apagar CV en tests; runtime normal requiere backend CV obligatorio.
+- Para calibración/gate real se recomienda usar:
+  - `OMR_RESPUESTA_CONF_MIN`
+  - `OMR_SCORE_MIN`
+  - `OMR_DELTA_MIN`
+  - `OMR_AUTO_CONF_MIN`
+  - `OMR_AUTO_AMBIGUAS_MAX`
+  - `OMR_AUTO_DETECCION_MIN`
 
 ## Backend
 - `API_BASE` (usado en: apps/backend/scripts/omr-validate-api.js, apps/backend/scripts/omr_calibrate.js)
