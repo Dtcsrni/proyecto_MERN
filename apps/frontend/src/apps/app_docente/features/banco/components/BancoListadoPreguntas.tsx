@@ -7,6 +7,7 @@
 import { Boton } from '../../../../../ui/ux/componentes/Boton';
 import { idCortoMateria, obtenerVersionPregunta, preguntaTieneCodigo } from '../../../utilidades';
 import type { Pregunta } from '../../../tipos';
+import { useMemo, useState } from 'react';
 
 export function BancoListadoPreguntas({
   periodoId,
@@ -25,20 +26,81 @@ export function BancoListadoPreguntas({
   iniciarEdicion: (pregunta: Pregunta) => void;
   archivarPregunta: (preguntaId: string) => Promise<void>;
 }) {
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [filtroTema, setFiltroTema] = useState('');
+
+  const temasDisponibles = useMemo(() => {
+    const set = new Set<string>();
+    for (const pregunta of preguntasMateria) {
+      const nombre = String(pregunta.tema ?? '').trim();
+      if (nombre) set.add(nombre);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'es'));
+  }, [preguntasMateria]);
+
+  const preguntasFiltradas = useMemo(() => {
+    const texto = filtroTexto.trim().toLowerCase();
+    const tema = filtroTema.trim().toLowerCase();
+    return preguntasMateria.filter((pregunta) => {
+      const version = obtenerVersionPregunta(pregunta);
+      const enunciado = String(version?.enunciado ?? '').toLowerCase();
+      const temaActual = String(pregunta.tema ?? '').toLowerCase();
+      const porTexto = !texto || enunciado.includes(texto);
+      const porTema = !tema || temaActual === tema;
+      return porTexto && porTema;
+    });
+  }, [filtroTexto, filtroTema, preguntasMateria]);
+
+  const hayFiltros = Boolean(filtroTexto.trim() || filtroTema.trim());
+
   return (
-    <>
-      <h3>Preguntas recientes{periodoId ? ` (${preguntasMateria.length})` : ''}</h3>
-      <ul className="lista lista-items">
+    <section className="banco-listado">
+      <h3>
+        Preguntas recientes{periodoId ? ` (${preguntasFiltradas.length}/${preguntasMateria.length})` : ''}
+      </h3>
+      {periodoId && (
+        <div className="banco-listado__filtros" role="search" aria-label="Filtros de preguntas">
+          <label className="campo">
+            Buscar en enunciado
+            <input
+              type="search"
+              value={filtroTexto}
+              onChange={(event) => setFiltroTexto(event.target.value)}
+              placeholder="Ej. derivada, arrays, SQL"
+            />
+          </label>
+          <label className="campo">
+            Tema
+            <select value={filtroTema} onChange={(event) => setFiltroTema(event.target.value)}>
+              <option value="">Todos los temas</option>
+              {temasDisponibles.map((tema) => (
+                <option key={tema} value={tema}>
+                  {tema}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="banco-listado__filtros-acciones">
+            <Boton type="button" variante="secundario" onClick={() => { setFiltroTexto(''); setFiltroTema(''); }} disabled={!hayFiltros}>
+              Limpiar filtros
+            </Boton>
+          </div>
+        </div>
+      )}
+      <ul className="lista lista-items banco-listado__items">
         {!periodoId && <li>Selecciona una materia para ver sus preguntas.</li>}
         {periodoId && preguntasMateria.length === 0 && <li>No hay preguntas en esta materia.</li>}
+        {periodoId && preguntasMateria.length > 0 && preguntasFiltradas.length === 0 && (
+          <li>No hay preguntas que coincidan con los filtros actuales.</li>
+        )}
         {periodoId &&
-          preguntasMateria.map((pregunta) => {
+          preguntasFiltradas.map((pregunta) => {
             const version = obtenerVersionPregunta(pregunta);
             const opcionesActuales = Array.isArray(version?.opciones) ? version?.opciones : [];
             const tieneCodigo = preguntaTieneCodigo(pregunta);
             return (
               <li key={pregunta._id}>
-                <div className="item-glass">
+                <div className="item-glass banco-listado__item">
                   <div className="item-row">
                     <div>
                       <div className="item-title">{version?.enunciado ?? 'Pregunta'}</div>
@@ -75,6 +137,6 @@ export function BancoListadoPreguntas({
             );
           })}
       </ul>
-    </>
+    </section>
   );
 }

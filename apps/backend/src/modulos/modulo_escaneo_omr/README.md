@@ -41,10 +41,13 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
   - `npm -C apps/backend run omr:cv:smoke`
   - `npm -C apps/backend run omr:tv3:eval:synthetic`
   - `npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real`
+  - `npm -C apps/backend run omr:tv3:generate:real:manual-min`
+  - `npm -C apps/backend run omr:tv3:validate:real:manual-min`
 
 ## Gate mixto (release)
 - Gate sintético: `omr:tv3:eval:synthetic` (guardrail de regresión controlada).
-- Gate real: `omr:tv3:validate:real` (criterio principal de autocalificación confiable).
+- Gate real simulado: `omr:tv3:validate:real`.
+- Gate real manual mínimo: `omr:tv3:validate:real:manual-min`.
 - Ambos son bloqueantes en CI backend.
 
 ## Troubleshooting rápido
@@ -52,6 +55,8 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
   - revisar `OMR_RESPUESTA_CONF_MIN`, `OMR_SCORE_MIN`, `OMR_DELTA_MIN`.
 - `autoGradeTrustRate` bajo:
   - revisar `OMR_AUTO_CONF_MIN`, `OMR_AUTO_AMBIGUAS_MAX`, `OMR_AUTO_DETECCION_MIN`.
+- `autoCoverageRate < 1.0`:
+  - revisar `estadoAnalisis`/policy de autocalificación y cobertura de detección por página.
 - `fuera_roi` o errores geométricos:
   - revisar `OMR_ALIGN_RANGE`, `OMR_VERT_RANGE`, rescate de fiduciales y perfil de geometría.
 

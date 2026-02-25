@@ -108,7 +108,9 @@ const dashboardConfigDefaults = Object.freeze({
   autoRestart: mode === 'dev',
   showFullLogs: Boolean(fullLogs),
   autoScroll: true,
-  pauseUpdates: false
+  pauseUpdates: false,
+  refreshForegroundMs: 3000,
+  refreshBackgroundMs: 20000
 });
 let dashboardConfig = loadDashboardConfig();
 let autoRestart = dashboardConfig.autoRestart;
@@ -679,11 +681,22 @@ function readJsonFile(filePath) {
 
 function sanitizeDashboardConfig(raw = null) {
   const source = raw && typeof raw === 'object' ? raw : {};
+  const normalizeMs = (value, fallback, min, max) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    const rounded = Math.round(numeric);
+    return Math.min(max, Math.max(min, rounded));
+  };
+  const refreshForegroundMs = normalizeMs(source.refreshForegroundMs, dashboardConfigDefaults.refreshForegroundMs, 1000, 15000);
+  const refreshBackgroundMsRaw = normalizeMs(source.refreshBackgroundMs, dashboardConfigDefaults.refreshBackgroundMs, 3000, 120000);
+  const refreshBackgroundMs = Math.max(refreshBackgroundMsRaw, refreshForegroundMs);
   const next = {
     autoRestart: Boolean(source.autoRestart),
     showFullLogs: Boolean(source.showFullLogs),
     autoScroll: source.autoScroll === undefined ? true : Boolean(source.autoScroll),
-    pauseUpdates: Boolean(source.pauseUpdates)
+    pauseUpdates: Boolean(source.pauseUpdates),
+    refreshForegroundMs,
+    refreshBackgroundMs
   };
   if (mode !== 'dev') next.autoRestart = false;
   return next;
@@ -1646,16 +1659,31 @@ function findBrowserExecutable() {
 }
 
 function openBrowser(url) {
+  const targetUrl = decorateDashboardUrl(url);
   const browserExe = findBrowserExecutable();
   if (browserExe) {
     const lower = browserExe.toLowerCase();
     const supportsNewWindow = lower.endsWith('msedge.exe') || lower.endsWith('chrome.exe');
-    const browserArgs = supportsNewWindow ? ['--new-window', url] : [url];
+    const browserArgs = supportsNewWindow ? ['--new-window', targetUrl] : [targetUrl];
     const child = spawn(browserExe, browserArgs, { detached: true, stdio: 'ignore', windowsHide: true });
     child.unref();
     return;
   }
-  spawn('cmd.exe', ['/c', 'start', '', url], { windowsHide: true });
+  spawn('cmd.exe', ['/c', 'start', '', targetUrl], { windowsHide: true });
+}
+
+function decorateDashboardUrl(rawUrl) {
+  try {
+    const parsed = new URL(String(rawUrl || '').trim());
+    const localHost = parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost';
+    if (localHost && (parsed.pathname === '/' || parsed.pathname === '')) {
+      if (!parsed.searchParams.has('resume')) parsed.searchParams.set('resume', '1');
+      if (!parsed.hash) parsed.hash = 'tab=main';
+    }
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
 }
 
 function shouldAutostartTray() {
@@ -2247,6 +2275,8 @@ const server = http.createServer(async (req, res) => {
     if (next.showFullLogs !== previous.showFullLogs) changed.push('showFullLogs');
     if (next.autoScroll !== previous.autoScroll) changed.push('autoScroll');
     if (next.pauseUpdates !== previous.pauseUpdates) changed.push('pauseUpdates');
+    if (next.refreshForegroundMs !== previous.refreshForegroundMs) changed.push('refreshForegroundMs');
+    if (next.refreshBackgroundMs !== previous.refreshBackgroundMs) changed.push('refreshBackgroundMs');
     logSystem(`Auto-reinicio: ${autoRestart ? 'ACTIVO' : 'DESACTIVADO'}`, autoRestart ? 'ok' : 'warn');
     if (changed.length > 0) {
       logSystem(`Configuracion dashboard actualizada: ${changed.join(', ')}`, 'system');
@@ -2263,6 +2293,8 @@ const server = http.createServer(async (req, res) => {
     if (previous.showFullLogs !== next.showFullLogs) changed.push('showFullLogs');
     if (previous.autoScroll !== next.autoScroll) changed.push('autoScroll');
     if (previous.pauseUpdates !== next.pauseUpdates) changed.push('pauseUpdates');
+    if (previous.refreshForegroundMs !== next.refreshForegroundMs) changed.push('refreshForegroundMs');
+    if (previous.refreshBackgroundMs !== next.refreshBackgroundMs) changed.push('refreshBackgroundMs');
     logSystem(`Configuracion dashboard reiniciada a valores por defecto (${changed.length ? changed.join(', ') : 'sin cambios'})`, 'warn');
     sendJson(res, 200, { ok: true, config: dashboardConfig, defaults: dashboardConfigDefaults });
     return;

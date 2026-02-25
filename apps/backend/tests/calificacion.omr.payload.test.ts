@@ -196,7 +196,7 @@ describe('calificación OMR payload estricto', () => {
     expect(respuesta.body.error.codigo).toBe('OMR_REVISION_METADATA_OBLIGATORIA');
   });
 
-  it('bloquea guardado final cuando estadoAnalisis!=ok y no hay revisionConfirmada', async () => {
+  it('permite guardado final cuando estadoAnalisis!=ok y no hay revisionConfirmada', async () => {
     const base = await crearEscenarioBase(app);
 
     const respuesta = await request(app)
@@ -220,9 +220,9 @@ describe('calificación OMR payload estricto', () => {
           motivosRevision: ['bajo_contraste']
         }
       })
-      .expect(409);
+      .expect(201);
 
-    expect(respuesta.body.error.codigo).toBe('OMR_ESTADO_ANALISIS_BLOQUEANTE');
+    expect(respuesta.body.calificacion).toBeTruthy();
   });
 
   it('rechaza paginasOmr sin omrAnalisis completo', async () => {

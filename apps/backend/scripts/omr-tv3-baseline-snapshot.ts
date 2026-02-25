@@ -8,6 +8,7 @@ const execAsync = promisify(exec);
 type Args = {
   datasetSynthetic: string;
   datasetReal: string;
+  datasetRealManual: string;
   report: string;
 };
 
@@ -15,6 +16,7 @@ function parseArgs(argv: string[]): Args {
   const args: Args = {
     datasetSynthetic: '../../omr_samples_tv3',
     datasetReal: '../../omr_samples_tv3_real',
+    datasetRealManual: '../../omr_samples_tv3_real_manual_min',
     report: '../../reports/qa/latest/omr/baseline_snapshot.json'
   };
   for (let i = 2; i < argv.length; i += 1) {
@@ -27,6 +29,11 @@ function parseArgs(argv: string[]): Args {
     }
     if (key === '--dataset-real' && value) {
       args.datasetReal = value;
+      i += 1;
+      continue;
+    }
+    if (key === '--dataset-real-manual' && value) {
+      args.datasetRealManual = value;
       i += 1;
       continue;
     }
@@ -87,6 +94,10 @@ async function main() {
     `npm run omr:tv3:validate:real -- --dataset ${args.datasetReal} --report ../../reports/qa/latest/omr/tv3-real-validation.json --failure-report ../../reports/qa/latest/omr/tv3-real-failure-analysis.json`,
     cwd
   );
+  const realManual = await runCmd(
+    `npm run omr:tv3:validate:real -- --dataset ${args.datasetRealManual} --report ../../reports/qa/latest/omr/tv3-real-manual-validation.json --failure-report ../../reports/qa/latest/omr/tv3-real-manual-failure-analysis.json`,
+    cwd
+  );
 
   const payload = {
     generatedAt: new Date().toISOString(),
@@ -95,13 +106,15 @@ async function main() {
     },
     datasets: {
       synthetic: path.resolve(cwd, args.datasetSynthetic),
-      real: path.resolve(cwd, args.datasetReal)
+      real: path.resolve(cwd, args.datasetReal),
+      realManual: path.resolve(cwd, args.datasetRealManual)
     },
     environment: pickOmrEnv(process.env),
     gates: {
       smokeCv: smoke,
       synthetic,
-      real
+      real,
+      realManual
     }
   };
 
@@ -114,6 +127,10 @@ async function main() {
   const syntheticReportPath = path.resolve(cwd, '../../reports/qa/latest/omr/synthetic-eval.json');
   const realValidationPath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-validation.json');
   const realFailurePath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-failure-analysis.json');
+  const realManualValidationPath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-manual-validation.json');
+  const realManualFailurePath = path.resolve(cwd, '../../reports/qa/latest/omr/tv3-real-manual-failure-analysis.json');
+  const realDatasetGenerationPath = path.resolve(cwd, '../../reports/qa/latest/omr/real_dataset_generation_report.json');
+  const realManualDatasetGenerationPath = path.resolve(cwd, '../../reports/qa/latest/omr/real_manual_dataset_generation_report.json');
   const omrManifestPath = path.resolve(cwd, '../../reports/qa/latest/omr/manifest.json');
   const omrManifest = {
     generatedAt: payload.generatedAt,
@@ -121,14 +138,19 @@ async function main() {
     datasets: payload.datasets,
     reports: {
       baselineSnapshot: toRepoRelative(reportPath),
+      realDatasetGeneration: toRepoRelative(realDatasetGenerationPath),
+      realManualDatasetGeneration: toRepoRelative(realManualDatasetGenerationPath),
       syntheticEval: toRepoRelative(syntheticReportPath),
       realValidation: toRepoRelative(realValidationPath),
-      realFailureAnalysis: toRepoRelative(realFailurePath)
+      realFailureAnalysis: toRepoRelative(realFailurePath),
+      realManualValidation: toRepoRelative(realManualValidationPath),
+      realManualFailureAnalysis: toRepoRelative(realManualFailurePath)
     },
     gates: {
       smokeCv: smoke.ok,
       synthetic: synthetic.ok,
-      real: real.ok
+      real: real.ok,
+      realManual: realManual.ok
     }
   };
   await fs.mkdir(path.dirname(omrManifestPath), { recursive: true });
@@ -141,7 +163,8 @@ async function main() {
       gates: {
         smokeCv: smoke.ok,
         synthetic: synthetic.ok,
-        real: real.ok
+        real: real.ok,
+        realManual: realManual.ok
       }
     })}\n`
   );

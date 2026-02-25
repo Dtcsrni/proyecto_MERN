@@ -5,6 +5,26 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Portal alumno académico TV3 ready:
+  - endpoints de consulta académica: `GET /api/portal/perfil`, `GET /api/portal/materias`, `GET /api/portal/agenda`, `GET /api/portal/avisos`, `GET /api/portal/historial`.
+  - read-model académico en portal: `perfilAlumno`, `materiasAlumno`, `agendaAlumno`, `avisosAlumno`, `historialAlumno`.
+  - soporte `schemaVersion: 3` en sincronización portal (con compat transitoria para `schemaVersion: 2`).
+  - ensamblador backend para payload académico `apps/backend/src/modulos/modulo_sincronizacion_nube/domain/portalAcademicoAssembler.ts`.
+- Frontend con build separado por destino:
+  - `npm -C apps/frontend run build:alumno`
+  - `npm -C apps/frontend run build:docente`
+  - scripts raíz `build:frontend:alumno`, `build:frontend:docente`, `dev:frontend:alumno`, `dev:frontend:docente`.
+- UX alta de alumnos:
+  - materia y grupo por defecto desde último contexto de captura (sesión actual).
+  - feedback de creación con ID real del alumno en mensaje inline y toast.
+  - badges de grupo con color determinista por valor de grupo.
+- Plan de pruebas E2E OMR TV3 para automatización docente:
+  - dataset real manual mínimo `omr_samples_tv3_real_manual_min/` y generador `apps/backend/scripts/omr-tv3-generate-real-manual-min.ts`.
+  - scripts backend:
+    - `omr:tv3:generate:real:manual-min`
+    - `omr:tv3:validate:real:manual-min`
+  - métricas canónicas de validación real incluyen `autoCoverageRate`.
+  - runbook actualizado para gate dual real (simulado + manual mínimo) en `docs/OMR_TV3_REAL_GATE_RUNBOOK.md`.
 - Cierre de confiabilidad real OMR TV3:
   - generador de dataset golden real simulado `apps/backend/scripts/omr-tv3-generate-real-golden.ts`.
   - baseline reproducible `apps/backend/scripts/omr-tv3-baseline-snapshot.ts`.

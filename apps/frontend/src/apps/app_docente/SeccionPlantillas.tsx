@@ -270,6 +270,16 @@ export function SeccionPlantillas({
 
   const totalPlantillas = plantillasFiltradas.length;
   const totalPlantillasTodas = Array.isArray(plantillas) ? plantillas.length : 0;
+  const resumenPlantillas = useMemo(() => {
+    const listaPlantillas = Array.isArray(plantillas) ? plantillas : [];
+    const total = listaPlantillas.length;
+    const conTemas = listaPlantillas.filter((p) => Array.isArray(p.temas) && p.temas.length > 0).length;
+    const totalTemasSeleccionados = listaPlantillas.reduce(
+      (acc, p) => acc + (Array.isArray(p.temas) ? p.temas.length : 0),
+      0
+    );
+    return { total, conTemas, totalTemasSeleccionados };
+  }, [plantillas]);
 
   async function refrescarPlantillas() {
     if (refrescandoPlantillas) return;
@@ -637,7 +647,7 @@ export function SeccionPlantillas({
   }, [avisarSinPermiso, cargarExamenesGenerados, enviarConPermiso, plantillaId, puedeGenerarExamenes]);
 
   return (
-    <div className="panel">
+    <div className="panel plantillas-shell">
       <div className="plantillas-header">
         <h2>
           <Icono nombre="plantillas" /> Plantillas
@@ -662,6 +672,24 @@ export function SeccionPlantillas({
           >
             Limpiar filtro
           </Boton>
+        </div>
+      </div>
+      <div className="plantillas-resumen" aria-live="polite">
+        <div className="plantillas-resumen__item">
+          <span>Plantillas</span>
+          <b>{resumenPlantillas.total}</b>
+        </div>
+        <div className="plantillas-resumen__item">
+          <span>Con temas</span>
+          <b>{resumenPlantillas.conTemas}</b>
+        </div>
+        <div className="plantillas-resumen__item">
+          <span>Temas vinculados</span>
+          <b>{resumenPlantillas.totalTemasSeleccionados}</b>
+        </div>
+        <div className="plantillas-resumen__item">
+          <span>Filtro</span>
+          <b>{filtroPlantillas.trim() ? 'Activo' : 'Sin filtro'}</b>
         </div>
       </div>
 
