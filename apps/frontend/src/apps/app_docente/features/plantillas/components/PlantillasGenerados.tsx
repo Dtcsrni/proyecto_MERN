@@ -26,8 +26,6 @@ export function PlantillasGenerados({
   plantillaId,
   setPlantillaId,
   plantillas,
-  alumnoId,
-  setAlumnoId,
   alumnos,
   generando,
   puedeGenerar,
@@ -57,8 +55,6 @@ export function PlantillasGenerados({
   plantillaId: string;
   setPlantillaId: (value: string) => void;
   plantillas: Plantilla[];
-  alumnoId: string;
-  setAlumnoId: (value: string) => void;
   alumnos: Alumno[];
   generando: boolean;
   puedeGenerar: boolean;
@@ -85,9 +81,11 @@ export function PlantillasGenerados({
   regenerandoExamenId: string | null;
   puedeArchivarExamenes: boolean;
 }) {
+  // Normalización defensiva: evita condicionales repetidas en el JSX.
   const listaPlantillas = Array.isArray(plantillas) ? plantillas : [];
   const listaAlumnos = Array.isArray(alumnos) ? alumnos : [];
   const listaExamenesGenerados = Array.isArray(examenesGenerados) ? examenesGenerados : [];
+  // Indicador de adopción operativa: exámenes ya descargados por docente.
   const totalDescargados = listaExamenesGenerados.filter((item) => Boolean(String(item.descargadoEn || '').trim())).length;
 
   return (
@@ -103,11 +101,11 @@ export function PlantillasGenerados({
               <b>Plantilla:</b> obligatoria.
             </li>
             <li>
-              <b>Alumno:</b> opcional; si lo eliges, el examen queda asociado desde el inicio.
+              <b>Vinculacion de alumno:</b> se realiza despues, en la seccion de <b>Entrega</b>, al recibir el examen fisico.
             </li>
           </ul>
           <p>
-            Ejemplo: plantilla <code>Parcial 1 - Algebra</code>, alumno <code>2024-001 - Ana Maria Gomez Ruiz</code>.
+            Ejemplo: genera primero los examenes por folio y luego vincula cada folio con su alumno al entregar.
           </p>
         </AyudaFormulario>
         <div className="plantillas-generacion__stats">
@@ -122,17 +120,6 @@ export function PlantillasGenerados({
               {listaPlantillas.map((plantilla) => (
                 <option key={plantilla._id} value={plantilla._id}>
                   {plantilla.titulo}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="campo">
-            Alumno (opcional)
-            <select value={alumnoId} onChange={(event) => setAlumnoId(event.target.value)} data-tooltip="Asocia el examen a un alumno (opcional).">
-              <option value="">Sin alumno</option>
-              {listaAlumnos.map((alumno) => (
-                <option key={alumno._id} value={alumno._id}>
-                  {alumno.matricula} - {alumno.nombreCompleto}
                 </option>
               ))}
             </select>

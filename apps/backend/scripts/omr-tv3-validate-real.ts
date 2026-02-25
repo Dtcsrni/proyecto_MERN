@@ -3,6 +3,15 @@ import path from 'node:path';
 import { analizarOmr } from '../src/modulos/modulo_escaneo_omr/servicioOmr';
 import { evaluarAutoCalificableOmr } from '../src/modulos/modulo_escaneo_omr/politicaAutoCalificacionOmr';
 
+/**
+ * Gate real canónico para OMR TV3.
+ *
+ * Objetivo:
+ * - Ejecutar `analizarOmr` contra dataset real (capturas + mapa OMR + ground truth)
+ * - Calcular métricas bloqueantes de detección/autocalificación
+ * - Emitir reportes JSON homogéneos para CI y trazabilidad operativa
+ */
+
 type Opcion = 'A' | 'B' | 'C' | 'D' | 'E';
 type MarkType = 'valid' | 'blank' | 'double' | 'smudge';
 type EstadoAnalisisOmr = 'ok' | 'rechazado_calidad' | 'requiere_revision';
@@ -122,6 +131,9 @@ type Args = {
   pagePassMin?: number;
 };
 
+/**
+ * CLI parser deliberadamente simple para evitar dependencias extras en CI.
+ */
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     dataset: '../../omr_samples_tv3_real',
@@ -174,11 +186,17 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
+/**
+ * Lectura JSON tipada (best-effort): el contrato real se valida en runtime.
+ */
 async function readJsonFile<T>(filePath: string) {
   const raw = await fs.readFile(filePath, 'utf8');
   return JSON.parse(raw) as T;
 }
 
+/**
+ * Ground truth en JSONL para facilitar diffs y merges por captura/pregunta.
+ */
 async function readGroundTruth(filePath: string) {
   const raw = await fs.readFile(filePath, 'utf8');
   return raw
@@ -188,6 +206,9 @@ async function readGroundTruth(filePath: string) {
     .map((line) => JSON.parse(line) as GroundTruthRow);
 }
 
+/**
+ * Índice por captura/pregunta para consulta O(1) durante evaluación.
+ */
 function buildTruthIndex(rows: GroundTruthRow[]) {
   const byCapture = new Map<string, Map<number, GroundTruthRow>>();
   for (const row of rows) {
@@ -201,29 +222,47 @@ function round6(value: number) {
   return Number(value.toFixed(6));
 }
 
+/**
+ * Convierte imagen local a data-url para reutilizar el mismo contrato de `analizarOmr`.
+ */
 function imageToDataUrl(imagePath: string, fileBuffer: Buffer) {
   const ext = path.extname(imagePath).toLowerCase();
   const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
   return `data:${mime};base64,${fileBuffer.toString('base64')}`;
 }
 
+/**
+ * Contador genérico para diagnósticos de fallas y motivos.
+ */
 function bump(counter: Map<string, number>, key: string) {
   counter.set(key, (counter.get(key) ?? 0) + 1);
 }
 
+/**
+ * Ejecuta validación real OMR TV3 end-to-end sobre un dataset con truth etiquetado.
+ *
+ * Criterio:
+ * - Evalúa precisión de detección por pregunta.
+ * - Evalúa capacidad de autocalificación por página.
+ * - Emite artefactos JSON para gates bloqueantes de CI.
+ */
 export async function runTv3RealValidation(options: ValidateRealOptions): Promise<{
   report: RealValidationPayload;
   failures: FailurePayload;
 }> {
+  // Resolver paths absolutos para ejecución estable desde local/CI con cwd variable.
   const datasetRoot = path.resolve(process.cwd(), options.datasetRoot);
   const reportPath = path.resolve(process.cwd(), options.reportPath);
   const failureReportPath = options.failureReportPath
     ? path.resolve(process.cwd(), options.failureReportPath)
     : undefined;
 
+  // Cargar contrato de dataset y ground truth.
   const manifest = await readJsonFile<ManifestDataset>(path.join(datasetRoot, 'manifest.json'));
   const groundTruthRows = await readGroundTruth(path.join(datasetRoot, manifest.groundTruthRef));
   const truthByCapture = buildTruthIndex(groundTruthRows);
+
+  // Umbrales efectivos: override CLI -> manifiesto -> defaults.
   const thresholds: EvalThresholds = {
     precisionMin: options.thresholds?.precisionMin ?? manifest.thresholds.precisionMin,
     falsePositiveMax: options.thresholds?.falsePositiveMax ?? manifest.thresholds.falsePositiveMax,
@@ -232,6 +271,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
     autoGradeTrustMin: options.thresholds?.autoGradeTrustMin ?? manifest.thresholds.autoGradeTrustMin ?? 0.95
   };
 
+  // Contadores globales para métricas finales.
   let tp = 0;
   let fp = 0;
   let total = 0;
@@ -254,6 +294,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
 
   const perCapture: RealValidationPayload['perCapture'] = [];
 
+  // Evaluar cada captura de forma independiente para conservar granularidad diagnóstica.
   for (const capture of manifest.capturas) {
     const imageAbsolute = path.join(datasetRoot, capture.imagePath);
     const mapAbsolute = path.join(datasetRoot, capture.mapaOmrPath);
@@ -261,6 +302,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
     const imageDataUrl = imageToDataUrl(imageAbsolute, imageBuffer);
     const mapaPagina = await readJsonFile<unknown>(mapAbsolute);
 
+    // Acepta múltiples formas válidas de QR esperado para robustez entre revisiones de renderer.
     const qrEsperado = [
       capture.folio,
       `EXAMEN:${capture.folio}:P${capture.numeroPagina}`,
@@ -278,6 +320,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
     const expected = truthByCapture.get(capture.captureId);
     if (!expected) throw new Error(`No hay ground truth para ${capture.captureId}`);
 
+    // Índice de detecciones por número de pregunta para comparación directa con truth.
     const detectedMap = new Map<number, Opcion | null>();
     for (const respuesta of resultado.respuestasDetectadas) {
       detectedMap.set(respuesta.numeroPregunta, (respuesta.opcion as Opcion | null) ?? null);
@@ -288,6 +331,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
     }
 
     let mismatches = 0;
+    // Recorre pregunta por pregunta para medir aciertos, FP y errores invalidables.
     for (const [numeroPregunta, row] of expected.entries()) {
       total += 1;
       const exp = row.opcionEsperada;
@@ -324,6 +368,8 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
       ratioAmbiguas: resultado.ratioAmbiguas,
       coberturaDeteccion
     });
+
+    // Se tolera un margen acotado por página para marcar pass/fail de captura.
     const allowedMismatches = totalPreguntas > 0 ? Math.max(1, Math.floor(totalPreguntas * 0.35)) : 0;
     const pagePass = totalPreguntas > 0 ? mismatches <= allowedMismatches : true;
     if (pagePass) pagePassCount += 1;
@@ -358,6 +404,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
     });
   }
 
+  // Métricas globales del gate real.
   const precision = tp + fp > 0 ? tp / (tp + fp) : 1;
   const falsePositiveRate = total > 0 ? fp / total : 0;
   const invalidDetectionRate = invalidTotal > 0 ? invalidDetected / invalidTotal : 1;
@@ -424,6 +471,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
       }))
   };
 
+  // Persistencia de evidencia para CI/CD y auditoría de calibración.
   await fs.mkdir(path.dirname(reportPath), { recursive: true });
   await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   if (failureReportPath) {
@@ -434,6 +482,11 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
   return { report, failures };
 }
 
+/**
+ * Entrada CLI:
+ * - Imprime un resumen compacto en stdout para uso en pipelines.
+ * - Sale con código `1` si el gate no cumple.
+ */
 async function main() {
   const args = parseArgs(process.argv);
   const { report } = await runTv3RealValidation({

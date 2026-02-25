@@ -41,6 +41,7 @@ type LogoEmbed = {
 
 type SegmentoTexto = { texto: string; font: PDFFont; size: number; esCodigo?: boolean };
 type LineaSegmentos = { segmentos: SegmentoTexto[]; lineHeight: number };
+type RectBox = { x: number; y: number; width: number; height: number };
 
 const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   version: 3,
@@ -76,6 +77,18 @@ function mmAPuntos(mm: number) {
   return mm * MM_A_PUNTOS;
 }
 
+// Colision AABB para prevenir solapes de bloques en la plantilla final.
+function rectInterseca(a: RectBox, b: RectBox): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+// Falla temprano si un bloque critico sale del area imprimible.
+function assertRectDentroPagina(rect: RectBox, nombre: string) {
+  if (rect.x < 0 || rect.y < 0 || rect.x + rect.width > ANCHO_CARTA || rect.y + rect.height > ALTO_CARTA) {
+    throw new Error(`Layout invalido: ${nombre} fuera de la pagina`);
+  }
+}
+
 function normalizarEspacios(valor: string) {
   return valor.replace(/\s+/g, ' ').trim();
 }
@@ -105,6 +118,7 @@ function partirCodigoEnLineas(texto: string) {
     .map((linea) => linea.replace(/\t/g, '  '));
 }
 
+// Detecta bloques fenced code (`...`) para render monoespaciado.
 function partirBloquesCodigo(texto: string) {
   const src = String(texto ?? '');
   const bloques: Array<{ tipo: 'texto' | 'codigo'; contenido: string }> = [];
@@ -137,6 +151,7 @@ function partirBloquesCodigo(texto: string) {
   return bloques;
 }
 
+// Tokeniza codigo inline con backticks para estilo diferenciado.
 function partirInlineCodigo(texto: string) {
   const src = String(texto ?? '');
   const salida: Array<{ tipo: 'texto' | 'codigo'; contenido: string }> = [];
@@ -162,6 +177,7 @@ function widthSeg(segmento: SegmentoTexto) {
   return segmento.font.widthOfTextAtSize(segmento.texto, segmento.size);
 }
 
+// Word-wrap por segmentos preservando estilo (texto/codigo) y cortes seguros.
 function envolverSegmentos({
   segmentos,
   maxWidth,
@@ -235,6 +251,7 @@ function envolverSegmentos({
   return lineas.length > 0 ? lineas : [[]];
 }
 
+// Envoltura de texto enriquecido con soporte de fenced-code e inline-code.
 function envolverTextoMixto({
   texto,
   maxWidth,
@@ -320,6 +337,7 @@ function envolverTextoMixto({
     : [{ segmentos: [{ texto: '', font: fuente, size: sizeTexto }], lineHeight: lineHeightTexto }];
 }
 
+// Dibuja lineas mixtas respetando el espaciado calculado en la envoltura.
 function dibujarLineasMixtas({
   page,
   lineas,
@@ -642,9 +660,8 @@ export class PdfKitRenderer {
     const materia = String(examen.encabezado?.materia ?? '').trim();
     const docente = String(examen.encabezado?.docente ?? '').trim();
     const mostrarInstrucciones = examen.encabezado?.mostrarInstrucciones !== false;
-    const alumnoNombre = String(examen.encabezado?.alumno?.nombre ?? '').trim();
-    const alumnoGrupo = String(examen.encabezado?.alumno?.grupo ?? '').trim();
     const instrucciones = String(examen.encabezado?.instrucciones ?? '').trim() || instruccionesDefault;
+    const altoEncabezadoPrimeraMinimo = 130;
 
     const logoIzqSrc = examen.encabezado?.logos?.izquierdaPath ?? process.env.EXAMEN_LOGO_IZQ_PATH ?? '';
     const logoDerSrc = examen.encabezado?.logos?.derechaPath ?? process.env.EXAMEN_LOGO_DER_PATH ?? '';
@@ -711,7 +728,7 @@ export class PdfKitRenderer {
 
       const yTop = ALTO_CARTA - margen;
       const esPrimera = numeroPagina === 1;
-      const altoEncabezado = esPrimera ? headerHeightFirst : headerHeightOther;
+      const altoEncabezado = esPrimera ? Math.max(headerHeightFirst, altoEncabezadoPrimeraMinimo) : headerHeightOther;
       const xCaja = margen + 2;
       const wCaja = ANCHO_CARTA - 2 * margen - 4;
       const yCaja = yTop - altoEncabezado;
@@ -748,6 +765,18 @@ export class PdfKitRenderer {
 
       agregarMarcasRegistro(page, margen, perfilOmr);
       const { x: xQr, y: yQr, padding: qrPadding, qrSize } = await agregarQr(pdfDoc, page, qrTextoPagina, margen, perfilOmr);
+      const rectHeader: RectBox = { x: xCaja, y: yCaja, width: wCaja, height: altoEncabezado };
+      const rectQr: RectBox = {
+        x: xQr - qrPadding,
+        y: yQr - qrPadding,
+        width: qrSize + qrPadding * 2,
+        height: qrSize + qrPadding * 2
+      };
+      assertRectDentroPagina(rectHeader, 'encabezado');
+      assertRectDentroPagina(rectQr, 'qr');
+      if (esPrimera && !rectInterseca(rectHeader, rectQr)) {
+        throw new Error('Layout invalido: QR fuera del area de encabezado en primera pagina');
+      }
 
       const marcasPagina: PaginaOmr['marcasPagina'] = {
         tipo: perfilOmr.marcasEsquina,
@@ -835,41 +864,30 @@ export class PdfKitRenderer {
           page.drawText(linea, { x: xTexto, y: metaY - indice * lineaMeta, size: sizeMeta, font: fuente, color: colorGris });
         });
 
-        const yCampos = metaY - metaLineas.length * lineaMeta - 10;
-        page.drawText('Alumno:', { x: xTexto, y: yCampos, size: 10, font: fuenteBold, color: colorPrimario });
-        const alumnoLineaEnd = Math.min(xTexto + 260, xMaxEnc - 110);
-        page.drawLine({ start: { x: xTexto + 52, y: yCampos + 3 }, end: { x: alumnoLineaEnd, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
-        if (alumnoNombre) {
-          const maxAlumno = Math.max(40, alumnoLineaEnd - (xTexto + 56));
-          const alumnoLinea = partirEnLineas({ texto: alumnoNombre, maxWidth: maxAlumno, font: fuente, size: 10 })[0] ?? '';
-          page.drawText(alumnoLinea, { x: xTexto + 56, y: yCampos, size: 10, font: fuente, color: colorPrimario });
-        }
-
-        const xGrupo = alumnoLineaEnd + 10;
-        page.drawText('Grupo:', { x: xGrupo, y: yCampos, size: 10, font: fuenteBold, color: colorPrimario });
-        const grupoLineaEnd = Math.min(xGrupo + 65, xMaxEnc);
-        page.drawLine({ start: { x: xGrupo + 45, y: yCampos + 3 }, end: { x: grupoLineaEnd, y: yCampos + 3 }, color: colorLinea, thickness: 1 });
-        if (alumnoGrupo) {
-          const maxGrupo = Math.max(40, grupoLineaEnd - (xGrupo + 50));
-          const grupoLinea = partirEnLineas({ texto: alumnoGrupo, maxWidth: maxGrupo, font: fuente, size: 10 })[0] ?? '';
-          page.drawText(grupoLinea, { x: xGrupo + 50, y: yCampos, size: 10, font: fuente, color: colorPrimario });
-        }
-      } else {
-        const alumnoLinea = alumnoNombre || '-';
-        const grupoLinea = alumnoGrupo || '-';
-        page.drawText(`Alumno: ${alumnoLinea}`, {
-          x: margen + 8,
-          y: yTop - 12,
-          size: 8.4,
-          font: fuente,
-          color: colorGris
+        const yCamposBase = Math.max(yCaja + 18, metaY - metaLineas.length * lineaMeta - 24);
+        const etiquetaNombre = 'Nombre del alumno (escribir a mano):';
+        const anchoEtiquetaNombre = fuenteBold.widthOfTextAtSize(etiquetaNombre, 9.6);
+        const xLineaNombre = Math.min(xTexto + anchoEtiquetaNombre + 8, xMaxEnc - 40);
+        const xLineaNombreEnd = xMaxEnc;
+        const yNombre = yCamposBase + 12;
+        page.drawText(etiquetaNombre, { x: xTexto, y: yNombre, size: 9.6, font: fuenteBold, color: colorPrimario });
+        page.drawLine({
+          start: { x: xLineaNombre, y: yNombre + 3 },
+          end: { x: xLineaNombreEnd, y: yNombre + 3 },
+          color: colorLinea,
+          thickness: 1
         });
-        page.drawText(`Grupo: ${grupoLinea}`, {
-          x: margen + 260,
-          y: yTop - 12,
-          size: 8.4,
-          font: fuente,
-          color: colorGris
+
+        const etiquetaGrupo = 'Grupo (escribir a mano):';
+        const anchoEtiquetaGrupo = fuenteBold.widthOfTextAtSize(etiquetaGrupo, 9.6);
+        const xLineaGrupo = Math.min(xTexto + anchoEtiquetaGrupo + 8, xMaxEnc - 40);
+        const yGrupo = yCamposBase - 4;
+        page.drawText(etiquetaGrupo, { x: xTexto, y: yGrupo, size: 9.6, font: fuenteBold, color: colorPrimario });
+        page.drawLine({
+          start: { x: xLineaGrupo, y: yGrupo + 3 },
+          end: { x: xMaxEnc, y: yGrupo + 3 },
+          color: colorLinea,
+          thickness: 1
         });
       }
 
@@ -877,6 +895,9 @@ export class PdfKitRenderer {
       const yZonaContenidoSeguro = yQr - (qrPadding + 8);
       const yZonaContenido = esPrimera ? yZonaContenidoBase : Math.min(yZonaContenidoBase, yZonaContenidoSeguro);
       const cursorYInicio = snapToGrid(yZonaContenido);
+      if (esPrimera && cursorYInicio >= yCaja) {
+        throw new Error('Layout invalido: el contenido invade el encabezado de la primera pagina');
+      }
       let cursorY = cursorYInicio;
 
       const alturaDisponibleMin = margen + this.perfilLayout.bottomSafePt;
@@ -978,21 +999,6 @@ export class PdfKitRenderer {
         const hNecesariaFinal = hLabel + paddingY + lineasIndicaciones.length * lineaIndicaciones;
         hMin = Math.max(hMin, hLabel + paddingY + lineaIndicaciones + 12);
         const hCaja = Math.max(hMin, hNecesariaFinal);
-
-        if (alumnoNombre || alumnoGrupo) {
-          const yAlumno = yTopInd + 6;
-          const xAlumno = xInd;
-          const maxAnchoAlumno = Math.max(120, xDerechaTexto - xAlumno - 140);
-          const alumnoLinea = alumnoNombre
-            ? (partirEnLineas({ texto: alumnoNombre, maxWidth: maxAnchoAlumno, font: fuente, size: 9 })[0] ?? '')
-            : '';
-          page.drawText(`Alumno: ${alumnoLinea || '-'}`, { x: xAlumno, y: yAlumno, size: 9, font: fuente, color: colorGris });
-
-          if (alumnoGrupo) {
-            const xGrupo = Math.max(xAlumno + 260, xDerechaTexto - 120);
-            page.drawText(`Grupo: ${alumnoGrupo}`, { x: xGrupo, y: yAlumno, size: 9, font: fuente, color: colorGris });
-          }
-        }
 
         page.drawRectangle({
           x: xInd,
@@ -1291,3 +1297,5 @@ export class PdfKitRenderer {
     };
   }
 }
+
+
