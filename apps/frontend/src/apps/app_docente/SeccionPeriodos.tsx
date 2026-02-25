@@ -471,7 +471,7 @@ export function SeccionPeriodos({
               <div className="item-row">
                 <div>
                   {editandoId === periodo._id ? (
-                    <div className="lista materias-edicion" style={{ gap: 8 }}>
+                    <div className="lista materias-edicion">
                       <label className="campo">
                         Nombre de la materia
                         <input

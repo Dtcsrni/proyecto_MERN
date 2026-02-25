@@ -1480,6 +1480,7 @@ p {
 }
 
 .materias-edicion {
+  gap: 8px;
   border: 1px dashed var(--campoBorde);
   border-radius: 12px;
   padding: 0.6rem;

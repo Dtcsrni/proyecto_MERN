@@ -36,6 +36,22 @@ function getArg(name) {
   return process.argv[index + 1] ?? null;
 }
 
+function resolveSelectedApps() {
+  const raw = getArg('--apps') ?? process.env.DIFF_COVERAGE_APPS ?? '';
+  const requested = raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (requested.length === 0) return APPS;
+
+  const selected = APPS.filter((app) => requested.includes(app.name));
+  if (selected.length === 0) {
+    throw new Error(`No hay apps válidas para diff coverage en "${raw}". Opciones: ${APPS.map((app) => app.name).join(', ')}`);
+  }
+  return selected;
+}
+
 function normalizeRelative(inputPath) {
   const normalized = inputPath.replace(/\\/g, '/');
   if (/^[a-zA-Z]:\//.test(normalized)) {
@@ -55,8 +71,8 @@ function isCoverableFile(filePath) {
   return COVERABLE_EXTENSIONS.has(ext);
 }
 
-async function runGitDiff(baseRef, headRef) {
-  const scopes = APPS.map((app) => app.scope);
+async function runGitDiff(baseRef, headRef, apps) {
+  const scopes = apps.map((app) => app.scope);
 
   try {
     const { stdout } = await execFile(
@@ -151,17 +167,17 @@ function parseLcov(content) {
   return coverageByFile;
 }
 
-function appForFile(relativeFile) {
+function appForFile(relativeFile, apps) {
   const normalized = normalizeRelative(relativeFile);
-  return APPS.find((app) => normalized.startsWith(`${app.scope}/`) || normalized === app.scope) ?? null;
+  return apps.find((app) => normalized.startsWith(`${app.scope}/`) || normalized === app.scope) ?? null;
 }
 
-function resolveRequiredApps(touched) {
+function resolveRequiredApps(touched, apps) {
   const required = new Map();
 
   for (const file of touched.keys()) {
     if (!isCoverableFile(file)) continue;
-    const app = appForFile(file);
+    const app = appForFile(file, apps);
     if (app) {
       required.set(app.name, app);
     }
@@ -216,8 +232,9 @@ async function main() {
   const minCoverage = resolveThreshold();
   const baseRef = resolveBaseRef();
   const headRef = resolveHeadRef();
+  const selectedApps = resolveSelectedApps();
 
-  const diffOutput = await runGitDiff(baseRef, headRef);
+  const diffOutput = await runGitDiff(baseRef, headRef, selectedApps);
   const touched = parseTouchedLines(diffOutput);
 
   if (touched.size === 0) {
@@ -231,7 +248,7 @@ async function main() {
     return;
   }
 
-  const requiredApps = resolveRequiredApps(touchedCoverable);
+  const requiredApps = resolveRequiredApps(touchedCoverable, selectedApps);
   if (requiredApps.length === 0) {
     console.log('[diff-coverage] No hay apps con coverage aplicable en líneas tocadas; gate en no-op.');
     return;
