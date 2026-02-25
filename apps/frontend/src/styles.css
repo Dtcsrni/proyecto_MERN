@@ -2735,9 +2735,20 @@ p {
 }
 
 .helper-panel {
-  border: 1px solid var(--borde);
+  border: 1px solid color-mix(in srgb, var(--borde) 72%, var(--acentoAzul));
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(241, 247, 255, 0.9), rgba(255, 255, 255, 0.95));
+  background:
+    linear-gradient(168deg, color-mix(in srgb, var(--superficieSolida) 86%, var(--acentoAzulSuave)), var(--superficieSolida)),
+    var(--superficieSolida);
+  color: var(--texto);
+}
+
+.helper-panel .eyebrow,
+.helper-panel h3,
+.helper-panel li,
+.helper-panel .nota,
+.helper-panel p {
+  color: inherit;
 }
 
 .helper-panel__pasos {
@@ -2749,6 +2760,14 @@ p {
 
 .helper-panel__notas {
   margin-top: 10px;
+}
+
+:root[data-theme="dark"] .helper-panel {
+  border-color: rgba(56, 189, 248, 0.28);
+  background:
+    linear-gradient(170deg, rgba(8, 47, 73, 0.55), rgba(15, 23, 42, 0.92)),
+    rgba(2, 6, 23, 0.9);
+  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.42);
 }
 
 .alerta {
@@ -3343,6 +3362,120 @@ p {
   background: var(--superficie);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
+}
+
+.portal-alumno-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.portal-alumno-shell::before {
+  content: '';
+  position: absolute;
+  inset: -24% auto auto -16%;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--acentoAzul) 32%, transparent), transparent 72%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.portal-alumno-shell::after {
+  content: '';
+  position: absolute;
+  inset: auto -18% -26% auto;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--acentoMenta) 36%, transparent), transparent 74%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.portal-alumno-badges {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.portal-alumno-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--texto);
+  border: 1px solid color-mix(in srgb, var(--borde) 72%, var(--acentoAzul));
+  background: color-mix(in srgb, var(--superficieSolida) 88%, var(--acentoAzulSuave));
+}
+
+.portal-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.52rem;
+}
+
+.portal-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: color-mix(in srgb, var(--superficieSolida) 80%, var(--acentoAzulSuave));
+  color: var(--texto);
+}
+
+.portal-card-icon--perfil {
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.14);
+}
+
+.portal-card-icon--materias {
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.portal-card-icon--agenda {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.portal-card-icon--avisos {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.portal-card-icon--historial {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.portal-card-icon--folio {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.portal-alumno-card,
+.portal-resultado-card {
+  border-color: color-mix(in srgb, var(--borde) 70%, var(--acentoAzul));
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--acentoAzul) 12%, transparent);
+}
+
+:root[data-theme="dark"] .portal-card-icon {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+:root[data-theme="dark"] .portal-alumno-badge {
+  border-color: rgba(94, 234, 212, 0.3);
+  background: rgba(8, 47, 73, 0.7);
 }
 
 /* Utilidades (evitar estilos inline) */
