@@ -360,7 +360,7 @@ export function AppAlumno() {
   const cooldownActivo = Date.now() < cooldownHasta;
 
   return (
-    <section className="card anim-entrada">
+    <section className="card anim-entrada portal-alumno-shell">
       <div className="cabecera">
         <p className="eyebrow">
           <Icono nombre="alumno" /> Portal Alumno
@@ -404,6 +404,11 @@ export function AppAlumno() {
                 <Icono nombre="info" /> Si no aparece, intenta recargar.
               </li>
             </ul>
+            <div className="portal-alumno-badges" aria-hidden="true">
+              <span className="portal-alumno-badge"><Icono nombre="ok" /> Verificado</span>
+              <span className="portal-alumno-badge"><Icono nombre="pdf" /> PDF</span>
+              <span className="portal-alumno-badge"><Icono nombre="info" /> Historial</span>
+            </div>
             <div className="auth-ilustracion" aria-hidden="true">
               <div className="auth-blob" />
               <div className="auth-blob auth-blob--2" />
@@ -501,39 +506,51 @@ export function AppAlumno() {
 
       {token && resultados.length > 0 && (
         <div className="resultado">
-          <h3>Resultados disponibles</h3>
+          <h3>
+            <Icono nombre="ok" /> Resultados disponibles
+          </h3>
           <div className="guia-grid">
-            <div className="item-glass">
-              <div className="item-title">Perfil</div>
+            <div className="item-glass portal-alumno-card">
+              <div className="item-title portal-card-title">
+                <span className="portal-card-icon portal-card-icon--perfil"><Icono nombre="alumno" /></span> Perfil
+              </div>
               <div className="item-meta">
                 <span>{perfil?.nombreCompleto || '-'}</span>
                 <span>Matrícula: {perfil?.matricula || '-'}</span>
                 <span>Grupo: {perfil?.grupo || '-'}</span>
               </div>
             </div>
-            <div className="item-glass">
-              <div className="item-title">Materias</div>
+            <div className="item-glass portal-alumno-card">
+              <div className="item-title portal-card-title">
+                <span className="portal-card-icon portal-card-icon--materias"><Icono nombre="periodos" /></span> Materias
+              </div>
               <div className="item-meta">
                 <span>Total: {materias.length}</span>
                 <span>{materias.slice(0, 2).map((m) => m.nombre).filter(Boolean).join(' · ') || '-'}</span>
               </div>
             </div>
-            <div className="item-glass">
-              <div className="item-title">Agenda</div>
+            <div className="item-glass portal-alumno-card">
+              <div className="item-title portal-card-title">
+                <span className="portal-card-icon portal-card-icon--agenda"><Icono nombre="info" /></span> Agenda
+              </div>
               <div className="item-meta">
                 <span>Eventos: {agenda.length}</span>
                 <span>{agenda[0]?.titulo || '-'}</span>
               </div>
             </div>
-            <div className="item-glass">
-              <div className="item-title">Avisos</div>
+            <div className="item-glass portal-alumno-card">
+              <div className="item-title portal-card-title">
+                <span className="portal-card-icon portal-card-icon--avisos"><Icono nombre="alerta" /></span> Avisos
+              </div>
               <div className="item-meta">
                 <span>Activos: {avisos.length}</span>
                 <span>{avisos[0]?.titulo || '-'}</span>
               </div>
             </div>
-            <div className="item-glass">
-              <div className="item-title">Historial</div>
+            <div className="item-glass portal-alumno-card">
+              <div className="item-title portal-card-title">
+                <span className="portal-card-icon portal-card-icon--historial"><Icono nombre="recargar" /></span> Historial
+              </div>
               <div className="item-meta">
                 <span>Registros: {historial.length}</span>
                 <span>{historial[0]?.folio || '-'}</span>
@@ -552,10 +569,12 @@ export function AppAlumno() {
           <ul className="lista lista-items">
             {resultados.map((resultado) => (
               <li key={resultado.folio}>
-                <div className="item-glass">
+                <div className="item-glass portal-resultado-card">
                   <div className="item-row">
                     <div>
-                      <div className="item-title">Folio {resultado.folio}</div>
+                      <div className="item-title portal-card-title">
+                        <span className="portal-card-icon portal-card-icon--folio"><Icono nombre="calificar" /></span> Folio {resultado.folio}
+                      </div>
                       <div className="item-meta">
                         <span>Tipo: {resultado.tipoExamen}</span>
                         <span>Examen: {resultado.calificacionExamenFinalTexto}</span>
