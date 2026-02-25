@@ -670,7 +670,7 @@ export function SeccionBanco({
   }
 
   return (
-    <div className="panel">
+    <div className="panel banco-panel">
       <BancoFormularioPregunta
         periodoId={periodoId}
         setPeriodoId={setPeriodoId}
@@ -712,66 +712,68 @@ export function SeccionBanco({
         cancelarEdicion={cancelarEdicion}
       />
 
-      <BancoGestionTemas
-        periodoId={periodoId}
-        temasAbierto={temasAbierto}
-        setTemasAbierto={setTemasAbierto}
-        temasBanco={temasBanco}
-        temaNuevo={temaNuevo}
-        setTemaNuevo={setTemaNuevo}
-        creandoTema={creandoTema}
-        bloqueoEdicion={bloqueoEdicion}
-        crearTemaBanco={crearTemaBanco}
-        cargandoTemas={cargandoTemas}
-        conteoPorTema={conteoPorTema}
-        paginasPorTema={paginasPorTema}
-        paginasEstimadasBackendPorTema={paginasEstimadasBackendPorTema}
-        temaEditandoId={temaEditandoId}
-        temaEditandoNombre={temaEditandoNombre}
-        setTemaEditandoNombre={setTemaEditandoNombre}
-        guardandoTema={guardandoTema}
-        iniciarEdicionTema={iniciarEdicionTema}
-        guardarEdicionTema={guardarEdicionTema}
-        cancelarEdicionTema={cancelarEdicionTema}
-        abrirAjusteTema={abrirAjusteTema}
-        temaEditando={puedeGestionar}
-        archivandoTemaId={archivandoTemaId}
-        archivarTemaBanco={archivarTemaBanco}
-        ajusteProps={{
-          ajusteTemaId,
-          ajustePaginasObjetivo,
-          setAjustePaginasObjetivo,
-          ajusteAccion,
-          setAjusteAccion,
-          ajusteTemaDestinoId,
-          setAjusteTemaDestinoId,
-          ajusteSeleccion,
-          setAjusteSeleccion,
-          preguntasPorTemaId,
-          sugerirPreguntasARecortar,
-          estimarAltoPregunta,
-          cerrarAjusteTema,
-          aplicarAjusteTema,
-          moviendoTema,
-          sinTemaDestinoId,
-          setSinTemaDestinoId,
-          preguntasSinTema,
-          sinTemaSeleccion,
-          setSinTemaSeleccion,
-          moviendoSinTema,
-          asignarSinTemaATema
-        }}
-      />
+      <div className="banco-panel__split">
+        <BancoGestionTemas
+          periodoId={periodoId}
+          temasAbierto={temasAbierto}
+          setTemasAbierto={setTemasAbierto}
+          temasBanco={temasBanco}
+          temaNuevo={temaNuevo}
+          setTemaNuevo={setTemaNuevo}
+          creandoTema={creandoTema}
+          bloqueoEdicion={bloqueoEdicion}
+          crearTemaBanco={crearTemaBanco}
+          cargandoTemas={cargandoTemas}
+          conteoPorTema={conteoPorTema}
+          paginasPorTema={paginasPorTema}
+          paginasEstimadasBackendPorTema={paginasEstimadasBackendPorTema}
+          temaEditandoId={temaEditandoId}
+          temaEditandoNombre={temaEditandoNombre}
+          setTemaEditandoNombre={setTemaEditandoNombre}
+          guardandoTema={guardandoTema}
+          iniciarEdicionTema={iniciarEdicionTema}
+          guardarEdicionTema={guardarEdicionTema}
+          cancelarEdicionTema={cancelarEdicionTema}
+          abrirAjusteTema={abrirAjusteTema}
+          temaEditando={puedeGestionar}
+          archivandoTemaId={archivandoTemaId}
+          archivarTemaBanco={archivarTemaBanco}
+          ajusteProps={{
+            ajusteTemaId,
+            ajustePaginasObjetivo,
+            setAjustePaginasObjetivo,
+            ajusteAccion,
+            setAjusteAccion,
+            ajusteTemaDestinoId,
+            setAjusteTemaDestinoId,
+            ajusteSeleccion,
+            setAjusteSeleccion,
+            preguntasPorTemaId,
+            sugerirPreguntasARecortar,
+            estimarAltoPregunta,
+            cerrarAjusteTema,
+            aplicarAjusteTema,
+            moviendoTema,
+            sinTemaDestinoId,
+            setSinTemaDestinoId,
+            preguntasSinTema,
+            sinTemaSeleccion,
+            setSinTemaSeleccion,
+            moviendoSinTema,
+            asignarSinTemaATema
+          }}
+        />
 
-      <BancoListadoPreguntas
-        periodoId={periodoId}
-        preguntasMateria={preguntasMateria}
-        bloqueoEdicion={bloqueoEdicion}
-        archivandoPreguntaId={archivandoPreguntaId}
-        puedeArchivar={puedeArchivar}
-        iniciarEdicion={iniciarEdicion}
-        archivarPregunta={archivarPregunta}
-      />
+        <BancoListadoPreguntas
+          periodoId={periodoId}
+          preguntasMateria={preguntasMateria}
+          bloqueoEdicion={bloqueoEdicion}
+          archivandoPreguntaId={archivandoPreguntaId}
+          puedeArchivar={puedeArchivar}
+          iniciarEdicion={iniciarEdicion}
+          archivarPregunta={archivarPregunta}
+        />
+      </div>
     </div>
   );
 }

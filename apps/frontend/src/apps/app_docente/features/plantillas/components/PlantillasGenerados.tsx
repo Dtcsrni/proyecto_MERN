@@ -88,6 +88,7 @@ export function PlantillasGenerados({
   const listaPlantillas = Array.isArray(plantillas) ? plantillas : [];
   const listaAlumnos = Array.isArray(alumnos) ? alumnos : [];
   const listaExamenesGenerados = Array.isArray(examenesGenerados) ? examenesGenerados : [];
+  const totalDescargados = listaExamenesGenerados.filter((item) => Boolean(String(item.descargadoEn || '').trim())).length;
 
   return (
     <div className="plantillas-grid plantillas-grid--generacion">
@@ -109,6 +110,10 @@ export function PlantillasGenerados({
             Ejemplo: plantilla <code>Parcial 1 - Algebra</code>, alumno <code>2024-001 - Ana Maria Gomez Ruiz</code>.
           </p>
         </AyudaFormulario>
+        <div className="plantillas-generacion__stats">
+          <span className="badge">Plantillas: {listaPlantillas.length}</span>
+          <span className="badge">Alumnos: {listaAlumnos.length}</span>
+        </div>
         <div className="plantillas-form">
           <label className="campo">
             Plantilla
@@ -184,6 +189,12 @@ export function PlantillasGenerados({
       </div>
       <div className="subpanel plantillas-panel plantillas-panel--generados" id="examenes-generados">
         <h3>Examenes generados</h3>
+        {plantillaSeleccionada && (
+          <div className="plantillas-generacion__stats">
+            <span className="badge">Mostrados: {listaExamenesGenerados.length}</span>
+            <span className="badge">Descargados: {totalDescargados}</span>
+          </div>
+        )}
         {!plantillaSeleccionada && (
           <InlineMensaje tipo="info">Selecciona una plantilla para ver los examenes generados y su historial.</InlineMensaje>
         )}

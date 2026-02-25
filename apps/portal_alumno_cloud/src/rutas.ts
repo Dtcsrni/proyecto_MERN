@@ -15,8 +15,13 @@ import mongoose from 'mongoose';
 import { gunzipSync } from 'zlib';
 import { configuracion } from './configuracion';
 import { CodigoAcceso } from './modelos/modeloCodigoAcceso';
+import { AgendaAlumno } from './modelos/modeloAgendaAlumno';
+import { AvisoAlumno } from './modelos/modeloAvisoAlumno';
 import { EventoUsoAlumno } from './modelos/modeloEventoUsoAlumno';
+import { HistorialAlumno } from './modelos/modeloHistorialAlumno';
+import { MateriaAlumno } from './modelos/modeloMateriaAlumno';
 import { PaqueteSyncDocente } from './modelos/modeloPaqueteSyncDocente';
+import { PerfilAlumno } from './modelos/modeloPerfilAlumno';
 import { ResultadoAlumno } from './modelos/modeloResultadoAlumno';
 import { SolicitudRevision } from './modelos/modeloSolicitudRevision';
 import { SesionAlumno } from './modelos/modeloSesionAlumno';
@@ -126,6 +131,19 @@ function esMetaSeguro(meta: unknown): boolean {
   return false;
 }
 
+async function upsertColeccionAcademica(
+  Model:
+    | typeof PerfilAlumno
+    | typeof MateriaAlumno
+    | typeof AgendaAlumno
+    | typeof AvisoAlumno
+    | typeof HistorialAlumno,
+  filtro: Record<string, unknown>,
+  payload: Record<string, unknown>
+) {
+  await Model.updateOne(filtro, payload, { upsert: true });
+}
+
 router.get('/salud', (_req, res) => {
   res.json({ estado: 'ok', tiempoActivo: process.uptime() });
 });
@@ -165,13 +183,46 @@ router.get('/metrics', (_req, res) => {
 router.post('/sincronizar', async (req, res) => {
   if (!requerirApiKey(req, res)) return;
 
-  const clavesSyncPermitidas = ['docenteId', 'periodo', 'alumnos', 'calificaciones', 'examenes', 'banderas', 'codigoAcceso'];
+  const clavesSyncPermitidas = [
+    'schemaVersion',
+    'docenteId',
+    'periodo',
+    'alumnos',
+    'calificaciones',
+    'examenes',
+    'banderas',
+    'codigoAcceso',
+    'perfilAlumno',
+    'materiasAlumno',
+    'agendaAlumno',
+    'avisosAlumno',
+    'historialAlumno'
+  ];
   if (!tieneSoloClavesPermitidas(req.body ?? {}, clavesSyncPermitidas)) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
     return;
   }
 
-  const { periodo, alumnos, calificaciones, examenes, banderas, codigoAcceso } = req.body ?? {};
+  const {
+    schemaVersion,
+    periodo,
+    alumnos,
+    calificaciones,
+    examenes,
+    banderas,
+    codigoAcceso,
+    perfilAlumno,
+    materiasAlumno,
+    agendaAlumno,
+    avisosAlumno,
+    historialAlumno
+  } = req.body ?? {};
+
+  const schemaVersionNumerica = Number(schemaVersion ?? 2);
+  if (schemaVersion !== undefined && schemaVersionNumerica !== 2 && schemaVersionNumerica !== 3) {
+    responderError(res, 400, 'VERSION_INVALIDA', 'Version de payload no soportada');
+    return;
+  }
 
   if (!periodo || !Array.isArray(alumnos) || !Array.isArray(calificaciones)) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload incompleto');
@@ -194,6 +245,27 @@ router.post('/sincronizar', async (req, res) => {
   }
 
   if (codigoAcceso != null && !tieneSoloClavesPermitidas(codigoAcceso, ['codigo', 'expiraEn'])) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+
+  if (perfilAlumno != null && !Array.isArray(perfilAlumno)) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+  if (materiasAlumno != null && !Array.isArray(materiasAlumno)) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+  if (agendaAlumno != null && !Array.isArray(agendaAlumno)) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+  if (avisosAlumno != null && !Array.isArray(avisosAlumno)) {
+    responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
+    return;
+  }
+  if (historialAlumno != null && !Array.isArray(historialAlumno)) {
     responderError(res, 400, 'PAYLOAD_INVALIDO', 'Payload invalido');
     return;
   }
@@ -318,7 +390,115 @@ router.post('/sincronizar', async (req, res) => {
     );
   }
 
-  res.json({ mensaje: 'Sincronizacion aplicada' });
+  // Read-model académico para portal alumno (TV3 ready).
+  const perfilLista = Array.isArray(perfilAlumno) ? perfilAlumno : [];
+  for (const item of perfilLista) {
+    const alumnoId = String((item as { alumnoId?: unknown }).alumnoId ?? '').trim();
+    if (!alumnoId) continue;
+    await upsertColeccionAcademica(
+      PerfilAlumno,
+      { periodoId: periodo._id, alumnoId },
+      {
+        periodoId: periodo._id,
+        alumnoId,
+        matricula: String((item as { matricula?: unknown }).matricula ?? '').trim(),
+        nombreCompleto: String((item as { nombreCompleto?: unknown }).nombreCompleto ?? '').trim(),
+        grupo: String((item as { grupo?: unknown }).grupo ?? '').trim() || undefined,
+        docenteId: String((item as { docenteId?: unknown }).docenteId ?? '').trim() || undefined,
+        metadata: (item as { metadata?: unknown }).metadata
+      }
+    );
+  }
+
+  const materiasLista = Array.isArray(materiasAlumno) ? materiasAlumno : [];
+  for (const item of materiasLista) {
+    const alumnoId = String((item as { alumnoId?: unknown }).alumnoId ?? '').trim();
+    const materiaId = String((item as { materiaId?: unknown }).materiaId ?? '').trim();
+    if (!alumnoId || !materiaId) continue;
+    await upsertColeccionAcademica(
+      MateriaAlumno,
+      { periodoId: periodo._id, alumnoId, materiaId },
+      {
+        periodoId: periodo._id,
+        alumnoId,
+        materiaId,
+        nombre: String((item as { nombre?: unknown }).nombre ?? '').trim(),
+        docente: String((item as { docente?: unknown }).docente ?? '').trim() || undefined,
+        estado: String((item as { estado?: unknown }).estado ?? 'activa').trim() || 'activa',
+        metadata: (item as { metadata?: unknown }).metadata
+      }
+    );
+  }
+
+  const agendaLista = Array.isArray(agendaAlumno) ? agendaAlumno : [];
+  for (const item of agendaLista) {
+    const alumnoId = String((item as { alumnoId?: unknown }).alumnoId ?? '').trim();
+    const agendaId = String((item as { agendaId?: unknown }).agendaId ?? '').trim();
+    if (!alumnoId || !agendaId) continue;
+    const fecha = parsearFechaIso((item as { fecha?: unknown }).fecha) ?? new Date();
+    await upsertColeccionAcademica(
+      AgendaAlumno,
+      { periodoId: periodo._id, alumnoId, agendaId },
+      {
+        periodoId: periodo._id,
+        alumnoId,
+        agendaId,
+        titulo: String((item as { titulo?: unknown }).titulo ?? '').trim(),
+        descripcion: String((item as { descripcion?: unknown }).descripcion ?? '').trim() || undefined,
+        fecha,
+        tipo: String((item as { tipo?: unknown }).tipo ?? 'evento').trim() || 'evento',
+        metadata: (item as { metadata?: unknown }).metadata
+      }
+    );
+  }
+
+  const avisosLista = Array.isArray(avisosAlumno) ? avisosAlumno : [];
+  for (const item of avisosLista) {
+    const alumnoId = String((item as { alumnoId?: unknown }).alumnoId ?? '').trim();
+    const avisoId = String((item as { avisoId?: unknown }).avisoId ?? '').trim();
+    if (!alumnoId || !avisoId) continue;
+    const publicadoEn = parsearFechaIso((item as { publicadoEn?: unknown }).publicadoEn) ?? new Date();
+    await upsertColeccionAcademica(
+      AvisoAlumno,
+      { periodoId: periodo._id, alumnoId, avisoId },
+      {
+        periodoId: periodo._id,
+        alumnoId,
+        avisoId,
+        titulo: String((item as { titulo?: unknown }).titulo ?? '').trim(),
+        mensaje: String((item as { mensaje?: unknown }).mensaje ?? '').trim(),
+        severidad: String((item as { severidad?: unknown }).severidad ?? 'info').trim() || 'info',
+        publicadoEn,
+        metadata: (item as { metadata?: unknown }).metadata
+      }
+    );
+  }
+
+  const historialLista = Array.isArray(historialAlumno) ? historialAlumno : [];
+  for (const item of historialLista) {
+    const alumnoId = String((item as { alumnoId?: unknown }).alumnoId ?? '').trim();
+    const historialId = String((item as { historialId?: unknown }).historialId ?? '').trim();
+    if (!alumnoId || !historialId) continue;
+    const fecha = parsearFechaIso((item as { fecha?: unknown }).fecha) ?? new Date();
+    await upsertColeccionAcademica(
+      HistorialAlumno,
+      { periodoId: periodo._id, alumnoId, historialId },
+      {
+        periodoId: periodo._id,
+        alumnoId,
+        historialId,
+        folio: String((item as { folio?: unknown }).folio ?? '').trim() || undefined,
+        tipoExamen: String((item as { tipoExamen?: unknown }).tipoExamen ?? '').trim() || undefined,
+        calificacionTexto: String((item as { calificacionTexto?: unknown }).calificacionTexto ?? '').trim() || undefined,
+        aciertos: Number((item as { aciertos?: unknown }).aciertos ?? 0),
+        totalReactivos: Number((item as { totalReactivos?: unknown }).totalReactivos ?? 0),
+        fecha,
+        metadata: (item as { metadata?: unknown }).metadata
+      }
+    );
+  }
+
+  res.json({ mensaje: 'Sincronizacion aplicada', schemaVersion: schemaVersionNumerica });
 });
 
 router.post('/sincronizacion-docente/push', async (req, res) => {
@@ -352,7 +532,7 @@ router.post('/sincronizacion-docente/push', async (req, res) => {
     responderError(res, 413, 'PAQUETE_GRANDE', 'Paquete demasiado grande');
     return;
   }
-  if (schemaVersion !== 2) {
+  if (schemaVersion !== 2 && schemaVersion !== 3) {
     responderError(res, 400, 'VERSION_INVALIDA', 'Version de paquete no soportada');
     return;
   }
@@ -542,6 +722,39 @@ router.get('/resultados/:folio', requerirSesionAlumno, async (req: SolicitudAlum
     return;
   }
   res.json({ resultado });
+});
+
+router.get('/perfil', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  const perfil = await PerfilAlumno.findOne({ periodoId: req.periodoId, alumnoId: req.alumnoId }).lean();
+  res.json({ ok: true, data: { perfil } });
+});
+
+router.get('/materias', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  const materias = await MateriaAlumno.find({ periodoId: req.periodoId, alumnoId: req.alumnoId })
+    .sort({ nombre: 1, createdAt: -1 })
+    .lean();
+  res.json({ ok: true, data: { materias } });
+});
+
+router.get('/agenda', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  const agenda = await AgendaAlumno.find({ periodoId: req.periodoId, alumnoId: req.alumnoId })
+    .sort({ fecha: -1, createdAt: -1 })
+    .lean();
+  res.json({ ok: true, data: { agenda } });
+});
+
+router.get('/avisos', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  const avisos = await AvisoAlumno.find({ periodoId: req.periodoId, alumnoId: req.alumnoId })
+    .sort({ publicadoEn: -1, createdAt: -1 })
+    .lean();
+  res.json({ ok: true, data: { avisos } });
+});
+
+router.get('/historial', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {
+  const historial = await HistorialAlumno.find({ periodoId: req.periodoId, alumnoId: req.alumnoId })
+    .sort({ fecha: -1, createdAt: -1 })
+    .lean();
+  res.json({ ok: true, data: { historial } });
 });
 
 router.post('/solicitudes-revision', requerirSesionAlumno, async (req: SolicitudAlumno, res) => {

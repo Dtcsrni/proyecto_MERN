@@ -1,0 +1,56 @@
+{
+  "version": "2",
+  "datasetType": "tv3_real_from_finals_templates",
+  "examSpec": {
+    "totalQuestions": 50,
+    "totalPages": 4,
+    "optionsPerQuestion": 5
+  },
+  "renderSpec": {
+    "width": 612,
+    "height": 792,
+    "marginPt": 28.35,
+    "cornerMarkerSizePt": 20,
+    "qrSizePt": 88
+  },
+  "noiseSpec": {
+    "profile": "final_templates_capture_simulated",
+    "scenarios": [
+      "buena_luz",
+      "luz_calida",
+      "luz_fria",
+      "rotacion_leve",
+      "desenfoque_leve",
+      "jpeg_media",
+      "sombreado_parcial",
+      "baja_tinta"
+    ]
+  },
+  "thresholds": {
+    "precisionMin": 0.95,
+    "falsePositiveMax": 0.02,
+    "invalidDetectionMin": 0.8,
+    "pagePassMin": 0.75,
+    "autoGradeTrustMin": 0.75
+  },
+  "answerKeyPath": "answer_key.json",
+  "groundTruthRef": "ground_truth.jsonl",
+  "capturas": [
+    {
+      "captureId": "311C583B-P4",
+      "imagePath": "images/311C583B-P4.jpg",
+      "mapaOmrPath": "maps/311C583B-P4.json",
+      "folio": "311C583B",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "desenfoque_leve"
+    }
+  ],
+  "hash": "c38beea6551ddbaeda308703371fbc19095c2b16bb3e025566296acd12b21afd",
+  "layoutMeta": {
+    "layoutRevision": "tv3_low_ink_resilient_r1",
+    "layoutHash": "7d244945e62ed80cccf82bba40d7ee476d44d0b2d3a57b764fc484e7651d05d5"
+  }
+}

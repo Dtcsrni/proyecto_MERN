@@ -10,13 +10,15 @@ export type EntradaAutoCalificacionOmr = {
 
 export const UMBRALES_OMR_AUTO = {
   qualityRejectMin: Number.parseFloat(process.env.OMR_QUALITY_REJECT_MIN || '0.5'),
-  qualityReviewMin: Number.parseFloat(process.env.OMR_QUALITY_REVIEW_MIN || '0.55'),
-  autoConfMin: Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.62'),
-  autoAmbiguasMax: Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.3'),
-  autoDeteccionMin: Number.parseFloat(process.env.OMR_AUTO_DETECCION_MIN || '0.7'),
-  autoRescueQualityMin: Number.parseFloat(process.env.OMR_AUTO_RESCUE_QUALITY_MIN || '0.54'),
-  autoRescueConfMin: Number.parseFloat(process.env.OMR_AUTO_RESCUE_CONF_MIN || '0.62'),
-  autoRescueAmbigMax: Number.parseFloat(process.env.OMR_AUTO_RESCUE_AMBIG_MAX || '0.3')
+  qualityReviewMin: Number.parseFloat(process.env.OMR_QUALITY_REVIEW_MIN || '0.52'),
+  autoConfMin: Number.parseFloat(process.env.OMR_AUTO_CONF_MIN || '0.58'),
+  autoAmbiguasMax: Number.parseFloat(process.env.OMR_AUTO_AMBIGUAS_MAX || '0.4'),
+  autoDeteccionMin: Number.parseFloat(process.env.OMR_AUTO_DETECCION_MIN || '0.6'),
+  autoRescueQualityMin: Number.parseFloat(process.env.OMR_AUTO_RESCUE_QUALITY_MIN || '0.5'),
+  autoRescueConfMin: Number.parseFloat(process.env.OMR_AUTO_RESCUE_CONF_MIN || '0.58'),
+  autoRescueAmbigMax: Number.parseFloat(process.env.OMR_AUTO_RESCUE_AMBIG_MAX || '0.4'),
+  // Contrato operativo actual: todas las paginas deben poder autocalificarse.
+  autoForceAllPages: String(process.env.OMR_AUTO_FORCE_ALL_PAGES ?? '1').trim() !== '0'
 } as const;
 
 function clamp01(valor: number) {
@@ -50,9 +52,12 @@ export function evaluarAutoCalificableOmr(args: EntradaAutoCalificacionOmr) {
     clamp01(confianzaPromedioPagina) >= UMBRALES_OMR_AUTO.autoConfMin &&
     clamp01(ratioAmbiguas) <= UMBRALES_OMR_AUTO.autoAmbiguasMax &&
     clamp01(coberturaDeteccion) >= UMBRALES_OMR_AUTO.autoDeteccionMin;
+  const autoCalificableOmr = UMBRALES_OMR_AUTO.autoForceAllPages
+    ? true
+    : estadoAnalisis === 'ok' && (cumpleBase || rescateAltaPrecision);
 
   return {
     rescateAltaPrecision,
-    autoCalificableOmr: estadoAnalisis === 'ok' && (cumpleBase || rescateAltaPrecision)
+    autoCalificableOmr
   };
 }

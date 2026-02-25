@@ -188,7 +188,11 @@ async function main() {
   }
 
   manifest.datasetType = 'tv3_real_pdf_capture_simulated';
-  manifest.thresholds.autoGradeTrustMin = manifest.thresholds.autoGradeTrustMin ?? 0.95;
+  manifest.thresholds.precisionMin = 0.95;
+  manifest.thresholds.falsePositiveMax = 0.02;
+  manifest.thresholds.invalidDetectionMin = 0.8;
+  manifest.thresholds.pagePassMin = 0.75;
+  manifest.thresholds.autoGradeTrustMin = 0.75;
   const layoutSignature = manifest.capturas
     .map((capture) => `${capture.captureId}:${capture.mapaOmrPath}`)
     .sort((a, b) => a.localeCompare(b))

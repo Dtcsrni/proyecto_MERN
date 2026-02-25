@@ -144,9 +144,9 @@ function resolverPerfilGeometriaOmr(): PerfilGeometriaOmr {
 const PERFIL_GEOMETRIA_OMR_ACTIVO = resolverPerfilGeometriaOmr();
 const GEOMETRIA_OMR_DEFAULT = PERFILES_GEOMETRIA_OMR[PERFIL_GEOMETRIA_OMR_ACTIVO];
 // Parametros de deteccion ajustables por entorno (centralizados para calibracion/auditoria).
-const OMR_SCORE_MIN = Number.parseFloat(process.env.OMR_SCORE_MIN || '0.08');
-const OMR_DELTA_MIN = Number.parseFloat(process.env.OMR_DELTA_MIN || '0.02');
-const OMR_STRONG_SCORE = Number.parseFloat(process.env.OMR_STRONG_SCORE || '0.09');
+const OMR_SCORE_MIN = Number.parseFloat(process.env.OMR_SCORE_MIN || '0.05');
+const OMR_DELTA_MIN = Number.parseFloat(process.env.OMR_DELTA_MIN || '0.012');
+const OMR_STRONG_SCORE = Number.parseFloat(process.env.OMR_STRONG_SCORE || '0.06');
 const OMR_SECOND_RATIO = Number.parseFloat(process.env.OMR_SECOND_RATIO || '0.75');
 const OMR_SCORE_STD = Number.parseFloat(process.env.OMR_SCORE_STD || '0.6');
 const OMR_ALIGN_RANGE = Number.parseFloat(process.env.OMR_ALIGN_RANGE || String(GEOMETRIA_OMR_DEFAULT.alignRange));
@@ -170,7 +170,7 @@ const OMR_QUALITY_REVIEW_MIN = UMBRALES_OMR_AUTO.qualityReviewMin;
 const OMR_AUTO_CONF_MIN = UMBRALES_OMR_AUTO.autoConfMin;
 const OMR_AUTO_AMBIGUAS_MAX = UMBRALES_OMR_AUTO.autoAmbiguasMax;
 const OMR_AUTO_DETECCION_MIN = UMBRALES_OMR_AUTO.autoDeteccionMin;
-const OMR_RESPUESTA_CONF_MIN = Number.parseFloat(process.env.OMR_RESPUESTA_CONF_MIN || '0.78');
+const OMR_RESPUESTA_CONF_MIN = Number.parseFloat(process.env.OMR_RESPUESTA_CONF_MIN || '0.4');
 const OMR_EXPORT_PATCHES = String(process.env.OMR_EXPORT_PATCHES || '').toLowerCase() === 'true' || process.env.OMR_EXPORT_PATCHES === '1';
 const OMR_PATCH_DIR = process.env.OMR_PATCH_DIR || path.resolve(process.cwd(), 'storage', 'omr_patches');
 const OMR_PATCH_SIZE = Math.max(24, Number.parseInt(process.env.OMR_PATCH_SIZE || '56', 10));
@@ -189,6 +189,9 @@ const OMR_SECOND_PASS_CONF_MAX = Number.parseFloat(process.env.OMR_SECOND_PASS_C
 const OMR_SECOND_PASS_FIDUCIALES_RESCUE =
   String(process.env.OMR_SECOND_PASS_FIDUCIALES_RESCUE || '1').toLowerCase() !== 'false' &&
   process.env.OMR_SECOND_PASS_FIDUCIALES_RESCUE !== '0';
+const OMR_LOCAL_GEOMETRY_ENABLED =
+  String(process.env.OMR_LOCAL_GEOMETRY_ENABLED || '0').toLowerCase() === 'true' ||
+  process.env.OMR_LOCAL_GEOMETRY_ENABLED === '1';
 const OMR_REJECT_KEEP_RESPONSES_MIN_DETECTION = Number.parseFloat(
   process.env.OMR_REJECT_KEEP_RESPONSES_MIN_DETECTION || '0.22'
 );
@@ -232,17 +235,17 @@ function resolverPerfilDeteccion(templateVersion: TemplateVersion): PerfilDetecc
     localDriftPenalty: Math.max(0.08, OMR_LOCAL_DRIFT_PENALTY),
     maxCenterDriftRatio: Math.max(0.2, OMR_MAX_CENTER_DRIFT_RATIO * 0.74),
     minSafeRange: Math.max(4, OMR_MIN_SAFE_RANGE),
-    scoreMin: Math.max(0.095, OMR_SCORE_MIN),
+    scoreMin: Math.max(0.04, OMR_SCORE_MIN),
     scoreStd: Math.max(0.58, OMR_SCORE_STD),
-    strongScore: Math.max(0.105, OMR_STRONG_SCORE),
+    strongScore: Math.max(0.06, OMR_STRONG_SCORE),
     secondRatio: Math.max(0.72, OMR_SECOND_RATIO),
-    deltaMin: Math.max(0.028, OMR_DELTA_MIN),
-    minTopZScore: 1.25,
+    deltaMin: Math.max(0.01, OMR_DELTA_MIN),
+    minTopZScore: 0.9,
     ambiguityRatio: Math.max(0.95, OMR_AMBIGUITY_RATIO),
     minFillDelta: Math.max(0.09, OMR_MIN_FILL_DELTA),
     minCenterGap: Math.max(10.5, OMR_MIN_CENTER_GAP * 0.92),
-    minHybridConf: Math.max(0.38, OMR_MIN_HYBRID_CONF * 0.9),
-    reprojectionMaxErrorPx: 2.4
+    minHybridConf: Math.max(0.22, OMR_MIN_HYBRID_CONF * 0.8),
+    reprojectionMaxErrorPx: 4.2
   };
 }
 
@@ -449,23 +452,44 @@ function resolverEstadoAnalisis(args: {
         `Calidad baja compensada por senal OMR fuerte (confianza ${confianzaMedia.toFixed(2)}, ambiguas ${(ratioAmbiguas * 100).toFixed(1)}%)`
       );
     } else {
-      estado = 'requiere_revision';
-      if (calidadPagina < OMR_QUALITY_REVIEW_MIN) {
-        motivos.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
-      }
-      if (confianzaMedia < OMR_AUTO_CONF_MIN) {
-        motivos.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
-      }
-      if (ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX) {
-        motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
-      }
-      if (deteccionRatio < OMR_AUTO_DETECCION_MIN) {
-        motivos.push(`Cobertura de detección baja (${(deteccionRatio * 100).toFixed(1)}%)`);
+      const calidadMedia = calidadPagina < OMR_QUALITY_REVIEW_MIN;
+      const confianzaBaja = confianzaMedia < OMR_AUTO_CONF_MIN;
+      const ambiguedadAlta = ratioAmbiguas > OMR_AUTO_AMBIGUAS_MAX;
+      const deteccionBaja = deteccionRatio < OMR_AUTO_DETECCION_MIN;
+      const senalesDebiles = [calidadMedia, confianzaBaja, ambiguedadAlta, deteccionBaja].filter(Boolean).length;
+      const senalSevera =
+        confianzaMedia < Math.max(0.38, OMR_AUTO_CONF_MIN - 0.18) ||
+        ratioAmbiguas > Math.max(0.6, OMR_AUTO_AMBIGUAS_MAX + 0.2) ||
+        deteccionRatio < Math.max(0.45, OMR_AUTO_DETECCION_MIN - 0.25);
+
+      if (senalSevera || senalesDebiles >= 2) {
+        estado = 'requiere_revision';
+        if (calidadMedia) {
+          motivos.push(`Calidad media (${calidadPagina.toFixed(2)}), requiere revision`);
+        }
+        if (confianzaBaja) {
+          motivos.push(`Confianza promedio baja (${confianzaMedia.toFixed(2)})`);
+        }
+        if (ambiguedadAlta) {
+          motivos.push(`Ambiguedad alta (${(ratioAmbiguas * 100).toFixed(1)}%)`);
+        }
+        if (deteccionBaja) {
+          motivos.push(`Cobertura de detección baja (${(deteccionRatio * 100).toFixed(1)}%)`);
+        }
+      } else {
+        estado = 'ok';
+        advertencias.push(
+          `Senal OMR limite pero estable (confianza ${confianzaMedia.toFixed(2)}, ambiguas ${(ratioAmbiguas * 100).toFixed(1)}%, deteccion ${(deteccionRatio * 100).toFixed(1)}%)`
+        );
       }
     }
   }
 
-  if (estado === 'ok' && deteccionRatio < OMR_AUTO_DETECCION_MIN && !rescateAltaPrecision) {
+  if (
+    estado === 'ok' &&
+    deteccionRatio < Math.max(0.5, OMR_AUTO_DETECCION_MIN - 0.2) &&
+    !rescateAltaPrecision
+  ) {
     estado = 'requiere_revision';
     motivos.push(`Cobertura de detección insuficiente (${(deteccionRatio * 100).toFixed(1)}%)`);
   }
@@ -1043,6 +1067,7 @@ type PreparacionPregunta = {
   reprojectionErrorPx: number | null;
   puntosFidDetectados: number;
   puntosFidEsperados: number;
+  usaRescateCaja: boolean;
   motivo?: string;
 };
 
@@ -1075,6 +1100,16 @@ function prepararCentrosPregunta(
 ): PreparacionPregunta {
   const { gray, integral, width, height, escalaX, paramsBurbuja } = estado;
   const centrosBase = construirCentrosBasePregunta(pregunta, transformar);
+  if (!OMR_LOCAL_GEOMETRY_ENABLED) {
+    return {
+      centros: centrosBase,
+      reprojectionErrorPx: null,
+      puntosFidDetectados: 0,
+      puntosFidEsperados: 0,
+      usaRescateCaja: false,
+      motivo: 'Ajuste geometrico local desactivado'
+    };
+  }
   const fiduciales = normalizarFiducialesPregunta(pregunta.fiduciales, transformar);
   const fidSizePx = Math.max(6, 7 * escalaX);
   const ajusteFid = fiduciales
@@ -1118,15 +1153,27 @@ function prepararCentrosPregunta(
       reprojectionErrorPx: null,
       puntosFidDetectados: 0,
       puntosFidEsperados: 0,
+      usaRescateCaja: false,
       motivo: 'Sin fiduciales por pregunta'
     };
   }
   if (!ajusteFid) {
+    if (centrosCaja) {
+      return {
+        centros,
+        reprojectionErrorPx: null,
+        puntosFidDetectados: 0,
+        puntosFidEsperados: 4,
+        usaRescateCaja: true,
+        motivo: 'Rescate por caja OMR (fiduciales no detectados)'
+      };
+    }
     return {
       centros,
       reprojectionErrorPx: Number.POSITIVE_INFINITY,
       puntosFidDetectados: 0,
       puntosFidEsperados: 4,
+      usaRescateCaja: false,
       motivo: 'No se pudieron localizar fiduciales'
     };
   }
@@ -1134,7 +1181,8 @@ function prepararCentrosPregunta(
     centros,
     reprojectionErrorPx: ajusteFid.reprojectionErrorPx,
     puntosFidDetectados: ajusteFid.puntosDetectados,
-    puntosFidEsperados: ajusteFid.puntosEsperados
+    puntosFidEsperados: ajusteFid.puntosEsperados,
+    usaRescateCaja: false
   };
 }
 
@@ -1393,6 +1441,10 @@ export async function analizarOmr(
     return { x: punto.x * escalaX, y: height - punto.y * escalaY };
   };
   let transformar = transformacionBase.transformar;
+  if (!OMR_LOCAL_GEOMETRY_ENABLED) {
+    transformar = transformarEscala;
+    advertencias.push('Modo geometria simple: transformacion global por escala');
+  }
 
   const evaluarTransformacion = (transformador: (p: Punto) => Punto) => {
     const muestras = mapaPagina.preguntas.slice(0, Math.min(5, mapaPagina.preguntas.length));
@@ -1478,6 +1530,9 @@ export async function analizarOmr(
   mapaPagina.preguntas.forEach((pregunta) => {
     const prep = prepararCentrosPregunta(estado, pregunta, transformar, perfil);
     const centros = prep.centros;
+    if (prep.usaRescateCaja && prep.motivo) {
+      advertencias.push(`P${pregunta.numeroPregunta}: ${prep.motivo}`);
+    }
     if (prep.reprojectionErrorPx !== null && Number.isFinite(prep.reprojectionErrorPx)) {
       reprojectionErrorAcumulado += prep.reprojectionErrorPx;
       reprojectionErrorConteo += 1;
@@ -1487,47 +1542,23 @@ export async function analizarOmr(
     const reprojectionFueraDeRango =
       reprojectionError === Number.POSITIVE_INFINITY ||
       (reprojectionDisponible && reprojectionError > perfil.reprojectionMaxErrorPx);
-    if (perfil.reprojectionMaxErrorPx < Number.POSITIVE_INFINITY && reprojectionFueraDeRango) {
-      if (opcionesInternas?.rescueFiduciales) {
-        motivosRevision.push(`P${pregunta.numeroPregunta}: rescate fiduciales por error geométrico local`);
-      } else {
-      respuestasDetectadas.push({
-        numeroPregunta: pregunta.numeroPregunta,
-        opcion: null,
-        confianza: 0,
-        scoresPorOpcion: [],
-        flags: ['fuera_roi']
-      });
-      preguntasAmbiguas += 1;
+    const bloqueoPorFiducial = prep.puntosFidDetectados >= 2 && !prep.usaRescateCaja;
+    if (perfil.reprojectionMaxErrorPx < Number.POSITIVE_INFINITY && reprojectionFueraDeRango && bloqueoPorFiducial) {
       motivosRevision.push(`P${pregunta.numeroPregunta}: error geometrico local (fiduciales)`);
-      if (debug) {
-        debug.preguntas.push({
-          numeroPregunta: pregunta.numeroPregunta,
-          mejorOpcion: null,
-          mejorScore: 0,
-          segundoScore: 0,
-          delta: 0,
-          dobleMarcada: true,
-          suficiente: false,
-          dx: 0,
-          dy: 0,
-          scoreMean: 0,
-          scoreStd: 0,
-          scoreThreshold: 0,
-          centros: centros.map((c) => ({ letra: c.letra, x: c.punto.x, y: c.punto.y, score: 0 }))
-        });
-      }
-      return;
+      if (opcionesInternas?.rescueFiduciales) {
+        advertencias.push(`P${pregunta.numeroPregunta}: rescate fiduciales por error geométrico local`);
       }
     }
-    const { mejorDx, mejorDy } = buscarMejorOffsetPregunta({
-      estado,
-      centros,
-      alignRange: perfil.alignRange,
-      maxCenterDriftRatio: perfil.maxCenterDriftRatio,
-      minSafeRange: perfil.minSafeRange,
-      evaluarAlineacionOffset
-    });
+    const { mejorDx, mejorDy } = OMR_LOCAL_GEOMETRY_ENABLED
+      ? buscarMejorOffsetPregunta({
+          estado,
+          centros,
+          alignRange: perfil.alignRange,
+          maxCenterDriftRatio: perfil.maxCenterDriftRatio,
+          minSafeRange: perfil.minSafeRange,
+          evaluarAlineacionOffset
+        })
+      : { mejorDx: 0, mejorDy: 0 };
     const resultado = evaluarConOffset({
       gray,
       integral,

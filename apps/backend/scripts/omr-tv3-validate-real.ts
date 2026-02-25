@@ -66,6 +66,7 @@ type RealValidationPayload = {
     pagePassRate: number;
     autoGradeTrustRate: number;
     autoGradePrecision: number;
+    autoCoverageRate: number;
     autoPages: number;
     totalPages: number;
     totalPreguntas: number;
@@ -76,6 +77,7 @@ type RealValidationPayload = {
     invalidDetectionRate: boolean;
     pagePassRate: boolean;
     autoGradeTrustRate: boolean;
+    autoCoverageRate: boolean;
   };
   ok: boolean;
   perCapture: Array<{
@@ -113,7 +115,7 @@ type Args = {
   dataset: string;
   report: string;
   failureReport: string;
-  autoGradeTrustMin: number;
+  autoGradeTrustMin?: number;
   precisionMin?: number;
   falsePositiveMax?: number;
   invalidDetectionMin?: number;
@@ -124,8 +126,7 @@ function parseArgs(argv: string[]): Args {
   const args: Args = {
     dataset: '../../omr_samples_tv3_real',
     report: '../../reports/qa/latest/omr/tv3-real-validation.json',
-    failureReport: '../../reports/qa/latest/omr/tv3-real-failure-analysis.json',
-    autoGradeTrustMin: 0.95
+    failureReport: '../../reports/qa/latest/omr/tv3-real-failure-analysis.json'
   };
   for (let i = 2; i < argv.length; i += 1) {
     const key = argv[i];
@@ -366,13 +367,15 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
   const pagePassRate = manifest.capturas.length > 0 ? pagePassCount / manifest.capturas.length : 0;
   const autoGradeTrustRate = autoPages > 0 ? autoPagesPassing / autoPages : 0;
   const autoGradePrecision = autoTp + autoFp > 0 ? autoTp / (autoTp + autoFp) : 1;
+  const autoCoverageRate = manifest.capturas.length > 0 ? autoPages / manifest.capturas.length : 1;
 
   const checks: RealValidationPayload['checks'] = {
     precision: precision >= thresholds.precisionMin,
     falsePositiveRate: falsePositiveRate <= thresholds.falsePositiveMax,
     invalidDetectionRate: invalidDetectionRate >= thresholds.invalidDetectionMin,
     pagePassRate: pagePassRate >= thresholds.pagePassMin,
-    autoGradeTrustRate: autoGradeTrustRate >= thresholds.autoGradeTrustMin
+    autoGradeTrustRate: autoGradeTrustRate >= thresholds.autoGradeTrustMin,
+    autoCoverageRate: autoCoverageRate >= 1
   };
 
   const runId = `omr-tv3-real-${Date.now()}`;
@@ -390,6 +393,7 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
       pagePassRate: round6(pagePassRate),
       autoGradeTrustRate: round6(autoGradeTrustRate),
       autoGradePrecision: round6(autoGradePrecision),
+      autoCoverageRate: round6(autoCoverageRate),
       autoPages,
       totalPages: manifest.capturas.length,
       totalPreguntas: total

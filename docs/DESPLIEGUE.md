@@ -14,6 +14,7 @@ Alternativa separada:
 ```bash
 npm run dev:backend
 npm run dev:frontend
+npm run dev:frontend:alumno
 npm run dev:portal
 ```
 
@@ -58,6 +59,10 @@ Portal cloud:
 - `PORTAL_API_KEY`
 - `CODIGO_ACCESO_HORAS`
 - `CORS_ORIGENES`
+
+Frontend alumno/docente (build separado):
+- `VITE_APP_DESTINO` (`alumno` | `docente`)
+- `VITE_PORTAL_BASE_URL`
 
 Referencia completa: `docs/AUTO_ENV.md`.
 

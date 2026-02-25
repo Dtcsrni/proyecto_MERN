@@ -10,7 +10,7 @@ Version operativa: `1.0.0-beta.0`
 - API canonica: solo `/api/*` (sin rutas versionadas en path).
 - OMR con motor CV unico y contrato TV3.
 - PDF en contrato TV3 sin compatibilidades antiguas.
-- Sincronizacion con `schemaVersion: 2` y fingerprint `sync-v2-lww-updatedAt-schema2`.
+- Sincronizacion con `schemaVersion: 3` (compatible transitorio con `schemaVersion: 2`).
 - Gate de arquitectura limpia: `qa:clean-architecture:strict`.
 
 ## Apps
@@ -39,12 +39,30 @@ npm -C apps/backend run omr:tv3:eval:synthetic
 ```bash
 npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real
 ```
+- Gate real manual mínimo TV3 (captura tipo móvil, bloqueante en PR):
+```bash
+npm -C apps/backend run omr:tv3:generate:real:manual-min
+npm -C apps/backend run omr:tv3:validate:real:manual-min
+```
+Nota: `omr_samples_tv3_real_manual_min` se genera como base móvil simulada reproducible; puede sustituirse `images/*` por fotos reales manteniendo `maps/*` y `ground_truth.jsonl`.
 - Baseline/calibración/evidencia:
 ```bash
 npm -C apps/backend run omr:tv3:generate:real
 npm -C apps/backend run omr:tv3:baseline:snapshot
 npm -C apps/backend run omr:tv3:calibrate:real
 ```
+## Flujo E2E OMR TV3 (automatización docente)
+1. `npm -C apps/backend run omr:cv:smoke`
+2. `npm -C apps/backend run omr:tv3:generate:real`
+3. `npm -C apps/backend run omr:tv3:eval:synthetic`
+4. `npm -C apps/backend run omr:tv3:validate:real`
+5. `npm -C apps/backend run omr:tv3:generate:real:manual-min`
+6. `npm -C apps/backend run omr:tv3:validate:real:manual-min`
+7. `npm -C apps/backend run omr:tv3:baseline:snapshot -- --dataset-real-manual ../../omr_samples_tv3_real_manual_min`
+
+Criterios bloqueantes:
+- `autoCoverageRate == 1.0` en dataset real simulado y manual mínimo.
+- `precision`, `falsePositiveRate`, `invalidDetectionRate`, `pagePassRate`, `autoGradeTrustRate` dentro de `manifest.json`.
 
 ### Instalación local mínima (Linux)
 - Windows:
@@ -78,7 +96,11 @@ npm run dev:portal
   - `npm run dev`
   - `npm run dev:backend`
   - `npm run dev:frontend`
+  - `npm run dev:frontend:alumno`
+  - `npm run dev:frontend:docente`
   - `npm run dev:portal`
+  - `npm run build:frontend:alumno`
+  - `npm run build:frontend:docente`
 - Calidad:
   - `npm run lint`
   - `npm run typecheck`

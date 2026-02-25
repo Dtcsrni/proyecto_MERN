@@ -104,7 +104,7 @@ export function PlantillasListado({
             const pdfUrl = previewPdfUrlPorPlantillaId[plantilla._id];
             return (
               <li key={plantilla._id}>
-                <div className="item-glass">
+                <div className="item-glass plantillas-item">
                   <div className="item-row">
                     <div>
                       <div className="item-title">{plantilla.titulo}</div>
@@ -115,7 +115,16 @@ export function PlantillasListado({
                         <span>Creada: {formatearFechaHora(plantilla.createdAt)}</span>
                         <span>Materia: {materia ? etiquetaMateria(materia) : '-'}</span>
                       </div>
-                      <div className="item-sub">{modo}</div>
+                      <div className="item-sub plantillas-item__sub">{modo}</div>
+                      {temas.length > 0 && (
+                        <div className="plantillas-item__temas">
+                          {temas.map((tema) => (
+                            <span key={`${plantilla._id}-${tema}`} className="badge plantillas-item__tema-badge">
+                              {tema}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {previewAbierta && (
                         <div className="resultado plantillas-preview">
                           <h4 className="plantillas-preview__titulo">Previsualizacion (boceto por pagina)</h4>
@@ -271,7 +280,7 @@ export function PlantillasListado({
                         </div>
                       )}
                     </div>
-                    <div className="item-actions">
+                    <div className="item-actions plantillas-item__actions">
                       <Boton
                         type="button"
                         variante="secundario"

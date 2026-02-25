@@ -80,6 +80,57 @@ export async function crearPeriodo(req: SolicitudDocente, res: Response) {
 }
 
 /**
+ * Actualiza una materia del docente autenticado.
+ */
+export async function actualizarPeriodo(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const periodoId = String(req.params.periodoId ?? '').trim();
+
+  const periodo = await Periodo.findOne({ _id: periodoId, docenteId }).lean();
+  if (!periodo) {
+    throw new ErrorAplicacion('PERIODO_NO_ENCONTRADO', 'Materia no encontrada', 404);
+  }
+  if (periodo.activo === false) {
+    throw new ErrorAplicacion('PERIODO_INACTIVO', 'La materia está archivada', 409);
+  }
+
+  const payload = req.body as {
+    nombre?: string;
+    fechaInicio?: Date;
+    fechaFin?: Date;
+    grupos?: string[];
+  };
+
+  const cambios: Record<string, unknown> = {};
+  if (payload.nombre !== undefined) {
+    const nombre = String(payload.nombre ?? '').trim();
+    const nombreNormalizado = normalizarNombrePeriodo(nombre);
+    const existente = await Periodo.findOne({
+      docenteId,
+      nombreNormalizado,
+      _id: { $ne: periodoId }
+    }).lean();
+    if (existente) {
+      throw new ErrorAplicacion('PERIODO_DUPLICADO', 'Ya existe una materia con ese nombre', 409);
+    }
+    cambios.nombre = nombre;
+    cambios.nombreNormalizado = nombreNormalizado;
+  }
+
+  const fechaInicioNueva = payload.fechaInicio ?? (periodo.fechaInicio as Date);
+  const fechaFinNueva = payload.fechaFin ?? (periodo.fechaFin as Date);
+  if (fechaFinNueva < fechaInicioNueva) {
+    throw new ErrorAplicacion('PERIODO_FECHAS_INVALIDAS', 'La fecha fin debe ser igual o posterior a la fecha inicio', 400);
+  }
+  if (payload.fechaInicio !== undefined) cambios.fechaInicio = payload.fechaInicio;
+  if (payload.fechaFin !== undefined) cambios.fechaFin = payload.fechaFin;
+  if (payload.grupos !== undefined) cambios.grupos = payload.grupos;
+
+  const actualizado = await Periodo.findOneAndUpdate({ _id: periodoId, docenteId }, { $set: cambios }, { new: true }).lean();
+  res.json({ ok: true, periodo: actualizado });
+}
+
+/**
  * Archiva un periodo (materia): lo marca como inactivo, registra timestamp y genera un resumen.
  * Nota: no borra datos; desactiva entidades asociadas que soportan `activo`.
  */

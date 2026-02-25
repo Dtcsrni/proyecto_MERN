@@ -1960,6 +1960,7 @@
       background: #0f172a;
       color: #e2e8f0;
       overflow: hidden;
+      max-height: clamp(280px, 52vh, 780px);
       transition: max-height 0.3s ease, opacity 0.3s ease;
     }
 
@@ -1972,11 +1973,14 @@
 
     .log-body {
       padding: clamp(10px, 1.5vw, 14px);
-      height: clamp(280px, 46vh, 720px);
+      height: clamp(260px, 48vh, 760px);
       overflow: auto;
       font-family: Consolas, monospace;
       font-size: clamp(10px, 1.2vw, 12px);
+      line-height: 1.45;
       word-break: break-word;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .log-summary {
@@ -2040,6 +2044,98 @@
     .eventos-estado-lista {
       display: grid;
       gap: 6px;
+    }
+
+    .log-toolbar {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .log-actions,
+    .log-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .log-actions button {
+      flex: 1 1 180px;
+    }
+
+    .log-filters .search {
+      flex: 1 1 220px;
+      min-width: 140px;
+    }
+
+    .log-filters select {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 150px;
+    }
+
+    .log-line {
+      padding: 8px 10px;
+      border-bottom: 1px dashed rgba(226, 232, 240, 0.12);
+      animation: fadeIn 0.2s ease both;
+      border-radius: 8px;
+    }
+
+    .log-line-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+      color: #94a3b8;
+      font-size: 11px;
+    }
+
+    .log-line-head .meta {
+      margin-right: 0;
+      color: inherit;
+    }
+
+    .log-line-text {
+      color: inherit;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (min-width: 980px) {
+      .log-toolbar {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+      }
+
+      .log-actions button {
+        flex: 0 0 auto;
+      }
+
+      .log-filters {
+        justify-content: flex-end;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .log-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .log-filters select,
+      .log-filters .search,
+      .log-filters button {
+        flex: 1 1 100%;
+      }
     }
 
     .evento-estado {
@@ -2227,22 +2323,14 @@
     .evento-estado.con-detalles:hover { box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08); }
     .evento-estado.abierto .detalles { display: grid; }
 
-    .log-line {
-      padding: 4px 0;
-      border-bottom: 1px dashed rgba(226, 232, 240, 0.12);
-      animation: fadeIn 0.2s ease both;
-    }
-
     .log-line.has-meta { cursor: pointer; }
     .log-line.has-meta:hover { background: rgba(255, 255, 255, 0.04); }
     .log-line.open { background: rgba(255, 255, 255, 0.03); }
 
-    .log-line .meta { color: #94a3b8; margin-right: 6px; }
     .log-line .meta-tag {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-right: 6px;
       opacity: 0.9;
     }
 
@@ -2355,6 +2443,70 @@
     }
 
     .toggle input { accent-color: var(--accent-2); }
+
+    .refresh-config-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .refresh-config-item {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .refresh-config-item input[type="number"] {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .refresh-config-item small {
+      color: var(--ink-soft);
+      opacity: 0.85;
+      font-size: 11px;
+    }
+
+    #panel-config .toolbar-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    #panel-config .toolbar-group.switches {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+
+    #panel-config .toggle {
+      width: 100%;
+      align-items: flex-start;
+      line-height: 1.25;
+    }
+
+    #repair-issues-list .evento-estado,
+    #repair-manual-list .evento-estado {
+      padding: 10px 12px 10px 16px;
+      border-radius: 12px;
+      min-height: 44px;
+    }
+
+    #repair-issues-list .mensaje-titulo,
+    #repair-manual-list .mensaje-titulo {
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
 
     .search {
       border: 1px solid var(--border);
@@ -2938,7 +3090,7 @@
               <div class="health-check-meta">
                 <div>Último: <span id="health-check-last-main">-</span></div>
                 <div>Siguiente: <span id="health-check-next-main">-</span></div>
-                <div>Progreso: <span id="health-check-progress-text-main">-</span></div>
+                <div>Restante: <span id="health-check-progress-text-main">-</span></div>
                 <div>Intervalo: <span id="health-check-interval-main">-</span></div>
               </div>
             </div>
@@ -3230,7 +3382,7 @@
               <div class="health-check-meta">
                 <div>Último: <span id="health-check-last-status">-</span></div>
                 <div>Siguiente: <span id="health-check-next-status">-</span></div>
-                <div>Progreso: <span id="health-check-progress-text-status">-</span></div>
+                <div>Restante: <span id="health-check-progress-text-status">-</span></div>
                 <div>Intervalo: <span id="health-check-interval-status">-</span></div>
               </div>
             </div>
@@ -3275,16 +3427,20 @@
               <div class="log-meta">
                 <span class="pill" id="log-size">0 líneas</span>
                 <span class="pill" id="raw-size">0 en bruto</span>
+                <span class="pill" id="log-visible-count">0 visibles</span>
+                <span class="pill" id="log-total-count">0 total</span>
+                <span class="pill" id="log-render-limit">límite 0</span>
                 <span class="pill" id="last-refresh-status">-</span>
                 <span class="pill"><span class="dot" id="running-dot"></span> activo</span>
               </div>
             </div>
-            <div class="toolbar toolbar-grid" aria-label="Controles de salida">
-              <div class="toolbar-group actions" aria-label="Acciones de salida">
+            <div class="log-toolbar" aria-label="Controles de salida">
+              <div class="log-actions" aria-label="Acciones de salida">
                 <button class="ok" id="toggle-logs" aria-expanded="false" aria-controls="log-shell">
                   <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 7-7 7-1.4-1.4L15.2 13H5v-2h10.2l-4.6-4.6L12 5z"/></svg>
                   Mostrar salida
                 </button>
+                <button class="ghost-btn" id="log-scroll-bottom" type="button">Ir al final</button>
                 <button class="ghost-btn" id="open-logfile" type="button" title="Abrir logs/dashboard.log (log persistente)">
                   Abrir dashboard.log
                 </button>
@@ -3294,7 +3450,15 @@
                 </button>
               </div>
 
-              <div class="toolbar-group filter" aria-label="Filtro de salida">
+              <div class="log-filters" aria-label="Filtro de salida">
+                <select id="log-level-filter" aria-label="Filtrar por nivel">
+                  <option value="all">Todos los niveles</option>
+                  <option value="error">Error</option>
+                  <option value="warn">Warn</option>
+                  <option value="ok">OK</option>
+                  <option value="info">Info</option>
+                  <option value="system">System</option>
+                </select>
                 <input class="search" id="log-filter" placeholder="Filtrar texto" aria-label="Filtrar salida" />
                 <button class="ghost-btn" id="clear-filter" type="button">Limpiar filtro</button>
               </div>
@@ -3346,6 +3510,18 @@
                   Auto-reinicio (dev)
                 </label>
               </div>
+            </div>
+            <div class="refresh-config-grid" aria-label="Frecuencia de actualización">
+              <label class="refresh-config-item" for="refresh-foreground-ms">
+                <span>Refresco visible (ms)</span>
+                <input id="refresh-foreground-ms" type="number" min="1000" max="15000" step="500" />
+                <small>Actual: <span id="refresh-foreground-current">-</span></small>
+              </label>
+              <label class="refresh-config-item" for="refresh-background-ms">
+                <span>Refresco en segundo plano (ms)</span>
+                <input id="refresh-background-ms" type="number" min="3000" max="120000" step="1000" />
+                <small>Actual: <span id="refresh-background-current">-</span></small>
+              </label>
             </div>
             <div class="toolbar toolbar-spaced">
               <button class="danger" id="reset-config" type="button">Restablecer valores por defecto</button>
@@ -3446,14 +3622,16 @@
 
     // Identificador de UI (útil para confirmar que el HTML recargó cambios).
     // Nota: actualiza este valor cuando hagas cambios visibles al dashboard.
-    const UI_REV = '2026-02-14.3';
+    const UI_REV = '2026-02-25.10';
 
     const CLAVE_ALMACEN_TEMA = 'seuDashboardTheme';
     const CONFIG_DASHBOARD_DEFAULT = {
       autoRestart: false,
       showFullLogs: false,
       autoScroll: true,
-      pauseUpdates: false
+      pauseUpdates: false,
+      refreshForegroundMs: 3000,
+      refreshBackgroundMs: 20000
     };
 
     function establecerColorMetaTema(color) {
@@ -3567,6 +3745,63 @@
       return null;
     }
 
+    function valorBanderaActiva(valor) {
+      const normalizado = String(valor || '').trim().toLowerCase();
+      return normalizado === '1' || normalizado === 'true' || normalizado === 'yes' || normalizado === 'on';
+    }
+
+    function debeForzarReanudacion() {
+      try {
+        const query = new URLSearchParams(String(location.search || '').replace(/^\?/, ''));
+        const crudoHash = String(location.hash || '').replace(/^#/, '').trim();
+        const hash = new URLSearchParams(crudoHash.includes('=') ? crudoHash : (crudoHash ? `tab=${crudoHash}` : ''));
+        const candidatas = [
+          query.get('resume'),
+          query.get('live'),
+          hash.get('resume'),
+          hash.get('live')
+        ];
+        return candidatas.some((valor) => valorBanderaActiva(valor));
+      } catch {
+        return false;
+      }
+    }
+
+    function debeMantenerPausaExplicita() {
+      try {
+        const query = new URLSearchParams(String(location.search || '').replace(/^\?/, ''));
+        const crudoHash = String(location.hash || '').replace(/^#/, '').trim();
+        const hash = new URLSearchParams(crudoHash.includes('=') ? crudoHash : (crudoHash ? `tab=${crudoHash}` : ''));
+        const candidatas = [
+          query.get('pause'),
+          hash.get('pause')
+        ];
+        return candidatas.some((valor) => valorBanderaActiva(valor));
+      } catch {
+        return false;
+      }
+    }
+
+    function usuarioEstaViendoDashboard() {
+      const visible = document.visibilityState === 'visible';
+      const conFoco = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
+      return visible && conFoco;
+    }
+
+    function aplicarReanudacionAutomaticaSiCorresponde() {
+      const permitirAutoResume = usuarioEstaViendoDashboard() || debeForzarReanudacion() || !debeMantenerPausaExplicita();
+      if (!permitirAutoResume) return;
+      if (!state.pausado) return;
+      state.pausado = false;
+      establecerChipPausa(false);
+      const pausarActualizaciones = $('pause-updates');
+      if (pausarActualizaciones) pausarActualizaciones.checked = false;
+      if (!state.autoResumeAplicado) {
+        state.autoResumeAplicado = true;
+        guardarConfigDashboard({ pauseUpdates: false }).catch(() => undefined);
+      }
+    }
+
     function establecerHashPestana(idPestana) {
       try {
         const siguiente = `tab=${encodeURIComponent(String(idPestana || ''))}`;
@@ -3657,18 +3892,28 @@
         autoDesplazamiento: CONFIG_DASHBOARD_DEFAULT.autoScroll,
         pausado: CONFIG_DASHBOARD_DEFAULT.pauseUpdates,
         filtro: '',
+        filtroNivelLog: 'all',
+        logsCache: [],
+        logFilterDebounceId: 0,
         enEjecucion: new Set(),
         logsVisibles: false,
         pestanaActiva: 'main',
         modo: 'none',
         salud: {},
         ultimaSaludEn: 0,
+        ultimoRefrescoExitosoEn: 0,
+        ultimoAutoReloadEn: 0,
         ultimoHealthCheckEn: 0,
         proximoHealthCheckEn: 0,
         eventos: [],
         historialSalud: [],
         sesionIniciadaEn: Date.now(),
         haCargado: false,
+        autoResumeAplicado: false,
+        refreshForegroundMs: CONFIG_DASHBOARD_DEFAULT.refreshForegroundMs,
+        refreshBackgroundMs: CONFIG_DASHBOARD_DEFAULT.refreshBackgroundMs,
+        refreshTimerId: 0,
+        refreshIntervalMs: 0,
         claveInfoWebDocente: 'webDocenteDev',
         conexion: 'unknown',
         ultimaConexionEn: 0,
@@ -3705,6 +3950,19 @@
 
     const TIEMPO_MANTENER_MS = 1200;
     const HEALTH_CHECK_MS = 4000;
+    const STALE_REFRESH_RELOAD_MS = 30 * 1000;
+    const STALE_RELOAD_COOLDOWN_MS = 90 * 1000;
+    const STALE_RELOAD_MAX_PER_WINDOW = 3;
+    const STALE_RELOAD_WINDOW_MS = 5 * 60 * 1000;
+    const STALE_WATCHDOG_TICK_MS = 5000;
+    const STALE_RELOAD_GUARD_KEY = 'seuDashboardStaleReloadGuard';
+    const REFRESH_FOREGROUND_MIN_MS = 1000;
+    const REFRESH_FOREGROUND_MAX_MS = 15000;
+    const REFRESH_BACKGROUND_MIN_MS = 3000;
+    const REFRESH_BACKGROUND_MAX_MS = 120000;
+    const LOG_RENDER_LIMIT_COMPACT = 800;
+    const LOG_RENDER_LIMIT_DETAILED = 2000;
+    const LOG_FILTER_DEBOUNCE_MS = 140;
     const MAX_EVENTOS = 6;
     const MAX_HISTORIAL_SALUD = 16;
     const VENTANA_EVENTOS_RECIENTES_MS = 15 * 60 * 1000;
@@ -3722,6 +3980,67 @@
         return error.message;
       }
       return 'Sin respuesta';
+    }
+
+    function leerGuardiaRecargaStale() {
+      try {
+        const raw = sessionStorage.getItem(STALE_RELOAD_GUARD_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        if (!parsed || typeof parsed !== 'object') {
+          return { windowStartedAt: 0, count: 0, lastReloadAt: 0 };
+        }
+        return {
+          windowStartedAt: Number(parsed.windowStartedAt || 0),
+          count: Number(parsed.count || 0),
+          lastReloadAt: Number(parsed.lastReloadAt || 0)
+        };
+      } catch {
+        return { windowStartedAt: 0, count: 0, lastReloadAt: 0 };
+      }
+    }
+
+    function guardarGuardiaRecargaStale(guardia) {
+      try {
+        sessionStorage.setItem(STALE_RELOAD_GUARD_KEY, JSON.stringify(guardia || {}));
+      } catch {}
+    }
+
+    function puedeRecargarPorStale(ahora = Date.now()) {
+      const guardia = leerGuardiaRecargaStale();
+      const ventanaVencida = !guardia.windowStartedAt || ahora - guardia.windowStartedAt > STALE_RELOAD_WINDOW_MS;
+      if (ventanaVencida) {
+        guardarGuardiaRecargaStale({ windowStartedAt: ahora, count: 0, lastReloadAt: 0 });
+        return true;
+      }
+      return guardia.count < STALE_RELOAD_MAX_PER_WINDOW;
+    }
+
+    function registrarRecargaPorStale(ahora = Date.now()) {
+      const guardia = leerGuardiaRecargaStale();
+      const ventanaVencida = !guardia.windowStartedAt || ahora - guardia.windowStartedAt > STALE_RELOAD_WINDOW_MS;
+      const siguiente = ventanaVencida
+        ? { windowStartedAt: ahora, count: 1, lastReloadAt: ahora }
+        : { windowStartedAt: guardia.windowStartedAt, count: guardia.count + 1, lastReloadAt: ahora };
+      guardarGuardiaRecargaStale(siguiente);
+    }
+
+    function vigilarEstadoDesactualizado() {
+      if (state.pausado) return;
+      const ahora = Date.now();
+      const base = state.ultimoRefrescoExitosoEn || state.sesionIniciadaEn || ahora;
+      const edad = ahora - base;
+      if (edad < STALE_REFRESH_RELOAD_MS) return;
+      if (state.ultimoAutoReloadEn && ahora - state.ultimoAutoReloadEn < STALE_RELOAD_COOLDOWN_MS) return;
+      if (!puedeRecargarPorStale(ahora)) return;
+
+      state.ultimoAutoReloadEn = ahora;
+      registrarRecargaPorStale(ahora);
+      mostrarToast(`Información envejecida (${formatearMs(edad)}). Recargando dashboard...`, 'warn', {
+        id: 'stale-auto-reload',
+        title: 'Auto-recuperación',
+        duration: 2600
+      });
+      setTimeout(() => location.reload(), 400);
     }
 
     function establecerConexion(nombreEstado, detalle = '') {
@@ -3781,11 +4100,19 @@
       return `${minutos}m`;
     }
 
+    function normalizarMarcaTiempoHealth(candidato, ahora = Date.now()) {
+      const ts = Number(candidato || 0);
+      if (!Number.isFinite(ts) || ts <= 0) return ahora;
+      if (ts > ahora) return ahora;
+      return ts;
+    }
+
     function actualizarTiemposHealth(ahora = Date.now()) {
       const ultimo = state.ultimoHealthCheckEn || 0;
       const proximo = state.proximoHealthCheckEn || 0;
-      const hace = ultimo ? `hace ${formatearMs(ahora - ultimo)}` : '-';
-      const en = proximo ? `en ${formatearMs(Math.max(0, proximo - ahora))}` : '-';
+      const hace = ultimo ? `hace ${formatearMs(Math.max(0, ahora - ultimo))}` : '-';
+      const restanteMs = proximo ? Math.max(0, proximo - ahora) : 0;
+      const en = proximo ? (restanteMs === 0 ? 'ahora' : `en ${formatearMs(restanteMs)}`) : '-';
 
       const retraso = ultimo ? ahora - ultimo : Infinity;
       let badgeTexto = 'Sin datos';
@@ -3803,16 +4130,16 @@
         badgeClase = 'ok';
       }
 
-      const progreso = ultimo ? Math.min(1, Math.max(0, (ahora - ultimo) / HEALTH_CHECK_MS)) : 0;
-      const progresoPct = Math.round(progreso * 100);
-      const width = `${progresoPct}%`;
+      const restanteRatio = proximo ? Math.min(1, Math.max(0, restanteMs / HEALTH_CHECK_MS)) : 0;
+      const restantePct = Math.round(restanteRatio * 100);
+      const width = `${restantePct}%`;
       const intervalo = `${Math.round(HEALTH_CHECK_MS / 100) / 10}s`;
 
       const targets = ['main', 'status'];
       targets.forEach((suffix) => {
         establecerTexto(`health-check-last-${suffix}`, hace);
         establecerTexto(`health-check-next-${suffix}`, en);
-        establecerTexto(`health-check-progress-text-${suffix}`, ultimo ? `${progresoPct}%` : '-');
+        establecerTexto(`health-check-progress-text-${suffix}`, ultimo ? `${restantePct}% restante` : '-');
         establecerTexto(`health-check-interval-${suffix}`, intervalo);
         const badge = $(`health-check-badge-${suffix}`);
         if (badge) {
@@ -4002,6 +4329,34 @@
       setTimeout(() => refrescarTrasAccion({ forzarSalud: true }), 900);
       setTimeout(() => refrescarTrasAccion({ forzarSalud: true }), 2400);
       setTimeout(() => refrescarTrasAccion({ forzarSalud: true }), 5200);
+    }
+
+    function obtenerIntervaloRefrescoMs() {
+      return usuarioEstaViendoDashboard() ? state.refreshForegroundMs : state.refreshBackgroundMs;
+    }
+
+    function ejecutarCicloRefrescoPeriodico() {
+      if (state.pausado) return;
+      refrescarEstado();
+      if (state.logsVisibles) refrescarLogs();
+      else refrescarSenales();
+      if (state.pestanaActiva === 'status') refrescarEventos();
+      if (state.pestanaActiva === 'config') refrescarRepairProgress();
+      if (state.pestanaActiva === 'db') refrescarMongoExpress();
+    }
+
+    function reprogramarRefrescoPeriodico({ refrescarAhora = false } = {}) {
+      const intervalo = obtenerIntervaloRefrescoMs();
+      if (state.refreshTimerId && state.refreshIntervalMs === intervalo) {
+        if (refrescarAhora) ejecutarCicloRefrescoPeriodico();
+        return;
+      }
+      if (state.refreshTimerId) clearInterval(state.refreshTimerId);
+      state.refreshIntervalMs = intervalo;
+      state.refreshTimerId = setInterval(() => {
+        ejecutarCicloRefrescoPeriodico();
+      }, intervalo);
+      if (refrescarAhora) ejecutarCicloRefrescoPeriodico();
     }
 
     function formatearHora(marcaTiempo) {
@@ -4643,7 +4998,8 @@
           const res = await fetch('/api/health');
           const data = await res.json();
           state.salud = data.services || data || {};
-          state.ultimoHealthCheckEn = Number(data.checkedAt || 0) || Date.now();
+          const ahoraHealth = Date.now();
+          state.ultimoHealthCheckEn = normalizarMarcaTiempoHealth(data.checkedAt, ahoraHealth);
         } catch {
           state.salud = {};
           state.ultimoHealthCheckEn = Date.now();
@@ -4753,7 +5109,10 @@
       shell.classList.toggle('collapsed', !visible);
       toggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
       toggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 7-7 7-1.4-1.4L15.2 13H5v-2h10.2l-4.6-4.6L12 5z"/></svg> ' + (visible ? 'Ocultar salida' : 'Mostrar salida');
-      if (visible) refrescarLogs();
+      if (visible) {
+        renderizarLogsDesdeCache();
+        refrescarLogs();
+      }
       else refrescarSenales();
     }
 
@@ -5137,6 +5496,7 @@
         if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status || 0}`);
         const datos = await respuesta.json();
         establecerConexion('ok');
+        state.ultimoRefrescoExitosoEn = Date.now();
 
         const listaEjecucion = Array.isArray(datos.running) ? datos.running : [];
         const conteoEjecucion = listaEjecucion.length;
@@ -5184,6 +5544,7 @@
             ? datos.config
             : { autoRestart: Boolean(datos.autoRestart) };
           aplicarConfigDashboard(configRemota, { refrescarLogs: false });
+          aplicarReanudacionAutomaticaSiCorresponde();
           const toggleAutoReinicio = $('auto-restart');
           if (toggleAutoReinicio) {
             toggleAutoReinicio.disabled = String(datos.modeConfig || datos.mode || '').toLowerCase() !== 'dev';
@@ -5289,11 +5650,32 @@
 
     function normalizarConfigDashboard(config) {
       const raw = config && typeof config === 'object' ? config : {};
+      const normalizarMs = (valor, fallback, min, max) => {
+        const n = Number(valor);
+        if (!Number.isFinite(n)) return fallback;
+        const r = Math.round(n);
+        return Math.min(max, Math.max(min, r));
+      };
+      const refreshForegroundMs = normalizarMs(
+        raw.refreshForegroundMs,
+        CONFIG_DASHBOARD_DEFAULT.refreshForegroundMs,
+        REFRESH_FOREGROUND_MIN_MS,
+        REFRESH_FOREGROUND_MAX_MS
+      );
+      const refreshBackgroundMsRaw = normalizarMs(
+        raw.refreshBackgroundMs,
+        CONFIG_DASHBOARD_DEFAULT.refreshBackgroundMs,
+        REFRESH_BACKGROUND_MIN_MS,
+        REFRESH_BACKGROUND_MAX_MS
+      );
+      const refreshBackgroundMs = Math.max(refreshBackgroundMsRaw, refreshForegroundMs);
       return {
         autoRestart: Boolean(raw.autoRestart),
         showFullLogs: Boolean(raw.showFullLogs),
         autoScroll: raw.autoScroll === undefined ? true : Boolean(raw.autoScroll),
-        pauseUpdates: Boolean(raw.pauseUpdates)
+        pauseUpdates: Boolean(raw.pauseUpdates),
+        refreshForegroundMs,
+        refreshBackgroundMs
       };
     }
 
@@ -5303,6 +5685,8 @@
       state.autoDesplazamiento = cfg.autoScroll;
       state.pausado = cfg.pauseUpdates;
       state.autoReinicio = cfg.autoRestart;
+      state.refreshForegroundMs = cfg.refreshForegroundMs;
+      state.refreshBackgroundMs = cfg.refreshBackgroundMs;
 
       const logsCompletos = $('full-logs');
       if (logsCompletos) logsCompletos.checked = state.mostrarCompleto;
@@ -5316,7 +5700,20 @@
       const toggleAutoReinicio = $('auto-restart');
       if (toggleAutoReinicio) toggleAutoReinicio.checked = state.autoReinicio;
 
+      const inputRefreshForeground = $('refresh-foreground-ms');
+      if (inputRefreshForeground) inputRefreshForeground.value = String(state.refreshForegroundMs);
+
+      const inputRefreshBackground = $('refresh-background-ms');
+      if (inputRefreshBackground) inputRefreshBackground.value = String(state.refreshBackgroundMs);
+
+      const filtroNivel = $('log-level-filter');
+      if (filtroNivel) filtroNivel.value = String(state.filtroNivelLog || 'all');
+
+      establecerTexto('refresh-foreground-current', `${Math.round(state.refreshForegroundMs / 100) / 10}s`);
+      establecerTexto('refresh-background-current', `${Math.round(state.refreshBackgroundMs / 100) / 10}s`);
+
       establecerChipPausa(state.pausado);
+      reprogramarRefrescoPeriodico({ refrescarAhora: false });
       if (opciones.refrescarLogs !== false) refrescarLogs();
     }
 
@@ -5347,8 +5744,10 @@
         const respuesta = await fetch('/api/config');
         const data = await respuesta.json();
         aplicarConfigDashboard(data);
+        aplicarReanudacionAutomaticaSiCorresponde();
       } catch {
         aplicarConfigDashboard(CONFIG_DASHBOARD_DEFAULT);
+        aplicarReanudacionAutomaticaSiCorresponde();
       }
     }
 
@@ -5475,8 +5874,36 @@
       }
     }
 
+    function construirTextoBusquedaLog(entrada) {
+      const textoMeta = entrada && entrada.meta && typeof entrada.meta === 'object'
+        ? (() => { try { return JSON.stringify(entrada.meta); } catch { return ''; } })()
+        : '';
+      return `${entrada?.time || ''} ${entrada?.source || ''} ${entrada?.level || ''} ${entrada?.text || ''} ${textoMeta}`.toLowerCase();
+    }
+
+    function obtenerLimiteRenderLogs() {
+      return state.mostrarCompleto ? LOG_RENDER_LIMIT_DETAILED : LOG_RENDER_LIMIT_COMPACT;
+    }
+
+    function actualizarResumenRenderLogs(visibles, total, limite) {
+      establecerTexto('log-visible-count', `${visibles} visibles`);
+      establecerTexto('log-total-count', `${total} total`);
+      establecerTexto('log-render-limit', `límite ${limite}`);
+    }
+
+    function obtenerEntradasFiltradasLogs(entradas) {
+      const filtroTexto = state.filtro.trim().toLowerCase();
+      const filtroNivel = String(state.filtroNivelLog || 'all').toLowerCase();
+      const entradasSeguras = Array.isArray(entradas) ? entradas : [];
+      return entradasSeguras.filter((entrada) => {
+        const nivel = normalizarNivel(entrada?.level);
+        if (filtroNivel !== 'all' && nivel !== filtroNivel) return false;
+        if (!filtroTexto) return true;
+        return construirTextoBusquedaLog(entrada).includes(filtroTexto);
+      });
+    }
+
     function renderizarLogs(entradas) {
-      const filtro = state.filtro.trim().toLowerCase();
       const contenedorLog = $('log');
       if (!contenedorLog) return;
       contenedorLog.innerHTML = '';
@@ -5486,42 +5913,45 @@
         offline.className = 'log-line';
         offline.textContent = 'Sin conexión: no se pudo obtener la salida de logs.';
         contenedorLog.appendChild(offline);
+        actualizarResumenRenderLogs(0, 0, obtenerLimiteRenderLogs());
         return;
       }
 
-      const entradasSeguras = Array.isArray(entradas) ? entradas : [];
-      const totalEntradas = entradasSeguras.length;
+      const filtradas = obtenerEntradasFiltradasLogs(entradas);
+      const limite = obtenerLimiteRenderLogs();
+      const recortadas = filtradas.length > limite ? filtradas.slice(-limite) : filtradas;
+      actualizarResumenRenderLogs(recortadas.length, Array.isArray(entradas) ? entradas.length : 0, limite);
 
       const fragmento = document.createDocumentFragment();
-      let visibles = 0;
-
-      entradasSeguras.forEach((entrada) => {
-        const textoMeta = entrada && entrada.meta && typeof entrada.meta === 'object'
-          ? (() => { try { return JSON.stringify(entrada.meta); } catch { return ''; } })()
-          : '';
-        const texto = `${entrada.time} ${entrada.source} ${entrada.level} ${entrada.text} ${textoMeta}`;
-        if (filtro && !texto.toLowerCase().includes(filtro)) return;
+      recortadas.forEach((entrada) => {
+        const nivel = normalizarNivel(entrada?.level);
+        const tieneMeta = entrada && entrada.meta && typeof entrada.meta === 'object';
 
         const linea = document.createElement('div');
-        const tieneMeta = entrada && entrada.meta && typeof entrada.meta === 'object';
-        linea.className = `log-line ${entrada.level} ${tieneMeta ? 'has-meta' : ''}`.trim();
+        linea.className = `log-line ${nivel} ${tieneMeta ? 'has-meta' : ''}`.trim();
+
+        const cabecera = document.createElement('div');
+        cabecera.className = 'log-line-head';
 
         const meta = document.createElement('span');
         meta.className = 'meta';
-        meta.textContent = `[${entrada.time}] [${entrada.source}]`;
+        meta.textContent = `[${entrada?.time || '-'}] [${entrada?.source || '-'}]`;
 
         const etiquetas = document.createElement('span');
         etiquetas.className = 'meta-tag';
         const pildora = document.createElement('span');
         pildora.className = 'pill';
-        pildora.textContent = String(entrada.level || 'info').toUpperCase();
+        pildora.textContent = String(nivel || 'info').toUpperCase();
         etiquetas.appendChild(pildora);
 
-        const contenido = document.createElement('span');
-        contenido.textContent = ` ${entrada.text}`;
+        cabecera.appendChild(meta);
+        cabecera.appendChild(etiquetas);
 
-        linea.appendChild(meta);
-        linea.appendChild(etiquetas);
+        const contenido = document.createElement('div');
+        contenido.className = 'log-line-text';
+        contenido.textContent = String(entrada?.text || '');
+
+        linea.appendChild(cabecera);
         linea.appendChild(contenido);
 
         if (tieneMeta) {
@@ -5529,19 +5959,29 @@
           detalles.className = 'meta-json';
           try { detalles.textContent = JSON.stringify(entrada.meta, null, 2); } catch { detalles.textContent = ''; }
           linea.appendChild(detalles);
-          linea.addEventListener('click', () => {
-            linea.classList.toggle('open');
+          linea.tabIndex = 0;
+          linea.setAttribute('role', 'button');
+          linea.setAttribute('aria-expanded', 'false');
+          const alternar = () => {
+            const abierto = linea.classList.toggle('open');
+            linea.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+          };
+          linea.addEventListener('click', alternar);
+          linea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              alternar();
+            }
           });
         }
 
         fragmento.appendChild(linea);
-        visibles += 1;
       });
 
-      if (visibles === 0) {
+      if (recortadas.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'log-line';
-        if (totalEntradas === 0 && !filtro) {
+        if (!Array.isArray(entradas) || entradas.length === 0) {
           empty.textContent = 'Aún no hay logs. Inicia un entorno o espera actividad.';
         } else {
           empty.textContent = 'Sin salida para el filtro actual.';
@@ -5556,6 +5996,18 @@
       }
     }
 
+    function renderizarLogsDesdeCache() {
+      renderizarLogs(state.logsCache || []);
+    }
+
+    function programarRenderLogsFiltrados() {
+      if (state.logFilterDebounceId) clearTimeout(state.logFilterDebounceId);
+      state.logFilterDebounceId = setTimeout(() => {
+        state.logFilterDebounceId = 0;
+        renderizarLogsDesdeCache();
+      }, LOG_FILTER_DEBOUNCE_MS);
+    }
+
     async function refrescarLogs() {
       if (!state.logsVisibles) return;
       try {
@@ -5563,15 +6015,17 @@
         const respuesta = await fetch(consulta);
         const datos = await respuesta.json();
         const entradas = datos.entries || [];
+        state.logsCache = Array.isArray(entradas) ? entradas : [];
         state.logsOkRecientes = true;
         state.ultimoErrorLogs = '';
-        renderizarLogs(entradas);
-        actualizarSenales(entradas);
+        renderizarLogsDesdeCache();
+        actualizarSenales(state.logsCache);
       } catch (error) {
         state.logsOkRecientes = false;
         state.ultimoErrorLogs = normalizarMensajeError(error);
+        state.logsCache = [];
         mostrarToastErrorSiAplica('No se pudo obtener la salida de logs.');
-        renderizarLogs([]);
+        renderizarLogsDesdeCache();
         actualizarSenales([]);
       }
     }
@@ -5786,7 +6240,16 @@
     const pausarActualizaciones = $('pause-updates');
     if (pausarActualizaciones) {
       pausarActualizaciones.addEventListener('change', (event) => {
-        state.pausado = event.target.checked;
+        const quierePausar = Boolean(event.target.checked);
+        if (quierePausar && usuarioEstaViendoDashboard()) {
+          state.pausado = false;
+          event.target.checked = false;
+          establecerChipPausa(false);
+          mostrarToast('La actualización no se pausa mientras estás viendo el dashboard.', 'info');
+          guardarConfigDashboard({ pauseUpdates: false });
+          return;
+        }
+        state.pausado = quierePausar;
         establecerChipPausa(state.pausado);
         mostrarToast(state.pausado ? 'Actualizaciones pausadas' : 'Actualizaciones reanudadas', state.pausado ? 'warn' : 'ok');
         guardarConfigDashboard({ pauseUpdates: state.pausado });
@@ -5800,6 +6263,45 @@
         mostrarToast(value ? 'Auto-reinicio activado' : 'Auto-reinicio desactivado', value ? 'ok' : 'warn');
         guardarConfigDashboard({ autoRestart: value });
       });
+    }
+
+    const aplicarCambiosIntervalosRefresco = () => {
+      const inputForeground = $('refresh-foreground-ms');
+      const inputBackground = $('refresh-background-ms');
+      if (!inputForeground || !inputBackground) return;
+
+      const foregroundRaw = Number(inputForeground.value || CONFIG_DASHBOARD_DEFAULT.refreshForegroundMs);
+      const backgroundRaw = Number(inputBackground.value || CONFIG_DASHBOARD_DEFAULT.refreshBackgroundMs);
+
+      const foregroundMs = Math.min(
+        REFRESH_FOREGROUND_MAX_MS,
+        Math.max(REFRESH_FOREGROUND_MIN_MS, Math.round(Number.isFinite(foregroundRaw) ? foregroundRaw : CONFIG_DASHBOARD_DEFAULT.refreshForegroundMs))
+      );
+      const backgroundMsBase = Math.min(
+        REFRESH_BACKGROUND_MAX_MS,
+        Math.max(REFRESH_BACKGROUND_MIN_MS, Math.round(Number.isFinite(backgroundRaw) ? backgroundRaw : CONFIG_DASHBOARD_DEFAULT.refreshBackgroundMs))
+      );
+      const backgroundMs = Math.max(backgroundMsBase, foregroundMs);
+
+      inputForeground.value = String(foregroundMs);
+      inputBackground.value = String(backgroundMs);
+
+      guardarConfigDashboard({
+        refreshForegroundMs: foregroundMs,
+        refreshBackgroundMs: backgroundMs
+      }, 'Intervalos de refresco actualizados');
+    };
+
+    const inputRefreshForeground = $('refresh-foreground-ms');
+    if (inputRefreshForeground) {
+      inputRefreshForeground.addEventListener('change', aplicarCambiosIntervalosRefresco);
+      inputRefreshForeground.addEventListener('blur', aplicarCambiosIntervalosRefresco);
+    }
+
+    const inputRefreshBackground = $('refresh-background-ms');
+    if (inputRefreshBackground) {
+      inputRefreshBackground.addEventListener('change', aplicarCambiosIntervalosRefresco);
+      inputRefreshBackground.addEventListener('blur', aplicarCambiosIntervalosRefresco);
     }
 
     const botonResetConfig = $('reset-config');
@@ -5841,7 +6343,15 @@
     if (filtroLogs) {
       filtroLogs.addEventListener('input', (event) => {
         state.filtro = event.target.value;
-        refrescarLogs();
+        programarRenderLogsFiltrados();
+      });
+    }
+
+    const filtroNivelLogs = $('log-level-filter');
+    if (filtroNivelLogs) {
+      filtroNivelLogs.addEventListener('change', (event) => {
+        state.filtroNivelLog = String(event.target.value || 'all');
+        renderizarLogsDesdeCache();
       });
     }
 
@@ -5849,9 +6359,21 @@
     if (limpiarFiltro) {
       limpiarFiltro.addEventListener('click', () => {
         state.filtro = '';
+        state.filtroNivelLog = 'all';
         const input = $('log-filter');
         if (input) input.value = '';
-        refrescarLogs();
+        const inputNivel = $('log-level-filter');
+        if (inputNivel) inputNivel.value = 'all';
+        renderizarLogsDesdeCache();
+      });
+    }
+
+    const botonIrFinalLogs = $('log-scroll-bottom');
+    if (botonIrFinalLogs) {
+      botonIrFinalLogs.addEventListener('click', () => {
+        const contenedorLog = $('log');
+        if (!contenedorLog) return;
+        contenedorLog.scrollTop = contenedorLog.scrollHeight;
       });
     }
 
@@ -5935,6 +6457,23 @@
       establecerPestana(tab);
     });
 
+    window.addEventListener('focus', () => {
+      aplicarReanudacionAutomaticaSiCorresponde();
+      reprogramarRefrescoPeriodico({ refrescarAhora: true });
+    });
+    window.addEventListener('pageshow', () => {
+      aplicarReanudacionAutomaticaSiCorresponde();
+      reprogramarRefrescoPeriodico({ refrescarAhora: true });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        aplicarReanudacionAutomaticaSiCorresponde();
+        reprogramarRefrescoPeriodico({ refrescarAhora: true });
+        return;
+      }
+      reprogramarRefrescoPeriodico({ refrescarAhora: false });
+    });
+
     setInterval(() => aplicarBloqueTiempo(), 60 * 1000);
     establecerChipPausa(false);
     establecerConexion('unknown');
@@ -5949,15 +6488,15 @@
     refrescarSenales();
     actualizarUiMongoExpress();
 
+    reprogramarRefrescoPeriodico({ refrescarAhora: false });
+
     setInterval(() => {
-      if (state.pausado) return;
-      refrescarEstado();
-      if (state.logsVisibles) refrescarLogs();
-      else refrescarSenales();
-      if (state.pestanaActiva === 'status') refrescarEventos();
-      if (state.pestanaActiva === 'config') refrescarRepairProgress();
-      if (state.pestanaActiva === 'db') refrescarMongoExpress();
-    }, 3000);
+      actualizarTiemposHealth(Date.now());
+    }, 1000);
+
+    setInterval(() => {
+      vigilarEstadoDesactualizado();
+    }, STALE_WATCHDOG_TICK_MS);
   </script>
 </body>
 </html>

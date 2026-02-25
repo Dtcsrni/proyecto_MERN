@@ -88,18 +88,25 @@ export function BancoGestionTemas({
   };
 }) {
   return (
-    <details className="colapsable" open={temasAbierto} onToggle={(event) => setTemasAbierto((event.currentTarget as HTMLDetailsElement).open)}>
-      <summary><b>Temas</b>{periodoId ? ` (${temasBanco.length})` : ''}</summary>
-      <div className="campo-inline">
+    <details
+      className="colapsable banco-colapsable banco-colapsable--temas"
+      open={temasAbierto}
+      onToggle={(event) => setTemasAbierto((event.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary>
+        <b>Temas</b>
+        {periodoId ? ` (${temasBanco.length})` : ''}
+      </summary>
+      <div className="campo-inline banco-temas__crear">
         <input value={temaNuevo} onChange={(event) => setTemaNuevo(event.target.value)} placeholder="Nuevo tema (ej. Funciones)" aria-label="Nuevo tema" disabled={bloqueoEdicion} />
         <Boton type="button" variante="secundario" cargando={creandoTema} disabled={!periodoId || !temaNuevo.trim() || bloqueoEdicion} onClick={() => void crearTemaBanco()}>Agregar</Boton>
       </div>
       {cargandoTemas && <InlineMensaje tipo="info" leading={<Spinner />}>Cargando temas…</InlineMensaje>}
-      <ul className="lista lista-items">
+      <ul className="lista lista-items banco-temas__lista">
         {periodoId && !cargandoTemas && temasBanco.length === 0 && <li>No hay temas. Crea el primero arriba.</li>}
         {temasBanco.map((t) => (
           <li key={t._id}>
-            <div className="item-glass">
+            <div className="item-glass banco-temas__item">
               <div className="item-row">
                 <div>
                   <div className="item-title">{t.nombre}</div>

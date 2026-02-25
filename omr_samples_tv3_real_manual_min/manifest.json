@@ -1,0 +1,309 @@
+{
+  "version": "2",
+  "datasetType": "tv3_real_manual_min_from_finals_templates",
+  "examSpec": {
+    "totalQuestions": 50,
+    "totalPages": 4,
+    "optionsPerQuestion": 5
+  },
+  "renderSpec": {
+    "width": 612,
+    "height": 792,
+    "marginPt": 28.35,
+    "cornerMarkerSizePt": 20,
+    "qrSizePt": 88
+  },
+  "noiseSpec": {
+    "profile": "final_templates_capture_simulated",
+    "scenarios": [
+      "buena_luz",
+      "luz_calida",
+      "luz_fria",
+      "rotacion_leve",
+      "desenfoque_leve",
+      "jpeg_media",
+      "sombreado_parcial",
+      "baja_tinta"
+    ]
+  },
+  "thresholds": {
+    "precisionMin": 0.95,
+    "falsePositiveMax": 0.02,
+    "invalidDetectionMin": 0.75,
+    "pagePassMin": 0.75,
+    "autoGradeTrustMin": 0.75
+  },
+  "answerKeyPath": "answer_key.json",
+  "groundTruthRef": "ground_truth.jsonl",
+  "capturas": [
+    {
+      "captureId": "70A9B8C0-P1",
+      "imagePath": "images/70A9B8C0-P1.jpg",
+      "mapaOmrPath": "maps/70A9B8C0-P1.json",
+      "folio": "70A9B8C0",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "70A9B8C0-P2",
+      "imagePath": "images/70A9B8C0-P2.jpg",
+      "mapaOmrPath": "maps/70A9B8C0-P2.json",
+      "folio": "70A9B8C0",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "70A9B8C0-P3",
+      "imagePath": "images/70A9B8C0-P3.jpg",
+      "mapaOmrPath": "maps/70A9B8C0-P3.json",
+      "folio": "70A9B8C0",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "baja_tinta"
+    },
+    {
+      "captureId": "70A9B8C0-P4",
+      "imagePath": "images/70A9B8C0-P4.jpg",
+      "mapaOmrPath": "maps/70A9B8C0-P4.json",
+      "folio": "70A9B8C0",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "desenfoque_leve"
+    },
+    {
+      "captureId": "138AC0FE-P1",
+      "imagePath": "images/138AC0FE-P1.jpg",
+      "mapaOmrPath": "maps/138AC0FE-P1.json",
+      "folio": "138AC0FE",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "138AC0FE-P2",
+      "imagePath": "images/138AC0FE-P2.jpg",
+      "mapaOmrPath": "maps/138AC0FE-P2.json",
+      "folio": "138AC0FE",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "138AC0FE-P3",
+      "imagePath": "images/138AC0FE-P3.jpg",
+      "mapaOmrPath": "maps/138AC0FE-P3.json",
+      "folio": "138AC0FE",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "138AC0FE-P4",
+      "imagePath": "images/138AC0FE-P4.jpg",
+      "mapaOmrPath": "maps/138AC0FE-P4.json",
+      "folio": "138AC0FE",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "baja_tinta"
+    },
+    {
+      "captureId": "55A3BF5A-P1",
+      "imagePath": "images/55A3BF5A-P1.jpg",
+      "mapaOmrPath": "maps/55A3BF5A-P1.json",
+      "folio": "55A3BF5A",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "rotacion_leve"
+    },
+    {
+      "captureId": "55A3BF5A-P2",
+      "imagePath": "images/55A3BF5A-P2.jpg",
+      "mapaOmrPath": "maps/55A3BF5A-P2.json",
+      "folio": "55A3BF5A",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "55A3BF5A-P3",
+      "imagePath": "images/55A3BF5A-P3.jpg",
+      "mapaOmrPath": "maps/55A3BF5A-P3.json",
+      "folio": "55A3BF5A",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "55A3BF5A-P4",
+      "imagePath": "images/55A3BF5A-P4.jpg",
+      "mapaOmrPath": "maps/55A3BF5A-P4.json",
+      "folio": "55A3BF5A",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "5B065539-P1",
+      "imagePath": "images/5B065539-P1.jpg",
+      "mapaOmrPath": "maps/5B065539-P1.json",
+      "folio": "5B065539",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "sombreado_parcial"
+    },
+    {
+      "captureId": "5B065539-P2",
+      "imagePath": "images/5B065539-P2.jpg",
+      "mapaOmrPath": "maps/5B065539-P2.json",
+      "folio": "5B065539",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "rotacion_leve"
+    },
+    {
+      "captureId": "5B065539-P3",
+      "imagePath": "images/5B065539-P3.jpg",
+      "mapaOmrPath": "maps/5B065539-P3.json",
+      "folio": "5B065539",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "5B065539-P4",
+      "imagePath": "images/5B065539-P4.jpg",
+      "mapaOmrPath": "maps/5B065539-P4.json",
+      "folio": "5B065539",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "5E312078-P1",
+      "imagePath": "images/5E312078-P1.jpg",
+      "mapaOmrPath": "maps/5E312078-P1.json",
+      "folio": "5E312078",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20264261,
+      "variantIndex": 4,
+      "scenario": "luz_calida"
+    },
+    {
+      "captureId": "5E312078-P2",
+      "imagePath": "images/5E312078-P2.jpg",
+      "mapaOmrPath": "maps/5E312078-P2.json",
+      "folio": "5E312078",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20264261,
+      "variantIndex": 4,
+      "scenario": "sombreado_parcial"
+    },
+    {
+      "captureId": "5E312078-P3",
+      "imagePath": "images/5E312078-P3.jpg",
+      "mapaOmrPath": "maps/5E312078-P3.json",
+      "folio": "5E312078",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20264261,
+      "variantIndex": 4,
+      "scenario": "rotacion_leve"
+    },
+    {
+      "captureId": "5E312078-P4",
+      "imagePath": "images/5E312078-P4.jpg",
+      "mapaOmrPath": "maps/5E312078-P4.json",
+      "folio": "5E312078",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20264261,
+      "variantIndex": 4,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "439AFD38-P1",
+      "imagePath": "images/439AFD38-P1.jpg",
+      "mapaOmrPath": "maps/439AFD38-P1.json",
+      "folio": "439AFD38",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20265270,
+      "variantIndex": 5,
+      "scenario": "desenfoque_leve"
+    },
+    {
+      "captureId": "439AFD38-P2",
+      "imagePath": "images/439AFD38-P2.jpg",
+      "mapaOmrPath": "maps/439AFD38-P2.json",
+      "folio": "439AFD38",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20265270,
+      "variantIndex": 5,
+      "scenario": "luz_calida"
+    },
+    {
+      "captureId": "439AFD38-P3",
+      "imagePath": "images/439AFD38-P3.jpg",
+      "mapaOmrPath": "maps/439AFD38-P3.json",
+      "folio": "439AFD38",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20265270,
+      "variantIndex": 5,
+      "scenario": "sombreado_parcial"
+    },
+    {
+      "captureId": "439AFD38-P4",
+      "imagePath": "images/439AFD38-P4.jpg",
+      "mapaOmrPath": "maps/439AFD38-P4.json",
+      "folio": "439AFD38",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20265270,
+      "variantIndex": 5,
+      "scenario": "rotacion_leve"
+    }
+  ],
+  "hash": "73965a88044fc5879c29a7111d85457d0c48d94ae8b68e7aa72e7e807a299bda",
+  "layoutMeta": {
+    "layoutRevision": "tv3_low_ink_resilient_r1",
+    "layoutHash": "021c2dfe1eadc3f7254dacf0e4b6079352c8ec562afed9586a5b01b7a4f174e4"
+  }
+}

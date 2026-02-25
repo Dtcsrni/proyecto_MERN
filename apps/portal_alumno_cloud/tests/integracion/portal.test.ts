@@ -39,6 +39,7 @@ describe('portal alumno', () => {
       .post('/api/portal/sincronizar')
       .set({ 'x-api-key': apiKey })
       .send({
+        schemaVersion: 3,
         periodo: { _id: periodoId },
         alumnos: [{ _id: alumnoId, matricula: 'CUH512410168', nombreCompleto: 'Alumno Uno', grupo: 'A' }],
         calificaciones: [
@@ -66,7 +67,12 @@ describe('portal alumno', () => {
         ],
         examenes: [{ examenGeneradoId: examenId, folio, pdfComprimidoBase64 }],
         banderas: [{ examenGeneradoId: examenId, tipo: 'similitud' }],
-        codigoAcceso: { codigo: 'ABC123', expiraEn: new Date(Date.now() + 60 * 60 * 1000).toISOString() }
+        codigoAcceso: { codigo: 'ABC123', expiraEn: new Date(Date.now() + 60 * 60 * 1000).toISOString() },
+        perfilAlumno: [{ alumnoId, matricula: 'CUH512410168', nombreCompleto: 'Alumno Uno', grupo: 'A' }],
+        materiasAlumno: [{ alumnoId, materiaId: periodoId, nombre: 'Lógica de Programación', estado: 'activa' }],
+        agendaAlumno: [{ alumnoId, agendaId: `ag-${periodoId}`, titulo: 'Publicación', fecha: new Date().toISOString(), tipo: 'publicacion' }],
+        avisosAlumno: [{ alumnoId, avisoId: `av-${periodoId}`, titulo: 'Aviso', mensaje: 'Resultados publicados', severidad: 'info' }],
+        historialAlumno: [{ alumnoId, historialId: `hist-${folio}`, folio, tipoExamen: 'parcial', calificacionTexto: '4', fecha: new Date().toISOString() }]
       })
       .expect(200);
 
@@ -94,6 +100,23 @@ describe('portal alumno', () => {
       .set({ Authorization: `Bearer ${token}` })
       .expect(200);
     expect(pdf.header['content-type']).toContain('application/pdf');
+
+    const perfil = await request(app).get('/api/portal/perfil').set({ Authorization: `Bearer ${token}` }).expect(200);
+    expect(perfil.body?.ok).toBe(true);
+    expect(perfil.body?.data?.perfil?.matricula).toBe('CUH512410168');
+
+    const materias = await request(app).get('/api/portal/materias').set({ Authorization: `Bearer ${token}` }).expect(200);
+    expect(Array.isArray(materias.body?.data?.materias)).toBe(true);
+    expect(materias.body?.data?.materias?.[0]?.nombre).toBe('Lógica de Programación');
+
+    const agenda = await request(app).get('/api/portal/agenda').set({ Authorization: `Bearer ${token}` }).expect(200);
+    expect(Array.isArray(agenda.body?.data?.agenda)).toBe(true);
+
+    const avisos = await request(app).get('/api/portal/avisos').set({ Authorization: `Bearer ${token}` }).expect(200);
+    expect(Array.isArray(avisos.body?.data?.avisos)).toBe(true);
+
+    const historial = await request(app).get('/api/portal/historial').set({ Authorization: `Bearer ${token}` }).expect(200);
+    expect(Array.isArray(historial.body?.data?.historial)).toBe(true);
   });
 
   it('requiere api key para sincronizar', async () => {

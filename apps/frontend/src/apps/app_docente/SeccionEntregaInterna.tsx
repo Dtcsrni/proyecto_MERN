@@ -241,9 +241,17 @@ export function SeccionEntrega({
     });
   }, [examenesFiltrados]);
 
+  const resumenEntrega = useMemo(() => {
+    const total = examenesFiltrados.length;
+    const entregadosCount = entregados.length;
+    const pendientesCount = pendientes.length;
+    const avance = total > 0 ? Math.round((entregadosCount / total) * 100) : 0;
+    return { total, entregadosCount, pendientesCount, avance };
+  }, [entregados.length, examenesFiltrados.length, pendientes.length]);
+
   return (
     <>
-      <div className="panel">
+      <div className="panel entregas-panel">
         <h2>
           <Icono nombre="recepcion" /> Entrega de examenes
         </h2>
@@ -261,6 +269,24 @@ export function SeccionEntrega({
             </li>
           </ul>
         </AyudaFormulario>
+        <div className="entregas-resumen" aria-live="polite">
+          <div className="entregas-resumen__item">
+            <span>Total</span>
+            <b>{resumenEntrega.total}</b>
+          </div>
+          <div className="entregas-resumen__item">
+            <span>Entregados</span>
+            <b>{resumenEntrega.entregadosCount}</b>
+          </div>
+          <div className="entregas-resumen__item">
+            <span>Pendientes</span>
+            <b>{resumenEntrega.pendientesCount}</b>
+          </div>
+          <div className="entregas-resumen__item">
+            <span>Avance</span>
+            <b>{resumenEntrega.avance}%</b>
+          </div>
+        </div>
       </div>
 
       <SeccionRegistroEntrega
@@ -271,13 +297,11 @@ export function SeccionEntrega({
         examenesPorFolio={examenesPorFolio}
       />
 
-      <div className="panel">
+      <div className="panel entregas-panel">
         <div className="item-row">
           <div>
             <h3>Estado de entregas</h3>
-            <div className="nota">
-              Total: {examenesFiltrados.length} · Entregados: {entregados.length} · Pendientes: {pendientes.length}
-            </div>
+            <div className="nota">Total: {examenesFiltrados.length} · Entregados: {entregados.length} · Pendientes: {pendientes.length}</div>
           </div>
           <div className="item-actions">
             <Boton type="button" variante="secundario" onClick={() => void cargarExamenes()}>
@@ -286,26 +310,24 @@ export function SeccionEntrega({
           </div>
         </div>
 
-        <label className="campo">
-          Materia
-          <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
-            <option value="">Selecciona</option>
-            {periodos.map((periodo) => (
-              <option key={periodo._id} value={periodo._id}>
-                {periodo.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="entregas-filtros">
+          <label className="campo">
+            Materia
+            <select value={periodoId} onChange={(event) => setPeriodoId(event.target.value)}>
+              <option value="">Selecciona</option>
+              {periodos.map((periodo) => (
+                <option key={periodo._id} value={periodo._id}>
+                  {periodo.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="campo">
-          Buscar (folio o alumno)
-          <input
-            value={filtro}
-            onChange={(event) => setFiltro(event.target.value)}
-            placeholder="FOLIO-000123 o 2024-001"
-          />
-        </label>
+          <label className="campo">
+            Buscar (folio o alumno)
+            <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="FOLIO-000123 o 2024-001" />
+          </label>
+        </div>
 
         {mensaje && <InlineMensaje tipo="error">{mensaje}</InlineMensaje>}
         {cargando && (
@@ -314,7 +336,7 @@ export function SeccionEntrega({
           </p>
         )}
 
-        <div className="resultado">
+        <div className="resultado entregas-listado">
           <h3>Entregados</h3>
           {entregados.length === 0 && !cargando && <p className="nota">Aun no hay entregas registradas.</p>}
           <ul className="lista lista-items">
@@ -330,7 +352,7 @@ export function SeccionEntrega({
               const bloqueando = deshaciendoFolio === examen.folio;
               return (
                 <li key={examen._id}>
-                  <div className="item-glass">
+                  <div className="item-glass entregas-listado__item entregas-listado__item--ok">
                     <div className="item-row">
                       <div>
                         <div className="item-title">Folio {examen.folio}</div>
@@ -365,7 +387,7 @@ export function SeccionEntrega({
           </ul>
         </div>
 
-        <div className="resultado">
+        <div className="resultado entregas-listado">
           <h3>Pendientes</h3>
           {pendientes.length === 0 && !cargando && <p className="nota">No hay pendientes.</p>}
           <ul className="lista lista-items">
@@ -380,7 +402,7 @@ export function SeccionEntrega({
                 : '-';
               return (
                 <li key={examen._id}>
-                  <div className="item-glass">
+                  <div className="item-glass entregas-listado__item entregas-listado__item--pending">
                     <div className="item-row">
                       <div>
                         <div className="item-title">Folio {examen.folio}</div>

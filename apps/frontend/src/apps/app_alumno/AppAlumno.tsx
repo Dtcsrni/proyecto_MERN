@@ -60,6 +60,42 @@ type Resultado = {
   };
 };
 
+type PerfilAlumno = {
+  matricula?: string;
+  nombreCompleto?: string;
+  grupo?: string;
+};
+
+type MateriaAlumno = {
+  materiaId?: string;
+  nombre?: string;
+  estado?: string;
+};
+
+type AgendaAlumno = {
+  agendaId?: string;
+  titulo?: string;
+  descripcion?: string;
+  fecha?: string;
+  tipo?: string;
+};
+
+type AvisoAlumno = {
+  avisoId?: string;
+  titulo?: string;
+  mensaje?: string;
+  severidad?: string;
+  publicadoEn?: string;
+};
+
+type HistorialAlumno = {
+  historialId?: string;
+  folio?: string;
+  tipoExamen?: string;
+  calificacionTexto?: string;
+  fecha?: string;
+};
+
 export function AppAlumno() {
   const version = obtenerVersionApp();
   const [codigo, setCodigo] = useState('');
@@ -74,6 +110,11 @@ export function AppAlumno() {
   const [comentarioRevisionPorFolio, setComentarioRevisionPorFolio] = useState<Record<string, string>>({});
   const [conformidadPorFolio, setConformidadPorFolio] = useState<Record<string, boolean>>({});
   const [cargando, setCargando] = useState(false);
+  const [perfil, setPerfil] = useState<PerfilAlumno | null>(null);
+  const [materias, setMaterias] = useState<MateriaAlumno[]>([]);
+  const [agenda, setAgenda] = useState<AgendaAlumno[]>([]);
+  const [avisos, setAvisos] = useState<AvisoAlumno[]>([]);
+  const [historial, setHistorial] = useState<HistorialAlumno[]>([]);
   const intentosFallidosRef = useRef(0);
   const [cooldownHasta, setCooldownHasta] = useState(0);
 
@@ -171,6 +212,7 @@ export function AppAlumno() {
       if (Object.keys(detallesIniciales).length > 0) {
         setDetallesPorFolio((prev) => ({ ...prev, ...detallesIniciales }));
       }
+      await cargarContextoAcademico();
       void clientePortal.registrarEventosUso({
         eventos: [
           {
@@ -197,6 +239,25 @@ export function AppAlumno() {
       });
     } finally {
       setCargando(false);
+    }
+  }
+
+  async function cargarContextoAcademico() {
+    try {
+      const [perfilResp, materiasResp, agendaResp, avisosResp, historialResp] = await Promise.all([
+        clientePortal.obtener<{ ok: boolean; data?: { perfil?: PerfilAlumno | null } }>('/perfil'),
+        clientePortal.obtener<{ ok: boolean; data?: { materias?: MateriaAlumno[] } }>('/materias'),
+        clientePortal.obtener<{ ok: boolean; data?: { agenda?: AgendaAlumno[] } }>('/agenda'),
+        clientePortal.obtener<{ ok: boolean; data?: { avisos?: AvisoAlumno[] } }>('/avisos'),
+        clientePortal.obtener<{ ok: boolean; data?: { historial?: HistorialAlumno[] } }>('/historial')
+      ]);
+      setPerfil((perfilResp?.data?.perfil ?? null) as PerfilAlumno | null);
+      setMaterias(Array.isArray(materiasResp?.data?.materias) ? materiasResp.data.materias : []);
+      setAgenda(Array.isArray(agendaResp?.data?.agenda) ? agendaResp.data.agenda.slice(0, 6) : []);
+      setAvisos(Array.isArray(avisosResp?.data?.avisos) ? avisosResp.data.avisos.slice(0, 6) : []);
+      setHistorial(Array.isArray(historialResp?.data?.historial) ? historialResp.data.historial.slice(0, 10) : []);
+    } catch {
+      // Best-effort: contexto académico no bloquea consulta principal.
     }
   }
 
@@ -441,6 +502,44 @@ export function AppAlumno() {
       {token && resultados.length > 0 && (
         <div className="resultado">
           <h3>Resultados disponibles</h3>
+          <div className="guia-grid">
+            <div className="item-glass">
+              <div className="item-title">Perfil</div>
+              <div className="item-meta">
+                <span>{perfil?.nombreCompleto || '-'}</span>
+                <span>Matrícula: {perfil?.matricula || '-'}</span>
+                <span>Grupo: {perfil?.grupo || '-'}</span>
+              </div>
+            </div>
+            <div className="item-glass">
+              <div className="item-title">Materias</div>
+              <div className="item-meta">
+                <span>Total: {materias.length}</span>
+                <span>{materias.slice(0, 2).map((m) => m.nombre).filter(Boolean).join(' · ') || '-'}</span>
+              </div>
+            </div>
+            <div className="item-glass">
+              <div className="item-title">Agenda</div>
+              <div className="item-meta">
+                <span>Eventos: {agenda.length}</span>
+                <span>{agenda[0]?.titulo || '-'}</span>
+              </div>
+            </div>
+            <div className="item-glass">
+              <div className="item-title">Avisos</div>
+              <div className="item-meta">
+                <span>Activos: {avisos.length}</span>
+                <span>{avisos[0]?.titulo || '-'}</span>
+              </div>
+            </div>
+            <div className="item-glass">
+              <div className="item-title">Historial</div>
+              <div className="item-meta">
+                <span>Registros: {historial.length}</span>
+                <span>{historial[0]?.folio || '-'}</span>
+              </div>
+            </div>
+          </div>
           <HelperPanel
             titulo="Interpretacion de resultados"
             descripcion="Puedes revisar cada reactivo comparando la clave correcta con tu respuesta detectada."

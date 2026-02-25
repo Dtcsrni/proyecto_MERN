@@ -239,4 +239,31 @@ describe('periodos (materias)', () => {
     expect(banco.body.preguntas.length).toBe(1);
     expect(banco.body.preguntas[0].activo).toBe(false);
   });
+
+  it('permite editar datos de una materia activa', async () => {
+    const token = await registrar('docente-edit@local.test');
+    const periodoId = await crearPeriodo(token, 'Materia Editable');
+
+    const actualizar = await request(app)
+      .post(`/api/periodos/${periodoId}/actualizar`)
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        nombre: 'Materia Editable 2',
+        fechaInicio: '2025-02-01',
+        fechaFin: '2025-02-28',
+        grupos: ['A1', 'B1']
+      })
+      .expect(200);
+
+    expect(actualizar.body.ok).toBe(true);
+    expect(actualizar.body.periodo?.nombre).toBe('Materia Editable 2');
+    expect(Array.isArray(actualizar.body.periodo?.grupos)).toBe(true);
+    expect(actualizar.body.periodo?.grupos).toEqual(['A1', 'B1']);
+
+    const activas = await request(app)
+      .get('/api/periodos')
+      .set({ Authorization: `Bearer ${token}` })
+      .expect(200);
+    expect(activas.body.periodos[0]?.nombre).toBe('Materia Editable 2');
+  });
 });

@@ -23,3 +23,13 @@ Variables relevantes (ver lista completa en `../../docs/AUTO_ENV.md`):
 Docs recomendadas:
 - `../../docs/DESPLIEGUE.md`
 - `../../docs/SEGURIDAD.md`
+
+## Endpoints académicos (TV3 ready)
+- `GET /api/portal/perfil`
+- `GET /api/portal/materias`
+- `GET /api/portal/agenda`
+- `GET /api/portal/avisos`
+- `GET /api/portal/historial`
+
+Sincronización:
+- `POST /api/portal/sincronizar` soporta `schemaVersion: 3` (compat transitoria con `2`).

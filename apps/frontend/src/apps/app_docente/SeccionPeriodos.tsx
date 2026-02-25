@@ -40,6 +40,12 @@ export function SeccionPeriodos({
   const [creando, setCreando] = useState(false);
   const [archivandoId, setArchivandoId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [guardandoEdicionId, setGuardandoEdicionId] = useState<string | null>(null);
+  const [edicionNombre, setEdicionNombre] = useState('');
+  const [edicionFechaInicio, setEdicionFechaInicio] = useState('');
+  const [edicionFechaFin, setEdicionFechaFin] = useState('');
+  const [edicionGrupos, setEdicionGrupos] = useState('');
   const puedeGestionar = permisos.periodos.gestionar;
   const puedeArchivar = permisos.periodos.archivar;
   const bloqueoEdicion = !puedeGestionar;
@@ -49,6 +55,16 @@ export function SeccionPeriodos({
     const d = new Date(valor);
     if (Number.isNaN(d.getTime())) return String(valor);
     return d.toLocaleDateString();
+  }
+
+  function formatearFechaInput(valor?: string) {
+    if (!valor) return '';
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   function normalizarNombreMateria(valor: string): string {
@@ -109,6 +125,65 @@ export function SeccionPeriodos({
       !gruposDuplicados
   );
 
+  const nombreEdicionValido = useMemo(() => {
+    const limpio = normalizarTextoCorto(edicionNombre);
+    if (!limpio) return false;
+    if (limpio.length < 3 || limpio.length > 80) return false;
+    return patronNombreMateria.test(limpio);
+  }, [edicionNombre]);
+
+  const nombreEdicionNormalizado = useMemo(() => normalizarNombreMateria(edicionNombre), [edicionNombre]);
+  const nombreEdicionDuplicado = useMemo(() => {
+    if (!editandoId || !nombreEdicionNormalizado) return false;
+    return periodos.some((p) => p._id !== editandoId && normalizarNombreMateria(p.nombre) === nombreEdicionNormalizado);
+  }, [editandoId, nombreEdicionNormalizado, periodos]);
+
+  const gruposEdicionNormalizados = useMemo(
+    () =>
+      (edicionGrupos || '')
+        .split(',')
+        .map((item) => normalizarTextoCorto(item))
+        .filter(Boolean),
+    [edicionGrupos]
+  );
+  const gruposEdicionDuplicados = useMemo(() => {
+    const vistos = new Set<string>();
+    for (const grupo of gruposEdicionNormalizados) {
+      const clave = grupo.toLowerCase();
+      if (vistos.has(clave)) return true;
+      vistos.add(clave);
+    }
+    return false;
+  }, [gruposEdicionNormalizados]);
+  const gruposEdicionValidos = useMemo(() => {
+    if (gruposEdicionNormalizados.length > 50) return false;
+    return gruposEdicionNormalizados.every((g) => g.length >= 1 && g.length <= 40);
+  }, [gruposEdicionNormalizados]);
+
+  const puedeGuardarEdicion = Boolean(
+    editandoId &&
+      nombreEdicionValido &&
+      edicionFechaInicio &&
+      edicionFechaFin &&
+      edicionFechaFin >= edicionFechaInicio &&
+      !nombreEdicionDuplicado &&
+      gruposEdicionValidos &&
+      !gruposEdicionDuplicados
+  );
+
+  const resumenMaterias = useMemo(() => {
+    const totalMaterias = periodos.length;
+    const totalGrupos = periodos.reduce((acc, item) => acc + (Array.isArray(item.grupos) ? item.grupos.length : 0), 0);
+    const hoy = new Date();
+    const proximasAFinalizar = periodos.filter((item) => {
+      const fecha = item.fechaFin ? new Date(item.fechaFin) : null;
+      if (!fecha || Number.isNaN(fecha.getTime())) return false;
+      const diffDias = (fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24);
+      return diffDias >= 0 && diffDias <= 14;
+    }).length;
+    return { totalMaterias, totalGrupos, proximasAFinalizar };
+  }, [periodos]);
+
   async function crearPeriodo() {
     try {
       const inicio = Date.now();
@@ -152,6 +227,67 @@ export function SeccionPeriodos({
       setCreando(false);
     }
   }
+
+  function iniciarEdicion(periodo: Periodo) {
+    setEditandoId(periodo._id);
+    setEdicionNombre(String(periodo.nombre || ''));
+    setEdicionFechaInicio(formatearFechaInput(periodo.fechaInicio));
+    setEdicionFechaFin(formatearFechaInput(periodo.fechaFin));
+    setEdicionGrupos(Array.isArray(periodo.grupos) ? periodo.grupos.join(', ') : '');
+    setMensaje('');
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null);
+    setGuardandoEdicionId(null);
+    setEdicionNombre('');
+    setEdicionFechaInicio('');
+    setEdicionFechaFin('');
+    setEdicionGrupos('');
+  }
+
+  async function guardarEdicion(periodo: Periodo) {
+    try {
+      const inicio = Date.now();
+      if (!puedeGestionar) {
+        avisarSinPermiso('No tienes permiso para gestionar materias.');
+        return;
+      }
+      if (!puedeGuardarEdicion) return;
+      setGuardandoEdicionId(periodo._id);
+      setMensaje('');
+      await enviarConPermiso(
+        'periodos:gestionar',
+        `/periodos/${periodo._id}/actualizar`,
+        {
+          nombre: normalizarTextoCorto(edicionNombre),
+          fechaInicio: edicionFechaInicio,
+          fechaFin: edicionFechaFin,
+          grupos: gruposEdicionNormalizados
+        },
+        'No tienes permiso para editar materias.'
+      );
+      setMensaje('Materia actualizada');
+      emitToast({ level: 'ok', title: 'Materias', message: 'Materia actualizada', durationMs: 2200 });
+      registrarAccionDocente('actualizar_periodo', true, Date.now() - inicio);
+      cancelarEdicion();
+      onRefrescar();
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudo actualizar la materia');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'No se pudo actualizar',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('actualizar_periodo', false);
+    } finally {
+      setGuardandoEdicionId(null);
+    }
+  }
+
   async function archivarMateria(periodo: Periodo) {
     if (!puedeArchivar) {
       avisarSinPermiso('No tienes permiso para archivar materias.');
@@ -233,7 +369,7 @@ export function SeccionPeriodos({
   }
 
   return (
-    <div className="panel">
+    <div className="panel materias-panel">
       <h2>
         <Icono nombre="periodos" /> Materias
       </h2>
@@ -264,89 +400,184 @@ export function SeccionPeriodos({
           Reglas: nombre entre 3 y 80 caracteres; grupos unicos (max 50) y cada grupo max 40 caracteres.
         </p>
       </AyudaFormulario>
-      <label className="campo">
-        Nombre de la materia
-        <input value={nombre} onChange={(event) => setNombre(event.target.value)} disabled={bloqueoEdicion} />
-      </label>
-      {nombre.trim() && !nombreValido && (
-        <InlineMensaje tipo="warning">El nombre debe tener entre 3 y 80 caracteres para poder crear la materia.</InlineMensaje>
-      )}
-      {nombre.trim() && nombreDuplicado && (
-        <InlineMensaje tipo="error">Ya existe una materia con ese nombre. Cambia el nombre para crearla.</InlineMensaje>
-      )}
-      <label className="campo">
-        Fecha inicio
-        <input type="date" value={fechaInicio} onChange={(event) => setFechaInicio(event.target.value)} disabled={bloqueoEdicion} />
-      </label>
-      <label className="campo">
-        Fecha fin
-        <input type="date" value={fechaFin} onChange={(event) => setFechaFin(event.target.value)} disabled={bloqueoEdicion} />
-      </label>
-      {fechaInicio && fechaFin && fechaFin < fechaInicio && (
-        <InlineMensaje tipo="error">La fecha fin debe ser igual o posterior a la fecha inicio.</InlineMensaje>
-      )}
-      <label className="campo">
-        Grupos (separados por coma)
-        <input value={grupos} onChange={(event) => setGrupos(event.target.value)} disabled={bloqueoEdicion} />
-      </label>
-      {!gruposValidos && grupos.trim() && (
-        <InlineMensaje tipo="warning">Revisa grupos: máximo 50 y hasta 40 caracteres por grupo para poder crear la materia.</InlineMensaje>
-      )}
-      {gruposDuplicados && <InlineMensaje tipo="warning">Hay grupos repetidos; corrígelo para poder crear la materia.</InlineMensaje>}
-      <Boton
-        type="button"
-        icono={<Icono nombre="nuevo" />}
-        cargando={creando}
-        disabled={!puedeCrear || bloqueoEdicion}
-        onClick={crearPeriodo}
-      >
-        {creando ? 'Creando…' : 'Crear materia'}
-      </Boton>
+      <div className="materias-resumen" aria-live="polite">
+        <div className="materias-resumen__item">
+          <span>Materias activas</span>
+          <b>{resumenMaterias.totalMaterias}</b>
+        </div>
+        <div className="materias-resumen__item">
+          <span>Grupos vinculados</span>
+          <b>{resumenMaterias.totalGrupos}</b>
+        </div>
+        <div className="materias-resumen__item">
+          <span>Por cerrar (14 dias)</span>
+          <b>{resumenMaterias.proximasAFinalizar}</b>
+        </div>
+      </div>
+      <section className="materias-form">
+        <div className="materias-form__grid">
+          <label className="campo">
+            Nombre de la materia
+            <input value={nombre} onChange={(event) => setNombre(event.target.value)} disabled={bloqueoEdicion} />
+          </label>
+          <label className="campo">
+            Fecha inicio
+            <input type="date" value={fechaInicio} onChange={(event) => setFechaInicio(event.target.value)} disabled={bloqueoEdicion} />
+          </label>
+          <label className="campo">
+            Fecha fin
+            <input type="date" value={fechaFin} onChange={(event) => setFechaFin(event.target.value)} disabled={bloqueoEdicion} />
+          </label>
+        </div>
+        <label className="campo">
+          Grupos (separados por coma)
+          <input value={grupos} onChange={(event) => setGrupos(event.target.value)} disabled={bloqueoEdicion} />
+        </label>
+        {nombre.trim() && !nombreValido && (
+          <InlineMensaje tipo="warning">El nombre debe tener entre 3 y 80 caracteres para poder crear la materia.</InlineMensaje>
+        )}
+        {nombre.trim() && nombreDuplicado && (
+          <InlineMensaje tipo="error">Ya existe una materia con ese nombre. Cambia el nombre para crearla.</InlineMensaje>
+        )}
+        {fechaInicio && fechaFin && fechaFin < fechaInicio && (
+          <InlineMensaje tipo="error">La fecha fin debe ser igual o posterior a la fecha inicio.</InlineMensaje>
+        )}
+        {!gruposValidos && grupos.trim() && (
+          <InlineMensaje tipo="warning">Revisa grupos: máximo 50 y hasta 40 caracteres por grupo para poder crear la materia.</InlineMensaje>
+        )}
+        {gruposDuplicados && <InlineMensaje tipo="warning">Hay grupos repetidos; corrígelo para poder crear la materia.</InlineMensaje>}
+        <div className="acciones">
+          <Boton
+            type="button"
+            icono={<Icono nombre="nuevo" />}
+            cargando={creando}
+            disabled={!puedeCrear || bloqueoEdicion}
+            onClick={crearPeriodo}
+          >
+            {creando ? 'Creando…' : 'Crear materia'}
+          </Boton>
+        </div>
+      </section>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
         </p>
       )}
       <h3>Materias activas</h3>
-      <ul className="lista lista-items">
+      <ul className="lista lista-items materias-lista">
         {periodos.map((periodo) => (
           <li key={periodo._id}>
-            <div className="item-glass">
+            <div className="item-glass materias-lista__item">
               <div className="item-row">
                 <div>
-                  <div className="item-title" title={periodo._id}>
-                    {etiquetaMateria(periodo)}
-                  </div>
-                  <div className="item-meta">
-                    <span>ID: {idCortoMateria(periodo._id)}</span>
-                    <span>Inicio: {formatearFecha(periodo.fechaInicio)}</span>
-                    <span>Fin: {formatearFecha(periodo.fechaFin)}</span>
-                    <span>
-                      Grupos:{' '}
-                      {Array.isArray(periodo.grupos) && periodo.grupos.length > 0 ? periodo.grupos.join(', ') : '-'}
-                    </span>
-                  </div>
+                  {editandoId === periodo._id ? (
+                    <div className="lista materias-edicion" style={{ gap: 8 }}>
+                      <label className="campo">
+                        Nombre de la materia
+                        <input
+                          value={edicionNombre}
+                          onChange={(event) => setEdicionNombre(event.target.value)}
+                          disabled={!puedeGestionar || guardandoEdicionId === periodo._id}
+                        />
+                      </label>
+                      {edicionNombre.trim() && !nombreEdicionValido && (
+                        <InlineMensaje tipo="warning">El nombre debe tener entre 3 y 80 caracteres.</InlineMensaje>
+                      )}
+                      {nombreEdicionDuplicado && (
+                        <InlineMensaje tipo="error">Ya existe una materia activa con ese nombre.</InlineMensaje>
+                      )}
+                      <label className="campo">
+                        Fecha inicio
+                        <input
+                          type="date"
+                          value={edicionFechaInicio}
+                          onChange={(event) => setEdicionFechaInicio(event.target.value)}
+                          disabled={!puedeGestionar || guardandoEdicionId === periodo._id}
+                        />
+                      </label>
+                      <label className="campo">
+                        Fecha fin
+                        <input
+                          type="date"
+                          value={edicionFechaFin}
+                          onChange={(event) => setEdicionFechaFin(event.target.value)}
+                          disabled={!puedeGestionar || guardandoEdicionId === periodo._id}
+                        />
+                      </label>
+                      {edicionFechaInicio && edicionFechaFin && edicionFechaFin < edicionFechaInicio && (
+                        <InlineMensaje tipo="error">La fecha fin debe ser igual o posterior a la fecha inicio.</InlineMensaje>
+                      )}
+                      <label className="campo">
+                        Grupos (separados por coma)
+                        <input
+                          value={edicionGrupos}
+                          onChange={(event) => setEdicionGrupos(event.target.value)}
+                          disabled={!puedeGestionar || guardandoEdicionId === periodo._id}
+                        />
+                      </label>
+                      {!gruposEdicionValidos && edicionGrupos.trim() && (
+                        <InlineMensaje tipo="warning">Revisa grupos: máximo 50 y hasta 40 caracteres por grupo.</InlineMensaje>
+                      )}
+                      {gruposEdicionDuplicados && <InlineMensaje tipo="warning">Hay grupos repetidos.</InlineMensaje>}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="item-title" title={periodo._id}>
+                        {etiquetaMateria(periodo)}
+                      </div>
+                      <div className="item-meta">
+                        <span>ID: {idCortoMateria(periodo._id)}</span>
+                        <span>Inicio: {formatearFecha(periodo.fechaInicio)}</span>
+                        <span>Fin: {formatearFecha(periodo.fechaFin)}</span>
+                        <span>
+                          Grupos:{' '}
+                          {Array.isArray(periodo.grupos) && periodo.grupos.length > 0 ? periodo.grupos.join(', ') : '-'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="item-actions">
-                  <Boton
-                    variante="secundario"
-                    type="button"
-                    cargando={archivandoId === periodo._id}
-                    onClick={() => archivarMateria(periodo)}
-                    disabled={!puedeArchivar}
-                  >
-                    Archivar
-                  </Boton>
-                  {puedeEliminarMateriaDev && (
-                    <Boton
-                      variante="secundario"
-                      type="button"
-                      cargando={eliminandoId === periodo._id}
-                      onClick={() => void eliminarMateriaDev(periodo)}
-                      disabled={!puedeEliminarMateriaDev}
-                    >
-                      Eliminar (DEV)
-                    </Boton>
+                  {editandoId === periodo._id ? (
+                    <>
+                      <Boton
+                        type="button"
+                        cargando={guardandoEdicionId === periodo._id}
+                        onClick={() => void guardarEdicion(periodo)}
+                        disabled={!puedeGuardarEdicion || !puedeGestionar}
+                      >
+                        Guardar cambios
+                      </Boton>
+                      <Boton variante="secundario" type="button" onClick={cancelarEdicion} disabled={guardandoEdicionId === periodo._id}>
+                        Cancelar
+                      </Boton>
+                    </>
+                  ) : (
+                    <>
+                      <Boton variante="secundario" type="button" onClick={() => iniciarEdicion(periodo)} disabled={bloqueoEdicion}>
+                        Editar
+                      </Boton>
+                      <Boton
+                        variante="secundario"
+                        type="button"
+                        cargando={archivandoId === periodo._id}
+                        onClick={() => archivarMateria(periodo)}
+                        disabled={!puedeArchivar}
+                      >
+                        Archivar
+                      </Boton>
+                      {puedeEliminarMateriaDev && (
+                        <Boton
+                          variante="secundario"
+                          type="button"
+                          cargando={eliminandoId === periodo._id}
+                          onClick={() => void eliminarMateriaDev(periodo)}
+                          disabled={!puedeEliminarMateriaDev}
+                        >
+                          Eliminar (DEV)
+                        </Boton>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

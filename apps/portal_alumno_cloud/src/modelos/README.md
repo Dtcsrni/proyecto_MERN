@@ -10,6 +10,11 @@ Ruta: `apps/portal_alumno_cloud/src/modelos`.
 - `modeloPaqueteSyncDocente.ts`
 - `modeloResultadoAlumno.ts`
 - `modeloSesionAlumno.ts`
+- `modeloPerfilAlumno.ts`
+- `modeloMateriaAlumno.ts`
+- `modeloAgendaAlumno.ts`
+- `modeloAvisoAlumno.ts`
+- `modeloHistorialAlumno.ts`
 
 ## Reglas de mantenimiento
 - Mantener cambios pequeños y trazables con pruebas/validación asociada.

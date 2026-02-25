@@ -12,6 +12,7 @@ import { comprimirBase64, construirComparativaRespuestas } from '../../sincroniz
 import { crearClientePortal } from '../../infra/portalSyncClient';
 import { leerCapturasOmrParaPortal } from '../../infra/omrCapturas';
 import { syncClock } from '../../infra/repositoriosSync';
+import { construirColeccionesAcademicasPortal } from '../../domain/portalAcademicoAssembler';
 
 export async function publicarResultadosUseCase(params: { docenteId: string; periodoId: string }) {
   const { docenteId, periodoId } = params;
@@ -70,6 +71,7 @@ export async function publicarResultadosUseCase(params: { docenteId: string; per
   }
 
   const payload = {
+    schemaVersion: 3,
     docenteId,
     periodo: { _id: periodo._id },
     alumnos: alumnos.map((alumno) => ({
@@ -122,7 +124,13 @@ export async function publicarResultadosUseCase(params: { docenteId: string; per
       descripcion: bandera.descripcion,
       sugerencia: bandera.sugerencia
     })),
-    codigoAcceso: codigo ? { codigo: codigo.codigo, expiraEn: codigo.expiraEn } : null
+    codigoAcceso: codigo ? { codigo: codigo.codigo, expiraEn: codigo.expiraEn } : null,
+    ...construirColeccionesAcademicasPortal({
+      periodo: periodo as unknown as Record<string, unknown>,
+      alumnos: alumnos as unknown as Array<Record<string, unknown>>,
+      calificaciones: calificaciones as unknown as Array<Record<string, unknown>>,
+      examenes: examenes as unknown as Array<Record<string, unknown>>
+    })
   };
 
   const respuesta = await portal.postJson<Record<string, unknown>>('/api/portal/sincronizar', payload);

@@ -1,0 +1,221 @@
+{
+  "version": "2",
+  "datasetType": "tv3_real_from_finals_templates",
+  "examSpec": {
+    "totalQuestions": 50,
+    "totalPages": 4,
+    "optionsPerQuestion": 5
+  },
+  "renderSpec": {
+    "width": 612,
+    "height": 792,
+    "marginPt": 28.35,
+    "cornerMarkerSizePt": 20,
+    "qrSizePt": 88
+  },
+  "noiseSpec": {
+    "profile": "final_templates_capture_simulated",
+    "scenarios": [
+      "buena_luz",
+      "luz_calida",
+      "luz_fria",
+      "rotacion_leve",
+      "desenfoque_leve",
+      "jpeg_media",
+      "sombreado_parcial",
+      "baja_tinta"
+    ]
+  },
+  "thresholds": {
+    "precisionMin": 0.95,
+    "falsePositiveMax": 0.02,
+    "invalidDetectionMin": 0.8,
+    "pagePassMin": 0.75,
+    "autoGradeTrustMin": 0.75
+  },
+  "answerKeyPath": "answer_key.json",
+  "groundTruthRef": "ground_truth.jsonl",
+  "capturas": [
+    {
+      "captureId": "311C583B-P1",
+      "imagePath": "images/311C583B-P1.jpg",
+      "mapaOmrPath": "maps/311C583B-P1.json",
+      "folio": "311C583B",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "311C583B-P2",
+      "imagePath": "images/311C583B-P2.jpg",
+      "mapaOmrPath": "maps/311C583B-P2.json",
+      "folio": "311C583B",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "311C583B-P3",
+      "imagePath": "images/311C583B-P3.jpg",
+      "mapaOmrPath": "maps/311C583B-P3.json",
+      "folio": "311C583B",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "baja_tinta"
+    },
+    {
+      "captureId": "311C583B-P4",
+      "imagePath": "images/311C583B-P4.jpg",
+      "mapaOmrPath": "maps/311C583B-P4.json",
+      "folio": "311C583B",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20260225,
+      "variantIndex": 0,
+      "scenario": "desenfoque_leve"
+    },
+    {
+      "captureId": "D11DAE46-P1",
+      "imagePath": "images/D11DAE46-P1.jpg",
+      "mapaOmrPath": "maps/D11DAE46-P1.json",
+      "folio": "D11DAE46",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "D11DAE46-P2",
+      "imagePath": "images/D11DAE46-P2.jpg",
+      "mapaOmrPath": "maps/D11DAE46-P2.json",
+      "folio": "D11DAE46",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "D11DAE46-P3",
+      "imagePath": "images/D11DAE46-P3.jpg",
+      "mapaOmrPath": "maps/D11DAE46-P3.json",
+      "folio": "D11DAE46",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "D11DAE46-P4",
+      "imagePath": "images/D11DAE46-P4.jpg",
+      "mapaOmrPath": "maps/D11DAE46-P4.json",
+      "folio": "D11DAE46",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20261234,
+      "variantIndex": 1,
+      "scenario": "baja_tinta"
+    },
+    {
+      "captureId": "EEF77EBD-P1",
+      "imagePath": "images/EEF77EBD-P1.jpg",
+      "mapaOmrPath": "maps/EEF77EBD-P1.json",
+      "folio": "EEF77EBD",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "rotacion_leve"
+    },
+    {
+      "captureId": "EEF77EBD-P2",
+      "imagePath": "images/EEF77EBD-P2.jpg",
+      "mapaOmrPath": "maps/EEF77EBD-P2.json",
+      "folio": "EEF77EBD",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "EEF77EBD-P3",
+      "imagePath": "images/EEF77EBD-P3.jpg",
+      "mapaOmrPath": "maps/EEF77EBD-P3.json",
+      "folio": "EEF77EBD",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "jpeg_media"
+    },
+    {
+      "captureId": "EEF77EBD-P4",
+      "imagePath": "images/EEF77EBD-P4.jpg",
+      "mapaOmrPath": "maps/EEF77EBD-P4.json",
+      "folio": "EEF77EBD",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20262243,
+      "variantIndex": 2,
+      "scenario": "luz_fria"
+    },
+    {
+      "captureId": "C0361EAD-P1",
+      "imagePath": "images/C0361EAD-P1.jpg",
+      "mapaOmrPath": "maps/C0361EAD-P1.json",
+      "folio": "C0361EAD",
+      "numeroPagina": 1,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "sombreado_parcial"
+    },
+    {
+      "captureId": "C0361EAD-P2",
+      "imagePath": "images/C0361EAD-P2.jpg",
+      "mapaOmrPath": "maps/C0361EAD-P2.json",
+      "folio": "C0361EAD",
+      "numeroPagina": 2,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "rotacion_leve"
+    },
+    {
+      "captureId": "C0361EAD-P3",
+      "imagePath": "images/C0361EAD-P3.jpg",
+      "mapaOmrPath": "maps/C0361EAD-P3.json",
+      "folio": "C0361EAD",
+      "numeroPagina": 3,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "buena_luz"
+    },
+    {
+      "captureId": "C0361EAD-P4",
+      "imagePath": "images/C0361EAD-P4.jpg",
+      "mapaOmrPath": "maps/C0361EAD-P4.json",
+      "folio": "C0361EAD",
+      "numeroPagina": 4,
+      "templateVersion": 3,
+      "seed": 20263252,
+      "variantIndex": 3,
+      "scenario": "jpeg_media"
+    }
+  ],
+  "hash": "c38beea6551ddbaeda308703371fbc19095c2b16bb3e025566296acd12b21afd",
+  "layoutMeta": {
+    "layoutRevision": "tv3_low_ink_resilient_r1",
+    "layoutHash": "7d244945e62ed80cccf82bba40d7ee476d44d0b2d3a57b764fc484e7651d05d5"
+  }
+}

@@ -94,7 +94,7 @@ export function PlantillasFormulario({
           <code>Arreglos</code> + <code>Funciones</code>.
         </p>
       </AyudaFormulario>
-      <div className="ayuda">
+      <div className="ayuda plantillas-panel__hint">
         {modoEdicion && plantillaEditando ? (
           <>
             Editando: <b>{plantillaEditando.titulo}</b> (ID: {idCortoMateria(plantillaEditando._id)})
@@ -103,107 +103,104 @@ export function PlantillasFormulario({
           'Crea plantillas por temas, o edita una existente.'
         )}
       </div>
-      <div className="plantillas-form">
-        <label className="campo">
-          Titulo
-          <input
-            value={titulo}
-            onChange={(event) => setTitulo(event.target.value)}
-            disabled={bloqueoEdicion}
-            data-tooltip="Nombre visible de la plantilla."
-          />
-        </label>
-        <label className="campo">
-          Tipo
-          <select
-            value={tipo}
-            onChange={(event) => setTipo(event.target.value as 'parcial' | 'global')}
-            disabled={bloqueoEdicion}
-            data-tooltip="Define si es parcial o global."
-          >
-            <option value="parcial">Parcial</option>
-            <option value="global">Global</option>
-          </select>
-        </label>
-        <label className="campo">
-          Materia
-          <select
-            value={periodoId}
-            onChange={(event) => setPeriodoId(event.target.value)}
-            disabled={bloqueoEdicion}
-            data-tooltip="Materia a la que pertenece la plantilla."
-          >
-            <option value="">Selecciona</option>
-            {periodos.map((periodo) => (
-              <option key={periodo._id} value={periodo._id} title={periodo._id}>
-                {etiquetaMateria(periodo)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="campo">
-          Numero de paginas
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={numeroPaginas}
-            onChange={(event) => setNumeroPaginas(Number(event.target.value))}
-            disabled={bloqueoEdicion}
-            data-tooltip="Cantidad total de paginas del examen."
-          />
-        </label>
+      <div className="plantillas-form-wrap">
+        <div className="plantillas-form">
+          <label className="campo">
+            Titulo
+            <input
+              value={titulo}
+              onChange={(event) => setTitulo(event.target.value)}
+              disabled={bloqueoEdicion}
+              data-tooltip="Nombre visible de la plantilla."
+            />
+          </label>
+          <label className="campo">
+            Tipo
+            <select
+              value={tipo}
+              onChange={(event) => setTipo(event.target.value as 'parcial' | 'global')}
+              disabled={bloqueoEdicion}
+              data-tooltip="Define si es parcial o global."
+            >
+              <option value="parcial">Parcial</option>
+              <option value="global">Global</option>
+            </select>
+          </label>
+          <label className="campo">
+            Materia
+            <select
+              value={periodoId}
+              onChange={(event) => setPeriodoId(event.target.value)}
+              disabled={bloqueoEdicion}
+              data-tooltip="Materia a la que pertenece la plantilla."
+            >
+              <option value="">Selecciona</option>
+              {periodos.map((periodo) => (
+                <option key={periodo._id} value={periodo._id} title={periodo._id}>
+                  {etiquetaMateria(periodo)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="campo">
+            Numero de paginas
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={numeroPaginas}
+              onChange={(event) => setNumeroPaginas(Number(event.target.value))}
+              disabled={bloqueoEdicion}
+              data-tooltip="Cantidad total de paginas del examen."
+            />
+          </label>
 
-        <label className="campo plantillas-form__full">
-          Instrucciones (opcional)
-          <textarea
-            value={instrucciones}
-            onChange={(event) => setInstrucciones(event.target.value)}
-            rows={3}
-            disabled={bloqueoEdicion}
-            data-tooltip="Texto opcional que aparece en el examen."
-          />
-        </label>
+          <label className="campo plantillas-form__full">
+            Instrucciones (opcional)
+            <textarea
+              value={instrucciones}
+              onChange={(event) => setInstrucciones(event.target.value)}
+              rows={3}
+              disabled={bloqueoEdicion}
+              data-tooltip="Texto opcional que aparece en el examen."
+            />
+          </label>
+        </div>
 
-        <label className="campo plantillas-form__full" data-tooltip="Selecciona los temas que alimentan la plantilla.">
-          Temas
+        <div className="plantillas-temas">
+          <div className="plantillas-temas__header">
+            <h4>Temas</h4>
+            <div className="plantillas-temas__stats">
+              <span>Seleccionados: {temasSeleccionados.length}</span>
+              <span>Disponibles: {temasDisponibles.length}</span>
+            </div>
+          </div>
           {periodoId && temasDisponibles.length === 0 && (
             <span className="ayuda">No hay temas para esta materia. Ve a &quot;Banco&quot; y crea preguntas con tema.</span>
           )}
           {temasDisponibles.length > 0 && (
-            <ul className="lista lista-items">
+            <div className="plantillas-temas__grid">
               {temasDisponibles.map((item) => {
                 const checked = temasSeleccionados.some((t) => t.toLowerCase() === item.tema.toLowerCase());
                 return (
-                  <li key={item.tema}>
-                    <div className="item-glass">
-                      <div className="item-row">
-                        <div>
-                          <div className="item-title">{item.tema}</div>
-                          <div className="item-sub">Preguntas disponibles: {item.total}</div>
-                        </div>
-                        <div className="item-actions">
-                          <label className="campo campo-inline">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setTemasSeleccionados((prev) =>
-                                  checked ? prev.filter((t) => t.toLowerCase() !== item.tema.toLowerCase()) : [...prev, item.tema]
-                                );
-                              }}
-                              disabled={bloqueoEdicion}
-                              data-tooltip="Incluye este tema en la plantilla."
-                            />
-                            Usar
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
+                  <label key={item.tema} className={`plantillas-temas__chip${checked ? ' is-active' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setTemasSeleccionados((prev) =>
+                          checked ? prev.filter((t) => t.toLowerCase() !== item.tema.toLowerCase()) : [...prev, item.tema]
+                        );
+                      }}
+                      disabled={bloqueoEdicion}
+                      data-tooltip="Incluye este tema en la plantilla."
+                    />
+                    <span className="plantillas-temas__name">{item.tema}</span>
+                    <span className="plantillas-temas__count">{item.total}</span>
+                  </label>
                 );
               })}
-            </ul>
+            </div>
           )}
           {temasSeleccionados.length > 0 && (
             <span className="ayuda">
@@ -212,7 +209,7 @@ export function PlantillasFormulario({
               mas de la mitad vacia.
             </span>
           )}
-        </label>
+        </div>
       </div>
       <div className="acciones acciones--mt">
         {!modoEdicion && (

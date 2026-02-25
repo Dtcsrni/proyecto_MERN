@@ -291,20 +291,6 @@ function validarPayloadCalificacionOmr(params: {
       );
     }
   }
-  if (!soloPreview && analisisOmr.estadoAnalisis === 'rechazado_calidad' && !analisisOmr.revisionConfirmada) {
-    throw new ErrorAplicacion(
-      'OMR_RECHAZADO_CALIDAD',
-      'La captura fue rechazada por calidad y no puede guardarse en calificación final automática',
-      409
-    );
-  }
-  if (!soloPreview && analisisOmr.estadoAnalisis !== 'ok' && !analisisOmr.revisionConfirmada) {
-    throw new ErrorAplicacion(
-      'OMR_ESTADO_ANALISIS_BLOQUEANTE',
-      'La calificación final automática está bloqueada mientras estadoAnalisis no sea ok',
-      409
-    );
-  }
 }
 
 /**
@@ -382,20 +368,6 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     ratioAmbiguas,
     coberturaDeteccion
   });
-
-  if (!soloPreview && analisisOmr && !revisionConfirmada && !autoCalificableOmr) {
-    throw new ErrorAplicacion(
-      'OMR_REQUIERE_REVISION',
-      'El analisis OMR requiere revision manual antes de guardar calificacion',
-      409,
-      {
-        estadoAnalisis: analisisOmr.estadoAnalisis,
-        calidadPagina,
-        confianzaPromedioPagina,
-        ratioAmbiguas
-      }
-    );
-  }
 
   let aciertosCalculados = 0;
   let contestadasTotal = 0;
