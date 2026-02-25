@@ -589,7 +589,7 @@ export function SeccionRegistroEntrega({
   }
 
   return (
-    <div className="panel">
+    <div className="panel entregas-panel entregas-panel--registro">
       <h2>
         <Icono nombre="recepcion" /> Registro de entrega
       </h2>
@@ -609,7 +609,7 @@ export function SeccionRegistroEntrega({
           Ejemplo: folio <code>FOLIO-000123</code> y alumno <code>2024-001 - Ana Maria</code>.
         </p>
       </AyudaFormulario>
-      <div className="subpanel guia-visual">
+      <div className="subpanel guia-visual entregas-guia">
         <h3>
           <Icono nombre="recepcion" /> Guia rapida (movil o manual)
         </h3>
@@ -689,12 +689,20 @@ export function SeccionRegistroEntrega({
           </div>
         </div>
       </div>
-      <div className="subpanel">
-        <Boton type="button" icono={<Icono nombre="escaneo" />} onClick={abrirCamara}>
-          Escanear QR del examen
-        </Boton>
+      <div className="subpanel entregas-scan">
+        <div className="item-row">
+          <div>
+            <h3>Escaneo y captura</h3>
+            <p className="nota">Usa cámara en vivo, imagen única o lote de imágenes para acelerar la recepción.</p>
+          </div>
+          <div className="item-actions">
+            <Boton type="button" icono={<Icono nombre="escaneo" />} onClick={abrirCamara}>
+              Escanear QR del examen
+            </Boton>
+          </div>
+        </div>
         {escaneando && (
-          <div className="item-glass guia-card">
+          <div className="item-glass guia-card entregas-scan__camera">
             <div className="guia-card__header">
               <span className="chip chip-static" aria-hidden="true">
                 <Icono nombre="escaneo" /> Camara activa
@@ -703,13 +711,7 @@ export function SeccionRegistroEntrega({
                 Cerrar camara
               </Boton>
             </div>
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="registro-entrega-video"
-            />
+            <video ref={videoRef} autoPlay muted playsInline className="registro-entrega-video" />
             <div className="nota">Apunta al QR del examen para capturar el folio.</div>
           </div>
         )}
@@ -800,30 +802,37 @@ export function SeccionRegistroEntrega({
           </div>
         )}
       </div>
-      <label className="campo">
-        Folio
-        <input value={folio} onChange={(event) => setFolio(event.target.value)} disabled={bloqueoEdicion} />
-      </label>
-      <label className="campo">
-        Alumno
-        <select value={alumnoId} onChange={(event) => setAlumnoId(event.target.value)} disabled={bloqueoEdicion}>
-          <option value="">Selecciona</option>
-          {alumnos.map((alumno) => (
-            <option key={alumno._id} value={alumno._id}>
-              {alumno.matricula} - {alumno.nombreCompleto}
-            </option>
-          ))}
-        </select>
-      </label>
-      <Boton
-        type="button"
-        icono={<Icono nombre="recepcion" />}
-        cargando={vinculando}
-        disabled={!puedeVincular || bloqueoEdicion}
-        onClick={vincular}
-      >
-        {vinculando ? 'Vinculando…' : 'Vincular'}
-      </Boton>
+      <div className="subpanel entregas-vinculacion">
+        <h3>Vinculación manual</h3>
+        <div className="entregas-vinculacion__form">
+          <label className="campo">
+            Folio
+            <input value={folio} onChange={(event) => setFolio(event.target.value)} disabled={bloqueoEdicion} />
+          </label>
+          <label className="campo">
+            Alumno
+            <select value={alumnoId} onChange={(event) => setAlumnoId(event.target.value)} disabled={bloqueoEdicion}>
+              <option value="">Selecciona</option>
+              {alumnos.map((alumno) => (
+                <option key={alumno._id} value={alumno._id}>
+                  {alumno.matricula} - {alumno.nombreCompleto}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="acciones">
+          <Boton
+            type="button"
+            icono={<Icono nombre="recepcion" />}
+            cargando={vinculando}
+            disabled={!puedeVincular || bloqueoEdicion}
+            onClick={vincular}
+          >
+            {vinculando ? 'Vinculando…' : 'Vincular'}
+          </Boton>
+        </div>
+      </div>
       {mensaje && (
         <p className={esMensajeError(mensaje) ? 'mensaje error' : 'mensaje ok'} role="status">
           {mensaje}
