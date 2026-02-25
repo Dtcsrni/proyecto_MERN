@@ -178,7 +178,7 @@ export function SeccionCuenta({
   }
 
   return (
-    <div className="panel">
+    <div className="panel cuenta-panel">
       <h2>
         <Icono nombre="info" /> Cuenta
       </h2>
@@ -205,16 +205,115 @@ export function SeccionCuenta({
         </p>
       </AyudaFormulario>
 
-      <div className="meta" aria-label="Estado de la cuenta">
-        <span className={docente.tieneGoogle ? 'badge ok' : 'badge'}>
-          <span className="dot" aria-hidden="true" /> Google {docente.tieneGoogle ? 'vinculado' : 'no vinculado'}
-        </span>
-        <span className={docente.tieneContrasena ? 'badge ok' : 'badge'}>
-          <span className="dot" aria-hidden="true" /> Contrasena {docente.tieneContrasena ? 'definida' : 'no definida'}
-        </span>
+      <div className="cuenta-resumen" aria-label="Estado de la cuenta">
+        <div className="cuenta-resumen__item">
+          <span>Google</span>
+          <b>{docente.tieneGoogle ? 'Vinculado' : 'No vinculado'}</b>
+        </div>
+        <div className="cuenta-resumen__item">
+          <span>Contraseña</span>
+          <b>{docente.tieneContrasena ? 'Definida' : 'No definida'}</b>
+        </div>
+        <div className="cuenta-resumen__item">
+          <span>Cuenta</span>
+          <b>{String(docente.correo || '').trim() || 'Sin correo'}</b>
+        </div>
+        <div className="cuenta-resumen__item">
+          <span>Rol</span>
+          <b>{esAdmin ? 'Administrador' : 'Docente'}</b>
+        </div>
       </div>
 
-      <div className="subpanel">
+      <div className="subpanel cuenta-seguridad">
+        <h3>
+          <Icono nombre="ok" /> Seguridad de acceso
+        </h3>
+        <div className="meta">
+          <span className={docente.tieneGoogle ? 'badge ok' : 'badge'}>
+            <span className="dot" aria-hidden="true" /> Google {docente.tieneGoogle ? 'vinculado' : 'no vinculado'}
+          </span>
+          <span className={docente.tieneContrasena ? 'badge ok' : 'badge'}>
+            <span className="dot" aria-hidden="true" /> Contraseña {docente.tieneContrasena ? 'definida' : 'no definida'}
+          </span>
+        </div>
+
+        {Boolean(docente.tieneGoogle && hayGoogleConfigurado()) && (
+          <div className="auth-google auth-google--mb">
+            <p className="nota">Reautenticacion con Google (recomendado).</p>
+            <GoogleLogin
+              onSuccess={(cred) => {
+                const credencialGoogle = cred.credential;
+                if (!credencialGoogle) {
+                  setMensaje('No se recibio credencial de Google.');
+                  return;
+                }
+                setCredentialReauth(credencialGoogle);
+                setMensaje('Reautenticacion con Google lista.');
+              }}
+              onError={() => setMensaje('No se pudo reautenticar con Google.')}
+            />
+            <div className="acciones acciones--mt">
+              <button type="button" className="chip" disabled={!credentialReauth} onClick={() => setCredentialReauth(null)}>
+                Limpiar reauth
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="cuenta-seguridad__form">
+          {docente.tieneContrasena && (
+            <label className="campo">
+              Contrasena actual
+              <input
+                type="password"
+                value={contrasenaActual}
+                onChange={(event) => setContrasenaActual(event.target.value)}
+                autoComplete="current-password"
+              />
+            </label>
+          )}
+
+          <label className="campo">
+            Nueva contrasena
+            <input
+              type="password"
+              value={contrasenaNueva}
+              onChange={(event) => setContrasenaNueva(event.target.value)}
+              autoComplete="new-password"
+            />
+            <span className="ayuda">Minimo 8 caracteres.</span>
+          </label>
+
+          <label className="campo">
+            Confirmar contrasena
+            {contrasenaNueva2 && !coincide ? (
+              <input
+                type="password"
+                value={contrasenaNueva2}
+                onChange={(event) => setContrasenaNueva2(event.target.value)}
+                autoComplete="new-password"
+                aria-invalid="true"
+              />
+            ) : (
+              <input
+                type="password"
+                value={contrasenaNueva2}
+                onChange={(event) => setContrasenaNueva2(event.target.value)}
+                autoComplete="new-password"
+              />
+            )}
+            {contrasenaNueva2 && !coincide && <span className="ayuda error">Las contrasenas no coinciden.</span>}
+          </label>
+        </div>
+
+        <div className="acciones">
+          <Boton type="button" icono={<Icono nombre="ok" />} cargando={guardando} disabled={!puedeGuardar} onClick={guardar}>
+            {guardando ? 'Guardando…' : 'Guardar contrasena'}
+          </Boton>
+        </div>
+      </div>
+
+      <div className="subpanel cuenta-pdf">
         <h3>
           <Icono nombre="pdf" /> PDF institucional
         </h3>
@@ -244,7 +343,7 @@ export function SeccionCuenta({
           Lema
           <input value={lemaPdf} onChange={(e) => setLemaPdf(e.target.value)} placeholder="La sabiduria es nuestra fuerza" />
         </label>
-        <div className="grid grid--2">
+        <div className="grid grid--2 cuenta-pdf__logos">
           <label className="campo">
             Logo izquierda (path)
             <input value={logoIzqPdf} onChange={(e) => setLogoIzqPdf(e.target.value)} placeholder="logos/logo_cuh.png" />
@@ -260,12 +359,10 @@ export function SeccionCuenta({
             Guardar PDF
           </Boton>
         </div>
-
-      {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
       </div>
 
       {esAdmin && esDev && (
-        <div className="subpanel">
+        <div className="subpanel cuenta-papelera">
           <h3>
             <Icono nombre="info" /> Papelera (dev)
           </h3>
@@ -277,7 +374,7 @@ export function SeccionCuenta({
           </div>
           {!cargandoPapelera && papelera.length === 0 && <InlineMensaje tipo="info">No hay elementos en papelera.</InlineMensaje>}
           {papelera.length > 0 && (
-            <div className="lista lista--compacta">
+            <div className="lista lista--compacta cuenta-papelera__lista">
               {papelera.map((item) => {
                 const id = String(item._id ?? '');
                 const tipo = String(item.tipo ?? 'desconocido');
@@ -286,7 +383,7 @@ export function SeccionCuenta({
                 const eliminadoEn = formatearFechaPapelera(item.eliminadoEn);
                 const expiraEn = formatearFechaPapelera(item.expiraEn);
                 return (
-                  <div key={id} className="item-glass">
+                  <div key={id} className="item-glass cuenta-papelera__item">
                     <div>
                       <div className="texto-base">{titulo}</div>
                       <div className="nota">Tipo: {tipo} · Eliminado: {eliminadoEn} · Expira: {expiraEn}</div>
@@ -310,79 +407,6 @@ export function SeccionCuenta({
           )}
         </div>
       )}
-
-      {Boolean(docente.tieneGoogle && hayGoogleConfigurado()) && (
-        <div className="auth-google auth-google--mb">
-          <p className="nota">Reautenticacion con Google (recomendado).</p>
-          <GoogleLogin
-            onSuccess={(cred) => {
-              const credencialGoogle = cred.credential;
-              if (!credencialGoogle) {
-                setMensaje('No se recibio credencial de Google.');
-                return;
-              }
-              setCredentialReauth(credencialGoogle);
-              setMensaje('Reautenticacion con Google lista.');
-            }}
-            onError={() => setMensaje('No se pudo reautenticar con Google.')}
-          />
-          <div className="acciones acciones--mt">
-            <button type="button" className="chip" disabled={!credentialReauth} onClick={() => setCredentialReauth(null)}>
-              Limpiar reauth
-            </button>
-          </div>
-        </div>
-      )}
-
-      {docente.tieneContrasena && (
-        <label className="campo">
-          Contrasena actual
-          <input
-            type="password"
-            value={contrasenaActual}
-            onChange={(event) => setContrasenaActual(event.target.value)}
-            autoComplete="current-password"
-          />
-        </label>
-      )}
-
-      <label className="campo">
-        Nueva contrasena
-        <input
-          type="password"
-          value={contrasenaNueva}
-          onChange={(event) => setContrasenaNueva(event.target.value)}
-          autoComplete="new-password"
-        />
-        <span className="ayuda">Minimo 8 caracteres.</span>
-      </label>
-
-      <label className="campo">
-        Confirmar contrasena
-        {contrasenaNueva2 && !coincide ? (
-          <input
-            type="password"
-            value={contrasenaNueva2}
-            onChange={(event) => setContrasenaNueva2(event.target.value)}
-            autoComplete="new-password"
-            aria-invalid="true"
-          />
-        ) : (
-          <input
-            type="password"
-            value={contrasenaNueva2}
-            onChange={(event) => setContrasenaNueva2(event.target.value)}
-            autoComplete="new-password"
-          />
-        )}
-        {contrasenaNueva2 && !coincide && <span className="ayuda error">Las contrasenas no coinciden.</span>}
-      </label>
-
-      <div className="acciones">
-        <Boton type="button" icono={<Icono nombre="ok" />} cargando={guardando} disabled={!puedeGuardar} onClick={guardar}>
-          {guardando ? 'Guardando…' : 'Guardar contrasena'}
-        </Boton>
-      </div>
 
       {mensaje && <InlineMensaje tipo={tipoMensajeInline(mensaje)}>{mensaje}</InlineMensaje>}
     </div>

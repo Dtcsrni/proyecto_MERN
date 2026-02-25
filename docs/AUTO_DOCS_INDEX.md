@@ -17,6 +17,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [IA_TRAZABILIDAD_AGENTES.md](IA_TRAZABILIDAD_AGENTES.md) — Trazabilidad IA del Proyecto
 - [INVENTARIO_CODIGO_EXHAUSTIVO.md](INVENTARIO_CODIGO_EXHAUSTIVO.md) — Inventario Exhaustivo de Codigo
 - [INVENTARIO_PROYECTO.md](INVENTARIO_PROYECTO.md) — Inventario Tecnico del Proyecto
+- [OMR_TV3_REAL_GATE_RUNBOOK.md](OMR_TV3_REAL_GATE_RUNBOOK.md) — Runbook OMR TV3 Real Gate
 - [OPERACION_EXAMEN_GLOBAL_PROD.md](OPERACION_EXAMEN_GLOBAL_PROD.md) — Operacion de Examen Global en Produccion
 - [PRUEBAS.md](PRUEBAS.md) — Pruebas automatizadas
 - [QA_GATE_CRITERIA.md](QA_GATE_CRITERIA.md) — QA Gate Criteria (`1.0.0-beta.0`)

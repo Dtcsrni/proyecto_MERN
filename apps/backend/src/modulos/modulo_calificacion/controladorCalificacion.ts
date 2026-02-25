@@ -198,7 +198,6 @@ function validarPayloadCalificacionOmr(params: {
   totalPreguntasEsperadas: number;
   respuestas: RespuestaDetectada[];
   analisisOmr?: AnalisisOmrCalificacion;
-  soloPreview?: boolean;
 }) {
   const {
     folioPayload,
@@ -206,8 +205,7 @@ function validarPayloadCalificacionOmr(params: {
     templateVersionOmr,
     totalPreguntasEsperadas,
     respuestas,
-    analisisOmr,
-    soloPreview
+    analisisOmr
   } = params;
 
   const folioReq = String(folioPayload ?? '').trim().toUpperCase();
@@ -357,8 +355,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     templateVersionOmr: Number(examen.mapaOmr?.templateVersion ?? 0),
     totalPreguntasEsperadas,
     respuestas,
-    analisisOmr,
-    soloPreview: Boolean(soloPreview)
+    analisisOmr
   });
   const coberturaDeteccion = totalPreguntasEsperadas > 0 ? respuestas.length / totalPreguntasEsperadas : 0;
   const { autoCalificableOmr } = evaluarAutoCalificableOmr({

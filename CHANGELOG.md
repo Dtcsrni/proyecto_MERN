@@ -5,6 +5,17 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Documentación actualizada y regenerada al estado UX/UI 2026-02-25:
+  - `docs/AUTO_ENV.md` (regenerado)
+  - `docs/AUTO_DOCS_INDEX.md` (regenerado)
+  - `docs/README.md` (estado documental y referencias UI)
+  - `docs/UX_QUALITY_CRITERIA.md` (criterios extendidos de temas/variedad visual/responsive).
+- Cobertura UX/UI integral en secciones docentes:
+  - refresh de pestañas `Calificaciones`, `Sincronización` y `Cuenta`.
+  - continuidad de mejoras previas en `Materias`, `Alumnos`, `Banco`, `Plantillas`, `Entrega`.
+- Refuerzo visual global de temas claro/oscuro:
+  - mayor variedad de acentos y gradientes.
+  - actualización de componentes base (`card`, `subpanel`, `tabs`, `botones`, `item-glass`) en `apps/frontend/src/styles.css`.
 - Portal alumno académico TV3 ready:
   - endpoints de consulta académica: `GET /api/portal/perfil`, `GET /api/portal/materias`, `GET /api/portal/agenda`, `GET /api/portal/avisos`, `GET /api/portal/historial`.
   - read-model académico en portal: `perfilAlumno`, `materiasAlumno`, `agendaAlumno`, `avisosAlumno`, `historialAlumno`.

@@ -2,7 +2,7 @@
 
 Documentacion oficial de Sistema EvaluaPro.
 
-Ultima actualizacion integral: 2026-02-19.
+Ultima actualizacion integral: 2026-02-25.
 
 ## Arranque para agentes IA
 - `../AGENTS.md`
@@ -45,3 +45,10 @@ Comandos canonicos:
 - `npm run pipeline:contract:check`
 - `npm run qa:clean-architecture:strict`
 - `npm run qa:full`
+
+## UI y Temas (actualizado)
+- `UX_QUALITY_CRITERIA.md` define criterios UX verificables y gates.
+- La GUI docente/alumno se encuentra unificada en:
+  - sistema de colores y superficies en `apps/frontend/src/styles.css`
+  - diseño responsive contractual en `apps/frontend/tests/gui.responsive.contract.test.tsx`
+  - cobertura funcional de secciones en `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx`.

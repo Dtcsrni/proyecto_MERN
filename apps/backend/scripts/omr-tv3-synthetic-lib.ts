@@ -202,10 +202,6 @@ function round6(value: number) {
   return Number(value.toFixed(6));
 }
 
-function resolveOptionByIndex(index: number): Opcion {
-  return LETTERS[Math.max(0, Math.min(LETTERS.length - 1, index))]!;
-}
-
 function hashObject(input: unknown) {
   return crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex');
 }
@@ -335,30 +331,14 @@ function drawBubbleSvg(cx: number, cy: number, selected: boolean, fillOpacity: n
   return `${ring}<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="6.9" fill="#040404" fill-opacity="${Math.max(0.98, fillOpacity).toFixed(3)}"/>`;
 }
 
-function drawSmudgeSvg(cx: number, cy: number) {
-  const x1 = cx - 14.5;
-  const y1 = cy - 11.2;
-  const x2 = cx + 13.8;
-  const y2 = cy + 9.6;
-  const x3 = cx - 10.2;
-  const y3 = cy + 8.8;
-  const x4 = cx + 12.5;
-  const y4 = cy - 8.5;
-  return [
-    `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="#222222" stroke-width="1.5"/>`,
-    `<line x1="${x3.toFixed(2)}" y1="${y3.toFixed(2)}" x2="${x4.toFixed(2)}" y2="${y4.toFixed(2)}" stroke="#222222" stroke-width="1.1"/>`
-  ].join('');
-}
-
 async function renderPageImage(args: {
   mapPage: ReturnType<typeof buildPageMap>;
   renderSpec: RenderSpec;
   selectedByQuestion: Map<number, Opcion[]>;
-  markTypeByQuestion: Map<number, MarkType>;
   noiseSpec: NoiseSpec;
   rng: Rng;
 }) {
-  const { mapPage, renderSpec, selectedByQuestion, markTypeByQuestion, noiseSpec, rng } = args;
+  const { mapPage, renderSpec, selectedByQuestion, noiseSpec, rng } = args;
   const halfMarker = renderSpec.cornerMarkerSizePt / 2;
   const markers = [
     mapPage.marcasPagina.tl,
@@ -382,7 +362,6 @@ async function renderPageImage(args: {
   const questionsSvg = mapPage.preguntas
     .map((question) => {
       const selected = selectedByQuestion.get(question.numeroPregunta) ?? [];
-      const markType = markTypeByQuestion.get(question.numeroPregunta) ?? 'blank';
       const optionsSvg = question.opciones
         .map((option) => {
           const cx = option.x;
@@ -526,7 +505,6 @@ export async function generateSyntheticTv3Dataset(options: GenerateDatasetOption
         mapPage: pageMap,
         renderSpec,
         selectedByQuestion,
-        markTypeByQuestion,
         noiseSpec,
         rng: new Rng(variantSeed + pageIdx * 37 + 17)
       });

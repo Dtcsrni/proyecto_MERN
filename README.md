@@ -2,7 +2,7 @@
 
 Plataforma MERN para evaluacion universitaria: generacion de examenes PDF, vinculacion por QR, analisis OMR, calificacion asistida y sincronizacion local/cloud.
 
-Estado del repositorio: 2026-02-19
+Estado del repositorio: 2026-02-25
 Version operativa: `1.0.0-beta.0`
 
 ## Estado actual
@@ -111,6 +111,14 @@ npm run dev:portal
   - `npm run qa:clean-architecture:strict`
 - Empaquetado:
   - `npm run msi:build`
+
+## UI Docente/Alumno (2026-02-25)
+- Se completó un refresh visual transversal en todas las pestañas docentes:
+  - `Materias`, `Alumnos`, `Banco`, `Plantillas`, `Entrega`, `Calificaciones`, `Sincronización`, `Cuenta`.
+- Se reforzaron ambos temas (`claro` y `oscuro`) con mayor variedad cromática y mejor contraste.
+- Se estandarizó la responsividad con layouts grid/card y jerarquía visual consistente entre secciones.
+- Criterios UX de referencia:
+  - `docs/UX_QUALITY_CRITERIA.md`
 
 ## Documentacion principal
 - `docs/README.md`
