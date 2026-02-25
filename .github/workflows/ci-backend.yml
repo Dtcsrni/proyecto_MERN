@@ -134,7 +134,7 @@ jobs:
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
       - name: Etapa diff-coverage-check
-        run: npm run test:coverage:diff
+        run: npm run test:coverage:diff -- --apps backend
 
       - name: Etapa build backend
         run: npm -C apps/backend run build

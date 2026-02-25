@@ -77,7 +77,7 @@ jobs:
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
       - name: Etapa diff-coverage-check
-        run: npm run test:coverage:diff
+        run: npm run test:coverage:diff -- --apps portal
 
       - name: Etapa build portal
         run: npm -C apps/portal_alumno_cloud run build

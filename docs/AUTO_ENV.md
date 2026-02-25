@@ -140,6 +140,7 @@ este documento se actualiza automáticamente al regenerar.
 - `DASHBOARD_TRAY_AUTOSTART` (usado en: scripts/launcher-dashboard.mjs, scripts/start-tray.mjs)
 - `DIAGRAMAS_PUPPETEER_CONFIG` (usado en: scripts/diagramas-render.mjs)
 - `DIAGRAMAS_RENDER_CHECK` (usado en: scripts/diagramas-render.mjs)
+- `DIFF_COVERAGE_APPS` (usado en: scripts/testing/check-diff-coverage.mjs)
 - `DIFF_COVERAGE_MIN` (usado en: scripts/testing/check-diff-coverage.mjs)
 - `DOCENTE_TOKEN` (usado en: scripts/release/preflight-global-prod.mjs)
 - `DOMINIOS_CORREO_PERMITIDOS` (usado en: scripts/perf-collect-business.ts)
