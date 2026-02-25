@@ -198,7 +198,10 @@ export function SeccionCalificaciones({
   );
   const [examenesCalificadosPersistidos, setExamenesCalificadosPersistidos] = useState<ExamenEntregado[]>([]);
   const [examenesPorId, setExamenesPorId] = useState<Map<string, ExamenEntregado>>(new Map());
-  const solicitudesSeguras = Array.isArray(solicitudesRevision) ? solicitudesRevision : [];
+  const solicitudesSeguras = useMemo(
+    () => (Array.isArray(solicitudesRevision) ? solicitudesRevision : []),
+    [solicitudesRevision]
+  );
   const [examenRevisadoSeleccionadoId, setExamenRevisadoSeleccionadoId] = useState('');
   const [respuestaPorSolicitudId, setRespuestaPorSolicitudId] = useState<Record<string, string>>({});
   const [alumnoManualId, setAlumnoManualId] = useState('');
@@ -212,6 +215,7 @@ export function SeccionCalificaciones({
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(false);
   const [resolviendoSolicitudId, setResolviendoSolicitudId] = useState('');
   const [mensajeRevision, setMensajeRevision] = useState('');
+  const [filtroSolicitudes, setFiltroSolicitudes] = useState('');
   const bancoPorPeriodoRef = useRef<Map<string, Pregunta[]>>(new Map());
   const cargasCalificacionEnCursoRef = useRef<Set<string>>(new Set());
   const examenesSinCalificacionRef = useRef<Set<string>>(new Set());
@@ -276,6 +280,28 @@ export function SeccionCalificaciones({
     return { tipo, plantilla: plantillaTitulo, estado };
   }, [examenManualSeleccionado, plantillasPorId]);
   const mapaAlumnos = useMemo(() => new Map(alumnos.map((item) => [String(item._id), String(item.nombreCompleto ?? '').trim()])), [alumnos]);
+  const resumenSolicitudes = useMemo(() => {
+    const pendientes = solicitudesSeguras.filter((s) => s.estado === 'pendiente').length;
+    const atendidas = solicitudesSeguras.filter((s) => s.estado === 'atendida').length;
+    const rechazadas = solicitudesSeguras.filter((s) => s.estado === 'rechazada').length;
+    return { pendientes, atendidas, rechazadas, total: solicitudesSeguras.length };
+  }, [solicitudesSeguras]);
+  const solicitudesFiltradas = useMemo(() => {
+    const q = String(filtroSolicitudes ?? '').trim().toLowerCase();
+    if (!q) return solicitudesSeguras;
+    return solicitudesSeguras.filter((solicitud) => {
+      const texto = [
+        solicitud.folio,
+        solicitud.numeroPregunta,
+        solicitud.comentario,
+        solicitud.estado,
+        solicitud.externoId
+      ]
+        .join(' ')
+        .toLowerCase();
+      return texto.includes(q);
+    });
+  }, [filtroSolicitudes, solicitudesSeguras]);
   const examenActivoMeta = useMemo(() => {
     const id = String(examenId ?? '').trim();
     if (!id) return null;
@@ -764,24 +790,29 @@ export function SeccionCalificaciones({
   return (
     <>
       <div className="panel calificaciones-hero">
-        <h2>
-          <Icono nombre="calificar" /> Calificaciones
-        </h2>
-        <p className="nota">
-          Escanea por página, revisa por examen y guarda solo cuando la revisión esté confirmada.
-        </p>
+        <div className="calificaciones-hero__head">
+          <h2>
+            <Icono nombre="calificar" /> Calificaciones
+          </h2>
+          <p className="nota">
+            Escanea por página, revisa por examen y guarda solo cuando la revisión esté confirmada.
+          </p>
+        </div>
+        <div className="calificaciones-kpi" aria-live="polite">
+          <div className="calificaciones-kpi__item"><span>Exámenes en flujo</span><b>{revisionesSeguras.length}</b></div>
+          <div className="calificaciones-kpi__item"><span>Páginas procesadas</span><b>{totalPaginas}</b></div>
+          <div className="calificaciones-kpi__item"><span>Páginas pendientes</span><b>{paginasPendientes}</b></div>
+          <div className="calificaciones-kpi__item"><span>Revisados/Calificados</span><b>{examenesListos}</b></div>
+          <div className="calificaciones-kpi__item"><span>Solicitudes revisión</span><b>{resumenSolicitudes.total}</b></div>
+        </div>
         <div className="item-meta calificaciones-hero__meta">
-          <span>{revisionesSeguras.length} examen(es) en flujo</span>
-          <span>{totalPaginas} página(s) procesadas</span>
-          <span>{paginasPendientes} página(s) pendientes</span>
-          <span>{examenesListos} examen(es) revisados/calificados</span>
           {examenIdActivo ? (
             <span className={`badge ${hayCambiosPendientesOmrActiva ? 'warning' : 'ok'}`}>
               {hayCambiosPendientesOmrActiva ? 'Examen activo con cambios pendientes' : 'Examen activo sin cambios pendientes'}
             </span>
-          ) : null}
+          ) : <span className="badge">Sin examen activo</span>}
         </div>
-        <div className="item-actions">
+        <div className="item-actions calificaciones-hero__actions">
           <label className="campo calificaciones-revisados-select">
             Exámenes revisados/calificados
             <select
@@ -861,6 +892,10 @@ export function SeccionCalificaciones({
               <Icono nombre="alumno" /> Selección manual por entregado
             </h3>
             <p className="nota">Selecciona alumno y examen entregado para calificar manualmente cada pregunta.</p>
+            <div className="item-meta">
+              <span>Exámenes entregados del alumno: {examenesManual.length}</span>
+              <span>Filtrados: {examenesManualFiltrados.length}</span>
+            </div>
             <label className="campo">
               Alumno
               <select value={alumnoManualId} onChange={(event) => seleccionarAlumnoManual(event.target.value)}>
@@ -981,6 +1016,11 @@ export function SeccionCalificaciones({
             <h3>
               <Icono nombre="info" /> Solicitudes de revisión del alumno
             </h3>
+            <div className="calificaciones-revision-panel__stats item-meta">
+              <span>Pendientes: {resumenSolicitudes.pendientes}</span>
+              <span>Atendidas: {resumenSolicitudes.atendidas}</span>
+              <span>Rechazadas: {resumenSolicitudes.rechazadas}</span>
+            </div>
             <div className="item-actions calificaciones-revision-panel__toolbar">
               <button
                 type="button"
@@ -997,12 +1037,24 @@ export function SeccionCalificaciones({
                 <Icono nombre="recargar" /> {cargandoSolicitudes ? 'Sincronizando…' : 'Sincronizar solicitudes'}
               </button>
             </div>
+            <label className="campo">
+              Buscar solicitud
+              <input
+                value={filtroSolicitudes}
+                onChange={(event) => setFiltroSolicitudes(event.target.value)}
+                placeholder="Folio, estado, pregunta o comentario"
+                disabled={solicitudesSeguras.length === 0}
+              />
+            </label>
             {mensajeRevision && (
               <InlineMensaje tipo={esMensajeError(mensajeRevision) ? 'error' : 'info'}>{mensajeRevision}</InlineMensaje>
             )}
             {solicitudesSeguras.length === 0 && <InlineMensaje tipo="info">Sin solicitudes pendientes de revisión.</InlineMensaje>}
+            {solicitudesSeguras.length > 0 && solicitudesFiltradas.length === 0 && (
+              <InlineMensaje tipo="info">No hay solicitudes que coincidan con el filtro.</InlineMensaje>
+            )}
             <ul className="lista lista-items">
-              {solicitudesSeguras.map((solicitud) => (
+              {solicitudesFiltradas.map((solicitud) => (
                 <li key={solicitud._id ?? solicitud.externoId}>
                   <div className="item-glass">
                     <div className="item-row">

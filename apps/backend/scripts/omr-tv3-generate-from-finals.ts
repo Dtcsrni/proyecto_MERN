@@ -81,7 +81,6 @@ type GroundTruthRow = {
   selectedOptions: Opcion[];
 };
 
-const LETTERS: Opcion[] = ['A', 'B', 'C', 'D', 'E'];
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
 const SCENARIOS: Scenario[] = [
@@ -204,10 +203,6 @@ function drawSelectedMarkSvg(cx: number, cy: number, radius = 7.0) {
   return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${fillRadius.toFixed(2)}" fill="#060606"/>`;
 }
 
-function drawGuideBubbleSvg(cx: number, cy: number, radius = 7.0) {
-  return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}" fill="none" stroke="#b6b6b6" stroke-width="0.55"/>`;
-}
-
 function drawQuestionBoxSvg(x: number, y: number, width: number, height: number) {
   const topY = yImage(y + height);
   return `<rect x="${x.toFixed(2)}" y="${topY.toFixed(2)}" width="${width.toFixed(2)}" height="${height.toFixed(2)}" fill="none" stroke="#101010" stroke-width="2.4"/>`;
@@ -323,8 +318,6 @@ async function renderPageFromMap(
       ].join('');
     })
     .join('');
-
-  const guideSvg = '';
 
   const boxesSvg = (mapPage.preguntas ?? [])
     .map((q) => {

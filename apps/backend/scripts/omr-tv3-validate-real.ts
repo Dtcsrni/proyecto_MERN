@@ -234,7 +234,6 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
 
   let tp = 0;
   let fp = 0;
-  let fn = 0;
   let total = 0;
   let invalidTotal = 0;
   let invalidDetected = 0;
@@ -306,12 +305,10 @@ export async function runTv3RealValidation(options: ValidateRealOptions): Promis
         mismatches += 1;
         bump(causeCounts, 'mismatch:false_mark');
       } else if (exp !== null && det === null) {
-        fn += 1;
         mismatches += 1;
         bump(causeCounts, 'mismatch:missed_mark');
       } else if (exp !== null && det !== null && exp !== det) {
         fp += 1;
-        fn += 1;
         mismatches += 1;
         bump(causeCounts, 'mismatch:wrong_option');
       }

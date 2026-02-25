@@ -89,6 +89,7 @@ export function SeccionSincronizacion({
   const [cargandoEstado, setCargandoEstado] = useState(false);
   const [errorEstado, setErrorEstado] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [filtroHistorial, setFiltroHistorial] = useState('');
   const montadoRef = useRef(true);
 
   const resumenDatos = useMemo(
@@ -131,6 +132,14 @@ export function SeccionSincronizacion({
   }, [ordenadas]);
 
   const fechaActualizacion = ultimaActualizacionDatos ? new Date(ultimaActualizacionDatos).toLocaleString() : '-';
+  const historialFiltrado = useMemo(() => {
+    const q = String(filtroHistorial ?? '').trim().toLowerCase();
+    if (!q) return ordenadas;
+    return ordenadas.filter((item) => {
+      const texto = [item.estado, item.tipo, item.ejecutadoEn, item.createdAt].join(' ').toLowerCase();
+      return texto.includes(q);
+    });
+  }, [filtroHistorial, ordenadas]);
 
   const refrescarEstado = useCallback(() => {
     setCargandoEstado(true);
@@ -175,98 +184,62 @@ export function SeccionSincronizacion({
   }, [autoRefresh, refrescarEstado]);
 
   return (
-    <div className="panel">
-      <div className="panel">
-        <h2>
-          <Icono nombre="publicar" /> Sincronización, backups y estado de datos
-        </h2>
-        <p className="nota">Consolida sincronización con portal, paquetes entre computadoras y trazabilidad del estado operativo.</p>
-        <div className="estado-datos-grid">
-          <div className="item-glass estado-datos-card">
-            <div className="estado-datos-header">
-              <div>
-                <div className="estado-datos-titulo">Estado de datos locales</div>
-                <div className="nota">Actualizado: {fechaActualizacion}</div>
+    <div className="panel sincronizacion-shell">
+      <h2>
+        <Icono nombre="publicar" /> Sincronización, backups y estado de datos
+      </h2>
+      <p className="nota">Consolida sincronización con portal, paquetes entre computadoras y trazabilidad del estado operativo.</p>
+
+      <div className="sincronizacion-kpi" aria-live="polite">
+        <div className="sincronizacion-kpi__item"><span>Materias activas</span><b>{resumenDatos.materiasActivas}</b></div>
+        <div className="sincronizacion-kpi__item"><span>Materias archivadas</span><b>{resumenDatos.materiasArchivadas}</b></div>
+        <div className="sincronizacion-kpi__item"><span>Alumnos</span><b>{resumenDatos.alumnos}</b></div>
+        <div className="sincronizacion-kpi__item"><span>Plantillas</span><b>{resumenDatos.plantillas}</b></div>
+        <div className="sincronizacion-kpi__item"><span>Banco</span><b>{resumenDatos.banco}</b></div>
+        <div className="sincronizacion-kpi__item"><span>Última actualización local</span><b>{fechaActualizacion}</b></div>
+      </div>
+
+      <div className="estado-datos-grid sincronizacion-resumen-grid">
+        <div className="item-glass estado-datos-card">
+          <div className="estado-datos-header">
+            <div>
+              <div className="estado-datos-titulo">Estado de sincronización</div>
+              <div className="nota">
+                Último evento:{' '}
+                {sincronizacionReciente ? formatearFecha(sincronizacionReciente.ejecutadoEn || sincronizacionReciente.createdAt) : 'Sin registros'}
               </div>
-              <span className="estado-chip info">Local</span>
             </div>
-            <div className="estado-datos-cifras">
-              <div>
-                <div className="estado-datos-numero">{resumenDatos.materiasActivas}</div>
-                <div className="nota">Materias activas</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{resumenDatos.materiasArchivadas}</div>
-                <div className="nota">Materias archivadas</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{resumenDatos.alumnos}</div>
-                <div className="nota">Alumnos</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{resumenDatos.plantillas}</div>
-                <div className="nota">Plantillas</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{resumenDatos.banco}</div>
-                <div className="nota">Banco de preguntas</div>
-              </div>
+            <span className={`estado-chip ${normalizarEstado(sincronizacionReciente?.estado).clase}`}>
+              {normalizarEstado(sincronizacionReciente?.estado).texto}
+            </span>
+          </div>
+
+          <div className="estado-datos-cifras">
+            <div>
+              <div className="estado-datos-numero">{totalesEstado.exitosas}</div>
+              <div className="nota">Exitosas</div>
+            </div>
+            <div>
+              <div className="estado-datos-numero">{totalesEstado.fallidas}</div>
+              <div className="nota">Fallidas</div>
+            </div>
+            <div>
+              <div className="estado-datos-numero">{totalesEstado.pendientes}</div>
+              <div className="nota">Pendientes</div>
             </div>
           </div>
 
-          <div className="item-glass estado-datos-card">
-            <div className="estado-datos-header">
-              <div>
-                <div className="estado-datos-titulo">Estado de sincronización</div>
-                <div className="nota">
-                  Último evento:{' '}
-                  {sincronizacionReciente ? formatearFecha(sincronizacionReciente.ejecutadoEn || sincronizacionReciente.createdAt) : 'Sin registros'}
-                </div>
-              </div>
-              <span className={`estado-chip ${normalizarEstado(sincronizacionReciente?.estado).clase}`}>
-                {normalizarEstado(sincronizacionReciente?.estado).texto}
-              </span>
-            </div>
-
-            <div className="estado-datos-cifras">
-              <div>
-                <div className="estado-datos-numero">{totalesEstado.exitosas}</div>
-                <div className="nota">Exitosas</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{totalesEstado.fallidas}</div>
-                <div className="nota">Fallidas</div>
-              </div>
-              <div>
-                <div className="estado-datos-numero">{totalesEstado.pendientes}</div>
-                <div className="nota">Pendientes</div>
-              </div>
-            </div>
-
-            <div className="estado-datos-lista">
-              {(ordenadas.length ? ordenadas : [{} as RegistroSincronizacion]).slice(0, 5).map((item, idx) => {
-                if (!item?.estado) {
-                  return (
-                    <div key={`vacio-${idx}`} className="estado-datos-item">
-                      <div className="nota">No hay historial disponible.</div>
-                    </div>
-                  );
-                }
-                const estado = normalizarEstado(item.estado);
-                return (
-                  <div key={item._id || `sync-${idx}`} className="estado-datos-item">
-                    <span className={`estado-chip ${estado.clase}`}>{estado.texto}</span>
-                    <div>
-                      <div className="estado-datos-item__titulo">{String(item.tipo || 'sincronizacion').toUpperCase()}</div>
-                      <div className="nota">{formatearFecha(item.ejecutadoEn || item.createdAt)}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {errorEstado && <InlineMensaje tipo="warning">{errorEstado}</InlineMensaje>}
-            <div className="acciones">
+          <div className="sincronizacion-toolbar">
+            <label className="campo">
+              Buscar en historial
+              <input
+                value={filtroHistorial}
+                onChange={(e) => setFiltroHistorial(e.target.value)}
+                placeholder="Tipo, estado o fecha"
+                disabled={ordenadas.length === 0}
+              />
+            </label>
+            <div className="acciones sincronizacion-toolbar__actions">
               <Boton type="button" variante="secundario" icono={<Icono nombre="recargar" />} cargando={cargandoEstado} onClick={refrescarEstado}>
                 {cargandoEstado ? 'Actualizando...' : 'Actualizar estado'}
               </Boton>
@@ -276,6 +249,30 @@ export function SeccionSincronizacion({
               </label>
             </div>
           </div>
+
+          <div className="estado-datos-lista sincronizacion-timeline">
+            {(historialFiltrado.length ? historialFiltrado : [{} as RegistroSincronizacion]).slice(0, 8).map((item, idx) => {
+              if (!item?.estado) {
+                return (
+                  <div key={`vacio-${idx}`} className="estado-datos-item">
+                    <div className="nota">No hay historial disponible.</div>
+                  </div>
+                );
+              }
+              const estado = normalizarEstado(item.estado);
+              return (
+                <div key={item._id || `sync-${idx}`} className="estado-datos-item">
+                  <span className={`estado-chip ${estado.clase}`}>{estado.texto}</span>
+                  <div>
+                    <div className="estado-datos-item__titulo">{String(item.tipo || 'sincronizacion').toUpperCase()}</div>
+                    <div className="nota">{formatearFecha(item.ejecutadoEn || item.createdAt)}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {errorEstado && <InlineMensaje tipo="warning">{errorEstado}</InlineMensaje>}
         </div>
       </div>
 
