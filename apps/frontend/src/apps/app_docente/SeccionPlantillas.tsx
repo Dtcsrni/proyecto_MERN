@@ -67,6 +67,10 @@ export function SeccionPlantillas({
   setCargandoPreviewPdfPlantillaId: Dispatch<SetStateAction<string | null>>;
   onRefrescar: () => void;
 }) {
+  /**
+   * Texto base orientado a impresión física/OMR.
+   * Se reestablece al salir de modo edición para mantener consistencia UX.
+   */
   const INSTRUCCIONES_DEFAULT =
     'Por favor conteste las siguientes preguntas referentes al parcial. ' +
     'Rellene el círculo de la respuesta más adecuada, evitando salirse del mismo. ' +
@@ -80,7 +84,6 @@ export function SeccionPlantillas({
   const [instrucciones, setInstrucciones] = useState(INSTRUCCIONES_DEFAULT);
   const [mensaje, setMensaje] = useState('');
   const [plantillaId, setPlantillaId] = useState('');
-  const [alumnoId, setAlumnoId] = useState('');
   const [mensajeGeneracion, setMensajeGeneracion] = useState('');
   const [lotePdfUrl, setLotePdfUrl] = useState<string | null>(null);
   const [ultimoGenerado, setUltimoGenerado] = useState<ExamenGeneradoResumen | null>(null);
@@ -109,6 +112,7 @@ export function SeccionPlantillas({
   const puedePrevisualizarPlantillas = permisos.plantillas.previsualizar;
   const bloqueoEdicion = !puedeGestionarPlantillas;
 
+  // Estado solo de presentación para vista ampliada del preview PDF.
   const [pdfFullscreenUrl, setPdfFullscreenUrl] = useState<string | null>(null);
 
   const abrirPdfFullscreen = useCallback((url: string) => {
@@ -130,6 +134,7 @@ export function SeccionPlantillas({
     return (Array.isArray(plantillas) ? plantillas : []).find((p) => p._id === plantillaEditandoId) ?? null;
   }, [plantillas, plantillaEditandoId]);
 
+  // Índice local para resolver alumno por id sin búsquedas O(n) repetidas al renderizar listados.
   const alumnosPorId = useMemo(() => {
     const mapa = new Map<string, Alumno>();
     for (const a of Array.isArray(alumnos) ? alumnos : []) {
@@ -146,6 +151,7 @@ export function SeccionPlantillas({
     return d.toLocaleString();
   }, []);
 
+  // Carga el historial de generados de la plantilla seleccionada (máx 50 recientes).
   const cargarExamenesGenerados = useCallback(async () => {
     if (!plantillaId) {
       setExamenesGenerados([]);
@@ -205,12 +211,14 @@ export function SeccionPlantillas({
       setCargandoPreviewPdfPlantillaId
     });
 
+  // Catálogo de preguntas filtrado por materia/periodo activo en el formulario.
   const preguntasDisponibles = useMemo(() => {
     if (!periodoId) return [];
     const lista = Array.isArray(preguntas) ? preguntas : [];
     return lista.filter((p) => p.periodoId === periodoId);
   }, [preguntas, periodoId]);
 
+  // Resumen de temas con conteo, para selección multi-tema y validación de cobertura.
   const temasDisponibles = useMemo(() => {
     const mapa = new Map<string, { tema: string; total: number }>();
     for (const pregunta of preguntasDisponibles) {
@@ -254,6 +262,7 @@ export function SeccionPlantillas({
   );
   const puedeGenerar = Boolean(plantillaId) && puedeGenerarExamenes;
 
+  // Búsqueda local por título/id/temas (case-insensitive) para UX reactiva.
   const plantillasFiltradas = useMemo(() => {
     const q = String(filtroPlantillas || '').trim().toLowerCase();
     const lista = Array.isArray(plantillas) ? plantillas : [];
@@ -549,10 +558,7 @@ export function SeccionPlantillas({
       const payload = await enviarConPermiso<{ examenGenerado: ExamenGeneradoResumen; advertencias?: string[] }>(
         'examenes:generar',
         '/examenes/generados',
-        {
-          plantillaId,
-          alumnoId: alumnoId || undefined
-        },
+        { plantillaId },
         'No tienes permiso para generar examenes.'
       );
       const ex = payload?.examenGenerado ?? null;
@@ -581,7 +587,7 @@ export function SeccionPlantillas({
     } finally {
       setGenerando(false);
     }
-  }, [alumnoId, avisarSinPermiso, cargarExamenesGenerados, enviarConPermiso, plantillaId, puedeGenerarExamenes]);
+  }, [avisarSinPermiso, cargarExamenesGenerados, enviarConPermiso, plantillaId, puedeGenerarExamenes]);
 
   const generarExamenesLote = useCallback(async () => {
     const ok = globalThis.confirm('¿Generar examenes para TODOS los alumnos activos de la materia de esta plantilla? Esto puede tardar.');
@@ -758,8 +764,6 @@ export function SeccionPlantillas({
         plantillaId={plantillaId}
         setPlantillaId={setPlantillaId}
         plantillas={plantillas}
-        alumnoId={alumnoId}
-        setAlumnoId={setAlumnoId}
         alumnos={alumnos}
         generando={generando}
         puedeGenerar={puedeGenerar}

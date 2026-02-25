@@ -66,33 +66,26 @@ function normalizarNombreTemaPreview(valor: unknown): string {
     .replace(/\s+/g, ' ');
 }
 
-function formatearNombreAlumno(alumno?: unknown): string {
-  if (!alumno) return '';
-  const a = alumno as {
-    nombreCompleto?: unknown;
-    nombres?: unknown;
-    apellidos?: unknown;
-    matricula?: unknown;
-  };
-  const nombreCompleto = String(a.nombreCompleto ?? '').trim();
-  if (nombreCompleto) return nombreCompleto;
-  const nombres = String(a.nombres ?? '').trim();
-  const apellidos = String(a.apellidos ?? '').trim();
-  const combinado = [nombres, apellidos].filter(Boolean).join(' ').trim();
-  if (combinado) return combinado;
-  return String(a.matricula ?? '').trim();
-}
-
+/**
+ * Clave estable para comparar/buscar temas sin sensibilidad de mayúsculas.
+ */
 function claveTemaPreview(valor: unknown): string {
   return normalizarNombreTemaPreview(valor).toLowerCase();
 }
 
+/**
+ * Endpoints de mantenimiento destructivo habilitados solo en desarrollo.
+ */
 function validarAdminDev() {
   if (String(configuracion.entorno).toLowerCase() !== 'development') {
     throw new ErrorAplicacion('SOLO_DEV', 'Accion disponible solo en modo desarrollo', 403);
   }
 }
 
+/**
+ * Construye un nombre de archivo legible y estable para trazabilidad operativa.
+ * Incluye materia/tema/lote/folio cuando estén disponibles.
+ */
 function construirNombrePdfExamen(parametros: {
   folio: string;
   loteId?: string;
@@ -141,6 +134,10 @@ function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: un
   return TEMPLATE_VERSION_TV3;
 }
 
+/**
+ * Filtra la variante a las preguntas realmente renderizadas en el mapa OMR.
+ * Evita inconsistencias cuando hay autoajuste de paginación.
+ */
 function construirMapaVarianteUsadaDesdeOmr(
   mapaVariante: MapaVariante,
   mapaOmr: { paginas?: Array<{ preguntas?: Array<{ idPregunta?: string }> }> }
@@ -158,6 +155,9 @@ function obtenerDirectorioPreview() {
   return path.resolve(os.tmpdir(), 'evaluapro-preview');
 }
 
+/**
+ * Firma de preview para invalidación de caché por cambios de plantilla/layout.
+ */
 function clavePreviewPlantilla(params: {
   plantillaId: string;
   plantillaUpdatedAt?: unknown;
@@ -289,6 +289,9 @@ function hash32(input: string) {
   return h >>> 0;
 }
 
+/**
+ * PRNG liviano para shuffle determinista sin dependencias externas.
+ */
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -298,6 +301,9 @@ function mulberry32(seed: number) {
   };
 }
 
+/**
+ * Shuffle determinista para reproducibilidad entre corridas y auditoría.
+ */
 function barajarDeterminista<T>(items: T[], seed: number): T[] {
   const rand = mulberry32(seed);
   const copia = items.slice();
@@ -310,6 +316,9 @@ function barajarDeterminista<T>(items: T[], seed: number): T[] {
   return copia;
 }
 
+/**
+ * Variante determinista por semilla textual (folio/lote/plantilla).
+ */
 function generarVarianteDeterminista(preguntas: Array<{ id: string; opciones: Array<unknown> }>, seedTexto: string): MapaVariante {
   const seedBase = hash32(seedTexto);
   const ordenPreguntas = barajarDeterminista(
@@ -875,7 +884,7 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
  */
 export async function generarExamen(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
-  const { plantillaId, alumnoId } = req.body;
+  const { plantillaId } = req.body;
   const plantilla = await ExamenPlantilla.findById(plantillaId).lean();
 
   if (!plantilla) {
@@ -894,18 +903,6 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
   }
   if (periodo && (periodo as unknown as { activo?: boolean }).activo === false) {
     throw new ErrorAplicacion('PERIODO_INACTIVO', 'La materia esta archivada', 409);
-  }
-
-  const alumno = alumnoId
-    ? await Alumno.findOne({
-        _id: String(alumnoId).trim(),
-        docenteId,
-        ...(plantilla.periodoId ? { periodoId: plantilla.periodoId } : {}),
-        activo: true
-      }).lean()
-    : null;
-  if (alumnoId && !alumno) {
-    throw new ErrorAplicacion('ALUMNO_INVALIDO', 'Alumno no encontrado en la materia', 400);
   }
 
   const docenteDb = await Docente.findById(docenteId).lean();
@@ -976,11 +973,7 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     encabezado: {
       materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
       docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
-      instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
-      alumno: {
-        nombre: formatearNombreAlumno(alumno),
-        grupo: String((alumno as unknown as { grupo?: unknown })?.grupo ?? '')
-      }
+      instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? '')
     }
   });
 
@@ -1039,7 +1032,6 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     docenteId,
     periodoId: plantilla.periodoId,
     plantillaId: plantilla._id,
-    alumnoId,
     loteId,
     folio,
     estado: 'generado',
@@ -1090,12 +1082,6 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   const totalAlumnos = Array.isArray(alumnos) ? alumnos.length : 0;
   if (totalAlumnos === 0) {
     throw new ErrorAplicacion('SIN_ALUMNOS', 'No hay alumnos activos en esta materia', 400);
-  }
-
-  const alumnosPorId = new Map<string, unknown>();
-  for (const a of Array.isArray(alumnos) ? alumnos : []) {
-    const id = String((a as unknown as { _id?: unknown })?._id ?? '').trim();
-    if (id) alumnosPorId.set(id, a);
   }
 
   const LIMITE_SIN_CONFIRMAR = 200;
@@ -1188,7 +1174,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
     }
   }
 
-  async function crearExamenParaAlumno(alumnoId: string) {
+  async function crearExamenSinAlumno() {
     const preguntasCandidatas = barajar(preguntasBase);
     const mapaVariante = generarVariante(preguntasCandidatas);
 
@@ -1207,11 +1193,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           encabezado: {
             materia: String((periodo as unknown as { nombre?: unknown })?.nombre ?? ''),
             docente: formatearDocente((docenteDb as unknown as { nombreCompleto?: unknown })?.nombreCompleto),
-            instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? ''),
-            alumno: {
-              nombre: formatearNombreAlumno(alumnosPorId.get(alumnoId)),
-              grupo: String((alumnosPorId.get(alumnoId) as unknown as { grupo?: unknown })?.grupo ?? '')
-            }
+            instrucciones: String((plantilla as unknown as { instrucciones?: unknown })?.instrucciones ?? '')
           }
         });
 
@@ -1245,7 +1227,6 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
           docenteId,
           periodoId: plantilla.periodoId,
           plantillaId: plantilla._id,
-          alumnoId,
           loteId,
           folio,
           estado: 'generado',
@@ -1270,15 +1251,13 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
     throw new ErrorAplicacion('FOLIO_COLISION', 'No se pudo generar un folio unico', 500);
   }
 
-  const examenesGenerados = [] as Array<{ _id: string; folio: string; alumnoId: string; generadoEn: Date }>;
+  const examenesGenerados = [] as Array<{ _id: string; folio: string; generadoEn: Date }>;
   const pdfsLote: Uint8Array[] = [];
-  for (const alumno of alumnos as Array<{ _id: unknown }>) {
-    const alumnoId = String(alumno._id);
-    const { examenGenerado, pdfBytes } = await crearExamenParaAlumno(alumnoId);
+  for (let indice = 0; indice < totalAlumnos; indice += 1) {
+    const { examenGenerado, pdfBytes } = await crearExamenSinAlumno();
     examenesGenerados.push({
       _id: String(examenGenerado._id),
       folio: examenGenerado.folio,
-      alumnoId,
       generadoEn: examenGenerado.generadoEn
     });
     if (pdfBytes) pdfsLote.push(pdfBytes);

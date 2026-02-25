@@ -8,11 +8,13 @@ import {
 } from '../src/modulos/modulo_escaneo_omr/infra/omrCvEngine';
 
 const ENV_BACKUP = {
-  OMR_CV_ENGINE_ENABLED: process.env.OMR_CV_ENGINE_ENABLED
+  OMR_CV_ENGINE_ENABLED: process.env.OMR_CV_ENGINE_ENABLED,
+  NODE_ENV: process.env.NODE_ENV
 };
 
 afterEach(() => {
   process.env.OMR_CV_ENGINE_ENABLED = ENV_BACKUP.OMR_CV_ENGINE_ENABLED;
+  process.env.NODE_ENV = ENV_BACKUP.NODE_ENV;
   setCvBackendCheckForTests(null);
 });
 
@@ -61,6 +63,15 @@ describe('omrCvEngine', () => {
     expect(smoke.enabled).toBe(true);
     expect(smoke.backend).toBe('cv');
     expect(smoke.cvDisponible).toBe(true);
+  });
+
+  it('en runtime no-test ignora desactivación por variable y mantiene CV activo', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.OMR_CV_ENGINE_ENABLED = '0';
+    setCvBackendCheckForTests(async () => ({}));
+    const smoke = await ejecutarSmokeTestOmrCv();
+    expect(smoke.enabled).toBe(true);
+    expect(debeIntentarMotorCv(3)).toBe(true);
   });
 
   it('preprocesa imagen con backend CV disponible', async () => {

@@ -25,6 +25,10 @@ Principios activos:
   - `templateVersion` fijo a TV3.
   - preguntas normalizadas a 5 opciones para mapa OMR TV3.
   - preguntas con mas de 5 opciones se rechazan (422).
+- Generacion desacoplada de alumno:
+  - el examen se genera sin `alumnoId` asociado.
+  - la vinculacion examen-alumno se realiza en recepcion/entrega.
+  - el PDF incluye campos manuales amplios para `Nombre del alumno` y `Grupo`.
 
 ## Contrato operativo
 

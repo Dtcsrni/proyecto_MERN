@@ -37,6 +37,8 @@ Ruta: `apps/backend/src/modulos/modulo_escaneo_omr`.
 - El preproceso CV de OMR TV3 es obligatorio en runtime.
 - No existe backend alterno ni fallback `simple`.
 - Si el backend CV no está disponible, el backend falla en arranque (smoke test bloqueante).
+- `OMR_CV_ENGINE_ENABLED` solo se respeta en `NODE_ENV=test` para pruebas internas controladas.
+- En runtime normal (dev/prod), el motor CV permanece forzado a activo.
 - Verificación local:
   - `npm -C apps/backend run omr:cv:smoke`
   - `npm -C apps/backend run omr:tv3:eval:synthetic`

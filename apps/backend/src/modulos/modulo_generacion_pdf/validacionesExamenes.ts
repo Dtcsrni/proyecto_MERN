@@ -9,6 +9,9 @@ const esquemaTitulo = z.string().trim().min(3).max(120).transform(normalizarText
 const esquemaInstrucciones = z.string().trim().max(2000).transform(normalizarTexto);
 const esquemaTema = z.string().trim().min(1).max(80).transform(normalizarTexto);
 
+/**
+ * Garantiza unicidad semántica de IDs dentro del mismo payload.
+ */
 function validarIdsUnicos(ids: string[], ctx: z.RefinementCtx, etiqueta: string) {
   const vistos = new Set<string>();
   for (const id of ids) {
@@ -23,6 +26,9 @@ function validarIdsUnicos(ids: string[], ctx: z.RefinementCtx, etiqueta: string)
   }
 }
 
+/**
+ * Garantiza unicidad case-insensitive para campos de texto (ej. temas).
+ */
 function validarTextosUnicos(valores: string[], ctx: z.RefinementCtx, etiqueta: string) {
   const vistos = new Set<string>();
   for (const valor of valores) {
@@ -38,6 +44,11 @@ function validarTextosUnicos(valores: string[], ctx: z.RefinementCtx, etiqueta: 
   }
 }
 
+/**
+ * Contrato de alta de plantilla:
+ * - Permite selección explícita de preguntas o selección por temas.
+ * - Si usa temas, exige periodo para resolver banco de preguntas.
+ */
 export const esquemaCrearPlantilla = z
   .object({
     periodoId: esquemaObjectId.optional(),
@@ -80,10 +91,12 @@ export const esquemaCrearPlantilla = z
   });
 
 export const esquemaGenerarExamen = z.object({
-  plantillaId: esquemaObjectId,
-  alumnoId: esquemaObjectId.optional()
+  plantillaId: esquemaObjectId
 });
 
+/**
+ * Lote masivo para una plantilla ya validada.
+ */
 export const esquemaGenerarExamenesLote = z.object({
   plantillaId: esquemaObjectId,
   confirmarMasivo: z.boolean().optional()
