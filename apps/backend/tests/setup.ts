@@ -16,5 +16,9 @@ process.env.RATE_LIMIT_LIMIT = '100000';
 // En pruebas se permiten correos de cualquier dominio.
 process.env.DOMINIOS_CORREO_PERMITIDOS = '';
 
-instalarTestHardening();
+instalarTestHardening({
+  // Node 24 emite este warning transitorio desde dependencias de terceros
+  // durante tests HTTP; no representa fallo funcional del sistema.
+  allowNodeWarningPatterns: [/The `punycode` module is deprecated/i]
+});
 
