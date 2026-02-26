@@ -3404,6 +3404,7 @@
             </div>
             <div class="toolbar toolbar-spaced toolbar-right" aria-label="Acciones de instalación">
               <button class="ghost-btn" id="refresh-install" type="button">Actualizar</button>
+              <button class="ghost-btn" id="regenerate-shortcuts" type="button">Regenerar accesos</button>
               <button class="ok" id="copy-install" type="button">Copiar</button>
             </div>
           </div>
@@ -6392,6 +6393,38 @@
     const botonRefrescarInstalacion = $('refresh-install');
     if (botonRefrescarInstalacion) {
       botonRefrescarInstalacion.addEventListener('click', () => refrescarInfoInstalacion());
+    }
+
+    const botonRegenerarAccesos = $('regenerate-shortcuts');
+    if (botonRegenerarAccesos) {
+      botonRegenerarAccesos.addEventListener('click', async () => {
+        botonRegenerarAccesos.disabled = true;
+        mostrarToast('Regenerando accesos directos...', 'info', {
+          id: 'shortcuts-regenerate-pending',
+          title: 'Accesos directos',
+          duration: 2600
+        });
+        try {
+          const respuesta = await api('/api/shortcuts/regenerate', {});
+          if (!respuesta || respuesta.ok === false) {
+            const detalle = String((respuesta && (respuesta.error || respuesta.detail)) || 'No se pudo completar la regeneración.');
+            mostrarToast(detalle, 'error', {
+              id: 'shortcuts-regenerate-error',
+              title: 'Accesos directos',
+              duration: 5200
+            });
+            return;
+          }
+          mostrarToast('Accesos e iconos regenerados correctamente.', 'ok', {
+            id: 'shortcuts-regenerate-ok',
+            title: 'Accesos directos',
+            duration: 2600
+          });
+          refrescarInfoInstalacion();
+        } finally {
+          botonRegenerarAccesos.disabled = false;
+        }
+      });
     }
 
     const botonRefrescarDb = $('refresh-db');

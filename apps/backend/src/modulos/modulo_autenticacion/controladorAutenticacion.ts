@@ -2,6 +2,9 @@
  * Controlador de autenticacion docente.
  */
 import type { Request, Response } from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 import { esCorreoDeDominioPermitido } from '../../compartido/utilidades/correo';
 import { configuracion } from '../../configuracion';
@@ -16,6 +19,64 @@ import { permisosComoLista, normalizarRoles } from '../../infraestructura/seguri
 function rolesParaToken(roles: unknown): string[] {
   const normalizados = normalizarRoles(roles);
   return normalizados.length > 0 ? normalizados : ['docente'];
+}
+
+function resolverScriptAccesosDirectos(): string {
+  const posibles = [
+    path.resolve(process.cwd(), 'scripts', 'create-shortcuts.ps1'),
+    path.resolve(process.cwd(), '..', '..', 'scripts', 'create-shortcuts.ps1'),
+    path.resolve(__dirname, '..', '..', '..', '..', '..', 'scripts', 'create-shortcuts.ps1')
+  ];
+  const unico = new Set(posibles.map((ruta) => path.normalize(ruta)));
+  for (const ruta of unico) {
+    if (fs.existsSync(ruta)) return ruta;
+  }
+  throw new ErrorAplicacion(
+    'SHORTCUT_SCRIPT_NOT_FOUND',
+    'No se encontro scripts/create-shortcuts.ps1 en este entorno.',
+    404
+  );
+}
+
+function ejecutarRegeneracionAccesos(scriptPath: string): Promise<{ ok: boolean; code: number; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    const proceso = spawn(
+      'powershell',
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, '-Force'],
+      {
+        cwd: path.resolve(path.dirname(scriptPath), '..'),
+        windowsHide: true
+      }
+    );
+    let stdout = '';
+    let stderr = '';
+    let terminado = false;
+    const timeout = setTimeout(() => {
+      if (terminado) return;
+      terminado = true;
+      try {
+        proceso.kill();
+      } catch {
+        // noop
+      }
+      resolve({ ok: false, code: 124, stdout, stderr: `${stderr}\nTimeout` });
+    }, 90_000);
+
+    proceso.stdout.on('data', (chunk) => { stdout += String(chunk ?? ''); });
+    proceso.stderr.on('data', (chunk) => { stderr += String(chunk ?? ''); });
+    proceso.on('error', (error) => {
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(timeout);
+      resolve({ ok: false, code: 1, stdout, stderr: `${stderr}\n${error?.message || 'error'}` });
+    });
+    proceso.on('exit', (code) => {
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(timeout);
+      resolve({ ok: Number(code || 0) === 0, code: Number(code || 0), stdout, stderr });
+    });
+  });
 }
 
 export async function registrarDocente(req: Request, res: Response) {
@@ -378,5 +439,29 @@ export async function actualizarPreferenciasPdfDocente(req: SolicitudDocente, re
           undefined
       }
     }
+  });
+}
+
+export async function regenerarAccesosDirectosDocente(_req: SolicitudDocente, res: Response) {
+  if (process.platform !== 'win32') {
+    throw new ErrorAplicacion(
+      'SHORTCUTS_UNSUPPORTED_PLATFORM',
+      'La regeneracion de accesos directos solo esta disponible en Windows.',
+      400
+    );
+  }
+  const scriptPath = resolverScriptAccesosDirectos();
+  const resultado = await ejecutarRegeneracionAccesos(scriptPath);
+  if (!resultado.ok) {
+    throw new ErrorAplicacion(
+      'SHORTCUTS_REGEN_FAILED',
+      `No se pudieron regenerar los accesos directos. ${String(resultado.stderr || resultado.stdout || 'Sin detalle').slice(0, 300)}`,
+      500
+    );
+  }
+  res.json({
+    ok: true,
+    message: 'Accesos directos regenerados en Escritorio y Menu Inicio.',
+    scriptPath
   });
 }

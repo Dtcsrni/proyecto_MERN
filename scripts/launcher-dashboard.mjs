@@ -2330,6 +2330,38 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && pathName === '/api/shortcuts/regenerate') {
+    if (process.platform !== 'win32') {
+      return sendJson(res, 400, {
+        ok: false,
+        error: 'Plataforma no soportada para accesos directos.'
+      });
+    }
+    if (!fs.existsSync(shortcutsScriptPath)) {
+      return sendJson(res, 404, {
+        ok: false,
+        error: 'Script scripts/create-shortcuts.ps1 no encontrado.'
+      });
+    }
+    pushEvent('api', 'dashboard', 'info', 'POST /api/shortcuts/regenerate', {});
+    logSystem('Regenerando accesos directos e iconos...', 'system');
+    const result = await runCommandCapture('powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcuts.ps1 -Force', 90_000);
+    if (!result.ok) {
+      logSystem('No se pudieron regenerar accesos directos.', 'error');
+      return sendJson(res, 500, {
+        ok: false,
+        error: 'No se pudieron regenerar accesos directos.',
+        detail: String(result.stderr || result.stdout || '').slice(0, 500)
+      });
+    }
+    logSystem('Accesos directos e iconos regenerados.', 'ok');
+    return sendJson(res, 200, {
+      ok: true,
+      message: 'Accesos directos e iconos regenerados.',
+      scriptPath: shortcutsScriptPath
+    });
+  }
+
   if (req.method === 'GET' && pathName === '/api/health') {
     const services = await collectHealth();
     sendJson(res, 200, { checkedAt: Date.now(), services });

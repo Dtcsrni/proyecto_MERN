@@ -16,7 +16,17 @@ $targetWscript = Join-Path $env:WINDIR "System32\wscript.exe"
 $iconDir = Join-Path $root "scripts\icons"
 $outputPath = Join-Path $root $OutputDir
 
-$desktopPath = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "Desktop" } else { $null }
+$desktopPath = [Environment]::GetFolderPath('Desktop')
+$desktopPathCandidates = New-Object System.Collections.Generic.List[string]
+if ($desktopPath) { $desktopPathCandidates.Add($desktopPath) }
+if ($env:USERPROFILE) {
+  $userDesktop = Join-Path $env:USERPROFILE "Desktop"
+  if (-not $desktopPathCandidates.Contains($userDesktop)) { $desktopPathCandidates.Add($userDesktop) }
+}
+if ($env:OneDrive) {
+  $oneDriveDesktop = Join-Path $env:OneDrive "Desktop"
+  if (-not $desktopPathCandidates.Contains($oneDriveDesktop)) { $desktopPathCandidates.Add($oneDriveDesktop) }
+}
 $startMenuBase = if ($env:APPDATA) { Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs" } else { $null }
 $startMenuPath = if ($startMenuBase) { Join-Path $startMenuBase "EvaluaPro" } else { $null }
 
@@ -324,8 +334,12 @@ if (-not $IncludeOpsShortcuts) {
 $destinations = @(
   @{ Name = 'Repo'; Path = $outputPath; Include = $true; UseDesktopFlag = $false; UseStartMenuFlag = $false }
 )
-if ($SyncDesktop -and $desktopPath) {
-  $destinations += @{ Name = 'Desktop'; Path = $desktopPath; Include = $true; UseDesktopFlag = $true; UseStartMenuFlag = $false }
+if ($SyncDesktop) {
+  foreach ($desktopCandidate in $desktopPathCandidates) {
+    if ($desktopCandidate) {
+      $destinations += @{ Name = 'Desktop'; Path = $desktopCandidate; Include = $true; UseDesktopFlag = $true; UseStartMenuFlag = $false }
+    }
+  }
 }
 if ($SyncStartMenu -and $startMenuPath) {
   $destinations += @{ Name = 'StartMenu'; Path = $startMenuPath; Include = $true; UseDesktopFlag = $false; UseStartMenuFlag = $true }

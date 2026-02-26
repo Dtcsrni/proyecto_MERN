@@ -11,6 +11,7 @@ import {
 	ingresarDocente,
 	ingresarDocenteGoogle,
 	perfilDocente,
+	regenerarAccesosDirectosDocente,
 	recuperarContrasenaGoogle,
 	refrescarDocente,
 	registrarDocente,
@@ -99,6 +100,14 @@ router.post(
 	requerirPermiso('cuenta:actualizar'),
 	validarCuerpo(esquemaActualizarPreferenciasPdf, { strict: true }),
 	actualizarPreferenciasPdfDocente
+);
+
+router.post(
+	'/accesos-directos/regenerar',
+	requerirDocente,
+	requerirPermiso('cuenta:actualizar'),
+	validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
+	regenerarAccesosDirectosDocente
 );
 
 export default router;

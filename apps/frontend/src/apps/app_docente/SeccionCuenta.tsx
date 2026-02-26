@@ -34,6 +34,7 @@ export function SeccionCuenta({
   const [credentialReauth, setCredentialReauth] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [regenerandoAccesos, setRegenerandoAccesos] = useState(false);
 
   const [institucionPdf, setInstitucionPdf] = useState(docente.preferenciasPdf?.institucion ?? '');
   const [lemaPdf, setLemaPdf] = useState(docente.preferenciasPdf?.lema ?? '');
@@ -126,6 +127,36 @@ export function SeccionCuenta({
       registrarAccionDocente('preferencias_pdf', false);
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function regenerarAccesosDirectos() {
+    try {
+      const inicio = Date.now();
+      setRegenerandoAccesos(true);
+      setMensaje('');
+      await clienteApi.enviar('/autenticacion/accesos-directos/regenerar', {});
+      setMensaje('Accesos directos regenerados en el escritorio.');
+      emitToast({
+        level: 'ok',
+        title: 'Accesos directos',
+        message: 'Iconos y accesos regenerados correctamente.',
+        durationMs: 3000
+      });
+      registrarAccionDocente('regenerar_accesos_directos', true, Date.now() - inicio);
+    } catch (error) {
+      const msg = mensajeDeError(error, 'No se pudieron regenerar los accesos directos');
+      setMensaje(msg);
+      emitToast({
+        level: 'error',
+        title: 'Accesos directos',
+        message: msg,
+        durationMs: 5200,
+        action: accionToastSesionParaError(error, 'docente')
+      });
+      registrarAccionDocente('regenerar_accesos_directos', false);
+    } finally {
+      setRegenerandoAccesos(false);
     }
   }
 
@@ -357,6 +388,27 @@ export function SeccionCuenta({
         <div className="acciones acciones--mt">
           <Boton onClick={guardarPreferenciasPdf} disabled={guardando}>
             Guardar PDF
+          </Boton>
+        </div>
+      </div>
+
+      <div className="subpanel cuenta-accesos">
+        <h3>
+          <Icono nombre="recargar" /> Accesos directos
+        </h3>
+        <p className="nota">
+          Regenera los accesos de EvaluaPro en Escritorio y Menú Inicio, incluyendo la actualización de iconos.
+        </p>
+        <div className="acciones acciones--mt">
+          <Boton
+            type="button"
+            variante="secundario"
+            icono={<Icono nombre="recargar" />}
+            cargando={regenerandoAccesos}
+            disabled={regenerandoAccesos}
+            onClick={regenerarAccesosDirectos}
+          >
+            {regenerandoAccesos ? 'Regenerando...' : 'Regenerar accesos e iconos'}
           </Boton>
         </div>
       </div>
