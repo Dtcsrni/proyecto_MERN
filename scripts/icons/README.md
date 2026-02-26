@@ -7,6 +7,10 @@ Ruta: `scripts/icons`.
 ## Archivos clave
 - `dashboard-dev.ico`
 - `dashboard-prod.ico`
+- `dashboard-open.ico`
+- `dashboard-restart.ico`
+- `dashboard-stop.ico`
+- `dashboard-repair.ico`
 - `tray-error.ico`
 - `tray-info.ico`
 - `tray-ok.ico`

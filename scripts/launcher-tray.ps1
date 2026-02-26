@@ -478,13 +478,18 @@ function Format-ApiException([object]$err) {
   }
 }
 
+function Get-TickNowMs {
+  # Compatible with Windows PowerShell 5.1 (no TickCount64).
+  return [int64][uint32][System.Environment]::TickCount
+}
+
 function Log-ApiFailure([string]$key, [string]$msg, [int]$minIntervalMs = 8000) {
   try {
     if (-not (Test-Path variable:script:ApiFailLog)) {
       $script:ApiFailLog = @{}
     }
 
-    $now = [Environment]::TickCount64
+    $now = Get-TickNowMs
     $last = 0
     try {
       if ($script:ApiFailLog.ContainsKey($key)) { $last = [int64]$script:ApiFailLog[$key] }
@@ -521,13 +526,13 @@ function Invoke-PostJsonOrNull([string]$path, [hashtable]$body) {
 }
 
 function Wait-ForStatus([int]$timeoutMs = 5000) {
-  $deadline = [Environment]::TickCount64 + [Math]::Max(500, $timeoutMs)
+  $deadline = (Get-TickNowMs) + [Math]::Max(500, $timeoutMs)
   do {
     $status = Get-JsonOrNull '/api/status'
     if ($status) { return $status }
     Sync-PortFromLock -RequireReachable | Out-Null
     Start-Sleep -Milliseconds 250
-  } while ([Environment]::TickCount64 -lt $deadline)
+  } while ((Get-TickNowMs) -lt $deadline)
   return $null
 }
 
@@ -872,7 +877,7 @@ $timer.add_Tick({
     if (-not $st) {
       $script:ApiFailCount += 1
       if (-not $Attach -and $script:ApiFailCount -ge 3) {
-        $now = [Environment]::TickCount64
+        $now = Get-TickNowMs
         if (($now - $script:LastRestartAttempt) -ge $script:RestartCooldownMs -and -not $script:RestartInFlight) {
           $script:LastRestartAttempt = $now
           $script:RestartInFlight = $true
@@ -925,8 +930,8 @@ $timer.add_Tick({
       if ($hasStack) {
         $script:NoStackSince = $null
       } else {
-        if (-not $script:NoStackSince) { $script:NoStackSince = [Environment]::TickCount64 }
-        $elapsed = [Environment]::TickCount64 - [int64]$script:NoStackSince
+        if (-not $script:NoStackSince) { $script:NoStackSince = Get-TickNowMs }
+        $elapsed = (Get-TickNowMs) - [int64]$script:NoStackSince
         if ($elapsed -ge $script:AutoExitGraceMs) {
           Log('AutoExit: stack inactivo; cerrando tray.')
           Exit-Tray

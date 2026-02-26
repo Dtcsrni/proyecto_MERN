@@ -14,6 +14,8 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 
 ## Accesos directos / bandeja
 - Generación de accesos: `create-shortcuts.ps1`
+- Operaciones por acceso directo: `shortcut-ops.ps1`
+- Wrapper oculto para operaciones: `shortcut-op-hidden.vbs`
 - Launcher oculto: `launcher-dashboard-hidden.vbs`
 - Tray (NotifyIcon): `launcher-tray.ps1`
 

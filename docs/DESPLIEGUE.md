@@ -30,7 +30,10 @@ npm run portal:prod
 
 Notas:
 - `portal:prod` compila `apps/portal_alumno_cloud` solo si falta `dist/index.js`.
-- El acceso directo `EvaluaPro - Prod` (tray) arranca stack + portal automaticamente si estaban apagados.
+- Los accesos directos `EvaluaPro - Dev` y `EvaluaPro - Prod` aplican arranque estricto:
+  - levantan dashboard/tray si no estaba activo,
+  - solicitan inicio de stack/portal,
+  - esperan salud (`apiDocente` + `apiPortal`) antes de abrir la UI.
 
 ## Servicios locales tipicos
 - `mongo_local`
@@ -102,6 +105,12 @@ Autoconfiguracion durante uso:
 - acceso directo Prod intenta iniciar stack+portal si no estan activos.
 - instalacion/actualizacion crea accesos directos automaticamente.
 - escritorio habilitado por defecto (`InstallDesktopShortcuts=1`).
+- menu inicio agrega accesos operativos: Abrir Dashboard, Reiniciar Stack, Detener Todo, Reparar Entorno.
+
+Regenerar accesos directos locales (repo + escritorio + menu inicio):
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcuts.ps1 -Force
+```
 
 No autoconfigurable por instalador:
 - instalacion de Node.js/Docker Desktop.
