@@ -84,6 +84,7 @@ jobs:
 
       - name: Etapa docs-check
         run: |
+          npm run docs:generate
           npm run docs:check
           npm run diagramas:check
           npm run diagramas:render
