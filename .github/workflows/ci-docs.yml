@@ -67,7 +67,9 @@ jobs:
         run: npm run pipeline:contract:check
 
       - name: Etapa docs-check
-        run: npm run docs:check
+        run: |
+          npm run docs:generate
+          npm run docs:check
 
       - name: Etapa diagramas-check
         run: npm run diagramas:check
