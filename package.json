@@ -57,6 +57,7 @@
     "test:client:proyectos:ci": "node scripts/testing/run-client-proyectos-vite-tests.mjs",
     "test:frontend:coverage:min": "npm -C apps/frontend run test:coverage",
     "test:dashboard:repair": "node --test scripts/tests/dashboard-repair.test.mjs",
+    "test:update": "node --test scripts/tests/update-manager.test.mjs scripts/tests/update-api.test.mjs scripts/tests/tray-update-action.test.mjs",
     "test:coverage:diff": "node scripts/testing/check-diff-coverage.mjs --min=90",
     "test:coverage:exclusions:debt": "node scripts/testing/check-coverage-exclusions-debt.mjs",
     "test:tdd:enforcement:ci": "npm run test:coverage:exclusions:debt && npm run test:coverage:diff",

@@ -3407,6 +3407,19 @@
               <button class="ghost-btn" id="regenerate-shortcuts" type="button">Regenerar accesos</button>
               <button class="ok" id="copy-install" type="button">Copiar</button>
             </div>
+            <div class="install-grid" id="update-grid" aria-live="polite" style="margin-top:14px">
+              <div class="install-row"><div class="k">Estado update</div><div class="v" id="update-state">-</div></div>
+              <div class="install-row"><div class="k">Versión disponible</div><div class="v mono" id="update-version">-</div></div>
+              <div class="install-row"><div class="k">Descarga</div><div class="v mono" id="update-download">-</div></div>
+              <div class="install-row"><div class="k">Preflight sync</div><div class="v" id="update-preflight">-</div></div>
+              <div class="install-row"><div class="k">Detalle</div><div class="v" id="update-error">-</div></div>
+            </div>
+            <div class="toolbar toolbar-spaced toolbar-right" aria-label="Acciones de actualización">
+              <button class="ghost-btn" id="update-check" type="button">Buscar actualización</button>
+              <button class="ghost-btn" id="update-download-btn" type="button">Descargar</button>
+              <button class="ghost-btn" id="update-cancel-btn" type="button">Cancelar descarga</button>
+              <button class="ok" id="update-apply-btn" type="button">Aplicar actualización</button>
+            </div>
           </div>
         </div>
 
@@ -4205,6 +4218,87 @@
         establecerTexto('install-version', '-');
         establecerTexto('install-dashboard', 'No se pudo cargar la info de instalación.');
         mostrarToastErrorSiAplica('No se pudo cargar la info de instalación.');
+      }
+    }
+
+    function renderizarEstadoUpdate(payload) {
+      const estado = payload && typeof payload === 'object' ? payload : {};
+      const descarga = estado.download && typeof estado.download === 'object' ? estado.download : {};
+      const preflight = estado.preflight && typeof estado.preflight === 'object' ? estado.preflight : {};
+
+      const textoEstado = String(estado.state || '-');
+      const version = String(estado.availableVersion || '-');
+      const pct = Number(descarga.percent || 0);
+      const bytesRec = Number(descarga.bytesReceived || 0);
+      const bytesTot = Number(descarga.bytesTotal || 0);
+      const preflightOk = preflight.backupOk && preflight.pushOk && preflight.pullOk;
+      const preflightDetalle = Array.isArray(preflight.details) ? preflight.details.join(' · ') : '';
+      const error = String(estado.lastError || '').trim();
+
+      establecerTexto('update-state', textoEstado);
+      establecerTexto('update-version', version);
+      if (bytesTot > 0) {
+        establecerTexto('update-download', `${pct}% (${bytesRec}/${bytesTot} bytes)`);
+      } else if (bytesRec > 0) {
+        establecerTexto('update-download', `${pct}% (${bytesRec} bytes)`);
+      } else {
+        establecerTexto('update-download', '-');
+      }
+      establecerTexto('update-preflight', preflightDetalle ? `${preflightOk ? 'OK' : 'PENDIENTE/FALLO'} · ${preflightDetalle}` : '-');
+      establecerTexto('update-error', error || '-');
+
+      const botonCheck = $('update-check');
+      const botonDownload = $('update-download-btn');
+      const botonCancel = $('update-cancel-btn');
+      const botonApply = $('update-apply-btn');
+      const busy = textoEstado === 'checking' || textoEstado === 'downloading' || textoEstado === 'applying';
+      if (botonCheck) botonCheck.disabled = busy;
+      if (botonDownload) botonDownload.disabled = busy || textoEstado !== 'available';
+      if (botonCancel) botonCancel.disabled = textoEstado !== 'downloading';
+      if (botonApply) botonApply.disabled = busy || textoEstado !== 'ready';
+    }
+
+    async function refrescarEstadoUpdate() {
+      try {
+        const res = await fetch('/api/update/status');
+        const status = await res.json();
+        state.update = status;
+        renderizarEstadoUpdate(status);
+      } catch (error) {
+        renderizarEstadoUpdate({ state: 'error', lastError: normalizarMensajeError(error) });
+      }
+    }
+
+    async function ejecutarAccionUpdate(path, options = {}) {
+      const metodo = options.method || 'POST';
+      const exito = options.successText || '';
+      try {
+        const respuesta = await fetch(path, {
+          method: metodo,
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        const datos = await respuesta.json();
+        renderizarEstadoUpdate(datos);
+        state.update = datos;
+        if (!respuesta.ok) {
+          mostrarToast(String(datos.lastError || 'No se pudo completar la acción de update.'), 'error', {
+            title: 'Actualización',
+            duration: 4200
+          });
+          return;
+        }
+        if (exito) {
+          mostrarToast(exito, 'ok', {
+            title: 'Actualización',
+            duration: 2200
+          });
+        }
+      } catch (error) {
+        mostrarToast(String(normalizarMensajeError(error) || 'No se pudo contactar el updater.'), 'error', {
+          title: 'Actualización',
+          duration: 4200
+        });
       }
     }
 
@@ -6392,7 +6486,10 @@
 
     const botonRefrescarInstalacion = $('refresh-install');
     if (botonRefrescarInstalacion) {
-      botonRefrescarInstalacion.addEventListener('click', () => refrescarInfoInstalacion());
+      botonRefrescarInstalacion.addEventListener('click', () => {
+        refrescarInfoInstalacion();
+        refrescarEstadoUpdate();
+      });
     }
 
     const botonRegenerarAccesos = $('regenerate-shortcuts');
@@ -6474,6 +6571,40 @@
       });
     }
 
+    const botonCheckUpdate = $('update-check');
+    if (botonCheckUpdate) {
+      botonCheckUpdate.addEventListener('click', () => ejecutarAccionUpdate('/api/update/check', {
+        successText: 'Búsqueda de actualizaciones completada.'
+      }));
+    }
+
+    const botonDescargarUpdate = $('update-download-btn');
+    if (botonDescargarUpdate) {
+      botonDescargarUpdate.addEventListener('click', () => ejecutarAccionUpdate('/api/update/download', {
+        successText: 'Descarga finalizada.'
+      }));
+    }
+
+    const botonCancelarUpdate = $('update-cancel-btn');
+    if (botonCancelarUpdate) {
+      botonCancelarUpdate.addEventListener('click', () => ejecutarAccionUpdate('/api/update/cancel', {
+        successText: 'Descarga cancelada.'
+      }));
+    }
+
+    const botonAplicarUpdate = $('update-apply-btn');
+    if (botonAplicarUpdate) {
+      botonAplicarUpdate.addEventListener('click', async () => {
+        const confirmar = window.confirm('Esto detendrá el stack, ejecutará el instalador y reiniciará servicios. ¿Continuar?');
+        if (!confirmar) return;
+        await ejecutarAccionUpdate('/api/update/apply', {
+          successText: 'Actualización aplicada.'
+        });
+        refrescarEstado();
+        refrescarInfoInstalacion();
+      });
+    }
+
     // Carga inicial y refresco periódico.
     iniciarTema();
     establecerTexto('ui-chip', `UI: ${UI_REV}`);
@@ -6518,6 +6649,7 @@
     refrescarRepairProgress();
     refrescarEstado();
     refrescarInfoInstalacion();
+    refrescarEstadoUpdate();
     refrescarSenales();
     actualizarUiMongoExpress();
 
@@ -6526,6 +6658,10 @@
     setInterval(() => {
       actualizarTiemposHealth(Date.now());
     }, 1000);
+
+    setInterval(() => {
+      refrescarEstadoUpdate();
+    }, 12000);
 
     setInterval(() => {
       vigilarEstadoDesactualizado();

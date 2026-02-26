@@ -20,6 +20,7 @@ import process from 'node:process';
 import { X509Certificate } from 'node:crypto';
 import { spawn, execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { createUpdateManager } from './update-manager.mjs';
 
 // Resolve paths relative to this script.
 const __filename = fileURLToPath(import.meta.url);
@@ -67,6 +68,8 @@ const logFile = path.join(logDir, 'dashboard.log');
 const lockPath = path.join(logDir, 'dashboard.lock.json');
 const singletonPath = path.join(logDir, 'dashboard.singleton.json');
 const dashboardConfigPath = path.join(logDir, 'dashboard.config.json');
+const updateStatePath = path.join(logDir, 'update-state.json');
+const updateConfigPath = path.join(root, 'config', 'update-config.json');
 ensureDir(logDir);
 
 // Logging persistence mode:
@@ -239,6 +242,54 @@ function buildVersionInfoPayload(source = 'dashboard') {
     changelog
   };
 }
+
+function readUpdateConfig() {
+  const defaults = {
+    owner: 'Dtcsrni',
+    repo: 'EvaluaPro_Sistema_Universitario',
+    channel: 'beta+stable',
+    assetName: 'EvaluaPro-Setup.exe',
+    sha256AssetName: 'EvaluaPro-Setup.exe.sha256',
+    requireSha256: false,
+    checkIntervalMs: 900_000,
+    syncPreflight: {
+      enabled: true,
+      baseUrl: 'http://127.0.0.1:4000/api/sincronizaciones',
+      tokenEnv: 'EVALUAPRO_SYNC_BEARER',
+      exportPayload: {},
+      pushPayload: {},
+      pullPayload: {}
+    }
+  };
+
+  let parsed = {};
+  try {
+    const raw = fs.readFileSync(updateConfigPath, 'utf8');
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = {};
+  }
+
+  const cfg = {
+    ...defaults,
+    ...parsed,
+    syncPreflight: {
+      ...defaults.syncPreflight,
+      ...(parsed.syncPreflight && typeof parsed.syncPreflight === 'object' ? parsed.syncPreflight : {})
+    }
+  };
+
+  if (process.env.EVALUAPRO_UPDATE_OWNER) cfg.owner = String(process.env.EVALUAPRO_UPDATE_OWNER);
+  if (process.env.EVALUAPRO_UPDATE_REPO) cfg.repo = String(process.env.EVALUAPRO_UPDATE_REPO);
+  if (process.env.EVALUAPRO_UPDATE_CHANNEL) cfg.channel = String(process.env.EVALUAPRO_UPDATE_CHANNEL);
+  if (process.env.EVALUAPRO_UPDATE_ASSET) cfg.assetName = String(process.env.EVALUAPRO_UPDATE_ASSET);
+  if (process.env.EVALUAPRO_UPDATE_SHA_ASSET) cfg.sha256AssetName = String(process.env.EVALUAPRO_UPDATE_SHA_ASSET);
+  if (process.env.EVALUAPRO_UPDATE_FEED_URL) cfg.feedUrl = String(process.env.EVALUAPRO_UPDATE_FEED_URL);
+  if (process.env.EVALUAPRO_UPDATE_REQUIRE_SHA256) cfg.requireSha256 = /^(1|true|yes|si)$/i.test(String(process.env.EVALUAPRO_UPDATE_REQUIRE_SHA256));
+  return cfg;
+}
+
+const updateConfig = readUpdateConfig();
 
 function renderVersionInfoPage() {
   return `<!doctype html>
@@ -1238,6 +1289,183 @@ function runCommandCapture(command, timeoutMs = 20_000) {
   });
 }
 
+async function postJsonWithAuth(url, token, payload, timeoutMs = 30_000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(1_000, timeoutMs));
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload || {}),
+      signal: controller.signal
+    });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    return {
+      ok: response.ok,
+      status: Number(response.status || 0),
+      data
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function runSyncPreflightForUpdate() {
+  const syncCfg = updateConfig?.syncPreflight && typeof updateConfig.syncPreflight === 'object'
+    ? updateConfig.syncPreflight
+    : {};
+  if (!syncCfg.enabled) {
+    return {
+      ok: true,
+      backupOk: true,
+      pushOk: true,
+      pullOk: true,
+      details: ['Preflight sync desactivado por configuración.']
+    };
+  }
+
+  const tokenEnv = String(syncCfg.tokenEnv || 'EVALUAPRO_SYNC_BEARER');
+  const token = String(process.env[tokenEnv] || '').trim();
+  const baseUrl = String(syncCfg.baseUrl || 'http://127.0.0.1:4000/api/sincronizaciones').replace(/\/$/, '');
+  if (!token) {
+    return {
+      ok: false,
+      backupOk: false,
+      pushOk: false,
+      pullOk: false,
+      error: `Falta token de sincronización en variable ${tokenEnv}.`,
+      details: [`Configura ${tokenEnv} con JWT docente válido para ejecutar preflight.`]
+    };
+  }
+
+  const details = [];
+  const exportRes = await postJsonWithAuth(`${baseUrl}/paquete/exportar`, token, syncCfg.exportPayload || {});
+  details.push(`exportar:${exportRes.status}`);
+  if (!exportRes.ok) {
+    return {
+      ok: false,
+      backupOk: false,
+      pushOk: false,
+      pullOk: false,
+      error: 'Falló backup pre-update (exportar).',
+      details
+    };
+  }
+
+  const pushRes = await postJsonWithAuth(`${baseUrl}/push`, token, syncCfg.pushPayload || {});
+  details.push(`push:${pushRes.status}`);
+  if (!pushRes.ok) {
+    return {
+      ok: false,
+      backupOk: true,
+      pushOk: false,
+      pullOk: false,
+      error: 'Falló sincronización pre-update (push).',
+      details
+    };
+  }
+
+  const pullRes = await postJsonWithAuth(`${baseUrl}/pull`, token, syncCfg.pullPayload || {});
+  details.push(`pull:${pullRes.status}`);
+  if (!pullRes.ok) {
+    return {
+      ok: false,
+      backupOk: true,
+      pushOk: true,
+      pullOk: false,
+      error: 'Falló sincronización pre-update (pull).',
+      details
+    };
+  }
+
+  return {
+    ok: true,
+    backupOk: true,
+    pushOk: true,
+    pullOk: true,
+    details
+  };
+}
+
+async function stopTasksForUpdate() {
+  const runningBefore = runningTasks();
+  for (const task of runningBefore) {
+    try { stopTask(task); } catch {}
+  }
+  await sleep(1200);
+  return { ok: true, runningBefore };
+}
+
+async function startTasksAfterUpdate(runningBefore = []) {
+  const toStart = Array.from(new Set(Array.isArray(runningBefore) ? runningBefore : []));
+  if (toStart.length === 0) {
+    const preferred = mode === 'prod' ? 'prod' : (mode === 'dev' ? 'dev' : '');
+    if (preferred) toStart.push(preferred);
+  }
+
+  for (const task of toStart) {
+    const command = getCommand(task);
+    if (!command) continue;
+    try { startTask(task, command); } catch {}
+  }
+  await sleep(1500);
+  return { ok: true, restarted: toStart };
+}
+
+async function runInstallerForUpdate(filePath) {
+  if (process.platform !== 'win32') {
+    return { ok: false, error: 'Actualización automática soportada solo en Windows.' };
+  }
+  const quoted = `"${String(filePath || '').replace(/"/g, '\\"')}"`;
+  const command = `${quoted} /quiet /norestart`;
+  const result = await runCommandCapture(command, 10 * 60_000);
+  if (!result.ok) {
+    return { ok: false, error: `Instalador falló (code=${result.code})` };
+  }
+  return { ok: true };
+}
+
+async function healthCheckAfterUpdate() {
+  const services = await collectHealth();
+  const running = runningTasks();
+  const expectsApi = running.includes('dev') || running.includes('prod') || mode === 'dev' || mode === 'prod';
+  const expectsPortal = running.includes('portal');
+  if (expectsApi && !services?.apiDocente?.ok) {
+    return { ok: false, error: 'API docente no saludable tras actualización.' };
+  }
+  if (expectsPortal && !services?.apiPortal?.ok) {
+    return { ok: false, error: 'Portal no saludable tras actualización.' };
+  }
+  return { ok: true };
+}
+
+const updateManager = createUpdateManager({
+  owner: updateConfig.owner,
+  repo: updateConfig.repo,
+  channel: updateConfig.channel,
+  assetName: updateConfig.assetName,
+  sha256AssetName: updateConfig.sha256AssetName,
+  requireSha256: updateConfig.requireSha256,
+  feedUrl: updateConfig.feedUrl,
+  statePath: updateStatePath,
+  downloadRoot: path.join(logDir, 'updates'),
+  logger: (message) => logSystem(`[update] ${message}`, 'system'),
+  getCurrentVersion: () => String(readRootPackageInfo().version || '0.0.0'),
+  preflightSync: runSyncPreflightForUpdate,
+  stopTasks: stopTasksForUpdate,
+  startTasks: startTasksAfterUpdate,
+  runInstaller: runInstallerForUpdate,
+  healthCheck: healthCheckAfterUpdate
+});
+
 function isShortcutsMissing() {
   if (!process.env.USERPROFILE) return false;
   const desktop = path.join(process.env.USERPROFILE, 'Desktop');
@@ -2183,7 +2411,8 @@ const server = http.createServer(async (req, res) => {
       noise,
       noiseTotal,
       autoRestart,
-      config: dashboardConfig
+      config: dashboardConfig,
+      update: updateManager.getStatus()
     };
     sendJson(res, 200, payload);
     return;
@@ -2259,6 +2488,33 @@ const server = http.createServer(async (req, res) => {
       status: probe.status || 0
     });
     return;
+  }
+
+  if (req.method === 'GET' && pathName === '/api/update/status') {
+    return sendJson(res, 200, updateManager.getStatus());
+  }
+
+  if (req.method === 'POST' && pathName === '/api/update/check') {
+    const status = await updateManager.check();
+    const code = status.state === 'error' ? 502 : 200;
+    return sendJson(res, code, status);
+  }
+
+  if (req.method === 'POST' && pathName === '/api/update/download') {
+    const status = await updateManager.download();
+    const code = status.state === 'error' ? 502 : 200;
+    return sendJson(res, code, status);
+  }
+
+  if (req.method === 'POST' && pathName === '/api/update/apply') {
+    const status = await updateManager.apply();
+    const code = status.state === 'error' ? 502 : 200;
+    return sendJson(res, code, status);
+  }
+
+  if (req.method === 'POST' && pathName === '/api/update/cancel') {
+    const canceled = updateManager.cancel();
+    return sendJson(res, 200, { ok: true, canceled, status: updateManager.getStatus() });
   }
 
   if (req.method === 'GET' && pathName === '/api/config') {

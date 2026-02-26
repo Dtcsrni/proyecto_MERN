@@ -821,6 +821,7 @@ $miStartDev = $menu.Items.Add('Iniciar DEV')
 $miStartProd = $menu.Items.Add('Iniciar PROD')
 $miStopAll = $menu.Items.Add('Detener todo')
 $miRestartStack = $menu.Items.Add('Reiniciar stack')
+$miCheckUpdates = $menu.Items.Add('Buscar actualizaciones')
 $menu.Items.Add('-') | Out-Null
 $miPid = $menu.Items.Add('PID: -')
 $miPid.Enabled = $false
@@ -840,6 +841,28 @@ $miStartDev.add_Click({ Invoke-PostJsonOrNull '/api/start' @{ task = 'dev' } | O
 $miStartProd.add_Click({ Invoke-PostJsonOrNull '/api/start' @{ task = 'prod' } | Out-Null })
 
 $miRestartStack.add_Click({ Invoke-PostJsonOrNull '/api/restart' @{ task = 'stack' } | Out-Null })
+
+$miCheckUpdates.add_Click({
+  $res = Invoke-PostJsonOrNull '/api/update/check' @{}
+  if (-not $res) {
+    Log('Busqueda de actualizaciones: sin respuesta del dashboard.')
+    return
+  }
+  $state = ''
+  $version = ''
+  try { $state = [string]$res.state } catch { $state = '' }
+  try { $version = [string]$res.availableVersion } catch { $version = '' }
+  if ($state -eq 'available' -and $version) {
+    Log("Actualizacion disponible: $version")
+    try { $notify.Text = ConvertTo-ShortText \"EP UPDATE | v$version disponible\" 60 } catch {}
+  } elseif ($state -eq 'error') {
+    $err = ''
+    try { $err = [string]$res.lastError } catch { $err = '' }
+    Log(\"Busqueda de actualizaciones fallo: $err\")
+  } else {
+    Log('Busqueda de actualizaciones sin novedades.')
+  }
+})
 
 $miStopAll.add_Click({
   $st = Get-JsonOrNull '/api/status'

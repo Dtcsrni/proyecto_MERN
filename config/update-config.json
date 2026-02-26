@@ -1,0 +1,17 @@
+{
+  "owner": "Dtcsrni",
+  "repo": "EvaluaPro_Sistema_Universitario",
+  "channel": "beta+stable",
+  "assetName": "EvaluaPro-Setup.exe",
+  "sha256AssetName": "EvaluaPro-Setup.exe.sha256",
+  "requireSha256": false,
+  "checkIntervalMs": 900000,
+  "syncPreflight": {
+    "enabled": true,
+    "baseUrl": "http://127.0.0.1:4000/api/sincronizaciones",
+    "tokenEnv": "EVALUAPRO_SYNC_BEARER",
+    "exportPayload": {},
+    "pushPayload": {},
+    "pullPayload": {}
+  }
+}
