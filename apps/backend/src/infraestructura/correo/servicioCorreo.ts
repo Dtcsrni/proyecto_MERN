@@ -13,14 +13,26 @@ export async function enviarCorreo(destinatario: string, asunto: string, conteni
   const email = String(destinatario || '').trim();
   if (!email) return false;
 
+  if (!configuracion.correoModuloActivo) {
+    log('warn', 'Modulo de correo desactivado por configuracion', {
+      destino: email,
+      asunto: String(asunto || '').slice(0, 120)
+    });
+    return false;
+  }
+
   // Modo best-effort: deja evidencia operativa y delega entrega real a webhook si existe.
   log('info', 'Notificacion correo solicitada', {
     destino: email,
     asunto: String(asunto || '').slice(0, 120)
   });
 
-  if (!configuracion.notificacionesWebhookUrl) {
-    return true;
+  if (!configuracion.notificacionesWebhookUrl || !configuracion.notificacionesWebhookToken) {
+    logError('Modulo de correo activo sin configuracion completa de webhook', undefined, {
+      webhookUrl: Boolean(configuracion.notificacionesWebhookUrl),
+      webhookToken: Boolean(configuracion.notificacionesWebhookToken)
+    });
+    return false;
   }
 
   return enviarNotificacionWebhook({

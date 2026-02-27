@@ -47,6 +47,17 @@ test('workflow de installer publica contratos nuevos de release', () => {
   assert.match(workflow, /EvaluaPro-release-manifest\.json/);
 });
 
+test('installer hub incluye fase de configuracion operativa y blindaje de licencia configurable', () => {
+  const hub = fs.readFileSync(path.join(root, 'scripts', 'installer-hub', 'InstallerHub.ps1'), 'utf8');
+  assert.match(hub, /OperationalConfig\.psm1/);
+  assert.match(hub, /configuracion_operativa/);
+  assert.match(hub, /MONGODB_URI|MongoUri/);
+  assert.match(hub, /PORTAL_ALUMNO_API_KEY|PortalAlumnoApiKey/);
+  assert.match(hub, /GOOGLE_OAUTH_CLIENT_ID|GoogleOauthClientId/);
+  assert.match(hub, /GOOGLE_CLASSROOM_CLIENT_ID|GoogleClassroomClientId/);
+  assert.match(hub, /RequireLicenseActivation/);
+});
+
 test('script de release manifest incluye contrato extendido de build/deployment/artifacts', () => {
   const script = fs.readFileSync(path.join(root, 'scripts', 'generate-installer-release-manifest.ps1'), 'utf8');
   assert.match(script, /build\s*=\s*\[ordered\]@{/);

@@ -165,6 +165,19 @@ export const esquemaRecuperarContrasenaGoogle = z.object({
   contrasenaNueva: z.string().min(8)
 });
 
+export const esquemaSolicitarRecuperacionContrasena = z
+  .object({
+    correo: z.string().email()
+  })
+  .strict();
+
+export const esquemaRestablecerContrasena = z
+  .object({
+    token: z.string().min(20),
+    contrasenaNueva: z.string().min(8)
+  })
+  .strict();
+
 export const esquemaActualizarPreferenciasPdf = z
   .object({
     institucion: z.string().min(1).max(120).optional(),

@@ -44,6 +44,8 @@ if (entorno === 'production' && !mongoUri) {
 const jwtSecretoEfectivo = jwtSecreto || 'cambia-este-secreto';
 const jwtExpiraHoras = Number(process.env.JWT_EXPIRA_HORAS ?? 8);
 const refreshTokenDias = Number(process.env.REFRESH_TOKEN_DIAS ?? 30);
+const passwordResetTokenMinutes = parsearNumeroSeguro(process.env.PASSWORD_RESET_TOKEN_MINUTES, 30, { min: 5, max: 180 });
+const passwordResetUrlBase = String(process.env.PASSWORD_RESET_URL_BASE ?? '').trim();
 const googleOauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
 const googleClassroomClientId = process.env.GOOGLE_CLASSROOM_CLIENT_ID ?? process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
 const googleClassroomClientSecret = process.env.GOOGLE_CLASSROOM_CLIENT_SECRET ?? '';
@@ -98,10 +100,10 @@ const dataPurgeCron = String(process.env.DATA_PURGE_CRON ?? '0 3 * * *').trim();
 const auditLogImmutable = ['1', 'true', 'yes'].includes(String(process.env.AUDIT_LOG_IMMUTABLE ?? 'true').toLowerCase());
 const dpoContactEmail = String(process.env.DPO_CONTACT_EMAIL ?? 'armsystechno@gmail.com').trim();
 const legalNoticeVersion = String(process.env.LEGAL_NOTICE_VERSION ?? '2026.02').trim();
-const superadminGoogleEmails = (process.env.SUPERADMIN_GOOGLE_EMAILS ?? '')
-  .split(',')
-  .map((correo) => correo.trim().toLowerCase())
-  .filter(Boolean);
+const superadminGoogleEmails = [
+  'armsystechno@gmail.com',
+  'erick.vega@cuh.mx'
+];
 const mercadoPagoAccessToken = String(process.env.MERCADOPAGO_ACCESS_TOKEN ?? '').trim();
 const mercadoPagoWebhookSecret = String(process.env.MERCADOPAGO_WEBHOOK_SECRET ?? '').trim();
 const mercadoPagoWebhookMaxEdadSegundos = parsearNumeroSeguro(process.env.MERCADOPAGO_WEBHOOK_MAX_EDAD_SEGUNDOS, 300, { min: 30, max: 3600 });
@@ -139,6 +141,20 @@ const cobranzaDiasSuspensionParcial = parsearNumeroSeguro(process.env.COBRANZA_D
 const cobranzaDiasSuspensionTotal = parsearNumeroSeguro(process.env.COBRANZA_DIAS_SUSPENSION_TOTAL, 10, { min: 2, max: 120 });
 const notificacionesWebhookUrl = String(process.env.NOTIFICACIONES_WEBHOOK_URL ?? '').trim();
 const notificacionesWebhookToken = String(process.env.NOTIFICACIONES_WEBHOOK_TOKEN ?? '').trim();
+const correoModuloActivo = (() => {
+  const raw = String(process.env.CORREO_MODULO_ACTIVO ?? '').trim().toLowerCase();
+  if (!raw) return Boolean(notificacionesWebhookUrl);
+  return ['1', 'true', 'yes', 'on'].includes(raw);
+})();
+const passwordResetEnabled = (() => {
+  const raw = String(process.env.PASSWORD_RESET_ENABLED ?? '').trim().toLowerCase();
+  if (raw) return ['1', 'true', 'yes', 'on'].includes(raw);
+  if (entorno === 'production') return Boolean(correoModuloActivo && passwordResetUrlBase);
+  return true;
+})();
+if (correoModuloActivo && (!notificacionesWebhookUrl || !notificacionesWebhookToken)) {
+  throw new Error('CORREO_MODULO_ACTIVO=1 requiere NOTIFICACIONES_WEBHOOK_URL y NOTIFICACIONES_WEBHOOK_TOKEN');
+}
 
 export const configuracion = {
   puerto,
@@ -150,6 +166,9 @@ export const configuracion = {
   jwtSecreto: jwtSecretoEfectivo,
   jwtExpiraHoras,
   refreshTokenDias,
+  passwordResetTokenMinutes,
+  passwordResetUrlBase,
+  passwordResetEnabled,
   googleOauthClientId,
   googleClassroomClientId,
   googleClassroomClientSecret,
@@ -188,5 +207,6 @@ export const configuracion = {
   cobranzaDiasSuspensionParcial,
   cobranzaDiasSuspensionTotal,
   notificacionesWebhookUrl,
-  notificacionesWebhookToken
+  notificacionesWebhookToken,
+  correoModuloActivo
 };

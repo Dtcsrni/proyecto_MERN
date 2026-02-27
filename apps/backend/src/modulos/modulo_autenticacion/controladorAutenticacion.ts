@@ -5,16 +5,19 @@ import type { Request, Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import crypto from 'node:crypto';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 import { esCorreoDeDominioPermitido } from '../../compartido/utilidades/correo';
 import { configuracion } from '../../configuracion';
 import { Docente } from './modeloDocente';
+import { RecuperacionContrasenaDocente } from './modeloRecuperacionContrasena';
 import { crearHash, compararContrasena } from './servicioHash';
 import { crearTokenDocente } from './servicioTokens';
 import { obtenerDocenteId, type SolicitudDocente } from './middlewareAutenticacion';
 import { cerrarSesionDocente, emitirSesionDocente, refrescarSesionDocente, revocarSesionesDocente } from './servicioSesiones';
 import { verificarCredencialGoogle } from './servicioGoogle';
 import { permisosComoLista, normalizarRoles } from '../../infraestructura/seguridad/rbac';
+import { enviarCorreo } from '../../infraestructura/correo/servicioCorreo';
 
 function rolesParaToken(roles: unknown): string[] {
   const normalizados = normalizarRoles(roles);
@@ -92,6 +95,18 @@ function ejecutarRegeneracionAccesos(scriptPath: string): Promise<{ ok: boolean;
       resolve({ ok: Number(code || 0) === 0, code: Number(code || 0), stdout, stderr });
     });
   });
+}
+
+function hashTokenRecuperacion(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function crearTokenRecuperacion(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+function ipSolicitud(req: Request): string {
+  return String(req.ip || req.socket?.remoteAddress || '').trim();
 }
 
 export async function registrarDocente(req: Request, res: Response) {
@@ -313,6 +328,97 @@ export async function recuperarContrasenaGoogle(req: Request, res: Response) {
 
   const token = crearTokenDocente({ docenteId: String(docente._id), roles: rolesParaToken(docente.roles) });
   res.json({ token });
+}
+
+export async function solicitarRecuperacionContrasena(req: Request, res: Response) {
+  if (!configuracion.passwordResetEnabled) {
+    throw new ErrorAplicacion(
+      'RECUPERACION_NO_DISPONIBLE',
+      'La recuperacion de contrasena esta deshabilitada por configuracion operativa.',
+      503
+    );
+  }
+
+  const correo = String((req.body as { correo?: unknown })?.correo || '').trim().toLowerCase();
+
+  // Respuesta no-enumerable: nunca revela si existe o no el correo.
+  const respuesta = {
+    ok: true,
+    mensaje: 'Si el correo existe y esta activo, se envio un enlace/codigo de recuperacion.'
+  };
+
+  const docente = await Docente.findOne({ correo }).select({ _id: 1, correo: 1, activo: 1, nombreCompleto: 1 }).lean();
+  if (!docente || !docente.activo) {
+    res.status(202).json(respuesta);
+    return;
+  }
+
+  const token = crearTokenRecuperacion();
+  const tokenHash = hashTokenRecuperacion(token);
+  const expiraEn = new Date(Date.now() + configuracion.passwordResetTokenMinutes * 60_000);
+  const resetBase = configuracion.passwordResetUrlBase;
+  const enlace = resetBase ? `${resetBase}${resetBase.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : '';
+  const contenido = enlace
+    ? `Recuperacion de acceso EvaluaPro.\n\nUsa este enlace antes de ${expiraEn.toISOString()}:\n${enlace}\n\nSi no solicitaste este cambio, ignora este mensaje.`
+    : `Recuperacion de acceso EvaluaPro.\n\nTu token de recuperacion es:\n${token}\n\nExpira en ${configuracion.passwordResetTokenMinutes} minutos. Si no solicitaste este cambio, ignora este mensaje.`;
+
+  await RecuperacionContrasenaDocente.deleteMany({ docenteId: docente._id, usadoEn: { $exists: false } });
+  await RecuperacionContrasenaDocente.create({
+    docenteId: docente._id,
+    tokenHash,
+    expiraEn,
+    solicitadoIp: ipSolicitud(req)
+  });
+
+  await enviarCorreo(String(docente.correo), 'Recuperacion de contrasena - EvaluaPro', contenido);
+
+  if (String(configuracion.entorno).toLowerCase() !== 'production') {
+    res.status(202).json({ ...respuesta, debugToken: token, debugExpiraEn: expiraEn.toISOString() });
+    return;
+  }
+
+  res.status(202).json(respuesta);
+}
+
+export async function restablecerContrasena(req: Request, res: Response) {
+  if (!configuracion.passwordResetEnabled) {
+    throw new ErrorAplicacion(
+      'RECUPERACION_NO_DISPONIBLE',
+      'La recuperacion de contrasena esta deshabilitada por configuracion operativa.',
+      503
+    );
+  }
+
+  const token = String((req.body as { token?: unknown })?.token || '').trim();
+  const contrasenaNueva = String((req.body as { contrasenaNueva?: unknown })?.contrasenaNueva || '');
+  const tokenHash = hashTokenRecuperacion(token);
+
+  const recuperacion = await RecuperacionContrasenaDocente.findOne({
+    tokenHash,
+    usadoEn: { $exists: false },
+    expiraEn: { $gt: new Date() }
+  });
+
+  if (!recuperacion) {
+    throw new ErrorAplicacion('TOKEN_RECUPERACION_INVALIDO', 'Token de recuperacion invalido o expirado', 400);
+  }
+
+  const docente = await Docente.findById(recuperacion.docenteId);
+  if (!docente || !docente.activo) {
+    throw new ErrorAplicacion('DOCENTE_NO_ENCONTRADO', 'Docente no encontrado', 404);
+  }
+
+  docente.hashContrasena = await crearHash(contrasenaNueva);
+  docente.ultimoAcceso = new Date();
+  await docente.save();
+
+  recuperacion.usadoEn = new Date();
+  recuperacion.usadoIp = ipSolicitud(req);
+  await recuperacion.save();
+  await RecuperacionContrasenaDocente.deleteMany({ docenteId: docente._id, usadoEn: { $exists: false } });
+  await revocarSesionesDocente(String(docente._id));
+
+  res.status(204).end();
 }
 
 export async function refrescarDocente(req: Request, res: Response) {

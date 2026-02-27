@@ -21,8 +21,9 @@ Bootstrapper online para instalacion desde cero de EvaluaPro en entornos docente
 6. Resolucion de release y descarga de `EvaluaPro.msi`.
 7. Verificacion de hash con `EvaluaPro.msi.sha256`.
 8. Ejecucion de `msiexec` segun modo.
-9. Verificacion post-instalacion.
-10. Blindaje local de licencia:
+9. Configuracion operativa obligatoria (escritura de `.env` con variables criticas de backend/portal, recuperacion de contrasena y OAuth).
+10. Verificacion post-instalacion.
+11. Blindaje local de licencia:
    - almacenamiento cifrado de token con DPAPI (`LocalMachine`)
    - baseline de integridad local (hash SHA-256 + MAC)
    - activacion opcional contra `/api/comercial-publico/licencias/activar`
@@ -36,6 +37,7 @@ Bootstrapper online para instalacion desde cero de EvaluaPro en entornos docente
   - `scripts/installer-hub/modules/PrereqDetector.psm1`
   - `scripts/installer-hub/modules/PrereqInstaller.psm1`
   - `scripts/installer-hub/modules/ProductInstaller.psm1`
+  - `scripts/installer-hub/modules/OperationalConfig.psm1`
   - `scripts/installer-hub/modules/PostInstallVerifier.psm1`
   - `scripts/installer-hub/modules/LicenseClientSecurity.psm1`
 
@@ -61,6 +63,16 @@ npm run installer:hub:build
 npm run installer:hashes
 npm run installer:sign
 ```
+
+## Configuracion operativa obligatoria en instalacion
+- El Hub detecta automaticamente valores existentes desde `.env` previo (si existe) y los precarga en la UI.
+- Si falta configuracion critica, el flujo falla en `configuracion_operativa` (fail-fast) y no permite dejar instalacion incompleta.
+- Variables cubiertas por instalador:
+  - backend/portal: `MONGODB_URI`, `JWT_SECRETO`, `CORS_ORIGENES`, `PORTAL_ALUMNO_URL`, `PORTAL_ALUMNO_API_KEY`, `PORTAL_API_KEY`
+  - recuperacion segura: `PASSWORD_RESET_ENABLED`, `PASSWORD_RESET_TOKEN_MINUTES`, `PASSWORD_RESET_URL_BASE`
+  - OAuth/Google: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_CLASSROOM_CLIENT_ID`, `GOOGLE_CLASSROOM_CLIENT_SECRET`, `GOOGLE_CLASSROOM_REDIRECT_URI`, `REQUIRE_GOOGLE_OAUTH`
+  - correo: `CORREO_MODULO_ACTIVO`, `NOTIFICACIONES_WEBHOOK_URL`, `NOTIFICACIONES_WEBHOOK_TOKEN`
+  - licencia: `ApiComercialBaseUrl`, `TenantId`, `CodigoActivacion`, `RequireLicenseActivation`
 
 Activacion segura opcional al instalar (GUI o headless):
 - `-ApiComercialBaseUrl`

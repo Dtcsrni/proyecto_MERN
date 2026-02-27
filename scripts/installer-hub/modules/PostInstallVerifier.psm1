@@ -38,6 +38,26 @@ function Invoke-PostInstallVerification {
       }
     }
 
+    $envPath = Join-Path $effectiveDir '.env'
+    if (-not (Test-Path $envPath)) {
+      $issues += "No se encontro archivo de configuracion operativa: $envPath"
+    } else {
+      $envRaw = Get-Content -Path $envPath -Raw -Encoding utf8
+      foreach ($requiredKey in @('MONGODB_URI', 'JWT_SECRETO', 'CORS_ORIGENES', 'PORTAL_ALUMNO_URL', 'PORTAL_ALUMNO_API_KEY', 'PORTAL_API_KEY')) {
+        if ($envRaw -notmatch ("(?m)^\s*{0}\s*=" -f [Regex]::Escape($requiredKey))) {
+          $issues += "Falta variable operativa en .env: $requiredKey"
+        }
+      }
+
+      if ($envRaw -match '(?m)^\s*REQUIRE_GOOGLE_OAUTH\s*=\s*1\s*$') {
+        foreach ($oauthKey in @('GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_CLASSROOM_CLIENT_ID', 'GOOGLE_CLASSROOM_CLIENT_SECRET', 'GOOGLE_CLASSROOM_REDIRECT_URI')) {
+          if ($envRaw -notmatch ("(?m)^\s*{0}\s*=" -f [Regex]::Escape($oauthKey))) {
+            $issues += "OAuth requerido y falta variable en .env: $oauthKey"
+          }
+        }
+      }
+    }
+
     $nodeMajor = Get-NodeMajorVersion
     if ($nodeMajor -lt 24) {
       $issues += 'Node.js 24+ no disponible tras instalacion.'

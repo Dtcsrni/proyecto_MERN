@@ -56,16 +56,28 @@ Backend docente:
 - `JWT_SECRETO`
 - `PORTAL_ALUMNO_URL`
 - `PORTAL_ALUMNO_API_KEY`
+- `PASSWORD_RESET_ENABLED` (`0`/`1`)
+- `PASSWORD_RESET_TOKEN_MINUTES`
+- `PASSWORD_RESET_URL_BASE`
+- `GOOGLE_OAUTH_CLIENT_ID` (si se habilita login Google)
+- `REQUIRE_GOOGLE_OAUTH` (`0`/`1`, exige claves Google/Classroom cuando esta en `1`)
+- `GOOGLE_CLASSROOM_CLIENT_ID` (si se habilita Classroom)
+- `GOOGLE_CLASSROOM_CLIENT_SECRET` (si se habilita Classroom)
+- `GOOGLE_CLASSROOM_REDIRECT_URI` (si se habilita Classroom)
 
 Portal cloud:
 - `MONGODB_URI`
 - `PORTAL_API_KEY`
 - `CODIGO_ACCESO_HORAS`
 - `CORS_ORIGENES`
+- `CORREO_MODULO_ACTIVO` (`0`/`1`)
+- `NOTIFICACIONES_WEBHOOK_URL` (obligatoria si `CORREO_MODULO_ACTIVO=1`)
+- `NOTIFICACIONES_WEBHOOK_TOKEN` (obligatoria si `CORREO_MODULO_ACTIVO=1`)
 
 Fail-fast en produccion:
 - Backend docente exige `MONGODB_URI`, `JWT_SECRETO`, `PORTAL_ALUMNO_URL`, `PORTAL_ALUMNO_API_KEY`, `CORS_ORIGENES`.
 - Portal cloud exige `MONGODB_URI`, `PORTAL_API_KEY`, `CORS_ORIGENES` y rechaza `CORS_ORIGENES=*`.
+- Si `CORREO_MODULO_ACTIVO=1`, backend exige `NOTIFICACIONES_WEBHOOK_URL` y `NOTIFICACIONES_WEBHOOK_TOKEN`.
 
 Frontend alumno/docente (build separado):
 - `VITE_APP_DESTINO` (`alumno` | `docente`)

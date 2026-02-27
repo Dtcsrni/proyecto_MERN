@@ -53,7 +53,16 @@ Objetivo: dejar operativo el piloto (1 institucion, 1-3 docentes) con backend lo
   - [ ] `JWT_SECRETO`
   - [ ] `PORTAL_ALUMNO_URL` (URL cloud real)
   - [ ] `PORTAL_ALUMNO_API_KEY` (misma clave del portal)
+  - [ ] `PORTAL_API_KEY` (para operaciones portal cloud)
   - [ ] `CORS_ORIGENES`
+  - [ ] `PASSWORD_RESET_TOKEN_MINUTES` y `PASSWORD_RESET_URL_BASE` (recuperacion segura de contraseña)
+  - [ ] `PASSWORD_RESET_ENABLED` (`0`/`1`)
+  - [ ] Si OAuth/Google habilitado: `GOOGLE_OAUTH_CLIENT_ID`
+  - [ ] Si OAuth requerido en sitio: `REQUIRE_GOOGLE_OAUTH=1`
+  - [ ] Si Classroom habilitado: `GOOGLE_CLASSROOM_CLIENT_ID`, `GOOGLE_CLASSROOM_CLIENT_SECRET`, `GOOGLE_CLASSROOM_REDIRECT_URI`
+  - [ ] `CORREO_MODULO_ACTIVO` (`0`/`1`)
+  - [ ] Si correo activo: `NOTIFICACIONES_WEBHOOK_URL` y `NOTIFICACIONES_WEBHOOK_TOKEN`
+  - [ ] Si licencia requerida: `TenantId` + `CodigoActivacion` en Installer Hub
 - [ ] Iniciar stack:
   - [ ] `npm run stack:prod`
   - [ ] `npm run portal:prod` (si aplica en host local)
@@ -62,6 +71,8 @@ Objetivo: dejar operativo el piloto (1 institucion, 1-3 docentes) con backend lo
   - [ ] `GET /api/salud/ready` => 200
   - [ ] `GET /api/metrics` => 200
   - [ ] `GET /api/version` => 200
+  - [ ] `POST /api/autenticacion/solicitar-recuperacion-contrasena` => 202
+  - [ ] `POST /api/autenticacion/restablecer-contrasena` => 204
 
 ## 5. Onboarding funcional (1-3 docentes)
 - [ ] Instalar via `EvaluaPro-InstallerHub.exe` en equipos objetivo.

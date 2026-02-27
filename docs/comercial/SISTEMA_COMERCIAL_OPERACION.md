@@ -11,7 +11,9 @@
 - Alcance: tenants, planes, suscripciones, licencias, cupones, campanas, cobranza, auditoria y metricas.
 
 ## Root admin Google
-- Variable: `SUPERADMIN_GOOGLE_EMAILS=tu-correo@dominio.com`.
+- Allowlist fija en backend (no configurable por entorno):
+  - `armsystechno@gmail.com`
+  - `erick.vega@cuh.mx`
 - En login/registro con Google, si el correo esta en allowlist se agregan roles:
   - `superadmin_negocio`
   - `admin`
@@ -60,7 +62,6 @@
 12. CI incluye prueba de integración de webhook firmado para bloquear regresiones de validación.
 
 ## Variables de entorno nuevas
-- `SUPERADMIN_GOOGLE_EMAILS`
 - `MERCADOPAGO_ACCESS_TOKEN`
 - `MERCADOPAGO_WEBHOOK_SECRET`
 - `MERCADOPAGO_WEBHOOK_MAX_EDAD_SEGUNDOS`

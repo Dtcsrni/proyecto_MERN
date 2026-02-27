@@ -13,6 +13,8 @@ import {
 	perfilDocente,
 	regenerarAccesosDirectosDocente,
 	recuperarContrasenaGoogle,
+	solicitarRecuperacionContrasena,
+	restablecerContrasena,
 	refrescarDocente,
 	registrarDocente,
 	registrarDocenteGoogle,
@@ -26,6 +28,8 @@ import {
 	esquemaIngresarDocente,
 	esquemaIngresarDocenteGoogle,
 	esquemaRecuperarContrasenaGoogle,
+	esquemaSolicitarRecuperacionContrasena,
+	esquemaRestablecerContrasena,
 	esquemaRegistrarDocente,
 	esquemaRegistrarDocenteGoogle
 } from './validacionesAutenticacion';
@@ -81,6 +85,18 @@ router.post(
 	limiterCredenciales,
 	validarCuerpo(esquemaRecuperarContrasenaGoogle, { strict: true }),
 	recuperarContrasenaGoogle
+);
+router.post(
+	'/solicitar-recuperacion-contrasena',
+	limiterCredenciales,
+	validarCuerpo(esquemaSolicitarRecuperacionContrasena, { strict: true }),
+	solicitarRecuperacionContrasena
+);
+router.post(
+	'/restablecer-contrasena',
+	limiterCredenciales,
+	validarCuerpo(esquemaRestablecerContrasena, { strict: true }),
+	restablecerContrasena
 );
 router.post('/refrescar', limiterRefresco, validarCuerpo(esquemaBodyVacioOpcional, { strict: true }), refrescarDocente);
 router.post('/salir', validarCuerpo(esquemaBodyVacioOpcional, { strict: true }), salirDocente);
