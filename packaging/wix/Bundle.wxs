@@ -8,6 +8,7 @@
 
     <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" />
     <Variable Name="InstallStartMenuShortcuts" Type="numeric" Value="1" Persisted="yes" />
+    <Variable Name="InstallFolder" Type="string" Value="C:\Program Files\EvaluaPro" Persisted="yes" bal:Overridable="yes" />
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense" LicenseUrl="" SuppressOptionsUI="no" />
@@ -18,6 +19,7 @@
         Id="EvaluaProMsi"
         SourceFile="$(var.SourceRoot)\dist\installer\EvaluaPro.msi"
         Visible="yes">
+        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="INSTALL_DESKTOP_SHORTCUTS" Value="[InstallDesktopShortcuts]" />
         <MsiProperty Name="INSTALL_STARTMENU_SHORTCUTS" Value="[InstallStartMenuShortcuts]" />
       </MsiPackage>
