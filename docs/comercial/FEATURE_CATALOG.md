@@ -3,88 +3,156 @@
 > Documento auto-generado. No editar manualmente.
 > Fecha de sincronizacion: **2026-02-27**
 
-## Matriz por nivel
+## Matriz por persona y nivel minimo
 
-| Capacidad | Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional | Estado tecnico | Evidencia |
-| --- | --- | --- | --- | --- | --- | --- |
-| Monitoreo de salud del sistema (`/salud`) | Plataforma | Si | Si | Si | Activa | `tests/salud.test.ts` |
-| Metricas Prometheus (`/metrics`) | Plataforma | No | Si | Si | Activa | `apps/backend/src/compartido/observabilidad/metrics.ts` |
-| Autenticacion docente y sesion segura (`/autenticacion`) | Seguridad | Si | Si | Si | Activa | `tests/integracion/autenticacionSesion.test.ts` |
-| Gestion de alumnos (`/alumnos`) | Operacion Academica | Si | Si | Si | Activa | `tests/integracion/alumnosEdicion.test.ts` |
-| Gestion de periodos y materias (`/periodos`) | Operacion Academica | Si | Si | Si | Activa | `tests/integracion/periodosBorradoDuplicados.test.ts` |
-| Banco de preguntas y asignacion (`/banco-preguntas`) | Preparacion de Examenes | Si | Si | Si | Activa | `tests/integracion/bancoPreguntasAsignarMateria.test.ts` |
-| Generacion de examenes PDF (`/examenes`) | Preparacion de Examenes | Si | Si | Si | Activa | `tests/integracion/pdfImpresionContrato.test.ts` |
-| Vinculacion por QR y entregas (`/entregas`) | Aplicacion y Captura | Si | Si | Si | Activa | `tests/integracion/flujoExamen.test.ts` |
-| Lectura OMR y validacion de respuestas (`/omr`) | Aplicacion y Captura | Si | Si | Si | Activa | `tests/omr.contrato.test.ts` |
-| Calificacion global y reglas institucionales (`/calificaciones`) | Calificacion | Si | Si | Si | Activa | `tests/calificacion.global.reglas.test.ts` |
-| Analiticas y exportables (`/analiticas`) | Calificacion | No | Si | Si | Activa | `tests/analiticas.xlsx.sv.contract.test.ts` |
-| Politicas de evaluacion por periodo (`/evaluaciones`) | Calificacion | No | Si | Si | Activa | `tests/integracion/evaluaciones.modulo.test.ts` |
-| Integracion con Google Classroom (`/integraciones/classroom`) | Integraciones | No | Si | Si | Activa | `tests/integracion/classroom.pull.test.ts` |
-| Sincronizacion local-cloud entre equipos (`/sincronizaciones`) | Operacion Distribuida | No | Si | Si | Activa | `tests/sincronizacion.contrato.test.ts` |
-| Papelera y recuperacion de registros (`/papelera`) | Operacion Distribuida | No | No | Si | Activa | `apps/backend/src/modulos/modulo_papelera` |
-| Cumplimiento (ARCO/DSR, retencion y auditoria) (`/compliance`) | Cumplimiento | No | No | Si | Activa | `tests/integracion/compliance.arco.test.ts` |
-| Administracion de docentes (`/admin`) | Gobernanza | No | No | Si | Activa | `apps/backend/src/modulos/modulo_admin_docentes` |
+| Capacidad | Categoria | Docente (nivel minimo) | Coordinacion (nivel minimo) | Institucional (nivel minimo) | Socio de Canal (nivel minimo) | Estado tecnico | Evidencia |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Monitoreo de salud del sistema (`/salud`) | Plataforma | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/salud.test.ts` |
+| Metricas Prometheus (`/metrics`) | Plataforma | Docente Impulso | Coordinacion Gestion | Institucional Esencial | Socio Operador | Activa | `apps/backend/src/compartido/observabilidad/metrics.ts` |
+| Autenticacion docente y sesion segura (`/autenticacion`) | Seguridad | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/autenticacionSesion.test.ts` |
+| Gestion de alumnos (`/alumnos`) | Operacion Academica | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/alumnosEdicion.test.ts` |
+| Gestion de periodos y materias (`/periodos`) | Operacion Academica | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/periodosBorradoDuplicados.test.ts` |
+| Banco de preguntas y asignacion (`/banco-preguntas`) | Preparacion de Examenes | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/bancoPreguntasAsignarMateria.test.ts` |
+| Generacion de examenes PDF (`/examenes`) | Preparacion de Examenes | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/pdfImpresionContrato.test.ts` |
+| Vinculacion por QR y entregas (`/entregas`) | Aplicacion y Captura | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/integracion/flujoExamen.test.ts` |
+| Lectura OMR y validacion de respuestas (`/omr`) | Aplicacion y Captura | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/omr.contrato.test.ts` |
+| Calificacion global y reglas institucionales (`/calificaciones`) | Calificacion | Docente Esencial | Coordinacion Esencial | Institucional Esencial | Socio Operador | Activa | `tests/calificacion.global.reglas.test.ts` |
+| Analiticas y exportables (`/analiticas`) | Calificacion | Docente Impulso | Coordinacion Gestion | Institucional Esencial | Socio Operador | Activa | `tests/analiticas.xlsx.sv.contract.test.ts` |
+| Politicas de evaluacion por periodo (`/evaluaciones`) | Calificacion | Docente Impulso | Coordinacion Gestion | Institucional Esencial | Socio Operador | Activa | `tests/integracion/evaluaciones.modulo.test.ts` |
+| Integracion con Google Classroom (`/integraciones/classroom`) | Integraciones | Docente Impulso | Coordinacion Gestion | Institucional Esencial | Socio Operador | Activa | `tests/integracion/classroom.pull.test.ts` |
+| Sincronizacion local-cloud entre equipos (`/sincronizaciones`) | Operacion Distribuida | Docente Impulso | Coordinacion Gestion | Institucional Esencial | Socio Operador | Activa | `tests/sincronizacion.contrato.test.ts` |
+| Papelera y recuperacion de registros (`/papelera`) | Operacion Distribuida | No | Coordinacion Acompanamiento | Institucional Esencial | Socio Operador | Activa | `apps/backend/src/modulos/modulo_papelera` |
+| Cumplimiento (ARCO/DSR, retencion y auditoria) (`/compliance`) | Cumplimiento | No | No | Institucional Sector Publico | Socio Operador | Activa | `tests/integracion/compliance.arco.test.ts` |
+| Administracion de docentes (`/admin`) | Gobernanza | No | Coordinacion Acompanamiento | Institucional Esencial | Socio Operador | Activa | `apps/backend/src/modulos/modulo_admin_docentes` |
 
 ## Aplicacion y Captura
 
 - **Lectura OMR y validacion de respuestas** (`/omr`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/omr.contrato.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/omr.contrato.test.ts`.
 - **Vinculacion por QR y entregas** (`/entregas`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/flujoExamen.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/flujoExamen.test.ts`.
 
 ## Calificacion
 
 - **Analiticas y exportables** (`/analiticas`)
-  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/analiticas.xlsx.sv.contract.test.ts`.
+  - Docente: Docente Impulso.
+  - Coordinacion: Coordinacion Gestion.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/analiticas.xlsx.sv.contract.test.ts`.
 - **Calificacion global y reglas institucionales** (`/calificaciones`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/calificacion.global.reglas.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/calificacion.global.reglas.test.ts`.
 - **Politicas de evaluacion por periodo** (`/evaluaciones`)
-  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/integracion/evaluaciones.modulo.test.ts`.
+  - Docente: Docente Impulso.
+  - Coordinacion: Coordinacion Gestion.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/evaluaciones.modulo.test.ts`.
 
 ## Cumplimiento
 
 - **Cumplimiento (ARCO/DSR, retencion y auditoria)** (`/compliance`)
-  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `tests/integracion/compliance.arco.test.ts`.
+  - Docente: No.
+  - Coordinacion: No.
+  - Institucional: Institucional Sector Publico.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/compliance.arco.test.ts`.
 
 ## Gobernanza
 
 - **Administracion de docentes** (`/admin`)
-  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_admin_docentes`.
+  - Docente: No.
+  - Coordinacion: Coordinacion Acompanamiento.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_admin_docentes`.
 
 ## Integraciones
 
 - **Integracion con Google Classroom** (`/integraciones/classroom`)
-  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/integracion/classroom.pull.test.ts`.
+  - Docente: Docente Impulso.
+  - Coordinacion: Coordinacion Gestion.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/classroom.pull.test.ts`.
 
 ## Operacion Academica
 
 - **Gestion de alumnos** (`/alumnos`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/alumnosEdicion.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/alumnosEdicion.test.ts`.
 - **Gestion de periodos y materias** (`/periodos`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/periodosBorradoDuplicados.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/periodosBorradoDuplicados.test.ts`.
 
 ## Operacion Distribuida
 
 - **Papelera y recuperacion de registros** (`/papelera`)
-  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_papelera`.
+  - Docente: No.
+  - Coordinacion: Coordinacion Acompanamiento.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_papelera`.
 - **Sincronizacion local-cloud entre equipos** (`/sincronizaciones`)
-  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/sincronizacion.contrato.test.ts`.
+  - Docente: Docente Impulso.
+  - Coordinacion: Coordinacion Gestion.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/sincronizacion.contrato.test.ts`.
 
 ## Plataforma
 
 - **Metricas Prometheus** (`/metrics`)
-  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `apps/backend/src/compartido/observabilidad/metrics.ts`.
+  - Docente: Docente Impulso.
+  - Coordinacion: Coordinacion Gestion.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `apps/backend/src/compartido/observabilidad/metrics.ts`.
 - **Monitoreo de salud del sistema** (`/salud`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/salud.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/salud.test.ts`.
 
 ## Preparacion de Examenes
 
 - **Banco de preguntas y asignacion** (`/banco-preguntas`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/bancoPreguntasAsignarMateria.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/bancoPreguntasAsignarMateria.test.ts`.
 - **Generacion de examenes PDF** (`/examenes`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/pdfImpresionContrato.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/pdfImpresionContrato.test.ts`.
 
 ## Seguridad
 
 - **Autenticacion docente y sesion segura** (`/autenticacion`)
-  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/autenticacionSesion.test.ts`.
+  - Docente: Docente Esencial.
+  - Coordinacion: Coordinacion Esencial.
+  - Institucional: Institucional Esencial.
+  - Socio de Canal: Socio Operador.
+  - Estado: activa. Evidencia: `tests/integracion/autenticacionSesion.test.ts`.

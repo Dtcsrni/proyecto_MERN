@@ -23,13 +23,56 @@ function parseMountedPrefixes(rutasSource) {
   return prefixes;
 }
 
-function tierRank(tier) {
-  if (tier === 'free') return 1;
-  if (tier === 'pro') return 2;
-  return 3;
+function buildPersonaMaps(personas) {
+  const labels = new Map();
+  for (const persona of personas) {
+    labels.set(persona.id, persona.etiquetasNivel || persona.tierLabels || {});
+  }
+  return { labels };
 }
 
-function renderFeatureCatalog({ tiers, capabilities, mountedPrefixes }) {
+function formatAvailability(availability, persona, labels) {
+  const tierId = availability?.[persona.id] ?? null;
+  if (!tierId) return 'No';
+  return labels.get(persona.id)?.[tierId] || tierId;
+}
+
+function summarizeByPersona(capabilities, personas) {
+  const counts = new Map();
+  for (const persona of personas) counts.set(persona.id, 0);
+
+  for (const capability of capabilities) {
+    for (const persona of personas) {
+      if (capability.availability?.[persona.id]) {
+        counts.set(persona.id, (counts.get(persona.id) || 0) + 1);
+      }
+    }
+  }
+  return counts;
+}
+
+function validateConfig(config) {
+  if (!Array.isArray(config.personas) || config.personas.length === 0) {
+    throw new Error('feature-catalog.config.json requiere el arreglo "personas".');
+  }
+  if (!Array.isArray(config.capabilities) || config.capabilities.length === 0) {
+    throw new Error('feature-catalog.config.json requiere el arreglo "capabilities".');
+  }
+
+  const personaIds = new Set(config.personas.map((p) => p.id));
+  for (const capability of config.capabilities) {
+    if (!capability.availability || typeof capability.availability !== 'object') {
+      throw new Error(`Capability ${capability.routePrefix} sin bloque availability.`);
+    }
+    for (const key of Object.keys(capability.availability)) {
+      if (!personaIds.has(key)) {
+        throw new Error(`Capability ${capability.routePrefix} tiene persona no declarada: ${key}`);
+      }
+    }
+  }
+}
+
+function renderFeatureCatalog({ personas, capabilities, mountedPrefixes, labels }) {
   const generatedAt = nowIsoDate();
   const byCategory = new Map();
   for (const c of capabilities) {
@@ -46,20 +89,23 @@ function renderFeatureCatalog({ tiers, capabilities, mountedPrefixes }) {
   lines.push('> Documento auto-generado. No editar manualmente.');
   lines.push(`> Fecha de sincronizacion: **${generatedAt}**`);
   lines.push('');
-  lines.push('## Matriz por nivel');
+  lines.push('## Matriz por persona y nivel minimo');
   lines.push('');
-  lines.push('| Capacidad | Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional | Estado tecnico | Evidencia |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+
+  const header = ['Capacidad', 'Categoria', ...personas.map((p) => `${p.label} (nivel minimo)`), 'Estado tecnico', 'Evidencia'];
+  lines.push(`| ${header.join(' | ')} |`);
+  lines.push(`| ${header.map(() => '---').join(' | ')} |`);
 
   for (const c of capabilities) {
-    const r = tierRank(c.tier);
-    const free = r <= 1 ? 'Si' : 'No';
-    const pro = r <= 2 ? 'Si' : 'No';
-    const ent = r <= 3 ? 'Si' : 'No';
     const status = mountedPrefixes.has(c.routePrefix) ? 'Activa' : 'No detectada';
-    lines.push(
-      `| ${c.name} (\`${c.routePrefix}\`) | ${c.category} | ${free} | ${pro} | ${ent} | ${status} | \`${c.evidence}\` |`
-    );
+    const row = [
+      `${c.name} (\`${c.routePrefix}\`)`,
+      c.category,
+      ...personas.map((persona) => formatAvailability(c.availability, persona, labels)),
+      status,
+      `\`${c.evidence}\``
+    ];
+    lines.push(`| ${row.join(' | ')} |`);
   }
 
   for (const category of categories) {
@@ -67,38 +113,50 @@ function renderFeatureCatalog({ tiers, capabilities, mountedPrefixes }) {
     lines.push(`## ${category}`);
     lines.push('');
     for (const c of byCategory.get(category).sort((a, b) => a.name.localeCompare(b.name, 'es'))) {
-      const tier = tiers.find((t) => t.id === c.tier)?.label ?? c.tier;
       lines.push(`- **${c.name}** (\`${c.routePrefix}\`)`);
-      lines.push(`  Nivel minimo: ${tier}. Estado: ${c.status}. Evidencia: \`${c.evidence}\`.`);
+      for (const persona of personas) {
+        lines.push(`  - ${persona.label}: ${formatAvailability(c.availability, persona, labels)}.`);
+      }
+      lines.push(`  - Estado: ${c.status}. Evidencia: \`${c.evidence}\`.`);
     }
   }
 
   return lines.join('\n') + '\n';
 }
 
-function updateRootReadmeFeatureBlock(capabilities) {
+function updateRootReadmeFeatureBlock(personas, capabilities) {
   const markerStart = '<!-- AUTO:FEATURES:START -->';
   const markerEnd = '<!-- AUTO:FEATURES:END -->';
   const content = fs.readFileSync(rootReadmePath, 'utf8');
   const summary = [
     markerStart,
-    '## Funciones Confiables por Edicion',
+    '## Funciones Confiables por Persona',
     '',
     '_Lista auto-sincronizada desde rutas reales del backend + evidencia de pruebas._',
     '',
-    '| Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional |',
-    '| --- | --- | --- | --- |'
+    `| Categoria | ${personas.map((p) => p.label).join(' | ')} |`,
+    `| --- | ${personas.map(() => '---').join(' | ')} |`
   ];
 
-  const catMap = new Map();
-  for (const c of capabilities) {
-    if (!catMap.has(c.category)) catMap.set(c.category, { free: 0, pro: 0, enterprise: 0 });
-    catMap.get(c.category)[c.tier] += 1;
+  const categoryMap = new Map();
+  for (const capability of capabilities) {
+    if (!categoryMap.has(capability.category)) {
+      categoryMap.set(capability.category, Object.fromEntries(personas.map((p) => [p.id, 0])));
+    }
+    const bucket = categoryMap.get(capability.category);
+    for (const persona of personas) {
+      if (capability.availability?.[persona.id]) bucket[persona.id] += 1;
+    }
   }
-  for (const [category, counts] of [...catMap.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'))) {
-    summary.push(`| ${category} | ${counts.free} | ${counts.pro} | ${counts.enterprise} |`);
+
+  for (const [category, counts] of [...categoryMap.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'))) {
+    const rowCounts = personas.map((p) => String(counts[p.id] || 0));
+    summary.push(`| ${category} | ${rowCounts.join(' | ')} |`);
   }
+
+  const totals = summarizeByPersona(capabilities, personas);
   summary.push('');
+  summary.push(`- Totales por persona: ${personas.map((p) => `${p.label}: ${totals.get(p.id) || 0}`).join(' · ')}.`);
   summary.push('- Catalogo completo: [docs/comercial/FEATURE_CATALOG.md](docs/comercial/FEATURE_CATALOG.md)');
   summary.push(markerEnd);
 
@@ -115,11 +173,16 @@ function updateRootReadmeFeatureBlock(capabilities) {
 function main() {
   const rutasSource = fs.readFileSync(rutasPath, 'utf8');
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  validateConfig(config);
+
   const mountedPrefixes = parseMountedPrefixes(rutasSource);
+  const { labels } = buildPersonaMaps(config.personas);
+
   const markdown = renderFeatureCatalog({
-    tiers: config.tiers,
+    personas: config.personas,
     capabilities: config.capabilities,
-    mountedPrefixes
+    mountedPrefixes,
+    labels
   });
 
   fs.writeFileSync(outMdPath, markdown, 'utf8');
@@ -129,6 +192,7 @@ function main() {
       {
         generatedAt: new Date().toISOString(),
         mountedPrefixes: [...mountedPrefixes].sort(),
+        personas: config.personas,
         capabilities: config.capabilities.map((c) => ({
           ...c,
           status: mountedPrefixes.has(c.routePrefix) ? 'activa' : 'no-detectada'
@@ -139,7 +203,8 @@ function main() {
     ) + '\n',
     'utf8'
   );
-  updateRootReadmeFeatureBlock(config.capabilities);
+
+  updateRootReadmeFeatureBlock(config.personas, config.capabilities);
   console.log(`[docs:features:sync] actualizado ${path.relative(repoRoot, outMdPath)} y README.md`);
 }
 

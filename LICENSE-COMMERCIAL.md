@@ -1,7 +1,7 @@
 # Licencia Comercial EvaluaPro
 
 Este repositorio usa un modelo dual:
-- Edicion Open Core: AGPL-3.0-or-later (`LICENSE`).
+- Edicion de nucleo abierto: AGPL-3.0-or-later (`LICENSE`).
 - Edicion Comercial: licencia propietaria bajo contrato de suscripcion/soporte.
 
 ## Alcance comercial
@@ -16,14 +16,16 @@ Modalidades de pago:
 4. Licencia de unico pago (perpetua por version mayor) con garantia de actualizaciones por periodo definido en contrato.
 
 Tipos de licencia comercial disponibles (segun contrato):
-1. Suscripcion Inicial.
-2. Suscripcion de Crecimiento.
-3. Suscripcion Institucional.
-4. Licencia Institucional Perpetua.
-5. Licencia Campus / Multisede.
-6. Proveedor de Servicio Administrado (MSP).
-7. OEM / Marca Blanca.
-8. Sector Publico con anexo de cumplimiento.
+1. Docente Esencial / Impulso / Rendimiento / Acompanamiento.
+2. Coordinacion Esencial / Control / Gestion / Acompanamiento.
+3. Institucional Esencial / Integral / Multisede / Sector Publico.
+4. Socio Operador / Crecimiento / Marca Blanca / OEM Integrado.
+5. Licencia Institucional Perpetua.
+
+Promocion de prueba comercial (35 dias):
+- Acceso temporal a capacidades comerciales para validacion de valor.
+- Requiere consentimiento informado para tratamiento de datos operativos/de uso con finalidades de producto, soporte y conversion comercial.
+- Debe respetar aviso de privacidad vigente y mecanismos ARCO/DSR aplicables.
 
 Referencia operativa de niveles y tipos: `docs/comercial/LICENSING_TIERS.md`.
 

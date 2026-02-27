@@ -1,49 +1,56 @@
-# EvaluaPro | Evaluacion Universitaria 
+# EvaluaPro | Evaluacion Universitaria
 
 EvaluaPro convierte el flujo academico completo en un proceso trazable y repetible: diseno de examen, impresion PDF, aplicacion, lectura OMR, calificacion y publicacion.
 
-Esta version del repositorio sigue un enfoque **Open Core**:
+Esta version del repositorio sigue un enfoque **Nucleo Abierto**:
 - **Edicion gratuita (AGPL)**: cubre el flujo minimo que realmente resuelve operacion docente diaria.
 - **Ediciones comercial e institucional**: habilitan capacidades avanzadas por nivel, soporte y compromisos de hoja de ruta.
 
 ## Propuesta de Valor Comercial
 - Reduce reprocesos en captura/calificacion con flujos validados en CI.
 - Minimiza riesgo operativo con contratos de API, OMR y release.
-- Permite adopcion progresiva: iniciar gratis y escalar a licencia comercial sin migracion de plataforma.
+- Permite adopcion progresiva: iniciar gratis, contratar un plan comercial individual de entrada y escalar sin migracion de plataforma.
 
 ## Ediciones y Licenciamiento
-- `Edicion Comunitaria (AGPLv3)`: uso del core abierto bajo `LICENSE`.
+- `Edicion Comunitaria (AGPLv3)`: uso del nucleo abierto bajo `LICENSE`.
 - `Edicion Comercial` y `Edicion Institucional`: `LICENSE-COMMERCIAL.md`.
+- Nivel comercial de entrada recomendado (docente): `Docente Esencial` (1 docente, calidad/precio).
+- Promocion comercial de prueba: `35 dias` con consentimiento informado para uso de datos operativos y de adopcion.
 - Modalidades comerciales: mensual, semestral, anual y pago unico recomendado.
 - Detalle de niveles: [docs/comercial/LICENSING_TIERS.md](docs/comercial/LICENSING_TIERS.md).
 - Estrategia comercial: [docs/comercial/ESTRATEGIA_COMERCIAL.md](docs/comercial/ESTRATEGIA_COMERCIAL.md).
+- Monetizacion de la Edicion Comunitaria: [docs/comercial/MONETIZACION_EDICION_COMUNITARIA.md](docs/comercial/MONETIZACION_EDICION_COMUNITARIA.md).
+- Analisis de mercado LATAM: [docs/comercial/MERCADO_LATAM_ANALISIS.md](docs/comercial/MERCADO_LATAM_ANALISIS.md).
+- Modelo de pricing: [docs/comercial/MODELO_PRECIOS_LATAM.md](docs/comercial/MODELO_PRECIOS_LATAM.md).
+- Arquitectura de oferta por perfil: [docs/comercial/ARQUITECTURA_OFERTA_PERFIL_NIVELES.md](docs/comercial/ARQUITECTURA_OFERTA_PERFIL_NIVELES.md).
 
 ## Funciones actuales
 Las funciones se sincronizan automaticamente desde rutas activas del backend + evidencia de pruebas.
 
 <!-- AUTO:FEATURES:START -->
-## Funciones Confiables por Edicion
+## Funciones Confiables por Persona
 
 _Lista auto-sincronizada desde rutas reales del backend + evidencia de pruebas._
 
-| Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional |
-| --- | --- | --- | --- |
-| Aplicacion y Captura | 2 | 0 | 0 |
-| Calificacion | 1 | 2 | 0 |
-| Cumplimiento | 0 | 0 | 1 |
-| Gobernanza | 0 | 0 | 1 |
-| Integraciones | 0 | 1 | 0 |
-| Operacion Academica | 2 | 0 | 0 |
-| Operacion Distribuida | 0 | 1 | 1 |
-| Plataforma | 1 | 1 | 0 |
-| Preparacion de Examenes | 2 | 0 | 0 |
-| Seguridad | 1 | 0 | 0 |
+| Categoria | Docente | Coordinacion | Institucional | Socio de Canal |
+| --- | --- | --- | --- | --- |
+| Aplicacion y Captura | 2 | 2 | 2 | 2 |
+| Calificacion | 3 | 3 | 3 | 3 |
+| Cumplimiento | 0 | 0 | 1 | 1 |
+| Gobernanza | 0 | 1 | 1 | 1 |
+| Integraciones | 1 | 1 | 1 | 1 |
+| Operacion Academica | 2 | 2 | 2 | 2 |
+| Operacion Distribuida | 1 | 2 | 2 | 2 |
+| Plataforma | 2 | 2 | 2 | 2 |
+| Preparacion de Examenes | 2 | 2 | 2 | 2 |
+| Seguridad | 1 | 1 | 1 | 1 |
 
+- Totales por persona: Docente: 14 · Coordinacion: 16 · Institucional: 17 · Socio de Canal: 17.
 - Catalogo completo: [docs/comercial/FEATURE_CATALOG.md](docs/comercial/FEATURE_CATALOG.md)
 <!-- AUTO:FEATURES:END -->
 
 ## Hoja de Ruta Comercial (Promesas por Nivel)
-- `Edicion Comunitaria`: estabilidad del core y mejoras publicas sin SLA.
+- `Edicion Comunitaria`: estabilidad del nucleo y mejoras publicas sin SLA.
 - `Edicion Comercial`: prioridad en automatizacion docente y productividad.
 - `Edicion Institucional`: compromisos formales de hoja de ruta, cumplimiento y soporte institucional.
 
@@ -87,3 +94,4 @@ Para cotizacion de licencias comerciales, despliegue institucional y soporte, es
 - Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](docs/comercial/LICENSING_TIERS.md).
 - Ultima sincronizacion automatica: 2026-02-27.
 <!-- AUTO:COMMERCIAL-CONTEXT:END -->
+
