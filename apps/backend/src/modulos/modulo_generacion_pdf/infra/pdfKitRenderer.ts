@@ -50,26 +50,26 @@ const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   qrMarginModulos: 8,
   qrRasterWidth: 780,
   marcasEsquina: 'cuadrados',
-  marcaCuadradoSize: 14 * MM_A_PUNTOS,
-  marcaCuadradoQuietZone: 2.6 * MM_A_PUNTOS,
-  burbujaRadio: (6.1 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 9.4 * MM_A_PUNTOS,
-  burbujaStroke: 1.2,
-  burbujaOffsetX: 14.2,
-  omrHeaderGap: 16,
-  omrTagWidth: 26,
-  omrTagHeight: 10,
-  omrTagFontSize: 6.9,
-  omrLabelFontSize: 6.0,
-  omrBoxBorderWidth: 1.45,
-  omrPanelPadding: 4.5,
-  cajaOmrAncho: 78,
+  marcaCuadradoSize: 9.2 * MM_A_PUNTOS,
+  marcaCuadradoQuietZone: 1.4 * MM_A_PUNTOS,
+  burbujaRadio: (5.4 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 8.4 * MM_A_PUNTOS,
+  burbujaStroke: 1,
+  burbujaOffsetX: 10.8,
+  omrHeaderGap: 14,
+  omrTagWidth: 24,
+  omrTagHeight: 9,
+  omrTagFontSize: 6.4,
+  omrLabelFontSize: 5.6,
+  omrBoxBorderWidth: 1.1,
+  omrPanelPadding: 2.2,
+  cajaOmrAncho: 74,
   // Fiduciales compactos para evitar recortes y mejorar deteccion.
-  fiducialSize: 4.2 * MM_A_PUNTOS,
-  fiducialMargin: 3.6,
-  fiducialQuietZone: 1.2 * MM_A_PUNTOS,
-  bubbleStrokePt: 1.2,
-  labelToBubbleMm: 4.0,
+  fiducialSize: 2.4 * MM_A_PUNTOS,
+  fiducialMargin: 1.8,
+  fiducialQuietZone: 0.8 * MM_A_PUNTOS,
+  bubbleStrokePt: 1,
+  labelToBubbleMm: 3.2,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };
@@ -621,23 +621,23 @@ export class PdfKitRenderer {
     const colorAcentoSuave = rgb(0.93, 0.97, 1);
     const colorSeccion = rgb(0.97, 0.98, 1);
 
-    const sizeTitulo = 12.4;
-    const sizeMeta = 7.6;
-    const sizePregunta = 7.8;
-    const sizeOpcion = 6.8;
-    const sizeCodigoInline = 7.6;
-    const sizeCodigoBloque = 7.2;
+    const sizeTitulo = 14;
+    const sizeMeta = 8.4;
+    const sizePregunta = 10.8;
+    const sizeOpcion = 9.6;
+    const sizeCodigoInline = 9.2;
+    const sizeCodigoBloque = 8.8;
 
-    const lineaPregunta = 8.2;
-    const lineaOpcion = 7.2;
-    const lineaCodigoBloque = 7.8;
+    const lineaPregunta = 11.8;
+    const lineaOpcion = 10.4;
+    const lineaCodigoBloque = 9.8;
     const separacionPregunta = 0;
 
     const omrTotalLetras = 5;
     const omrRadio = perfilOmr.burbujaRadio;
     const omrPasoY = perfilOmr.burbujaPasoY;
-    const omrPadding = 4.2;
-    const omrExtraTitulo = 9;
+    const omrPadding = 3.4;
+    const omrExtraTitulo = 8;
 
     const anchoColRespuesta = perfilOmr.cajaOmrAncho;
     const gutterRespuesta = 11;
@@ -895,7 +895,8 @@ export class PdfKitRenderer {
         });
       }
 
-      const yZonaContenidoBase = esPrimera ? yCaja - 2 : yTop - 22;
+      // Reserva separacion visual clara entre encabezado y primera pregunta.
+      const yZonaContenidoBase = esPrimera ? yCaja - 30 : yTop - 28;
       const yZonaContenidoSeguro = yQr - (qrPadding + 8);
       const yZonaContenido = esPrimera ? yZonaContenidoBase : Math.min(yZonaContenidoBase, yZonaContenidoSeguro);
       const cursorYInicio = snapToGrid(yZonaContenido);
@@ -1139,7 +1140,7 @@ export class PdfKitRenderer {
         const yUltimaBurbuja = yPrimeraBurbuja - (omrTotalLetras - 1) * omrPasoY;
         const omrExtraBottom = 6;
         const bottom = yUltimaBurbuja - omrRadio - 4 - omrExtraBottom;
-        const hCaja = Math.max(40, top - bottom);
+        const hCaja = Math.max(38, top - bottom);
         const panelPad = perfilOmr.omrPanelPadding;
 
         if (panelPad > 0) {
@@ -1161,6 +1162,10 @@ export class PdfKitRenderer {
           borderColor: rgb(0, 0, 0),
           color: this.perfilLayout.usarRellenosDecorativos ? colorSeccion : rgb(1, 1, 1)
         });
+        assertRectDentroPagina(
+          { x: xColRespuesta, y: bottom, width: anchoColRespuesta, height: hCaja },
+          `omr-pregunta-${numero}`
+        );
 
         const hTag = perfilOmr.omrTagHeight;
         const wTag = perfilOmr.omrTagWidth;
@@ -1202,8 +1207,8 @@ export class PdfKitRenderer {
           });
           page.drawText(letra, {
             x: xBurbuja + omrRadio + mmAPuntos(perfilOmr.labelToBubbleMm ?? 5),
-            y: yBurbuja - 3,
-            size: 8.3,
+            y: yBurbuja - 3.2,
+            size: 8.8,
             font: fuente,
             color: rgb(0.12, 0.12, 0.12)
           });
@@ -1217,6 +1222,9 @@ export class PdfKitRenderer {
         const xFidRight = xColRespuesta + anchoColRespuesta - (halfFid + fidMargin);
         const yFidTop = top - (halfFid + fidMargin);
         const yFidBottom = bottom + halfFid + fidMargin;
+        if (yFidBottom >= yFidTop) {
+          throw new Error(`Layout invalido: fiduciales invertidos en pregunta ${numero}`);
+        }
         dibujarFiducialOmr(page, xFid, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
         dibujarFiducialOmr(page, xFid, yFidBottom, fidSize, perfilOmr.fiducialQuietZone);
         dibujarFiducialOmr(page, xFidRight, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
