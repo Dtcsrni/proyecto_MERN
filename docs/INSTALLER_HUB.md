@@ -1,15 +1,32 @@
 # Installer Hub (Windows)
 
-Bootstrapper online para instalacion desde cero de EvaluaPro en Windows.
+Bootstrapper online para instalacion desde cero de EvaluaPro en entornos docentes Windows.
 
 ## Objetivo
-- Ejecutar instalacion/reparacion/desinstalacion con UI guiada.
-- Verificar y autoinstalar prerequisitos (Node.js 24+ y Docker Desktop).
-- Descargar siempre la release estable mas reciente (`EvaluaPro.msi`) y validar SHA256.
-- Ejecutar MSI en modo silencioso y verificar estado final.
+- Ejecutar instalacion, reparacion o desinstalacion desde una GUI guiada.
+- Verificar y autoinstalar prerequisitos (Node.js y Docker Desktop) desde fuentes oficiales.
+- Descargar la release objetivo y validar integridad criptografica (`SHA-256`).
+- Ejecutar MSI con `msiexec` y validar estado final de modulos criticos.
+- Dejar trazabilidad en logs por sesion para soporte tecnico.
 
-## Componentes
-- Entry UI: `scripts/installer-hub/InstallerHub.ps1`
+## Flujo funcional
+1. Elevacion UAC y validacion inicial.
+2. Splash introductorio y seleccion guiada.
+3. Deteccion de modo:
+   - `install`
+   - `repair`
+   - `uninstall`
+4. Analisis de requisitos de equipo (SO, arquitectura, red, disco, prerequisitos).
+5. Instalacion silenciosa de prerequisitos faltantes.
+6. Resolucion de release y descarga de `EvaluaPro.msi`.
+7. Verificacion de hash con `EvaluaPro.msi.sha256`.
+8. Ejecucion de `msiexec` segun modo.
+9. Verificacion post-instalacion.
+10. Pantalla de cierre con acciones (abrir dashboard, ver logs, reintentar).
+
+## Estructura y componentes
+- Entry UI:
+  - `scripts/installer-hub/InstallerHub.ps1`
 - Modulos:
   - `scripts/installer-hub/modules/ReleaseResolver.psm1`
   - `scripts/installer-hub/modules/PrereqDetector.psm1`
@@ -17,27 +34,63 @@ Bootstrapper online para instalacion desde cero de EvaluaPro en Windows.
   - `scripts/installer-hub/modules/ProductInstaller.psm1`
   - `scripts/installer-hub/modules/PostInstallVerifier.psm1`
 
-## Manifiestos
-- Prerequisitos: `config/installer-prereqs.manifest.json`
-- Release manifest generado: `dist/installer/EvaluaPro-release-manifest.json`
-
-## Build
-```powershell
-npm run installer:hub:build
-npm run installer:hashes
-npm run installer:sign
-```
-
-## Artefactos release
+## Contratos de release
+Assets esperados en GitHub Release:
 - `EvaluaPro.msi`
 - `EvaluaPro.msi.sha256`
 - `EvaluaPro-InstallerHub.exe`
 - `EvaluaPro-InstallerHub.exe.sha256`
 - `EvaluaPro-release-manifest.json`
 
-## Exit codes Installer Hub
-- `0`: Exito.
-- `10`: Falla en requisitos o prerequisitos.
-- `20`: Falla en descarga/verificacion de release.
-- `30`: Falla en ejecucion MSI.
-- `40`: Falla en verificacion final post-instalacion.
+Manifest de prerequisitos versionado:
+- `config/installer-prereqs.manifest.json`
+
+Manifest de release generado:
+- `dist/installer/EvaluaPro-release-manifest.json`
+- campos minimos: `version`, `channel`, `msiUrl`, `msiSha256Url`, `publishedAt`
+
+## Build local
+```powershell
+npm run installer:hub:build
+npm run installer:hashes
+npm run installer:sign
+```
+
+## Pipeline CI Windows
+Workflow: `.github/workflows/ci-installer-windows.yml`
+
+Etapas principales:
+1. `npm ci`
+2. instalacion de WiX CLI
+3. gates de contrato (`test:wix:policy`, `test:installer-hub:contract`)
+4. build MSI + bundle
+5. build Installer Hub
+6. generacion de hashes y release manifest
+7. signing gate opcional
+8. publicacion de artefactos y release assets
+
+Regla de publicacion:
+- tags `v*` publican release assets.
+- tags con `alpha`, `beta` o `rc` se marcan como `prerelease`.
+- tags sin esos sufijos se marcan como release estable (`latest`).
+
+## Exit codes (estandarizados)
+- `0`: exito.
+- `10`: prerequisitos no cumplidos tras intento.
+- `20`: descarga o verificacion fallida.
+- `30`: instalacion MSI fallida.
+- `40`: validacion post-instalacion fallida.
+
+## Manejo de fallos y casos limite
+- Sin internet: bloqueo temprano y opcion de reintento.
+- Asset o API no disponible: reintentos controlados y mensaje accionable.
+- Hash invalido: aborta y purga artefacto descargado.
+- MSI con codigo no-cero: mapeo a mensaje entendible + log tecnico.
+- Uninstall sin instalacion previa: salida idempotente en exito.
+- Limpieza total: requiere confirmacion explicita.
+
+## Operacion recomendada para soporte
+1. Revisar logs de sesion Installer Hub.
+2. Verificar versiones y hashes de los assets descargados.
+3. Correlacionar codigo de salida con el modulo fallido.
+4. Ejecutar reparacion antes de desinstalacion en incidentes no destructivos.

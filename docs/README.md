@@ -2,7 +2,7 @@
 
 Documentacion oficial de Sistema EvaluaPro.
 
-Ultima actualizacion integral: 2026-02-25.
+Ultima actualizacion integral: 2026-02-27.
 
 ## Arranque para agentes IA
 - `../AGENTS.md`
@@ -25,6 +25,7 @@ Ultima actualizacion integral: 2026-02-25.
 - `INVENTARIO_PROYECTO.md`
 - `DEVOPS_BASELINE.md`
 - `RELEASE_GATE_STABLE.md`
+- `ROADMAP_REQUISITOS.md`
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`
