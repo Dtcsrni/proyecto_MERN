@@ -22,6 +22,10 @@ Objetivo: dejar operativo el piloto (1 institucion, 1-3 docentes) con backend lo
   - [ ] `npm run installer:hashes`
 - [ ] Firmar artefactos (si hay certificado):
   - [ ] `npm run installer:sign`
+- [ ] Si se usa firma interna:
+  - [ ] `npm run installer:sign:internal:init`
+  - [ ] `npm run installer:sign:internal:trust` en cada equipo del piloto
+  - [ ] Cargar secretos de firma interna en GitHub Actions (`EVALUAPRO_SIGN_CERT_BASE64`, `EVALUAPRO_SIGN_CERT_PASSWORD`, `EVALUAPRO_SIGN_TIMESTAMP_URL`)
 - [ ] Verificar artefactos esperados en `dist/installer`:
   - [ ] `EvaluaPro.msi`
   - [ ] `EvaluaPro.msi.sha256`

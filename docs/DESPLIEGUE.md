@@ -120,6 +120,29 @@ Signing gate opcional (si hay certificado en variables de entorno):
 npm run installer:sign
 ```
 
+Firma interna (sin costo, para despliegue controlado):
+```powershell
+npm run installer:sign:internal:init
+```
+- Genera `dist/signing-internal/evaluapro-internal-signing.pfx` y `.cer`.
+- Genera `dist/signing-internal/github-secrets.internal-signing.env` con variables para GitHub Actions.
+
+Confiar certificado interno en equipo(s) piloto:
+```powershell
+npm run installer:sign:internal:trust
+```
+
+Publicar secretos en GitHub (manual):
+- `EVALUAPRO_SIGN_CERT_BASE64`
+- `EVALUAPRO_SIGN_CERT_PASSWORD`
+- `EVALUAPRO_SIGN_TIMESTAMP_URL`
+
+Verificar firma local:
+```powershell
+Get-AuthenticodeSignature .\dist\installer\EvaluaPro-Setup.exe
+Get-AuthenticodeSignature .\dist\installer\EvaluaPro.msi
+```
+
 Garantia de estabilidad para distribuible:
 - `msi:build` ejecuta checks obligatorios antes de empaquetar:
   - `lint`
@@ -148,7 +171,7 @@ Prerequisitos de instalacion:
 
 CI de instalador Windows:
 - Workflow: `.github/workflows/ci-installer-windows.yml`.
-- Trigger: `main`, tags `v*` y `workflow_dispatch`.
+- Trigger: tags `v*` y `workflow_dispatch`.
 - Valida `test:wix:policy` + `test:installer-hub:contract`.
 - Compila MSI + bundle (`-SkipStabilityChecks -IncludeBundle`), compila `Installer Hub`, genera hashes/manifiesto y ejecuta signing gate opcional.
 - En tags `v*` publica automáticamente assets en GitHub Releases:

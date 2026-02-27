@@ -143,6 +143,8 @@
     "installer:hub:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer-hub.ps1",
     "installer:hashes": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-installer-hashes.ps1",
     "installer:sign": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sign-installer-artifacts.ps1",
+    "installer:sign:internal:init": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/signing/new-internal-signing-cert.ps1",
+    "installer:sign:internal:trust": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/signing/install-internal-signing-cert.ps1",
     "test:installer-hub:contract": "node --test scripts/tests/installer-hub-contract.test.mjs",
     "status": "node scripts/dashboard.mjs",
     "vscode:tune": "node scripts/vscode-tune.mjs",
