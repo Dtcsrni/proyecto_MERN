@@ -21,8 +21,8 @@ Ruta: `docs/diagramas/src/secuencias`.
 ## Contexto Comercial y Soporte
 
 - Rol de este documento: Documentacion funcional/operativa para despliegue, seguridad y cumplimiento.
-- Edicion Free (AGPL): flujo operativo base para uso real.
-- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Edicion Comunitaria (AGPL): flujo operativo base para uso real.
+- Edicion Comercial/Institucional: mas automatizacion, soporte SLA, endurecimiento y hoja de ruta prioritaria por nivel.
 - Catalogo dinamico de capacidades: [FEATURE_CATALOG](../../../comercial/FEATURE_CATALOG.md).
 - Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](../../../comercial/LICENSING_TIERS.md).
 - Ultima sincronizacion automatica: 2026-02-27.

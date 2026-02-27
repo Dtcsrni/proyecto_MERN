@@ -2,17 +2,17 @@
   "tiers": [
     {
       "id": "free",
-      "label": "Free (AGPL)",
+      "label": "Edicion Comunitaria (AGPL)",
       "description": "Flujo minimo util para operar evaluacion universitaria real."
     },
     {
       "id": "pro",
-      "label": "Commercial Pro",
+      "label": "Edicion Comercial",
       "description": "Automatizacion y productividad para equipos docentes."
     },
     {
       "id": "enterprise",
-      "label": "Commercial Enterprise",
+      "label": "Edicion Institucional",
       "description": "Gobernanza avanzada, cumplimiento y operacion institucional."
     }
   ],

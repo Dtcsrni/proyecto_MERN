@@ -3,9 +3,9 @@
 > Documento auto-generado. No editar manualmente.
 > Fecha de sincronizacion: **2026-02-27**
 
-## Matriz por tier
+## Matriz por nivel
 
-| Capacidad | Categoria | Free (AGPL) | Commercial Pro | Commercial Enterprise | Estado tecnico | Evidencia |
+| Capacidad | Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional | Estado tecnico | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
 | Monitoreo de salud del sistema (`/salud`) | Plataforma | Si | Si | Si | Activa | `tests/salud.test.ts` |
 | Metricas Prometheus (`/metrics`) | Plataforma | No | Si | Si | Activa | `apps/backend/src/compartido/observabilidad/metrics.ts` |
@@ -28,63 +28,63 @@
 ## Aplicacion y Captura
 
 - **Lectura OMR y validacion de respuestas** (`/omr`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/omr.contrato.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/omr.contrato.test.ts`.
 - **Vinculacion por QR y entregas** (`/entregas`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/flujoExamen.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/flujoExamen.test.ts`.
 
 ## Calificacion
 
 - **Analiticas y exportables** (`/analiticas`)
-  Tier minimo: Commercial Pro. Estado: activa. Evidencia: `tests/analiticas.xlsx.sv.contract.test.ts`.
+  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/analiticas.xlsx.sv.contract.test.ts`.
 - **Calificacion global y reglas institucionales** (`/calificaciones`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/calificacion.global.reglas.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/calificacion.global.reglas.test.ts`.
 - **Politicas de evaluacion por periodo** (`/evaluaciones`)
-  Tier minimo: Commercial Pro. Estado: activa. Evidencia: `tests/integracion/evaluaciones.modulo.test.ts`.
+  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/integracion/evaluaciones.modulo.test.ts`.
 
 ## Cumplimiento
 
 - **Cumplimiento (ARCO/DSR, retencion y auditoria)** (`/compliance`)
-  Tier minimo: Commercial Enterprise. Estado: activa. Evidencia: `tests/integracion/compliance.arco.test.ts`.
+  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `tests/integracion/compliance.arco.test.ts`.
 
 ## Gobernanza
 
 - **Administracion de docentes** (`/admin`)
-  Tier minimo: Commercial Enterprise. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_admin_docentes`.
+  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_admin_docentes`.
 
 ## Integraciones
 
 - **Integracion con Google Classroom** (`/integraciones/classroom`)
-  Tier minimo: Commercial Pro. Estado: activa. Evidencia: `tests/integracion/classroom.pull.test.ts`.
+  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/integracion/classroom.pull.test.ts`.
 
 ## Operacion Academica
 
 - **Gestion de alumnos** (`/alumnos`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/alumnosEdicion.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/alumnosEdicion.test.ts`.
 - **Gestion de periodos y materias** (`/periodos`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/periodosBorradoDuplicados.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/periodosBorradoDuplicados.test.ts`.
 
 ## Operacion Distribuida
 
 - **Papelera y recuperacion de registros** (`/papelera`)
-  Tier minimo: Commercial Enterprise. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_papelera`.
+  Nivel minimo: Edicion Institucional. Estado: activa. Evidencia: `apps/backend/src/modulos/modulo_papelera`.
 - **Sincronizacion local-cloud entre equipos** (`/sincronizaciones`)
-  Tier minimo: Commercial Pro. Estado: activa. Evidencia: `tests/sincronizacion.contrato.test.ts`.
+  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `tests/sincronizacion.contrato.test.ts`.
 
 ## Plataforma
 
 - **Metricas Prometheus** (`/metrics`)
-  Tier minimo: Commercial Pro. Estado: activa. Evidencia: `apps/backend/src/compartido/observabilidad/metrics.ts`.
+  Nivel minimo: Edicion Comercial. Estado: activa. Evidencia: `apps/backend/src/compartido/observabilidad/metrics.ts`.
 - **Monitoreo de salud del sistema** (`/salud`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/salud.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/salud.test.ts`.
 
 ## Preparacion de Examenes
 
 - **Banco de preguntas y asignacion** (`/banco-preguntas`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/bancoPreguntasAsignarMateria.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/bancoPreguntasAsignarMateria.test.ts`.
 - **Generacion de examenes PDF** (`/examenes`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/pdfImpresionContrato.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/pdfImpresionContrato.test.ts`.
 
 ## Seguridad
 
 - **Autenticacion docente y sesion segura** (`/autenticacion`)
-  Tier minimo: Free (AGPL). Estado: activa. Evidencia: `tests/integracion/autenticacionSesion.test.ts`.
+  Nivel minimo: Edicion Comunitaria (AGPL). Estado: activa. Evidencia: `tests/integracion/autenticacionSesion.test.ts`.

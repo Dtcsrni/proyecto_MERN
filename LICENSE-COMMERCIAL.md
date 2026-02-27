@@ -16,16 +16,16 @@ Modalidades de pago:
 4. Licencia de unico pago (perpetua por version mayor) con garantia de actualizaciones por periodo definido en contrato.
 
 Tipos de licencia comercial disponibles (segun contrato):
-1. Starter Subscription.
-2. Growth Subscription.
-3. Enterprise Subscription.
-4. Perpetual Institutional.
-5. Campus / Multi-sede.
-6. Managed Service Provider (MSP).
-7. OEM / White-label.
+1. Suscripcion Inicial.
+2. Suscripcion de Crecimiento.
+3. Suscripcion Institucional.
+4. Licencia Institucional Perpetua.
+5. Licencia Campus / Multisede.
+6. Proveedor de Servicio Administrado (MSP).
+7. OEM / Marca Blanca.
 8. Sector Publico con anexo de cumplimiento.
 
-Referencia operativa de tiers y tipos: `docs/comercial/LICENSING_TIERS.md`.
+Referencia operativa de niveles y tipos: `docs/comercial/LICENSING_TIERS.md`.
 
 ## Restricciones
 1. Prohibida la redistribucion de componentes propietarios sin autorizacion escrita.

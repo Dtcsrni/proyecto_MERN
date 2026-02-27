@@ -1,32 +1,32 @@
 # Estrategia Comercial EvaluaPro
 
 ## Objetivo
-Convertir la adopcion tecnica en conversion comercial sostenible, sin friccion entre edicion Free y licencias comerciales.
+Convertir la adopcion tecnica en conversion comercial sostenible, sin friccion entre la Edicion Comunitaria y las licencias comerciales.
 
 ## Segmentos Objetivo
 1. **Institucion privada pequena/mediana**
    Dolor: operacion manual, tiempos de entrega, errores de captura.
-   Oferta: Starter/Growth.
+   Oferta: Suscripcion Inicial / Suscripcion de Crecimiento.
 2. **Universidad multi-sede**
    Dolor: estandarizacion, gobernanza, auditoria y soporte.
-   Oferta: Enterprise/Campus.
+   Oferta: Suscripcion Institucional / Licencia Campus.
 3. **Integradores o partners**
    Dolor: tiempo de salida al mercado y costos de desarrollo propio.
-   Oferta: MSP/OEM.
+   Oferta: Proveedor de Servicio Administrado (MSP) / OEM.
 4. **Sector publico**
    Dolor: evidencia documental y cumplimiento.
-   Oferta: Enterprise + Anexo sector publico.
+   Oferta: Edicion Institucional + Anexo sector publico.
 
-## Estrategia de Producto (Free vs Commercial)
-- **Free (AGPL)**: flujo minimo completo para crear valor real.
+## Estrategia de Producto (Comunitaria vs Comercial)
+- **Edicion Comunitaria (AGPL)**: flujo minimo completo para crear valor real.
   Incluye lo necesario para que el sistema sea util y genere dependencia operativa positiva.
-- **Commercial**: acelera, reduce riesgo y agrega gobernanza.
+- **Ediciones Comercial e Institucional**: aceleran, reducen riesgo y agregan gobernanza.
   Se vende por ahorro de tiempo, reduccion de error y cumplimiento.
 
 ## Empaquetado Comercial
-1. **Starter**: entrada rapida, alcance acotado, onboarding corto.
-2. **Growth**: productividad y automatizacion adicional.
-3. **Enterprise**: seguridad/cumplimiento/SLA.
+1. **Suscripcion Inicial**: entrada rapida, alcance acotado, onboarding corto.
+2. **Suscripcion de Crecimiento**: productividad y automatizacion adicional.
+3. **Suscripcion Institucional**: seguridad/cumplimiento/SLA.
 4. **Extensiones**: Campus, MSP, OEM, Sector publico.
 
 ## Politica de Precios (Marco)
@@ -45,7 +45,7 @@ Convertir la adopcion tecnica en conversion comercial sostenible, sin friccion e
 3. **Cierre**: propuesta economica con 2 opciones:
    - anual (recomendada),
    - pago unico + mantenimiento.
-4. **Expansion**: upsell de Pro a Enterprise, y de Enterprise a Campus/MSP.
+4. **Expansion**: escalamiento de Edicion Comercial a Edicion Institucional, y de Institucional a Campus/MSP.
 
 ## Mensajeria Comercial
 - Mensaje principal: "Menos operacion manual, mas control academico".
@@ -66,12 +66,12 @@ Convertir la adopcion tecnica en conversion comercial sostenible, sin friccion e
 - NPS de coordinadores/docentes.
 
 ## Riesgos y Mitigacion
-- **Comoditizacion del Free**: mantener diferencial real en cumplimiento, soporte y SLA.
-- **Descuento excesivo**: definir piso de margen por tier.
-- **Sobreventa de roadmap**: comprometer solo hitos con capacidad real.
+- **Comoditizacion de la Edicion Comunitaria**: mantener diferencial real en cumplimiento, soporte y SLA.
+- **Descuento excesivo**: definir piso de margen por nivel.
+- **Sobreventa de hoja de ruta**: comprometer solo hitos con capacidad real.
 
 ## Entregables de Ventas Recomendados
-- One-pager por tier.
-- Matriz de licencias y comparativo Free/Commercial.
+- One-pager por nivel.
+- Matriz de licencias y comparativo Comunitaria/Comercial/Institucional.
 - Propuesta comercial editable.
 - Checklist de cierre legal/compliance.

@@ -4,7 +4,7 @@ EvaluaPro convierte el flujo academico completo en un proceso trazable y repetib
 
 Esta version del repositorio sigue un enfoque **Open Core**:
 - **Edicion gratuita (AGPL)**: cubre el flujo minimo que realmente resuelve operacion docente diaria.
-- **Edicion comercial**: habilita capacidades avanzadas por tier, soporte y compromisos de roadmap.
+- **Ediciones comercial e institucional**: habilitan capacidades avanzadas por nivel, soporte y compromisos de hoja de ruta.
 
 ## Propuesta de Valor Comercial
 - Reduce reprocesos en captura/calificacion con flujos validados en CI.
@@ -12,10 +12,10 @@ Esta version del repositorio sigue un enfoque **Open Core**:
 - Permite adopcion progresiva: iniciar gratis y escalar a licencia comercial sin migracion de plataforma.
 
 ## Ediciones y Licenciamiento
-- `Free (AGPLv3)`: uso del core abierto bajo `LICENSE`.
-- `Commercial Pro` y `Commercial Enterprise`: `LICENSE-COMMERCIAL.md`.
+- `Edicion Comunitaria (AGPLv3)`: uso del core abierto bajo `LICENSE`.
+- `Edicion Comercial` y `Edicion Institucional`: `LICENSE-COMMERCIAL.md`.
 - Modalidades comerciales: mensual, semestral, anual y pago unico recomendado.
-- Detalle de tiers: [docs/comercial/LICENSING_TIERS.md](docs/comercial/LICENSING_TIERS.md).
+- Detalle de niveles: [docs/comercial/LICENSING_TIERS.md](docs/comercial/LICENSING_TIERS.md).
 - Estrategia comercial: [docs/comercial/ESTRATEGIA_COMERCIAL.md](docs/comercial/ESTRATEGIA_COMERCIAL.md).
 
 ## Funciones actuales
@@ -26,7 +26,7 @@ Las funciones se sincronizan automaticamente desde rutas activas del backend + e
 
 _Lista auto-sincronizada desde rutas reales del backend + evidencia de pruebas._
 
-| Categoria | Free (AGPL) | Commercial Pro | Commercial Enterprise |
+| Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional |
 | --- | --- | --- | --- |
 | Aplicacion y Captura | 2 | 0 | 0 |
 | Calificacion | 1 | 2 | 0 |
@@ -42,12 +42,12 @@ _Lista auto-sincronizada desde rutas reales del backend + evidencia de pruebas._
 - Catalogo completo: [docs/comercial/FEATURE_CATALOG.md](docs/comercial/FEATURE_CATALOG.md)
 <!-- AUTO:FEATURES:END -->
 
-## Roadmap Comercial (Promesas por Tier)
-- `Free`: estabilidad del core y mejoras publicas sin SLA.
-- `Commercial Pro`: prioridad en automatizacion docente y productividad.
-- `Commercial Enterprise`: compromisos formales de roadmap, cumplimiento y soporte institucional.
+## Hoja de Ruta Comercial (Promesas por Nivel)
+- `Edicion Comunitaria`: estabilidad del core y mejoras publicas sin SLA.
+- `Edicion Comercial`: prioridad en automatizacion docente y productividad.
+- `Edicion Institucional`: compromisos formales de hoja de ruta, cumplimiento y soporte institucional.
 
-Roadmap de producto/ingenieria: [docs/ROADMAP_REQUISITOS.md](docs/ROADMAP_REQUISITOS.md).
+Hoja de ruta de producto/ingenieria: [docs/ROADMAP_REQUISITOS.md](docs/ROADMAP_REQUISITOS.md).
 
 ## Seguridad y Cumplimiento
 - Politica de seguridad: [docs/SECURITY_POLICY.md](docs/SECURITY_POLICY.md)
@@ -81,8 +81,8 @@ Para cotizacion de licencias comerciales, despliegue institucional y soporte, us
 ## Contexto Comercial y Soporte
 
 - Rol de este documento: Presentacion comercial del producto y decision de compra/licencia.
-- Edicion Free (AGPL): flujo operativo base para uso real.
-- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Edicion Comunitaria (AGPL): flujo operativo base para uso real.
+- Edicion Comercial/Institucional: mas automatizacion, soporte SLA, endurecimiento y hoja de ruta prioritaria por nivel.
 - Catalogo dinamico de capacidades: [FEATURE_CATALOG](docs/comercial/FEATURE_CATALOG.md).
 - Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](docs/comercial/LICENSING_TIERS.md).
 - Ultima sincronizacion automatica: 2026-02-27.

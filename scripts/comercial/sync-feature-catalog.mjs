@@ -46,9 +46,9 @@ function renderFeatureCatalog({ tiers, capabilities, mountedPrefixes }) {
   lines.push('> Documento auto-generado. No editar manualmente.');
   lines.push(`> Fecha de sincronizacion: **${generatedAt}**`);
   lines.push('');
-  lines.push('## Matriz por tier');
+  lines.push('## Matriz por nivel');
   lines.push('');
-  lines.push('| Capacidad | Categoria | Free (AGPL) | Commercial Pro | Commercial Enterprise | Estado tecnico | Evidencia |');
+  lines.push('| Capacidad | Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional | Estado tecnico | Evidencia |');
   lines.push('| --- | --- | --- | --- | --- | --- | --- |');
 
   for (const c of capabilities) {
@@ -69,7 +69,7 @@ function renderFeatureCatalog({ tiers, capabilities, mountedPrefixes }) {
     for (const c of byCategory.get(category).sort((a, b) => a.name.localeCompare(b.name, 'es'))) {
       const tier = tiers.find((t) => t.id === c.tier)?.label ?? c.tier;
       lines.push(`- **${c.name}** (\`${c.routePrefix}\`)`);
-      lines.push(`  Tier minimo: ${tier}. Estado: ${c.status}. Evidencia: \`${c.evidence}\`.`);
+      lines.push(`  Nivel minimo: ${tier}. Estado: ${c.status}. Evidencia: \`${c.evidence}\`.`);
     }
   }
 
@@ -86,7 +86,7 @@ function updateRootReadmeFeatureBlock(capabilities) {
     '',
     '_Lista auto-sincronizada desde rutas reales del backend + evidencia de pruebas._',
     '',
-    '| Categoria | Free (AGPL) | Commercial Pro | Commercial Enterprise |',
+    '| Categoria | Edicion Comunitaria (AGPL) | Edicion Comercial | Edicion Institucional |',
     '| --- | --- | --- | --- |'
   ];
 
