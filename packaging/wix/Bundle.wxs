@@ -4,6 +4,7 @@
     Name="EvaluaPro Setup Estable"
     Manufacturer="I.S.C. Erick Renato Vega Ceron"
     Version="0.2.0.0"
+    IconSourceFile="$(var.SourceRoot)\scripts\icons\dashboard-prod.ico"
     UpgradeCode="6EA80CBA-C4F5-4434-8B27-B66480ABAB4A">
 
     <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" />
