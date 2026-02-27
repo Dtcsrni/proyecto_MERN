@@ -24,6 +24,7 @@
       <MsiPackage
         Id="EvaluaProMsi"
         SourceFile="$(var.SourceRoot)\dist\installer\EvaluaPro.msi"
+        Compressed="yes"
         Visible="yes">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="INSTALL_DESKTOP_SHORTCUTS" Value="[InstallDesktopShortcuts]" />
