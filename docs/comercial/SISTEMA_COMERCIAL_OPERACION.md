@@ -57,6 +57,7 @@
 9. Webhook de pago valida firma, tipo de evento, tenant/suscripcion, moneda y monto dentro de tolerancia.
 10. Webhook duplicado por `eventId` o `paymentId+estado` no reprocesa cambios.
 11. En modo estricto, firma MP usa manifiesto oficial: `id:[data.id_url];request-id:[x-request-id];ts:[ts];`.
+12. CI incluye prueba de integración de webhook firmado para bloquear regresiones de validación.
 
 ## Variables de entorno nuevas
 - `SUPERADMIN_GOOGLE_EMAILS`
