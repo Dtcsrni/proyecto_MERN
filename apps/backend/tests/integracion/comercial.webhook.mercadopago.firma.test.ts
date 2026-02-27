@@ -125,4 +125,145 @@ describe('integracion webhook Mercado Pago - firma estricta', () => {
       .send({ type: 'payment', data: { id: paymentId } })
       .expect(401);
   });
+
+  it('procesa payment.updated rechazado y cambia suscripcion a past_due', async () => {
+    const tenantId = 'tenant_mp_rejected';
+    const suscripcionId = new mongoose.Types.ObjectId();
+    await Tenant.create({
+      tenantId,
+      nombre: 'Tenant MP Rejected',
+      tipoTenant: 'smb',
+      modalidad: 'saas',
+      estado: 'activo',
+      pais: 'MX',
+      moneda: 'MXN',
+      ownerDocenteId: new mongoose.Types.ObjectId().toString(),
+      configAislamiento: { estrategia: 'shared' }
+    });
+    await Suscripcion.create({
+      _id: suscripcionId,
+      tenantId,
+      planId: 'plan_demo',
+      ciclo: 'mensual',
+      estado: 'activo',
+      pasarela: 'mercadopago',
+      precioAplicado: 1200
+    });
+
+    const paymentId = '5544332211';
+    const requestId = 'req-webhook-rejected-001';
+    const ts = Math.floor(Date.now() / 1000);
+    const signature = construirFirmaMpOficial({
+      secret: 'mp-secret-integration',
+      ts,
+      dataIdUrl: paymentId,
+      requestId
+    });
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes(`/v1/payments/${paymentId}`)) {
+        return new Response(JSON.stringify({
+          id: paymentId,
+          status: 'rejected',
+          transaction_amount: 1200,
+          currency_id: 'MXN',
+          external_reference: `${tenantId}|${String(suscripcionId)}`,
+          metadata: { tenantId, suscripcionId: String(suscripcionId) }
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not-found', { status: 404 });
+    }) as typeof fetch);
+
+    await request(app)
+      .post(`/api/comercial-publico/mercadopago/webhook?type=payment.updated&data.id=${paymentId}`)
+      .set('x-request-id', requestId)
+      .set('x-signature', signature)
+      .send({
+        id: 'evt-rejected-01',
+        type: 'payment.updated',
+        data: { id: paymentId },
+        metadata: { tenantId, suscripcionId: String(suscripcionId) }
+      })
+      .expect(200);
+
+    const suscripcion = await Suscripcion.findById(suscripcionId).lean();
+    const cobro = await Cobranza.findOne({ suscripcionId }).lean();
+    expect(suscripcion?.estado).toBe('past_due');
+    expect(cobro?.estado).toBe('rechazado');
+  });
+
+  it('mantiene idempotencia cuando llega el mismo eventId duplicado', async () => {
+    const tenantId = 'tenant_mp_dup';
+    const suscripcionId = new mongoose.Types.ObjectId();
+    await Tenant.create({
+      tenantId,
+      nombre: 'Tenant MP Dup',
+      tipoTenant: 'smb',
+      modalidad: 'saas',
+      estado: 'past_due',
+      pais: 'MX',
+      moneda: 'MXN',
+      ownerDocenteId: new mongoose.Types.ObjectId().toString(),
+      configAislamiento: { estrategia: 'shared' }
+    });
+    await Suscripcion.create({
+      _id: suscripcionId,
+      tenantId,
+      planId: 'plan_demo',
+      ciclo: 'mensual',
+      estado: 'past_due',
+      pasarela: 'mercadopago',
+      precioAplicado: 950
+    });
+
+    const paymentId = '9988776655';
+    const requestId = 'req-webhook-dup-001';
+    const ts = Math.floor(Date.now() / 1000);
+    const signature = construirFirmaMpOficial({
+      secret: 'mp-secret-integration',
+      ts,
+      dataIdUrl: paymentId,
+      requestId
+    });
+    const eventId = 'evt-dup-001';
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes(`/v1/payments/${paymentId}`)) {
+        return new Response(JSON.stringify({
+          id: paymentId,
+          status: 'approved',
+          transaction_amount: 950,
+          currency_id: 'MXN',
+          external_reference: `${tenantId}|${String(suscripcionId)}`,
+          metadata: { tenantId, suscripcionId: String(suscripcionId) }
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not-found', { status: 404 });
+    }) as typeof fetch);
+
+    const body = {
+      eventId,
+      type: 'payment',
+      data: { id: paymentId },
+      metadata: { tenantId, suscripcionId: String(suscripcionId) }
+    };
+
+    const r1 = await request(app)
+      .post(`/api/comercial-publico/mercadopago/webhook?type=payment&data.id=${paymentId}`)
+      .set('x-request-id', requestId)
+      .set('x-signature', signature)
+      .send(body)
+      .expect(200);
+    const r2 = await request(app)
+      .post(`/api/comercial-publico/mercadopago/webhook?type=payment&data.id=${paymentId}`)
+      .set('x-request-id', requestId)
+      .set('x-signature', signature)
+      .send(body)
+      .expect(200);
+
+    expect(Boolean(r1.body?.duplicado)).toBe(false);
+    expect(Boolean(r2.body?.duplicado)).toBe(true);
+    const totalCobros = await Cobranza.countDocuments({ suscripcionId });
+    expect(totalCobros).toBe(1);
+  });
 });
