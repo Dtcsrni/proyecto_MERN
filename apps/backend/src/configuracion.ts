@@ -45,6 +45,10 @@ const jwtSecretoEfectivo = jwtSecreto || 'cambia-este-secreto';
 const jwtExpiraHoras = Number(process.env.JWT_EXPIRA_HORAS ?? 8);
 const refreshTokenDias = Number(process.env.REFRESH_TOKEN_DIAS ?? 30);
 const googleOauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
+const googleClassroomClientId = process.env.GOOGLE_CLASSROOM_CLIENT_ID ?? process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
+const googleClassroomClientSecret = process.env.GOOGLE_CLASSROOM_CLIENT_SECRET ?? '';
+const googleClassroomRedirectUri = process.env.GOOGLE_CLASSROOM_REDIRECT_URI ?? '';
+const classroomTokenCipherKey = process.env.CLASSROOM_TOKEN_CIPHER_KEY ?? '';
 const codigoAccesoHoras = Number(process.env.CODIGO_ACCESO_HORAS ?? 12);
 const portalAlumnoUrl = process.env.PORTAL_ALUMNO_URL ?? '';
 const portalApiKey = process.env.PORTAL_ALUMNO_API_KEY ?? '';
@@ -84,6 +88,10 @@ export const configuracion = {
   jwtExpiraHoras,
   refreshTokenDias,
   googleOauthClientId,
+  googleClassroomClientId,
+  googleClassroomClientSecret,
+  googleClassroomRedirectUri,
+  classroomTokenCipherKey,
   codigoAccesoHoras,
   portalAlumnoUrl,
   portalApiKey,

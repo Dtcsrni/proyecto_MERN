@@ -35,6 +35,11 @@ type Resultado = {
   calificacionExamenFinalTexto: string;
   calificacionParcialTexto?: string;
   calificacionGlobalTexto?: string;
+  versionPolitica?: number;
+  bloqueContinuaDecimal?: number;
+  bloqueExamenesDecimal?: number;
+  finalDecimal?: number;
+  finalRedondeada?: number;
   respuestasDetectadas?: Array<{ numeroPregunta: number; opcion: string | null; confianza?: number }>;
   comparativaRespuestas?: Array<{
     numeroPregunta: number;
@@ -580,6 +585,8 @@ export function AppAlumno() {
                         <span>Examen: {resultado.calificacionExamenFinalTexto}</span>
                         {resultado.calificacionParcialTexto && <span>Parcial: {resultado.calificacionParcialTexto}</span>}
                         {resultado.calificacionGlobalTexto && <span>Global: {resultado.calificacionGlobalTexto}</span>}
+                        {typeof resultado.finalDecimal === 'number' && <span>Final decimal: {resultado.finalDecimal.toFixed(4)}</span>}
+                        {typeof resultado.finalRedondeada === 'number' && <span>Final redondeada: {resultado.finalRedondeada.toFixed(0)}</span>}
                       </div>
                     </div>
                     <div className="item-actions">
@@ -682,6 +689,17 @@ export function AppAlumno() {
                                 <div className="item-meta">
                                   <span>Reactivos: {detalle.totalReactivos ?? total ?? '-'}</span>
                                   <span>Aciertos detectados: {typeof detalle.aciertos === 'number' ? detalle.aciertos : aciertos}</span>
+                                  {typeof detalle.versionPolitica === 'number' && <span>Política v{detalle.versionPolitica}</span>}
+                                  {typeof detalle.bloqueContinuaDecimal === 'number' && (
+                                    <span>Bloque continua: {detalle.bloqueContinuaDecimal.toFixed(4)}</span>
+                                  )}
+                                  {typeof detalle.bloqueExamenesDecimal === 'number' && (
+                                    <span>Bloque exámenes: {detalle.bloqueExamenesDecimal.toFixed(4)}</span>
+                                  )}
+                                  {typeof detalle.finalDecimal === 'number' && <span>Final decimal: {detalle.finalDecimal.toFixed(4)}</span>}
+                                  {typeof detalle.finalRedondeada === 'number' && (
+                                    <span>Final redondeada: {detalle.finalRedondeada.toFixed(0)}</span>
+                                  )}
                                   <span className={`badge ${estado.clase}`}>{estado.texto}</span>
                                 </div>
                                 {detalle.omrAuditoria?.motivosRevision && detalle.omrAuditoria.motivosRevision.length > 0 && (

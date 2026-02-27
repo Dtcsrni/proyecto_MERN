@@ -313,7 +313,14 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     respuestasDetectadas,
     omrAnalisis,
     paginasOmr,
-    soloPreview
+    soloPreview,
+    politicaId,
+    versionPolitica,
+    componentesExamen,
+    bloqueContinuaDecimal,
+    bloqueExamenesDecimal,
+    finalDecimal,
+    finalRedondeada
   } = req.body;
   const docenteId = obtenerDocenteId(req);
 
@@ -478,7 +485,21 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
           contestadasCorrectas,
           precisionSobreContestadas: contestadasTotal > 0 ? contestadasCorrectas / contestadasTotal : null
         }
-      : undefined
+      : undefined,
+    politicaId,
+    versionPolitica,
+    componentesExamen,
+    bloqueContinuaDecimal:
+      typeof bloqueContinuaDecimal === 'number' && Number.isFinite(bloqueContinuaDecimal)
+        ? bloqueContinuaDecimal
+        : undefined,
+    bloqueExamenesDecimal:
+      typeof bloqueExamenesDecimal === 'number' && Number.isFinite(bloqueExamenesDecimal)
+        ? bloqueExamenesDecimal
+        : undefined,
+    finalDecimal: typeof finalDecimal === 'number' && Number.isFinite(finalDecimal) ? finalDecimal : undefined,
+    finalRedondeada:
+      typeof finalRedondeada === 'number' && Number.isFinite(finalRedondeada) ? finalRedondeada : undefined
   });
 
   await ExamenGenerado.updateOne({ _id: examenGeneradoId }, { estado: 'calificado' });

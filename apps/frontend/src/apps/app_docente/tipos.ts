@@ -144,6 +144,8 @@ export type PermisosUI = {
   entregas: { gestionar: boolean };
   omr: { analizar: boolean };
   calificaciones: { calificar: boolean };
+  evaluaciones: { leer: boolean; gestionar: boolean };
+  classroom: { conectar: boolean; pull: boolean };
   publicar: { publicar: boolean };
   sincronizacion: { listar: boolean; exportar: boolean; importar: boolean; push: boolean; pull: boolean };
   cuenta: { leer: boolean; actualizar: boolean };

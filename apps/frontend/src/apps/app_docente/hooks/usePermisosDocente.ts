@@ -45,6 +45,8 @@ export function usePermisosDocente(docente: Docente | null) {
       entregas: { gestionar: puede('entregas:gestionar') },
       omr: { analizar: puede('omr:analizar') },
       calificaciones: { calificar: puede('calificaciones:calificar') },
+      evaluaciones: { leer: puede('evaluaciones:leer'), gestionar: puede('evaluaciones:gestionar') },
+      classroom: { conectar: puede('classroom:conectar'), pull: puede('classroom:pull') },
       publicar: { publicar: puede('calificaciones:publicar') },
       sincronizacion: {
         listar: puede('sincronizacion:listar'),
@@ -72,6 +74,7 @@ export function usePermisosDocente(docente: Docente | null) {
       { id: 'plantillas', label: 'Plantillas', icono: 'plantillas' as const, mostrar: puede('plantillas:leer') },
       { id: 'entrega', label: 'Entrega', icono: 'recepcion' as const, mostrar: puede('entregas:gestionar') },
       { id: 'calificaciones', label: 'Calificaciones', icono: 'calificar' as const, mostrar: puedeCalificar },
+      { id: 'evaluaciones', label: 'Evaluaciones', icono: 'calificar' as const, mostrar: puede('evaluaciones:leer') },
       { id: 'publicar', label: 'Sincronización', icono: 'publicar' as const, mostrar: puedePublicar },
       { id: 'cuenta', label: 'Cuenta', icono: 'info' as const, mostrar: puede('cuenta:leer') }
     ];

@@ -112,6 +112,13 @@ export async function publicarResultadosUseCase(params: { docenteId: string; per
       calificacionGlobalTexto: calificacion.calificacionGlobalTexto,
       evaluacionContinuaTexto: calificacion.evaluacionContinuaTexto,
       proyectoTexto: calificacion.proyectoTexto,
+      politicaId: calificacion.politicaId,
+      versionPolitica: calificacion.versionPolitica,
+      componentesExamen: calificacion.componentesExamen,
+      bloqueContinuaDecimal: calificacion.bloqueContinuaDecimal,
+      bloqueExamenesDecimal: calificacion.bloqueExamenesDecimal,
+      finalDecimal: calificacion.finalDecimal,
+      finalRedondeada: calificacion.finalRedondeada,
       omrCapturas: capturasOmrPorExamen.get(String(calificacion.examenGeneradoId)) ?? [],
       omrAuditoria: calificacion.omrAuditoria && typeof calificacion.omrAuditoria === 'object' ? calificacion.omrAuditoria : undefined
     })),

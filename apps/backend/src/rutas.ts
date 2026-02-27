@@ -22,6 +22,9 @@ import rutasAnaliticas from './modulos/modulo_analiticas/rutasAnaliticas';
 import rutasSincronizacionNube from './modulos/modulo_sincronizacion_nube/rutasSincronizacionNube';
 import rutasAdminDocentes from './modulos/modulo_admin_docentes/rutasAdminDocentes';
 import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
+import rutasEvaluaciones from './modulos/modulo_evaluaciones/rutasEvaluaciones';
+import rutasIntegracionesClassroomPublicas from './modulos/modulo_integraciones_classroom/rutasIntegracionesClassroomPublicas';
+import rutasIntegracionesClassroom from './modulos/modulo_integraciones_classroom/rutasIntegracionesClassroom';
 import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
 
 export function crearRouterApi() {
@@ -34,6 +37,7 @@ export function crearRouterApi() {
     res.send(exportarMetricasPrometheus());
   });
   router.use('/autenticacion', rutasAutenticacion);
+  router.use('/integraciones/classroom', rutasIntegracionesClassroomPublicas);
 
   // A partir de aqui: todas las rutas requieren sesion de docente.
   router.use(requerirDocente);
@@ -46,6 +50,8 @@ export function crearRouterApi() {
   router.use('/calificaciones', rutasCalificaciones);
   router.use('/analiticas', rutasAnaliticas);
   router.use('/sincronizaciones', rutasSincronizacionNube);
+  router.use('/evaluaciones', rutasEvaluaciones);
+  router.use('/integraciones/classroom', rutasIntegracionesClassroom);
   router.use('/papelera', rutasPapelera);
   router.use('/admin', rutasAdminDocentes);
 

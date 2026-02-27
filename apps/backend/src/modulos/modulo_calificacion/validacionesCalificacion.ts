@@ -69,7 +69,14 @@ export const esquemaCalificarExamen = z
     respuestasDetectadas: z.array(esquemaRespuestaDetectada).max(500).optional(),
     omrAnalisis: esquemaAnalisisOmr.optional(),
     paginasOmr: z.array(esquemaPaginaOmrCalificacion).max(100).optional(),
-    soloPreview: z.boolean().optional()
+    soloPreview: z.boolean().optional(),
+    politicaId: esquemaObjectId.optional(),
+    versionPolitica: z.number().int().min(1).optional(),
+    componentesExamen: z.unknown().optional(),
+    bloqueContinuaDecimal: z.number().min(0).max(10).optional(),
+    bloqueExamenesDecimal: z.number().min(0).max(10).optional(),
+    finalDecimal: z.number().min(0).max(10).optional(),
+    finalRedondeada: z.number().min(0).max(10).optional()
   })
   .strict()
   .superRefine((data, ctx) => {

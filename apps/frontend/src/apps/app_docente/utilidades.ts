@@ -17,6 +17,7 @@ const VISTAS_VALIDAS = new Set([
   'plantillas',
   'entrega',
   'calificaciones',
+  'evaluaciones',
   'publicar',
   'cuenta'
 ]);

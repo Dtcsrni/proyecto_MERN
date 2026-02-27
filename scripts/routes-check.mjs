@@ -258,7 +258,7 @@ function checarBackendRutasPublicas() {
 
   const antes = txt.slice(0, idxAuth);
   const reUseConPath = /router\.use\(\s*(['"`])([^'"`]+)\1\s*,/g;
-  const permitidas = new Set(['/salud', '/autenticacion']);
+  const permitidas = new Set(['/salud', '/autenticacion', '/integraciones/classroom']);
 
   let m;
   // eslint-disable-next-line no-cond-assign

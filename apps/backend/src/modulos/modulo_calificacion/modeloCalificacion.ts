@@ -25,7 +25,14 @@ const CalificacionSchema = new Schema(
     calificacionGlobalTexto: { type: String },
     retroalimentacion: { type: String },
     respuestasDetectadas: { type: Schema.Types.Mixed },
-    omrAuditoria: { type: Schema.Types.Mixed }
+    omrAuditoria: { type: Schema.Types.Mixed },
+    politicaId: { type: Schema.Types.ObjectId, ref: 'PoliticaCalificacion' },
+    versionPolitica: { type: Number, min: 1 },
+    componentesExamen: { type: Schema.Types.Mixed },
+    bloqueContinuaDecimal: { type: Number, min: 0, max: 10 },
+    bloqueExamenesDecimal: { type: Number, min: 0, max: 10 },
+    finalDecimal: { type: Number, min: 0, max: 10 },
+    finalRedondeada: { type: Number, min: 0, max: 10 }
   },
   { timestamps: true, collection: 'calificaciones' }
 );

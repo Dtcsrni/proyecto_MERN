@@ -15,6 +15,7 @@ import { SeccionPeriodos, SeccionPeriodosArchivados } from './SeccionPeriodos';
 import { SeccionEntrega } from './SeccionEntregaInterna';
 import { SeccionCalificaciones } from './SeccionCalificaciones';
 import { SeccionSincronizacion } from './SeccionSincronizacion';
+import { SeccionEvaluaciones } from './SeccionEvaluaciones';
 import { usePermisosDocente } from './hooks/usePermisosDocente';
 import { useSesionDocente } from './hooks/useSesionDocente';
 import { registrarAccionDocente } from './telemetriaDocente';
@@ -1064,6 +1065,14 @@ export function AppDocente() {
           }}
           onLimpiarColaEscaneos={limpiarColaEscaneosOmr}
           onCargarRevisionHistoricaCalificada={cargarRevisionHistoricaCalificada}
+        />
+      )}
+      {vista === 'evaluaciones' && (
+        <SeccionEvaluaciones
+          periodos={periodos}
+          alumnos={alumnos}
+          puedeGestionar={permisosUI.evaluaciones.gestionar}
+          puedeClassroom={permisosUI.classroom.conectar || permisosUI.classroom.pull}
         />
       )}
       {vista === 'publicar' && (
