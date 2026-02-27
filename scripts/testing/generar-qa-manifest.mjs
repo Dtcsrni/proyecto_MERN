@@ -8,6 +8,8 @@ const artefactos = [
   'reports/qa/latest/dataset-prodlike.json',
   'reports/qa/latest/e2e-docente-alumno.json',
   'reports/qa/latest/global-grade.json',
+  'reports/qa/latest/evaluaciones-policy.json',
+  'reports/qa/latest/evaluaciones-e2e.json',
   'reports/qa/latest/pdf-print.json',
   'reports/qa/latest/ux-visual.json',
   'reports/qa/latest/clean-architecture.json'

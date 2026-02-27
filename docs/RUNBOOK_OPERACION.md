@@ -146,6 +146,8 @@ Si falla portal:
 - `npm run test:dataset-prodlike:ci`
 - `npm run test:e2e:docente-alumno:ci`
 - `npm run test:global-grade:ci`
+- `npm run test:evaluaciones:policy:ci`
+- `npm run test:evaluaciones:e2e:ci`
 - `npm run test:pdf-print:ci`
 - `npm run test:ux-visual:ci`
 2. Consolidar evidencia:
@@ -154,6 +156,8 @@ Si falla portal:
 - `dataset-prodlike.json`
 - `e2e-docente-alumno.json`
 - `global-grade.json`
+- `evaluaciones-policy.json`
+- `evaluaciones-e2e.json`
 - `pdf-print.json`
 - `ux-visual.json`
 - `manifest.json`

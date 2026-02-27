@@ -22,7 +22,7 @@ describe('módulo evaluaciones (LISC)', () => {
     await cerrarMongoTest();
   });
 
-  it('calcula resumen por política LISC usando evidencias y componentes', async () => {
+  async function crearContexto() {
     const docente = await Docente.create({
       _id: '507f1f77bcf86cd799439500',
       nombreCompleto: 'Docente Evaluaciones',
@@ -49,6 +49,12 @@ describe('módulo evaluaciones (LISC)', () => {
 
     const token = crearTokenDocente({ docenteId: String(docente._id), roles: ['docente'] });
     const auth = { Authorization: `Bearer ${token}` };
+
+    return { docente, periodo, alumno, auth };
+  }
+
+  it('calcula resumen por política LISC usando evidencias y componentes', async () => {
+    const { periodo, alumno, auth } = await crearContexto();
 
     await request(app)
       .post('/api/evaluaciones/configuracion-periodo')
@@ -151,5 +157,110 @@ describe('módulo evaluaciones (LISC)', () => {
     expect(Number(resumen.finalDecimal)).toBeCloseTo(9, 4);
     expect(Number(resumen.finalRedondeada)).toBe(9);
     expect(resumen.estado).toBe('completo');
+  });
+
+  it('no marca faltante cuando la calificación del examen es 0 si el componente existe', async () => {
+    const { periodo, alumno, auth } = await crearContexto();
+
+    await request(app)
+      .post('/api/evaluaciones/configuracion-periodo')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        politicaCodigo: 'POLICY_LISC_ENCUADRE_2026',
+        politicaVersion: 1,
+        pesosGlobales: { continua: 0.5, examenes: 0.5 },
+        pesosExamenes: { parcial1: 0.2, parcial2: 0.2, global: 0.6 },
+        reglasCierre: { requiereTeorico: true, requierePractica: true, requiereContinuaMinima: false, continuaMinima: 0 }
+      })
+      .expect(200);
+
+    for (const corte of ['parcial1', 'parcial2', 'global']) {
+      await request(app)
+        .post('/api/evaluaciones/examenes/componentes')
+        .set(auth)
+        .send({
+          periodoId: String(periodo._id),
+          alumnoId: String(alumno._id),
+          corte,
+          teoricoDecimal: 0,
+          practicas: [0]
+        })
+        .expect(201);
+    }
+
+    const respuesta = await request(app)
+      .get(`/api/evaluaciones/alumnos/${encodeURIComponent(String(alumno._id))}/resumen?periodoId=${encodeURIComponent(String(periodo._id))}`)
+      .set(auth)
+      .expect(200);
+
+    const resumen = respuesta.body?.resumen;
+    expect(resumen.estado).toBe('completo');
+    expect(Array.isArray(resumen.faltantes) ? resumen.faltantes.length : -1).toBe(0);
+    expect(Number(resumen.finalDecimal)).toBe(0);
+    expect(Number(resumen.finalRedondeada)).toBe(0);
+  });
+
+  it('marca incompleto cuando falta componente práctico requerido por corte', async () => {
+    const { periodo, alumno, auth } = await crearContexto();
+
+    await request(app)
+      .post('/api/evaluaciones/configuracion-periodo')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        politicaCodigo: 'POLICY_LISC_ENCUADRE_2026',
+        politicaVersion: 1,
+        pesosGlobales: { continua: 0.5, examenes: 0.5 },
+        pesosExamenes: { parcial1: 0.2, parcial2: 0.2, global: 0.6 },
+        reglasCierre: { requiereTeorico: true, requierePractica: true, requiereContinuaMinima: false, continuaMinima: 0 }
+      })
+      .expect(200);
+
+    await request(app)
+      .post('/api/evaluaciones/examenes/componentes')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        alumnoId: String(alumno._id),
+        corte: 'parcial1',
+        teoricoDecimal: 8,
+        practicas: []
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/api/evaluaciones/examenes/componentes')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        alumnoId: String(alumno._id),
+        corte: 'parcial2',
+        teoricoDecimal: 8,
+        practicas: [8]
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/api/evaluaciones/examenes/componentes')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        alumnoId: String(alumno._id),
+        corte: 'global',
+        teoricoDecimal: 8,
+        practicas: [8]
+      })
+      .expect(201);
+
+    const respuesta = await request(app)
+      .get(`/api/evaluaciones/alumnos/${encodeURIComponent(String(alumno._id))}/resumen?periodoId=${encodeURIComponent(String(periodo._id))}`)
+      .set(auth)
+      .expect(200);
+
+    const resumen = respuesta.body?.resumen;
+    expect(resumen.estado).toBe('incompleto');
+    expect(Array.isArray(resumen.faltantes)).toBe(true);
+    expect(resumen.faltantes).toContain('examen.parcial1.practica');
   });
 });

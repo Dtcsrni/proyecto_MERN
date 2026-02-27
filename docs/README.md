@@ -16,10 +16,15 @@ Ultima actualizacion integral: 2026-02-27.
 - `FORMATO_PDF.md`
 - `ROLES_PERMISOS.md`
 - `SEGURIDAD.md`
+- `CUMPLIMIENTO.md`
 - `SINCRONIZACION_ENTRE_COMPUTADORAS.md`
 - `PRUEBAS.md`
 - `DESPLIEGUE.md`
 - `INSTALLER_HUB.md`
+- `SECURITY_POLICY.md`
+- `legal/aviso-privacidad-integral.md`
+- `legal/procedimiento-arco.md`
+- `comercial/playbook-demo-35d.md`
 - `VERSIONADO.md`
 - `ENGINEERING_BASELINE.md`
 - `INVENTARIO_PROYECTO.md`

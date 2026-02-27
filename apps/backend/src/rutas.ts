@@ -25,6 +25,7 @@ import rutasPapelera from './modulos/modulo_papelera/rutasPapelera';
 import rutasEvaluaciones from './modulos/modulo_evaluaciones/rutasEvaluaciones';
 import rutasIntegracionesClassroomPublicas from './modulos/modulo_integraciones_classroom/rutasIntegracionesClassroomPublicas';
 import rutasIntegracionesClassroom from './modulos/modulo_integraciones_classroom/rutasIntegracionesClassroom';
+import rutasCompliance from './modulos/modulo_compliance/rutasCompliance';
 import { exportarMetricasPrometheus } from './compartido/observabilidad/metrics';
 
 export function crearRouterApi() {
@@ -52,6 +53,7 @@ export function crearRouterApi() {
   router.use('/sincronizaciones', rutasSincronizacionNube);
   router.use('/evaluaciones', rutasEvaluaciones);
   router.use('/integraciones/classroom', rutasIntegracionesClassroom);
+  router.use('/compliance', rutasCompliance);
   router.use('/papelera', rutasPapelera);
   router.use('/admin', rutasAdminDocentes);
 

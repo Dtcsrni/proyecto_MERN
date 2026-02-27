@@ -82,6 +82,10 @@ Fecha de baseline: 2026-02-13.
  - Secret scanning:
    - habilitar en GitHub Advanced Security cuando el plan lo permita.
    - fallback operativo: auditoria de secretos por proceso manual documentado en PR/release.
+ - Compliance:
+   - `npm run test:compliance:policy`
+   - `npm run test:compliance:dsr-flow`
+   - `npm run compliance:evidence:generate`
 
 ## Observabilidad mínima
 - Health:

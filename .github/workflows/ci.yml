@@ -109,6 +109,15 @@ jobs:
           npm audit --omit=dev --audit-level=critical --json > npm-audit-report.json
           npm run security:audit
 
+      - name: Etapa legal-docs-check
+        run: npm run test:compliance:legal-docs
+
+      - name: Etapa pii-leak-check
+        run: npm run test:compliance:pii
+
+      - name: Etapa retention-policy-check
+        run: npm run test:compliance:retention
+
       - name: Publicar reporte de auditoría
         if: always()
         uses: actions/upload-artifact@v4
@@ -204,6 +213,12 @@ jobs:
       - name: Consolidar manifiesto QA
         if: always()
         run: npm run test:qa:manifest
+
+      - name: Etapa dsr-flow-test
+        run: npm run test:compliance:dsr-flow
+
+      - name: Etapa compliance-evidence
+        run: npm run compliance:evidence:generate
 
       - name: Publicar artefactos QA
         if: always()

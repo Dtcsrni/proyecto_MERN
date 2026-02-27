@@ -13,7 +13,10 @@
       "tdd-enforcement-check",
       "build",
       "docs-check",
-      "security-scan"
+      "security-scan",
+      "legal-docs-check",
+      "pii-leak-check",
+      "retention-policy-check"
     ],
     "extended": [
       "setup",
@@ -27,7 +30,9 @@
       "perf-check",
       "perf-business-check",
       "clean-architecture-check",
-      "qa-manifest"
+      "qa-manifest",
+      "dsr-flow-test",
+      "compliance-evidence"
     ],
     "package": [
       "package"
@@ -244,6 +249,46 @@
       "artifacts": [
         "reports/qa/latest/manifest.json",
         "reports/qa/latest/**"
+      ]
+    },
+    {
+      "name": "legal-docs-check",
+      "commands": [
+        "npm run test:compliance:legal-docs"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "pii-leak-check",
+      "commands": [
+        "npm run test:compliance:pii"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "retention-policy-check",
+      "commands": [
+        "npm run test:compliance:retention"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "dsr-flow-test",
+      "commands": [
+        "npm run test:compliance:dsr-flow"
+      ],
+      "artifacts": []
+    },
+    {
+      "name": "compliance-evidence",
+      "commands": [
+        "npm run compliance:evidence:generate"
+      ],
+      "artifacts": [
+        "reports/qa/latest/compliance-manifest.json",
+        "reports/qa/latest/data-inventory.json",
+        "reports/qa/latest/security-controls-evidence.json",
+        "reports/qa/latest/legal-docs-version.json"
       ]
     },
     {

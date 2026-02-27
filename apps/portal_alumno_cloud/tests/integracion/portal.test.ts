@@ -119,6 +119,65 @@ describe('portal alumno', () => {
     expect(Array.isArray(historial.body?.data?.historial)).toBe(true);
   });
 
+  it('acepta y expone desglose de evaluación (final decimal/redondeada)', async () => {
+    const periodoId = '507f1f77bcf86cd799439031';
+    const alumnoId = '507f1f77bcf86cd799439032';
+    const docenteId = '507f1f77bcf86cd799439033';
+    const examenId = '507f1f77bcf86cd799439034';
+    const folio = 'FOLIO-EVAL-1';
+
+    await request(app)
+      .post('/api/portal/sincronizar')
+      .set({ 'x-api-key': apiKey })
+      .send({
+        schemaVersion: 3,
+        periodo: { _id: periodoId },
+        alumnos: [{ _id: alumnoId, matricula: 'CUH512410170', nombreCompleto: 'Alumno Evaluaciones', grupo: 'A' }],
+        calificaciones: [
+          {
+            docenteId,
+            alumnoId,
+            examenGeneradoId: examenId,
+            tipoExamen: 'global',
+            totalReactivos: 10,
+            aciertos: 8,
+            calificacionExamenFinalTexto: '8',
+            versionPolitica: 1,
+            bloqueContinuaDecimal: 8.75,
+            bloqueExamenesDecimal: 9.25,
+            finalDecimal: 9,
+            finalRedondeada: 9,
+            componentesExamen: {
+              politicaCodigo: 'POLICY_LISC_ENCUADRE_2026',
+              examenesPorCorte: { parcial1: 8, parcial2: 9, global: 10 }
+            }
+          }
+        ],
+        examenes: [{ examenGeneradoId: examenId, folio }],
+        banderas: [],
+        codigoAcceso: { codigo: 'EVAL001', expiraEn: new Date(Date.now() + 60 * 60 * 1000).toISOString() }
+      })
+      .expect(200);
+
+    const ingreso = await request(app)
+      .post('/api/portal/ingresar')
+      .send({ codigo: 'EVAL001', matricula: 'CUH512410170' })
+      .expect(200);
+    const token = ingreso.body.token as string;
+
+    const resultados = await request(app)
+      .get('/api/portal/resultados')
+      .set({ Authorization: `Bearer ${token}` })
+      .expect(200);
+
+    expect(resultados.body?.resultados?.[0]?.versionPolitica).toBe(1);
+    expect(Number(resultados.body?.resultados?.[0]?.bloqueContinuaDecimal)).toBeCloseTo(8.75, 4);
+    expect(Number(resultados.body?.resultados?.[0]?.bloqueExamenesDecimal)).toBeCloseTo(9.25, 4);
+    expect(Number(resultados.body?.resultados?.[0]?.finalDecimal)).toBeCloseTo(9, 4);
+    expect(Number(resultados.body?.resultados?.[0]?.finalRedondeada)).toBe(9);
+    expect(resultados.body?.resultados?.[0]?.componentesExamen?.politicaCodigo).toBe('POLICY_LISC_ENCUADRE_2026');
+  });
+
   it('requiere api key para sincronizar', async () => {
     const respuesta = await request(app)
       .post('/api/portal/sincronizar')

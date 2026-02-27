@@ -22,6 +22,14 @@ apps/backend/storage/omr_scans/
 *.lcov
 reports/perf/
 docs/release/manual/prod-flow.json
+reports/qa/latest/compliance-manifest.json
+reports/qa/latest/data-inventory.json
+reports/qa/latest/security-controls-evidence.json
+reports/qa/latest/legal-docs-version.json
+backups/*.ep-sync.json
+apps/backend/storage/
+*.pem
+*.key
 
 # Legacy cleanup guards
 tests/client-smoke/

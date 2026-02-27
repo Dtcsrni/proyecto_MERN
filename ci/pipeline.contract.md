@@ -17,6 +17,9 @@ Define a single CI/CD contract that any runner can execute 1:1 (GitHub Actions, 
 9. `build`
 10. `docs-check`
 11. `security-scan`
+12. `legal-docs-check`
+13. `pii-leak-check`
+14. `retention-policy-check`
 
 ### Profile `extended` (blocking for `main`, `release/*`, `schedule`, or manual dispatch)
 1. `setup`
@@ -31,6 +34,8 @@ Define a single CI/CD contract that any runner can execute 1:1 (GitHub Actions, 
 10. `perf-business-check`
 11. `clean-architecture-check`
 12. `qa-manifest`
+13. `dsr-flow-test`
+14. `compliance-evidence`
 
 ### Profile `package`
 1. `package`
@@ -141,9 +146,30 @@ Policy:
   - `npm audit --omit=dev --audit-level=critical --json > npm-audit-report.json`
   - `npm run security:audit`
 
+### legal-docs-check
+- Command: `npm run test:compliance:legal-docs`
+
+### pii-leak-check
+- Command: `npm run test:compliance:pii`
+
+### retention-policy-check
+- Command: `npm run test:compliance:retention`
+
 ### qa-manifest
 - Command: `npm run test:qa:manifest`
 - Output: `reports/qa/latest/manifest.json`
+
+### dsr-flow-test
+- Command: `npm run test:compliance:dsr-flow`
+- Output: backend integration test evidence
+
+### compliance-evidence
+- Command: `npm run compliance:evidence:generate`
+- Output:
+  - `reports/qa/latest/compliance-manifest.json`
+  - `reports/qa/latest/data-inventory.json`
+  - `reports/qa/latest/security-controls-evidence.json`
+  - `reports/qa/latest/legal-docs-version.json`
 
 ### build
 - Command: `npm run build`

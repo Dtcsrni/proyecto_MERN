@@ -53,6 +53,16 @@ const CORTES_DEFAULT = [
   { numero: 2, nombre: 'Segundo parcial', pesoContinua: 0.5, pesoExamen: 0.5, pesoBloqueExamenes: 0.2 },
   { numero: 3, nombre: 'Global', pesoContinua: 0.5, pesoExamen: 0.5, pesoBloqueExamenes: 0.6 }
 ];
+const CORTES_EXAMEN = ['parcial1', 'parcial2', 'global'] as const;
+type CorteExamen = (typeof CORTES_EXAMEN)[number];
+type EstadoComponentesExamen = Record<
+  CorteExamen,
+  { presente: boolean; teoricoCapturado: boolean; practicasCapturadas: number }
+>;
+
+function esCorteExamen(valor: string): valor is CorteExamen {
+  return CORTES_EXAMEN.includes(valor as CorteExamen);
+}
 
 async function asegurarPoliticasBase() {
   for (const politica of POLITICAS_BASE) {
@@ -153,28 +163,60 @@ function determinarContinuaPorCortes(params: {
   return out;
 }
 
-function determinarExamenesPorCorte(componentes: Array<{ corte?: unknown; examenCorteDecimal?: unknown }>) {
-  const out = { parcial1: 0, parcial2: 0, global: 0 };
+function determinarExamenesPorCorte(
+  componentes: Array<{ corte?: unknown; examenCorteDecimal?: unknown; teoricoDecimal?: unknown; practicas?: unknown }>
+): {
+  examenesPorCorte: { parcial1: number; parcial2: number; global: number };
+  estadoComponentes: EstadoComponentesExamen;
+} {
+  const examenesPorCorte = { parcial1: 0, parcial2: 0, global: 0 };
+  const estadoComponentes: EstadoComponentesExamen = {
+    parcial1: { presente: false, teoricoCapturado: false, practicasCapturadas: 0 },
+    parcial2: { presente: false, teoricoCapturado: false, practicasCapturadas: 0 },
+    global: { presente: false, teoricoCapturado: false, practicasCapturadas: 0 }
+  };
+
   for (const item of Array.isArray(componentes) ? componentes : []) {
     const corte = String(item.corte || '').trim().toLowerCase();
-    if (corte === 'parcial1') out.parcial1 = round4(numeroSeguro(item.examenCorteDecimal));
-    if (corte === 'parcial2') out.parcial2 = round4(numeroSeguro(item.examenCorteDecimal));
-    if (corte === 'global') out.global = round4(numeroSeguro(item.examenCorteDecimal));
+    if (!esCorteExamen(corte)) continue;
+    const practicas = Array.isArray(item.practicas)
+      ? item.practicas.map((valor) => Number(valor)).filter((valor) => Number.isFinite(valor))
+      : [];
+
+    examenesPorCorte[corte] = round4(numeroSeguro(item.examenCorteDecimal));
+    estadoComponentes[corte] = {
+      presente: true,
+      teoricoCapturado: Number.isFinite(Number(item.teoricoDecimal)),
+      practicasCapturadas: practicas.length
+    };
   }
-  return out;
+  return { examenesPorCorte, estadoComponentes };
 }
 
 function faltantesLisc(params: {
   config: Record<string, unknown> | null;
   continuaPorCorte: { c1: number; c2: number; c3: number };
-  examenesPorCorte: { parcial1: number; parcial2: number; global: number };
+  estadoComponentes: EstadoComponentesExamen;
 }) {
   const faltantes: string[] = [];
   const reglas = ((params.config?.reglasCierre ?? {}) as Record<string, unknown>) || {};
+  const requiereTeorico = reglas.requiereTeorico !== false;
+  const requierePractica = reglas.requierePractica !== false;
+  const requiereComponente = requiereTeorico || requierePractica;
 
-  if (numeroSeguro(params.examenesPorCorte.parcial1) <= 0) faltantes.push('examen.parcial1');
-  if (numeroSeguro(params.examenesPorCorte.parcial2) <= 0) faltantes.push('examen.parcial2');
-  if (numeroSeguro(params.examenesPorCorte.global) <= 0) faltantes.push('examen.global');
+  for (const corte of CORTES_EXAMEN) {
+    const estado = params.estadoComponentes[corte];
+    if (requiereComponente && !estado.presente) {
+      faltantes.push(`examen.${corte}.componente`);
+      continue;
+    }
+    if (requiereTeorico && estado.presente && !estado.teoricoCapturado) {
+      faltantes.push(`examen.${corte}.teorico`);
+    }
+    if (requierePractica && estado.presente && estado.practicasCapturadas <= 0) {
+      faltantes.push(`examen.${corte}.practica`);
+    }
+  }
 
   if (Boolean(reglas.requiereContinuaMinima)) {
     const minima = numeroSeguro(reglas.continuaMinima);
@@ -200,7 +242,9 @@ async function calcularResumenLisc(docenteId: string, periodoId: string, alumnoI
     evidencias: evidencias as Array<Record<string, unknown>>,
     cortesConfig: (config.cortes ?? []) as Array<Record<string, unknown>>
   });
-  const examenesPorCorte = determinarExamenesPorCorte(componentes as Array<Record<string, unknown>>);
+  const { examenesPorCorte, estadoComponentes } = determinarExamenesPorCorte(
+    componentes as Array<Record<string, unknown>>
+  );
 
   const calculo = calcularPoliticaLisc({
     continuaPorCorte,
@@ -209,7 +253,11 @@ async function calcularResumenLisc(docenteId: string, periodoId: string, alumnoI
     pesosExamenes: (config.pesosExamenes ?? {}) as { parcial1?: number; parcial2?: number; global?: number }
   });
 
-  const faltantes = faltantesLisc({ config: config as Record<string, unknown>, continuaPorCorte, examenesPorCorte });
+  const faltantes = faltantesLisc({
+    config: config as Record<string, unknown>,
+    continuaPorCorte,
+    estadoComponentes
+  });
   const estado = faltantes.length === 0 ? 'completo' : 'incompleto';
 
   const resumen = {
@@ -227,9 +275,18 @@ async function calcularResumenLisc(docenteId: string, periodoId: string, alumnoI
     estado,
     faltantes,
     auditoria: {
+      politicaCodigo: 'POLICY_LISC_ENCUADRE_2026',
+      politicaVersion: numeroSeguro(config.politicaVersion) || 1,
       reglas: config.reglasCierre ?? {},
       pesosGlobales: config.pesosGlobales ?? {},
-      pesosExamenes: config.pesosExamenes ?? {}
+      pesosExamenes: config.pesosExamenes ?? {},
+      formulas: {
+        examenCorte: '0.5*teorico + 0.5*promedio(practicas)',
+        bloqueExamenes: '0.2*parcial1 + 0.2*parcial2 + 0.6*global',
+        bloqueContinua: '0.2*c1 + 0.2*c2 + 0.6*c3',
+        final: '0.5*bloqueContinua + 0.5*bloqueExamenes',
+        redondeoFinal: 'si <6 floor, si >=6 round half-up'
+      }
     },
     calculadoEn: new Date()
   };

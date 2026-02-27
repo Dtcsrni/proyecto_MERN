@@ -39,6 +39,9 @@ export const PERMISOS = [
   'sincronizacion:importar',
   'sincronizacion:push',
   'sincronizacion:pull',
+  'compliance:leer',
+  'compliance:gestionar',
+  'compliance:expurgar',
   'cuenta:leer',
   'cuenta:actualizar',
   'docentes:administrar'
@@ -81,6 +84,8 @@ const PERMISOS_DOCENTE: Permiso[] = [
   'sincronizacion:importar',
   'sincronizacion:push',
   'sincronizacion:pull',
+  'compliance:leer',
+  'compliance:gestionar',
   'cuenta:leer',
   'cuenta:actualizar'
 ];
@@ -114,6 +119,7 @@ const PERMISOS_COORDINADOR: Permiso[] = [
   'sincronizacion:importar',
   'sincronizacion:push',
   'sincronizacion:pull',
+  'compliance:leer',
   'cuenta:leer',
   'cuenta:actualizar'
 ];
@@ -131,6 +137,7 @@ const PERMISOS_AUXILIAR: Permiso[] = [
   'calificaciones:calificar',
   'evaluaciones:leer',
   'analiticas:leer',
+  'compliance:leer',
   'cuenta:leer'
 ];
 
@@ -145,6 +152,7 @@ const PERMISOS_LECTOR: Permiso[] = [
   'evaluaciones:leer',
   'analiticas:leer',
   'sincronizacion:listar',
+  'compliance:leer',
   'cuenta:leer'
 ];
 

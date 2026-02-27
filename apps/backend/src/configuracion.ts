@@ -77,6 +77,18 @@ const omrImagenBase64MaxChars = parsearNumeroSeguro(process.env.OMR_IMAGEN_BASE6
   min: 1_000,
   max: 50_000_000
 });
+
+const complianceModeRaw = String(process.env.COMPLIANCE_MODE ?? 'private').trim().toLowerCase();
+const complianceMode: 'private' | 'public-hidalgo' = complianceModeRaw === 'public-hidalgo' ? 'public-hidalgo' : 'private';
+const dataRetentionDefaultDays = parsearNumeroSeguro(process.env.DATA_RETENTION_DEFAULT_DAYS, 365, {
+  min: 1,
+  max: 3650
+});
+const dataPurgeCron = String(process.env.DATA_PURGE_CRON ?? '0 3 * * *').trim();
+const auditLogImmutable = ['1', 'true', 'yes'].includes(String(process.env.AUDIT_LOG_IMMUTABLE ?? 'true').toLowerCase());
+const dpoContactEmail = String(process.env.DPO_CONTACT_EMAIL ?? 'privacy@example.invalid').trim();
+const legalNoticeVersion = String(process.env.LEGAL_NOTICE_VERSION ?? '2026.02').trim();
+
 export const configuracion = {
   puerto,
   mongoUri,
@@ -99,5 +111,11 @@ export const configuracion = {
   rateLimitLimit,
   rateLimitCredencialesLimit,
   rateLimitRefrescoLimit,
-  omrImagenBase64MaxChars
+  omrImagenBase64MaxChars,
+  complianceMode,
+  dataRetentionDefaultDays,
+  dataPurgeCron,
+  auditLogImmutable,
+  dpoContactEmail,
+  legalNoticeVersion
 };

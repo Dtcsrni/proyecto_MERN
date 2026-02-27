@@ -29,6 +29,7 @@ EvaluaPro usa arquitectura de monorepo con separacion por aplicaciones:
 - `modulo_sincronizacion_nube`
 - `modulo_admin_docentes`
 - `modulo_papelera`
+- `modulo_compliance`
 
 ## Contratos de arquitectura
 - Rutas publicas solo en autenticacion y salud.

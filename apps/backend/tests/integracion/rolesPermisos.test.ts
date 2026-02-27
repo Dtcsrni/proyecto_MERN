@@ -73,5 +73,45 @@ describe('roles y permisos', () => {
     const respuesta = await request(app).get('/api/admin/docentes').set(authAdmin).expect(200);
     expect(respuesta.body?.docentes?.length ?? 0).toBeGreaterThanOrEqual(2);
   });
-});
 
+  it('permite leer evaluaciones a lector pero bloquea gestión', async () => {
+    const lector = await crearDocenteConRoles('lector-eval@local.test', ['lector']);
+    const authLector = authPara(lector, ['lector']);
+
+    await request(app).get('/api/evaluaciones/politicas').set(authLector).expect(200);
+    await request(app)
+      .post('/api/evaluaciones/configuracion-periodo')
+      .set(authLector)
+      .send({
+        periodoId: '507f1f77bcf86cd799439011',
+        politicaCodigo: 'POLICY_LISC_ENCUADRE_2026'
+      })
+      .expect(403);
+  });
+
+  it('permite classroom a docente y bloquea a lector por permisos', async () => {
+    const docente = await crearDocenteConRoles('docente-classroom@local.test', ['docente']);
+    const lector = await crearDocenteConRoles('lector-classroom@local.test', ['lector']);
+    const authDocente = authPara(docente, ['docente']);
+    const authLector = authPara(lector, ['lector']);
+
+    await request(app)
+      .get('/api/integraciones/classroom/oauth/iniciar')
+      .set(authDocente)
+      .expect((res) => {
+        expect([200, 503]).toContain(res.status);
+      });
+
+    await request(app).get('/api/integraciones/classroom/oauth/iniciar').set(authLector).expect(403);
+  });
+
+  it('bloquea purge de compliance para docente y permite status a lector', async () => {
+    const docente = await crearDocenteConRoles('docente-compliance@local.test', ['docente']);
+    const lector = await crearDocenteConRoles('lector-compliance@local.test', ['lector']);
+    const authDocente = authPara(docente, ['docente']);
+    const authLector = authPara(lector, ['lector']);
+
+    await request(app).get('/api/compliance/status').set(authLector).expect(200);
+    await request(app).post('/api/compliance/purge').set(authDocente).send({ dryRun: true }).expect(403);
+  });
+});

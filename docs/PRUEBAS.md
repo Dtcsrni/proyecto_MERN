@@ -70,6 +70,8 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Aislamiento entre docentes.
 - Publicacion/sincronizacion hacia portal.
 - Gate mixto OMR TV3 con dataset sintético (`omr_samples_tv3`) y real (`omr_samples_tv3_real`).
+- Modulo de evaluaciones continuas y politicas configurables (SV/LISC).
+- Integracion Google Classroom en modo `pull` (OAuth y mapeo de evidencias).
 
 ## Matriz unica de gates MVP comercial
 ### Gate de merge (main)
@@ -77,16 +79,21 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - `Verificaciones Extendidas (Main/Release)`
 - `Installer Windows (MSI + Bundle)`
 - `Security CodeQL (JS/TS)`
+- `legal-docs-check` + `pii-leak-check` + `retention-policy-check`
 
 ### Gate extendido (nightly/main/release)
 - `npm run test:omr:tv3:gate:ci`
 - `npm run test:e2e:docente-alumno:ci`
 - `npm run test:global-grade:ci`
+- `npm run test:evaluaciones:policy:ci`
+- `npm run test:evaluaciones:e2e:ci`
 - `npm run test:pdf-print:ci`
 - `npm run test:ux-visual:ci`
 - `npm run perf:check`
 - `npm run perf:check:business`
 - `npm run qa:clean-architecture:strict`
+- `npm run test:compliance:dsr-flow`
+- `npm run compliance:evidence:generate`
 
 ### Gate de promocion estable (tag v* sin prerelease)
 - `npm run release:validate:stable -- --version=<version>`
@@ -102,6 +109,8 @@ npm run test:coverage:ci
 npm run test:tdd:enforcement:ci
 npm run test:client:proyectos:ci
 npm run test:omr:tv3:gate:ci
+npm run test:evaluaciones:policy:ci
+npm run test:evaluaciones:e2e:ci
 npm run perf:check
 npm run security:env:check
 npm run security:audit

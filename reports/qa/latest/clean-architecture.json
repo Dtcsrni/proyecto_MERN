@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "gate": "clean-architecture",
+  "strict": false,
+  "generatedAt": "2026-02-27T07:59:11.680Z",
+  "ok": true,
+  "checks": [
+    {
+      "id": "size.frontend.app_docente.files",
+      "ok": true,
+      "detail": "AppDocente=1167, SeccionEscaneo=931"
+    },
+    {
+      "id": "token.api.v2",
+      "ok": true,
+      "detail": "/api/v2 matches=0"
+    },
+    {
+      "id": "token.engineUsed",
+      "ok": true,
+      "detail": "engineUsed matches=0"
+    },
+    {
+      "id": "token.pdf.totalReactivos.compat",
+      "ok": true,
+      "detail": "totalReactivos matches=0"
+    },
+    {
+      "id": "removed.apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/middlewareVersionadoApi.ts exists=false"
+    },
+    {
+      "id": "removed.apps/backend/src/compartido/observabilidad/metricsAdopcion.ts",
+      "ok": true,
+      "detail": "apps/backend/src/compartido/observabilidad/metricsAdopcion.ts exists=false"
+    }
+  ]
+}

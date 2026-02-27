@@ -106,7 +106,12 @@ describe('calificaciones persistencia', () => {
         respuestasDetectadas: [{ numeroPregunta: 1, opcion: 'A' }],
         omrAnalisis: crearAnalisisOmrOk(),
         bonoSolicitado: 0,
-        retroalimentacion: 'Correcto'
+        retroalimentacion: 'Correcto',
+        versionPolitica: 1,
+        bloqueContinuaDecimal: 8.75,
+        bloqueExamenesDecimal: 9.25,
+        finalDecimal: 9,
+        finalRedondeada: 9
       }
     } as unknown as SolicitudDocente;
     const resGuardar = crearRespuesta();
@@ -121,6 +126,11 @@ describe('calificaciones persistencia', () => {
     expect(calificacionGuardada).toBeTruthy();
     expect(calificacionGuardada?.aciertos).toBe(1);
     expect(calificacionGuardada?.respuestasDetectadas).toEqual([{ numeroPregunta: 1, opcion: 'A' }]);
+    expect(calificacionGuardada?.versionPolitica).toBe(1);
+    expect(calificacionGuardada?.bloqueContinuaDecimal).toBe(8.75);
+    expect(calificacionGuardada?.bloqueExamenesDecimal).toBe(9.25);
+    expect(calificacionGuardada?.finalDecimal).toBe(9);
+    expect(calificacionGuardada?.finalRedondeada).toBe(9);
 
     const examenActualizado = await ExamenGenerado.findById(examen._id).lean();
     expect(examenActualizado?.estado).toBe('calificado');

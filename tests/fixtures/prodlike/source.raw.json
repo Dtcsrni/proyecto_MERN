@@ -1,0 +1,34 @@
+{
+  "version": "1",
+  "periodos": [
+    {
+      "_id": "67f100000000000000000001",
+      "docenteId": "67f100000000000000000010",
+      "nombre": "Periodo Demo Anonimo",
+      "grupos": ["A", "B"]
+    }
+  ],
+  "docentes": [
+    {
+      "_id": "67f100000000000000000010",
+      "nombreCompleto": "Anon 0001",
+      "correo": "anon-docente@example.invalid"
+    }
+  ],
+  "alumnos": [
+    {
+      "_id": "67f100000000000000000020",
+      "docenteId": "67f100000000000000000010",
+      "periodoId": "67f100000000000000000001",
+      "matricula": "ANON00000001",
+      "nombreCompleto": "Anon 0002",
+      "correo": "anon-alumno@example.invalid",
+      "grupo": "A"
+    }
+  ],
+  "bancoPreguntas": [],
+  "plantillas": [],
+  "examenes": [],
+  "entregas": [],
+  "calificaciones": []
+}

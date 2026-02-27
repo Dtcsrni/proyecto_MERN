@@ -21,15 +21,16 @@ Catalogo principal (resumen):
 - Calificaciones: `calificaciones:calificar`, `calificaciones:publicar`
 - Analiticas: `analiticas:leer`
 - Sincronizacion: `sincronizacion:listar`, `sincronizacion:exportar`, `sincronizacion:importar`, `sincronizacion:push`, `sincronizacion:pull`
+- Compliance: `compliance:leer`, `compliance:gestionar`, `compliance:expurgar`
 - Cuenta: `cuenta:leer`, `cuenta:actualizar`
 - Admin docentes: `docentes:administrar`
 
 ## Matriz de capacidades por rol
 - `admin`: todos los permisos.
-- `docente`: operacion completa docente (sin privilegios administrativos de docentes).
-- `coordinador`: gestion academica y generacion, sin OMR/calificacion.
-- `auxiliar`: lectura + entrega + OMR + calificacion.
-- `lector`: solo lectura.
+- `docente`: operacion completa docente + gestion de solicitudes ARCO (sin privilegios administrativos de docentes).
+- `coordinador`: gestion academica y lectura de cumplimiento.
+- `auxiliar`: lectura + entrega + OMR + calificacion + lectura de cumplimiento.
+- `lector`: solo lectura (incluye estado de cumplimiento).
 
 ## Enforcement
 - Backend aplica permisos con `requerirPermiso(...)` por endpoint.

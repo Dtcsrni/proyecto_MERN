@@ -23,6 +23,9 @@
 - [ ] Logs sin exposición de secretos/tokens.
 - [ ] Request IDs presentes para trazabilidad.
 - [ ] Validación estricta de payloads en endpoints sensibles.
+- [ ] Endpoints `/api/compliance/*` operativos y auditables.
+- [ ] Flujo ARCO probado (`test:compliance:dsr-flow`).
+- [ ] Gate de fuga PII en repositorio (`test:compliance:pii`) en verde.
 - [ ] Exportaciones de lista académica incluyen manifiesto de integridad SHA-256.
 - [ ] Verificación de hash previa a distribución de CSV/DOCX.
 

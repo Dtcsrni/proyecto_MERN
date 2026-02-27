@@ -19,6 +19,18 @@ EvaluaPro unifica en un solo flujo el ciclo docente completo:
 - 🔄 **Canal estable por defecto**: el actualizador interno consume `stable`.
 - 📊 **Evidencia auditable**: trazabilidad en `reports/qa`, `docs` y gates CI.
 
+## ⚖️ Licenciamiento
+- Open Core: `AGPL-3.0-or-later` (`LICENSE`).
+- Licencia comercial propietaria: `LICENSE-COMMERCIAL.md`.
+- Avisos y contribución: `NOTICE.md`, `CONTRIBUTING.md`.
+
+## 🛡️ Privacidad y cumplimiento
+- Política de seguridad: `docs/SECURITY_POLICY.md`.
+- Aviso de privacidad: `docs/legal/aviso-privacidad-integral.md`.
+- Procedimiento ARCO: `docs/legal/procedimiento-arco.md`.
+- Anexo sector público Hidalgo: `docs/legal/anexo-sector-publico-hidalgo.md`.
+- Hooks locales de higiene (opcional): `npm run compliance:hooks:install`.
+
 ## 📦 Ultima version publicada
 Datos al **27 de febrero de 2026**:
 
