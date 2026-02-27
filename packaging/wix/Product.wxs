@@ -12,6 +12,7 @@
     <MajorUpgrade DowngradeErrorMessage="Ya existe una versión más reciente de EvaluaPro instalada." />
     <MediaTemplate EmbedCab="yes" />
     <Property Id="INSTALL_DESKTOP_SHORTCUTS" Value="1" />
+    <Property Id="INSTALL_STARTMENU_SHORTCUTS" Value="1" />
     <Property Id="NODEINSTALLED64">
       <RegistrySearch Root="HKLM" Key="SOFTWARE\Node.js" Name="InstallPath" Type="raw" />
     </Property>

@@ -1,7 +1,8 @@
 param(
   [string]$Configuration = "Release",
   [string]$Version = "",
-  [switch]$SkipStabilityChecks
+  [switch]$SkipStabilityChecks,
+  [switch]$IncludeBundle
 )
 
 Set-StrictMode -Version Latest
@@ -32,8 +33,42 @@ if (-not (Test-Path $wix)) {
   throw "No existe carpeta WiX en $wix"
 }
 
-if (-not (Get-Command wix -ErrorAction SilentlyContinue)) {
-  throw "No se encontró CLI de WiX (wix.exe). Instala WiX Toolset v4 y agrega 'wix' al PATH."
+$wixExe = $null
+$wixCmd = Get-Command wix -ErrorAction SilentlyContinue
+if ($wixCmd) {
+  $wixExe = $wixCmd.Source
+} else {
+  $wixCandidates = @(
+    "$env:ProgramFiles\WiX Toolset v6.0\bin\wix.exe",
+    "${env:ProgramFiles(x86)}\WiX Toolset v6.0\bin\wix.exe",
+    "$env:ProgramFiles\WiX Toolset v6.0\bin\wix.cmd",
+    "${env:ProgramFiles(x86)}\WiX Toolset v6.0\bin\wix.cmd"
+  ) | Where-Object { $_ -and (Test-Path $_) }
+
+  $wixCandidateList = @($wixCandidates)
+  if ($wixCandidateList.Count -gt 0) {
+    $wixExe = $wixCandidateList[0]
+  }
+}
+
+if (-not $wixExe) {
+  throw "No se encontró CLI de WiX (wix.exe). Instala WiX Toolset v6+ estable y agrega 'wix' al PATH."
+}
+
+$wixVersionRaw = (& $wixExe --version 2>$null | Select-Object -First 1)
+if (-not $wixVersionRaw) {
+  throw "No se pudo leer la versión de WiX. Verifica instalación de WiX Toolset v6+ estable."
+}
+
+$wixVersionText = [string]$wixVersionRaw
+$wixVersionMatch = [Regex]::Match($wixVersionText, '\d+(\.\d+){1,3}')
+if (-not $wixVersionMatch.Success) {
+  throw "No se pudo interpretar la versión de WiX desde: $wixVersionText"
+}
+
+$wixVersion = [Version]$wixVersionMatch.Value
+if ($wixVersion.Major -lt 6) {
+  throw "WiX detectado: $wixVersion. Se requiere WiX Toolset v6+ estable."
 }
 
 if (-not (Test-Path $out)) {
@@ -61,7 +96,10 @@ if (-not $SkipStabilityChecks) {
   )
 }
 
-$totalSteps = $checks.Count + 2
+$buildBundle = $IncludeBundle -or ($env:EVALUAPRO_BUILD_BUNDLE -match '^(1|true|yes|si)$')
+$buildSteps = 1
+if ($buildBundle) { $buildSteps = 2 }
+$totalSteps = $checks.Count + $buildSteps
 $idx = 1
 
 if ($checks.Count -gt 0) {
@@ -75,16 +113,20 @@ Write-Progress -Activity "EvaluaPro MSI (estable)" -Status "Compilar MSI Product
 Write-Host "[msi][step $idx/$totalSteps] Compilar MSI Product.wxs"
 $productArgs = @("build", $product) + $fragmentFiles + @("-arch", "x64", "-d", "SourceRoot=$root", "-o", (Join-Path $out "EvaluaPro.msi"))
 if ($Version) { $productArgs += @("-d", "Version=$Version") }
-& wix @productArgs
+& $wixExe @productArgs
 if ($LASTEXITCODE -ne 0) { throw "Falló build de Product.wxs" }
 $idx += 1
 
-Write-Progress -Activity "EvaluaPro MSI (estable)" -Status "Compilar EXE Bundle.wxs" -PercentComplete ([Math]::Floor((($idx - 1) * 100) / [Math]::Max(1, $totalSteps)))
-Write-Host "[msi][step $idx/$totalSteps] Compilar EXE Bundle.wxs"
-$bundleArgs = @("build", $bundle, "-arch", "x64", "-ext", "WixToolset.BootstrapperApplications.wixext", "-d", "SourceRoot=$root", "-o", (Join-Path $out "EvaluaPro-Setup.exe"))
-if ($Version) { $bundleArgs += @("-d", "Version=$Version") }
-& wix @bundleArgs
-if ($LASTEXITCODE -ne 0) { throw "Falló build de Bundle.wxs" }
+if ($buildBundle) {
+  Write-Progress -Activity "EvaluaPro MSI (estable)" -Status "Compilar EXE Bundle.wxs" -PercentComplete ([Math]::Floor((($idx - 1) * 100) / [Math]::Max(1, $totalSteps)))
+  Write-Host "[msi][step $idx/$totalSteps] Compilar EXE Bundle.wxs"
+  $bundleArgs = @("build", $bundle, "-arch", "x64", "-ext", "WixToolset.BootstrapperApplications.wixext", "-d", "SourceRoot=$root", "-o", (Join-Path $out "EvaluaPro-Setup.exe"))
+  if ($Version) { $bundleArgs += @("-d", "Version=$Version") }
+  & $wixExe @bundleArgs
+  if ($LASTEXITCODE -ne 0) { throw "Falló build de Bundle.wxs" }
+} else {
+  Write-Host "[msi] Bundle EXE omitido por defecto (migración Burn WiX v6 en progreso). Usa -IncludeBundle o EVALUAPRO_BUILD_BUNDLE=1 para intentarlo."
+}
 
 Write-Progress -Activity "EvaluaPro MSI (estable)" -Status "Completado" -PercentComplete 100
 Write-Host "[msi] Artefactos generados en $out"

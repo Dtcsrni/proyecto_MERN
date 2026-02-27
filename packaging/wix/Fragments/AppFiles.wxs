@@ -2,19 +2,14 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <ComponentGroup Id="CG.AppFiles" Directory="INSTALLFOLDER">
-      <Files
-        Include="$(var.SourceRoot)\*"
-        Exclude="$(var.SourceRoot)\.git\**;$(var.SourceRoot)\node_modules\**;$(var.SourceRoot)\logs\**;$(var.SourceRoot)\reports\**;$(var.SourceRoot)\dist\installer\**;$(var.SourceRoot)\packaging\wix\**" />
-      <Files
-        Include="$(var.SourceRoot)\apps\**"
-        Exclude="$(var.SourceRoot)\apps\**\node_modules\**;$(var.SourceRoot)\apps\**\dist\**;$(var.SourceRoot)\apps\**\coverage\**;$(var.SourceRoot)\apps\**\reports\**" />
-      <Files
-        Include="$(var.SourceRoot)\scripts\**"
-        Exclude="$(var.SourceRoot)\scripts\icons\**;$(var.SourceRoot)\scripts\*.log" />
-      <Files Include="$(var.SourceRoot)\docs\**" />
-      <Files Include="$(var.SourceRoot)\ops\**" />
-      <Files Include="$(var.SourceRoot)\ci\**" />
-      <Files Include="$(var.SourceRoot)\.github\**" />
+      <Files Include="$(var.SourceRoot)\**">
+        <Exclude Files="$(var.SourceRoot)\.git\**" />
+        <Exclude Files="$(var.SourceRoot)\node_modules\**" />
+        <Exclude Files="$(var.SourceRoot)\logs\**" />
+        <Exclude Files="$(var.SourceRoot)\reports\**" />
+        <Exclude Files="$(var.SourceRoot)\dist\installer\**" />
+        <Exclude Files="$(var.SourceRoot)\apps\backend\storage\**" />
+      </Files>
     </ComponentGroup>
   </Fragment>
 </Wix>

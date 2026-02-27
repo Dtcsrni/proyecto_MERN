@@ -11,7 +11,7 @@ Responsable: `I.S.C. Erick Renato Vega Ceron`.
 - `Fragments/Cleanup.wxs`: limpieza de logs/menu en uninstall.
 
 ## Requisitos
-- WiX Toolset v4 (`wix` en PATH).
+- WiX Toolset v6+ estable (`wix` en PATH).
 - Node.js 24+.
 - Docker Desktop.
 
@@ -36,9 +36,12 @@ Artefactos esperados:
 - Instalacion/actualizacion:
   - genera automaticamente accesos directos de menu inicio.
   - por defecto tambien genera accesos directos en escritorio (`InstallDesktopShortcuts=1`).
+  - por defecto tambien mantiene accesos en menu inicio (`InstallStartMenuShortcuts=1`).
   - se puede desactivar por linea de comandos:
     - `EvaluaPro-Setup.exe InstallDesktopShortcuts=0`
+    - `EvaluaPro-Setup.exe InstallStartMenuShortcuts=0`
 - El instalador aplica upgrade in-place si detecta una version previa.
+- La instalacion es per-machine y solicita elevacion (UAC) al inicio.
 - El instalador valida prerequisitos no autoconfigurables:
   - Node.js 24+
   - Docker Desktop

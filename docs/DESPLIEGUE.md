@@ -98,7 +98,7 @@ Artefactos:
 Prerequisitos de instalacion:
 - Node.js 24+
 - Docker Desktop
-- WiX Toolset v4 (solo para generar instalador)
+- WiX Toolset v6+ estable (solo para generar instalador)
 
 Autoconfiguracion durante uso:
 - shortcuts Dev/Prod instalados automaticamente.

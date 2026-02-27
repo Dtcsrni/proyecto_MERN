@@ -6,21 +6,18 @@
     Version="0.2.0.0"
     UpgradeCode="6EA80CBA-C4F5-4434-8B27-B66480ABAB4A">
 
-    <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" Overridable="yes" />
+    <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" />
+    <Variable Name="InstallStartMenuShortcuts" Type="numeric" Value="1" Persisted="yes" />
 
-    <BootstrapperApplication>
-      <bal:WixStandardBootstrapperApplication
-        Theme="standard"
-        LicenseUrl="https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario/blob/main/README.md" />
-    </BootstrapperApplication>
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication" />
 
     <Chain>
       <MsiPackage
         Id="EvaluaProMsi"
         SourceFile="$(var.SourceRoot)\dist\installer\EvaluaPro.msi"
-        DisplayInternalUI="no"
         Visible="yes">
         <MsiProperty Name="INSTALL_DESKTOP_SHORTCUTS" Value="[InstallDesktopShortcuts]" />
+        <MsiProperty Name="INSTALL_STARTMENU_SHORTCUTS" Value="[InstallStartMenuShortcuts]" />
       </MsiPackage>
     </Chain>
   </Bundle>
