@@ -263,4 +263,66 @@ describe('módulo evaluaciones (LISC)', () => {
     expect(Array.isArray(resumen.faltantes)).toBe(true);
     expect(resumen.faltantes).toContain('examen.parcial1.practica');
   });
+
+  it('marca faltantes de continua minima cuando la regla esta activa', async () => {
+    const { periodo, alumno, auth } = await crearContexto();
+
+    await request(app)
+      .post('/api/evaluaciones/configuracion-periodo')
+      .set(auth)
+      .send({
+        periodoId: String(periodo._id),
+        politicaCodigo: 'POLICY_LISC_ENCUADRE_2026',
+        politicaVersion: 1,
+        cortes: [
+          { numero: 1, nombre: 'C1', fechaCorte: '2026-01-15T00:00:00.000Z', pesoContinua: 0.5, pesoExamen: 0.5, pesoBloqueExamenes: 0.2 },
+          { numero: 2, nombre: 'C2', fechaCorte: '2026-02-15T00:00:00.000Z', pesoContinua: 0.5, pesoExamen: 0.5, pesoBloqueExamenes: 0.2 },
+          { numero: 3, nombre: 'C3', fechaCorte: '2026-03-15T00:00:00.000Z', pesoContinua: 0.5, pesoExamen: 0.5, pesoBloqueExamenes: 0.6 }
+        ],
+        pesosGlobales: { continua: 0.5, examenes: 0.5 },
+        pesosExamenes: { parcial1: 0.2, parcial2: 0.2, global: 0.6 },
+        reglasCierre: { requiereTeorico: true, requierePractica: true, requiereContinuaMinima: true, continuaMinima: 6 }
+      })
+      .expect(200);
+
+    for (const fecha of ['2026-01-10T00:00:00.000Z', '2026-02-10T00:00:00.000Z', '2026-03-10T00:00:00.000Z']) {
+      await request(app)
+        .post('/api/evaluaciones/evidencias')
+        .set(auth)
+        .send({
+          periodoId: String(periodo._id),
+          alumnoId: String(alumno._id),
+          titulo: `E-${fecha}`,
+          calificacionDecimal: 5,
+          ponderacion: 1,
+          fechaEvidencia: fecha
+        })
+        .expect(201);
+    }
+
+    for (const corte of ['parcial1', 'parcial2', 'global']) {
+      await request(app)
+        .post('/api/evaluaciones/examenes/componentes')
+        .set(auth)
+        .send({
+          periodoId: String(periodo._id),
+          alumnoId: String(alumno._id),
+          corte,
+          teoricoDecimal: 8,
+          practicas: [8]
+        })
+        .expect(201);
+    }
+
+    const respuesta = await request(app)
+      .get(`/api/evaluaciones/alumnos/${encodeURIComponent(String(alumno._id))}/resumen?periodoId=${encodeURIComponent(String(periodo._id))}`)
+      .set(auth)
+      .expect(200);
+
+    const resumen = respuesta.body?.resumen;
+    expect(resumen.estado).toBe('incompleto');
+    expect(resumen.faltantes).toContain('continua.c1.minima');
+    expect(resumen.faltantes).toContain('continua.c2.minima');
+    expect(resumen.faltantes).toContain('continua.c3.minima');
+  });
 });
