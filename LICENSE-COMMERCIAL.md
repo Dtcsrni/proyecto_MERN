@@ -8,13 +8,24 @@ Este repositorio usa un modelo dual:
 La licencia comercial habilita el uso sin obligaciones copyleft de AGPL en despliegues privados,
 ademas de capacidades premium, soporte y SLA segun contrato.
 
-## Modalidades comerciales
+## Modalidades comerciales y tipos de licencia
+Modalidades de pago:
 1. Suscripcion mensual.
 2. Suscripcion semestral.
 3. Suscripcion anual.
-4. Licencia de unico pago (recomendada para instituciones con ciclo estable), con garantia de actualizaciones por periodo definido en contrato.
+4. Licencia de unico pago (perpetua por version mayor) con garantia de actualizaciones por periodo definido en contrato.
 
-Referencia operativa de tiers: `docs/comercial/LICENSING_TIERS.md`.
+Tipos de licencia comercial disponibles (segun contrato):
+1. Starter Subscription.
+2. Growth Subscription.
+3. Enterprise Subscription.
+4. Perpetual Institutional.
+5. Campus / Multi-sede.
+6. Managed Service Provider (MSP).
+7. OEM / White-label.
+8. Sector Publico con anexo de cumplimiento.
+
+Referencia operativa de tiers y tipos: `docs/comercial/LICENSING_TIERS.md`.
 
 ## Restricciones
 1. Prohibida la redistribucion de componentes propietarios sin autorizacion escrita.

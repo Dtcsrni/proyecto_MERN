@@ -1,4 +1,4 @@
-# EvaluaPro | Evaluacion Universitaria que Si Cierra Operativamente
+# EvaluaPro | Evaluacion Universitaria 
 
 EvaluaPro convierte el flujo academico completo en un proceso trazable y repetible: diseno de examen, impresion PDF, aplicacion, lectura OMR, calificacion y publicacion.
 
@@ -16,8 +16,9 @@ Esta version del repositorio sigue un enfoque **Open Core**:
 - `Commercial Pro` y `Commercial Enterprise`: `LICENSE-COMMERCIAL.md`.
 - Modalidades comerciales: mensual, semestral, anual y pago unico recomendado.
 - Detalle de tiers: [docs/comercial/LICENSING_TIERS.md](docs/comercial/LICENSING_TIERS.md).
+- Estrategia comercial: [docs/comercial/ESTRATEGIA_COMERCIAL.md](docs/comercial/ESTRATEGIA_COMERCIAL.md).
 
-## Funciones Confiables
+## Funciones actuales
 Las funciones se sincronizan automaticamente desde rutas activas del backend + evidencia de pruebas.
 
 <!-- AUTO:FEATURES:START -->
