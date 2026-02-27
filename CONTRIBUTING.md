@@ -11,7 +11,7 @@
 4. Respetar contratos API y gates CI.
 
 ## Seguridad
-- Reportes responsables: security@evaluapro.example.invalid
+- Reportes responsables: armsystechno@gmail.com
 - No abrir incidencias publicas para vulnerabilidades activas.
 
 ## Cumplimiento

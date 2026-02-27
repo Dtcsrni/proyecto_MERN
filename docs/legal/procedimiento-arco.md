@@ -3,7 +3,7 @@
 Version: 2026.02
 
 ## Canales
-- Correo de privacidad: privacidad@evaluapro.example.invalid
+- Correo de privacidad: armsystechno@gmail.com
 - Mesa de ayuda institucional del cliente (si aplica)
 
 ## Flujo operativo

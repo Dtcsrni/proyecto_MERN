@@ -2,7 +2,7 @@
 
 Version: 2026.02
 Responsable: EvaluaPro (operador y/o cliente controlador, segun contrato)
-Contacto privacidad: privacidad@evaluapro.example.invalid
+Contacto privacidad: armsystechno@gmail.com
 
 ## Marco aplicable
 - LFPDPPP y su Reglamento.

@@ -37,7 +37,7 @@ El soporte, tiempos de respuesta, mantenimiento y seguridad se definen en el con
 firmado con cada cliente.
 
 ## Contacto
-- Comercial: comercial@evaluapro.example.invalid
-- Privacidad/DPO: privacidad@evaluapro.example.invalid
+- Comercial: armsystechno@gmail.com
+- Privacidad/DPO: armsystechno@gmail.com
 
 Aviso: este archivo no reemplaza un contrato legal firmado.

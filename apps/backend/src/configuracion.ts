@@ -86,7 +86,7 @@ const dataRetentionDefaultDays = parsearNumeroSeguro(process.env.DATA_RETENTION_
 });
 const dataPurgeCron = String(process.env.DATA_PURGE_CRON ?? '0 3 * * *').trim();
 const auditLogImmutable = ['1', 'true', 'yes'].includes(String(process.env.AUDIT_LOG_IMMUTABLE ?? 'true').toLowerCase());
-const dpoContactEmail = String(process.env.DPO_CONTACT_EMAIL ?? 'privacy@example.invalid').trim();
+const dpoContactEmail = String(process.env.DPO_CONTACT_EMAIL ?? 'armsystechno@gmail.com').trim();
 const legalNoticeVersion = String(process.env.LEGAL_NOTICE_VERSION ?? '2026.02').trim();
 
 export const configuracion = {

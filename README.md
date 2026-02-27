@@ -72,7 +72,7 @@ npm run dev:frontend
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## Contacto Comercial
-Para cotizacion de licencias comerciales, despliegue institucional y soporte, usar el canal definido por el equipo propietario del repositorio y adjuntar:
+Para cotizacion de licencias comerciales, despliegue institucional y soporte, escribir a `armsystechno@gmail.com` y adjuntar:
 - volumen de alumnos/docentes,
 - modalidad (local, hibrido, cloud),
 - requerimientos de cumplimiento y SLA.
