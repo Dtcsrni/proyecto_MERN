@@ -25,6 +25,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detectar cambios por módulo
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - ".github/workflows/ci.yml"
+              - "package.json"
+              - "package-lock.json"
+              - "tsconfig.base.json"
+              - "vitest.base.ts"
+              - "scripts/**"
+            backend:
+              - "apps/backend/**"
+              - "omr_samples_tv3/**"
+              - "omr_samples_tv3_real/**"
+            frontend:
+              - "apps/frontend/**"
+              - "client/**"
+            portal:
+              - "apps/portal_alumno_cloud/**"
+            docs:
+              - "docs/**"
+              - "ci/pipeline.contract.md"
+              - "ci/pipeline.matrix.json"
+            compliance:
+              - "docs/legal/**"
+              - "scripts/compliance/**"
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,9 +69,11 @@ jobs:
         run: npm ci
 
       - name: Preparar runtime sharp (linux-x64)
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
         run: npm install --no-save --include=optional --os=linux --cpu=x64 sharp
 
       - name: Instalar Chromium (Playwright)
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Etapa contract-check
@@ -54,26 +85,64 @@ jobs:
           npm run test:release:policy
           npm run test:security:policy
 
-      - name: Etapa lint
-        run: npm run lint
+      - name: Etapa lint backend
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/backend run lint
 
-      - name: Etapa typecheck
-        run: npm run typecheck
+      - name: Etapa lint frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/frontend run lint
 
-      - name: Etapa test
-        run: |
-          npm run test:backend:ci
-          npm run test:portal:ci
-          npm run test:frontend:ci
-          npm run test:client:proyectos:ci
+      - name: Etapa lint portal
+        if: steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/portal_alumno_cloud run lint
+
+      - name: Etapa typecheck backend
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/backend run typecheck
+
+      - name: Etapa typecheck frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/frontend run typecheck
+
+      - name: Etapa typecheck portal
+        if: steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/portal_alumno_cloud run typecheck
+
+      - name: Etapa test backend
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm run test:backend:ci
+
+      - name: Etapa test portal
+        if: steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm run test:portal:ci
+
+      - name: Etapa test frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm run test:frontend:ci
+
+      - name: Etapa test client proyectos
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm run test:client:proyectos:ci
 
       - name: Etapa ux-quality-check
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:ux-quality:ci
 
-      - name: Etapa coverage-check
-        run: npm run test:coverage:ci
+      - name: Etapa coverage backend
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/backend run test:coverage
+
+      - name: Etapa coverage portal
+        if: steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/portal_alumno_cloud run test:coverage
+
+      - name: Etapa coverage frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm run test:frontend:coverage:min
 
       - name: Etapa tdd-debt-check
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:coverage:exclusions:debt
 
       - name: Preparar base para diff coverage (PR)
@@ -83,12 +152,23 @@ jobs:
       - name: Etapa diff-coverage-check
         env:
           DIFF_COVERAGE_MIN: "90"
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:coverage:diff
 
-      - name: Etapa build
-        run: npm run build
+      - name: Etapa build backend
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/backend run build
+
+      - name: Etapa build frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/frontend run build
+
+      - name: Etapa build portal
+        if: steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
+        run: npm -C apps/portal_alumno_cloud run build
 
       - name: Etapa docs-check
+        if: steps.changes.outputs.docs == 'true' || steps.changes.outputs.shared == 'true'
         run: |
           npm run docs:generate
           npm run docs:check
@@ -98,6 +178,7 @@ jobs:
           npm run routes:check
 
       - name: Etapa security-scan
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.portal == 'true' || steps.changes.outputs.shared == 'true'
         env:
           NODE_ENV: production
           STRICT_ENV_CHECK: "1"
@@ -110,12 +191,15 @@ jobs:
           npm run security:audit
 
       - name: Etapa legal-docs-check
+        if: steps.changes.outputs.compliance == 'true' || steps.changes.outputs.docs == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:compliance:legal-docs
 
       - name: Etapa pii-leak-check
+        if: steps.changes.outputs.compliance == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:compliance:pii
 
       - name: Etapa retention-policy-check
+        if: steps.changes.outputs.compliance == 'true' || steps.changes.outputs.shared == 'true'
         run: npm run test:compliance:retention
 
       - name: Publicar reporte de auditoría
@@ -134,7 +218,6 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
-      github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/heads/release/')
 
     steps:
