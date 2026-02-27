@@ -8,6 +8,27 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Get-Sha256Hex {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+  }
+
+  $stream = [System.IO.File]::OpenRead($Path)
+  try {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+      $hashBytes = $sha.ComputeHash($stream)
+      return ([BitConverter]::ToString($hashBytes) -replace '-', '').ToLowerInvariant()
+    } finally {
+      $sha.Dispose()
+    }
+  } finally {
+    $stream.Dispose()
+  }
+}
+
 function Resolve-DefaultSourcePath {
   param([string]$Candidate)
 
@@ -38,7 +59,7 @@ if (-not $SkipHashCheck) {
   if ([string]::IsNullOrWhiteSpace($ExpectedSha256)) {
     Write-Host '[install-evaluapro] SHA256 esperado no definido; se omite validacion estricta. Usa -ExpectedSha256 para exigirlo.'
   } else {
-    $actual = (Get-FileHash -LiteralPath $targetPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $actual = Get-Sha256Hex -Path $targetPath
     $expected = $ExpectedSha256.Trim().ToLowerInvariant()
     if ($actual -ne $expected) {
       throw "SHA256 invalido. Esperado=$expected Actual=$actual"
