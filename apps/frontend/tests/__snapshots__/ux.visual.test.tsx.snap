@@ -581,7 +581,7 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
       </div>
     </div>
     <div
-      class="auth-grid"
+      class="auth-grid auth-grid--docente"
     >
       <div
         class="auth-hero"
@@ -622,6 +622,20 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
         >
           Entra al banco, examenes y calificacion.
         </p>
+        <div
+          aria-label="Estado de plataforma"
+          class="auth-hero-stats"
+        >
+          <span>
+            Sesion segura
+          </span>
+          <span>
+            Flujo guiado
+          </span>
+          <span>
+            Soporte Google
+          </span>
+        </div>
         <ul
           aria-label="Beneficios"
           class="auth-beneficios"
@@ -713,8 +727,20 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
         </div>
       </div>
       <div
-        class="auth-form"
+        class="auth-form auth-form--ingresar"
       >
+        <div
+          class="auth-form-head"
+        >
+          <p
+            class="eyebrow"
+          >
+            Iniciar sesion
+          </p>
+          <h3>
+            Bienvenido de nuevo
+          </h3>
+        </div>
         <p
           class="mensaje"
           role="status"
@@ -750,23 +776,23 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
            Inicio de sesion con Google deshabilitado en este entorno. Para habilitarlo en desarrollo, define VITE_GOOGLE_CLIENT_ID en el .env del root y reinicia Vite.
         </p>
         <div
-          class="acciones"
+          class="acciones auth-tabs"
         >
           <button
-            class="boton"
+            class="boton auth-tab auth-tab--activo"
             type="button"
           >
             Ingresar
           </button>
           <button
-            class="boton secundario"
+            class="boton secundario auth-tab"
             type="button"
           >
             Registrar
           </button>
         </div>
         <label
-          class="campo"
+          class="campo auth-campo"
         >
           Correo
           <input
@@ -776,7 +802,7 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
           />
         </label>
         <label
-          class="campo"
+          class="campo auth-campo"
         >
           Contrasena
           <input
@@ -786,7 +812,7 @@ exports[`UX visual regression > docente sin token mantiene layout de acceso 1`] 
           />
         </label>
         <div
-          class="acciones"
+          class="acciones auth-submit"
         >
           <button
             class="boton"
