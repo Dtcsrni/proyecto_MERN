@@ -16,7 +16,6 @@
         Theme="hyperlinkLicense"
         LogoFile="$(var.SourceRoot)\logos\logo_sys.png"
         LicenseUrl="https://www.gnu.org/licenses/agpl-3.0.html"
-        HelpUrl="https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario"
         ShowVersion="yes"
         SuppressOptionsUI="no" />
     </BootstrapperApplication>
