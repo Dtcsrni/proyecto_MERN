@@ -95,3 +95,5 @@ Para cotizacion de licencias comerciales, despliegue institucional y soporte, es
 - Ultima sincronizacion automatica: 2026-02-27.
 <!-- AUTO:COMMERCIAL-CONTEXT:END -->
 
+
+- Operacion del sistema comercial integral: [docs/comercial/SISTEMA_COMERCIAL_OPERACION.md](docs/comercial/SISTEMA_COMERCIAL_OPERACION.md)

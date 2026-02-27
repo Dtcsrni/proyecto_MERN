@@ -44,12 +44,39 @@ export const PERMISOS = [
   'compliance:expurgar',
   'cuenta:leer',
   'cuenta:actualizar',
-  'docentes:administrar'
+  'docentes:administrar',
+  'comercial:tenants:leer',
+  'comercial:tenants:gestionar',
+  'comercial:planes:leer',
+  'comercial:planes:gestionar',
+  'comercial:suscripciones:leer',
+  'comercial:suscripciones:gestionar',
+  'comercial:licencias:leer',
+  'comercial:licencias:gestionar',
+  'comercial:licencias:revocar',
+  'comercial:campanas:leer',
+  'comercial:campanas:gestionar',
+  'comercial:cupones:leer',
+  'comercial:cupones:gestionar',
+  'comercial:metricas:leer',
+  'comercial:cobranza:leer',
+  'comercial:cobranza:gestionar',
+  'comercial:auditoria:leer'
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];
 
-export const ROLES = ['admin', 'docente', 'coordinador', 'auxiliar', 'lector'] as const;
+export const ROLES = [
+  'admin',
+  'docente',
+  'coordinador',
+  'auxiliar',
+  'lector',
+  'superadmin_negocio',
+  'gestor_comercial',
+  'finanzas',
+  'soporte_comercial'
+] as const;
 export type Rol = (typeof ROLES)[number];
 
 const PERMISOS_DOCENTE: Permiso[] = [
@@ -156,12 +183,56 @@ const PERMISOS_LECTOR: Permiso[] = [
   'cuenta:leer'
 ];
 
+const PERMISOS_COMERCIAL_BASE: Permiso[] = [
+  'comercial:tenants:leer',
+  'comercial:planes:leer',
+  'comercial:suscripciones:leer',
+  'comercial:licencias:leer',
+  'comercial:campanas:leer',
+  'comercial:cupones:leer',
+  'comercial:metricas:leer',
+  'comercial:cobranza:leer',
+  'comercial:auditoria:leer',
+  'cuenta:leer'
+];
+
+const PERMISOS_GESTOR_COMERCIAL: Permiso[] = [
+  ...PERMISOS_COMERCIAL_BASE,
+  'comercial:tenants:gestionar',
+  'comercial:planes:gestionar',
+  'comercial:suscripciones:gestionar',
+  'comercial:licencias:gestionar',
+  'comercial:campanas:gestionar',
+  'comercial:cupones:gestionar',
+  'comercial:cobranza:gestionar'
+];
+
+const PERMISOS_FINANZAS: Permiso[] = [
+  ...PERMISOS_COMERCIAL_BASE,
+  'comercial:suscripciones:gestionar',
+  'comercial:cupones:gestionar',
+  'comercial:cobranza:gestionar'
+];
+
+const PERMISOS_SOPORTE_COMERCIAL: Permiso[] = [
+  ...PERMISOS_COMERCIAL_BASE,
+  'comercial:tenants:gestionar',
+  'comercial:suscripciones:gestionar',
+  'comercial:licencias:gestionar'
+];
+
+const PERMISOS_SUPERADMIN_NEGOCIO: Permiso[] = [...PERMISOS];
+
 export const PERMISOS_POR_ROL: Record<Rol, Permiso[]> = {
   admin: [...PERMISOS],
   docente: PERMISOS_DOCENTE,
   coordinador: PERMISOS_COORDINADOR,
   auxiliar: PERMISOS_AUXILIAR,
-  lector: PERMISOS_LECTOR
+  lector: PERMISOS_LECTOR,
+  superadmin_negocio: PERMISOS_SUPERADMIN_NEGOCIO,
+  gestor_comercial: PERMISOS_GESTOR_COMERCIAL,
+  finanzas: PERMISOS_FINANZAS,
+  soporte_comercial: PERMISOS_SOPORTE_COMERCIAL
 };
 
 export function normalizarRoles(roles: unknown): Rol[] {

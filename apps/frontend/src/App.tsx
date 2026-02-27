@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AppAlumno } from './apps/app_alumno/AppAlumno';
+import { AppAdminNegocio } from './apps/app_admin_negocio/AppAdminNegocio';
 import { AppDocente } from './apps/app_docente/AppDocente';
 import { TemaProvider } from './tema/TemaProvider';
 import { TooltipLayer } from './ui/ux/tooltip/TooltipLayer';
@@ -29,13 +30,18 @@ function App() {
 
   useEffect(() => {
     const esAlumno = destino === 'alumno';
-    document.title = esAlumno ? 'Portal Alumno - EvaluaPro' : 'Plataforma Docente - EvaluaPro';
+    const esAdminNegocio = destino === 'admin_negocio';
+    document.title = esAlumno
+      ? 'Portal Alumno - EvaluaPro'
+      : esAdminNegocio
+        ? 'Panel de Negocio - EvaluaPro'
+        : 'Plataforma Docente - EvaluaPro';
     establecerFavicon(esAlumno ? '/favicon-alumno.svg' : '/favicon-docente.svg');
   }, [destino]);
 
   const contenido = esVersionInfo
     ? <VersionInfoPage />
-    : (destino === 'alumno' ? <AppAlumno /> : <AppDocente />);
+    : (destino === 'alumno' ? <AppAlumno /> : destino === 'admin_negocio' ? <AppAdminNegocio /> : <AppDocente />);
 
   return (
     <TemaProvider>

@@ -21,6 +21,21 @@ function rolesParaToken(roles: unknown): string[] {
   return normalizados.length > 0 ? normalizados : ['docente'];
 }
 
+function esCorreoSuperadminGoogle(correo: string): boolean {
+  const normalizado = String(correo || '').trim().toLowerCase();
+  return normalizado.length > 0 && configuracion.superadminGoogleEmails.includes(normalizado);
+}
+
+function fusionarRolesGoogleConSuperadmin(rolesActuales: unknown, correoGoogle: string): string[] {
+  const base = new Set(rolesParaToken(rolesActuales));
+  base.add('docente');
+  if (esCorreoSuperadminGoogle(correoGoogle)) {
+    base.add('admin');
+    base.add('superadmin_negocio');
+  }
+  return rolesParaToken(Array.from(base));
+}
+
 function resolverScriptAccesosDirectos(): string {
   const posibles = [
     path.resolve(process.cwd(), 'scripts', 'create-shortcuts.ps1'),
@@ -147,14 +162,15 @@ export async function registrarDocenteGoogle(req: Request, res: Response) {
   const hashContrasena = contrasenaStr.trim() ? await crearHash(contrasenaStr) : undefined;
   const nombreCompletoReq = String(nombreCompleto ?? '').trim();
   const nombreCompletoFinal = nombreCompletoReq || String(perfil.nombreCompleto ?? '').trim();
-    const docente = await Docente.create({
+  const roles = fusionarRolesGoogleConSuperadmin([], correo);
+  const docente = await Docente.create({
       ...(typeof nombres === 'string' && String(nombres).trim() ? { nombres: String(nombres).trim() } : {}),
       ...(typeof apellidos === 'string' && String(apellidos).trim() ? { apellidos: String(apellidos).trim() } : {}),
       ...(nombreCompletoFinal ? { nombreCompleto: nombreCompletoFinal } : { nombreCompleto: String(perfil.nombreCompleto ?? '').trim() }),
       correo,
       ...(hashContrasena ? { hashContrasena } : {}),
       googleSub: perfil.sub,
-      roles: ['docente'],
+      roles,
       activo: true,
       ultimoAcceso: new Date()
     });
@@ -244,6 +260,10 @@ export async function ingresarDocenteGoogle(req: Request, res: Response) {
   }
   if (!docente.googleSub) {
     docente.googleSub = perfil.sub;
+  }
+  const rolesFinales = fusionarRolesGoogleConSuperadmin(docente.roles, perfil.correo);
+  if (String((docente.roles ?? []).join(',')) !== String(rolesFinales.join(','))) {
+    docente.roles = rolesFinales;
   }
 
   docente.ultimoAcceso = new Date();

@@ -88,6 +88,15 @@ const dataPurgeCron = String(process.env.DATA_PURGE_CRON ?? '0 3 * * *').trim();
 const auditLogImmutable = ['1', 'true', 'yes'].includes(String(process.env.AUDIT_LOG_IMMUTABLE ?? 'true').toLowerCase());
 const dpoContactEmail = String(process.env.DPO_CONTACT_EMAIL ?? 'armsystechno@gmail.com').trim();
 const legalNoticeVersion = String(process.env.LEGAL_NOTICE_VERSION ?? '2026.02').trim();
+const superadminGoogleEmails = (process.env.SUPERADMIN_GOOGLE_EMAILS ?? '')
+  .split(',')
+  .map((correo) => correo.trim().toLowerCase())
+  .filter(Boolean);
+const mercadoPagoAccessToken = String(process.env.MERCADOPAGO_ACCESS_TOKEN ?? '').trim();
+const mercadoPagoWebhookSecret = String(process.env.MERCADOPAGO_WEBHOOK_SECRET ?? '').trim();
+const licenciaJwtSecreto = String(process.env.LICENCIA_JWT_SECRETO ?? jwtSecretoEfectivo).trim();
+const licenciaHeartbeatHoras = parsearNumeroSeguro(process.env.LICENCIA_HEARTBEAT_HORAS, 12, { min: 1, max: 168 });
+const licenciaGraciaOfflineDias = parsearNumeroSeguro(process.env.LICENCIA_GRACIA_OFFLINE_DIAS, 7, { min: 1, max: 30 });
 
 export const configuracion = {
   puerto,
@@ -117,5 +126,11 @@ export const configuracion = {
   dataPurgeCron,
   auditLogImmutable,
   dpoContactEmail,
-  legalNoticeVersion
+  legalNoticeVersion,
+  superadminGoogleEmails,
+  mercadoPagoAccessToken,
+  mercadoPagoWebhookSecret,
+  licenciaJwtSecreto,
+  licenciaHeartbeatHoras,
+  licenciaGraciaOfflineDias
 };
