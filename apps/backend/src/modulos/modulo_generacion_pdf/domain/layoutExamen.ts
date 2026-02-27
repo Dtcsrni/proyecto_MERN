@@ -19,12 +19,12 @@ export const PERFIL_OMR_V3: PerfilPlantillaOmr = {
   marcasEsquina: 'cuadrados',
   marcaCuadradoSize: 9.2 * MM_A_PUNTOS,
   marcaCuadradoQuietZone: 1.4 * MM_A_PUNTOS,
-  burbujaRadio: (5.4 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 8.4 * MM_A_PUNTOS,
-  cajaOmrAncho: 74,
-  fiducialSize: 2.4 * MM_A_PUNTOS,
+  burbujaRadio: (2.8 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 2.9 * MM_A_PUNTOS,
+  cajaOmrAncho: 42,
+  fiducialSize: 1.1 * MM_A_PUNTOS,
   bubbleStrokePt: 1,
-  labelToBubbleMm: 3.2,
+  labelToBubbleMm: 1.6,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };

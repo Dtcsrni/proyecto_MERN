@@ -8,6 +8,7 @@ COPY apps/frontend/package*.json ./apps/frontend/
 COPY apps/frontend/tsconfig*.json ./apps/frontend/
 COPY apps/frontend/vite.config.ts ./apps/frontend/
 COPY apps/frontend/index.html ./apps/frontend/
+COPY apps/frontend/public ./apps/frontend/public
 COPY apps/frontend/src ./apps/frontend/src
 RUN npm install
 ARG VITE_API_BASE_URL=http://localhost:4000/api

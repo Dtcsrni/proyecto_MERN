@@ -8,6 +8,7 @@ import {
 	actualizarPregunta,
 	archivarTemaBanco,
 	archivarPregunta,
+	eliminarPregunta,
 	crearTemaBanco,
 	crearPregunta,
 	moverPreguntasTemaBanco,
@@ -59,6 +60,12 @@ router.post(
 	requerirPermiso('banco:archivar'),
 	validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
 	archivarPregunta
+);
+router.post(
+	'/:preguntaId/eliminar',
+	requerirPermiso('banco:archivar'),
+	validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
+	eliminarPregunta
 );
 
 export default router;

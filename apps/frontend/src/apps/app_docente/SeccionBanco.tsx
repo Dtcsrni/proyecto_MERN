@@ -633,10 +633,12 @@ export function SeccionBanco({
 
   async function archivarPregunta(preguntaId: string) {
     if (!puedeArchivar) {
-      avisarSinPermiso('No tienes permiso para archivar preguntas.');
+      avisarSinPermiso('No tienes permiso para eliminar preguntas.');
       return;
     }
-    const ok = globalThis.confirm('¿¿Archivar esta pregunta? Se desactivara del banco.');
+    const ok = globalThis.confirm(
+      '¿Eliminar esta pregunta?\n\nEsta accion es permanente y tambien la quitara de plantillas que la referencien.'
+    );
     if (!ok) return;
     try {
       const inicio = Date.now();
@@ -644,26 +646,26 @@ export function SeccionBanco({
       setMensaje('');
       await enviarConPermiso(
         'banco:archivar',
-        `/banco-preguntas/${preguntaId}/archivar`,
+        `/banco-preguntas/${preguntaId}/eliminar`,
         {},
-        'No tienes permiso para archivar preguntas.'
+        'No tienes permiso para eliminar preguntas.'
       );
-      setMensaje('Pregunta archivada');
-      emitToast({ level: 'ok', title: 'Banco', message: 'Pregunta archivada', durationMs: 2200 });
-      registrarAccionDocente('archivar_pregunta', true, Date.now() - inicio);
+      setMensaje('Pregunta eliminada');
+      emitToast({ level: 'ok', title: 'Banco', message: 'Pregunta eliminada', durationMs: 2200 });
+      registrarAccionDocente('eliminar_pregunta', true, Date.now() - inicio);
       if (editandoId === preguntaId) cancelarEdicion();
       onRefrescar();
     } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudo archivar');
+      const msg = mensajeDeError(error, 'No se pudo eliminar');
       setMensaje(msg);
       emitToast({
         level: 'error',
-        title: 'No se pudo archivar',
+        title: 'No se pudo eliminar',
         message: msg,
         durationMs: 5200,
         action: accionToastSesionParaError(error, 'docente')
       });
-      registrarAccionDocente('archivar_pregunta', false);
+      registrarAccionDocente('eliminar_pregunta', false);
     } finally {
       setArchivandoPreguntaId(null);
     }

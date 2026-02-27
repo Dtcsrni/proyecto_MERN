@@ -52,7 +52,6 @@ export function AppDocente() {
     itemsVista,
     esAdmin,
     esDev,
-    puedeEliminarPlantillaDev,
     puedeEliminarMateriaDev,
     puedeEliminarAlumnoDev
   } = usePermisosDocente(docente);
@@ -732,7 +731,6 @@ export function AppDocente() {
           periodos={periodos}
           preguntas={preguntas}
           permisos={permisosUI}
-          puedeEliminarPlantillaDev={puedeEliminarPlantillaDev}
           enviarConPermiso={enviarConPermiso}
           avisarSinPermiso={avisarSinPermiso}
           alumnos={alumnos}

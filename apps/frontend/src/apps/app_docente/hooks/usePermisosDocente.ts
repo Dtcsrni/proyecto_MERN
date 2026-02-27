@@ -60,7 +60,6 @@ export function usePermisosDocente(docente: Docente | null) {
     [puede]
   );
 
-  const puedeEliminarPlantillaDev = esDev && esAdmin && puede('plantillas:eliminar_dev');
   const puedeEliminarMateriaDev = esDev && esAdmin && puede('periodos:eliminar_dev');
   const puedeEliminarAlumnoDev = esDev && esAdmin && puede('alumnos:eliminar_dev');
 
@@ -87,7 +86,6 @@ export function usePermisosDocente(docente: Docente | null) {
     itemsVista,
     esAdmin,
     esDev,
-    puedeEliminarPlantillaDev,
     puedeEliminarMateriaDev,
     puedeEliminarAlumnoDev
   };

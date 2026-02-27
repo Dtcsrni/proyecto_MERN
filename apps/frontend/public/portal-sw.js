@@ -8,10 +8,10 @@
   Service Worker para portales Docente/Alumno (Vite).
   - No cachea HTML de navegación (evita "no se ven los cambios").
   - No cachea /api/* (siempre red).
-  - Cachea assets estáticos (JS/CSS/SVG) con stale-while-revalidate.
+  - Cachea assets estáticos (JS/CSS/SVG) con network-first (evita UI stale tras deploy).
 */
 
-const CACHE = 'ep-portal-assets-v2026-01-17.1';
+const CACHE = 'ep-portal-assets-v2026-02-27.1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -62,20 +62,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets: SWR.
+  // Assets: network-first (si falla red, usa cache).
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(request);
-    const fetchPromise = fetch(request)
-      .then((response) => {
-        if (response && response.ok) cache.put(request, response.clone());
-        return response;
-      })
-      .catch(() => null);
-
-    if (cached) return cached;
-    const network = await fetchPromise;
-    return network || new Response('', { status: 504, statusText: 'Gateway Timeout' });
+    try {
+      const network = await fetch(request);
+      if (network && network.ok) {
+        cache.put(request, network.clone());
+      }
+      return network;
+    } catch {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+    }
   })());
 });
 

@@ -52,24 +52,24 @@ const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   marcasEsquina: 'cuadrados',
   marcaCuadradoSize: 9.2 * MM_A_PUNTOS,
   marcaCuadradoQuietZone: 1.4 * MM_A_PUNTOS,
-  burbujaRadio: (5.4 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 8.4 * MM_A_PUNTOS,
+  burbujaRadio: (2.8 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 2.9 * MM_A_PUNTOS,
   burbujaStroke: 1,
-  burbujaOffsetX: 10.8,
-  omrHeaderGap: 14,
-  omrTagWidth: 24,
-  omrTagHeight: 9,
-  omrTagFontSize: 6.4,
-  omrLabelFontSize: 5.6,
-  omrBoxBorderWidth: 1.1,
-  omrPanelPadding: 2.2,
-  cajaOmrAncho: 74,
+  burbujaOffsetX: 3.8,
+  omrHeaderGap: 5,
+  omrTagWidth: 12,
+  omrTagHeight: 6,
+  omrTagFontSize: 4.2,
+  omrLabelFontSize: 4.4,
+  omrBoxBorderWidth: 1,
+  omrPanelPadding: 0.8,
+  cajaOmrAncho: 44,
   // Fiduciales compactos para evitar recortes y mejorar deteccion.
-  fiducialSize: 2.4 * MM_A_PUNTOS,
-  fiducialMargin: 1.8,
-  fiducialQuietZone: 0.8 * MM_A_PUNTOS,
+  fiducialSize: 1.1 * MM_A_PUNTOS,
+  fiducialMargin: 0.8,
+  fiducialQuietZone: 0.3 * MM_A_PUNTOS,
   bubbleStrokePt: 1,
-  labelToBubbleMm: 3.2,
+  labelToBubbleMm: 1.6,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };
@@ -621,26 +621,39 @@ export class PdfKitRenderer {
     const colorAcentoSuave = rgb(0.93, 0.97, 1);
     const colorSeccion = rgb(0.97, 0.98, 1);
 
-    const sizeTitulo = 14;
-    const sizeMeta = 8.4;
-    const sizePregunta = 10.8;
-    const sizeOpcion = 9.6;
-    const sizeCodigoInline = 9.2;
-    const sizeCodigoBloque = 8.8;
+    // Plantilla base en puntos (1pt ~= 1px a 72dpi) para posicionamiento estable.
+    const PLANTILLA_PX = Object.freeze({
+      headerPadTop: 12,
+      headerPadBottom: 10,
+      titleGap: 18,
+      lemaGap: 16,
+      metaGapTop: 12,
+      metaLine: 9.2,
+      camposGapTop: 10,
+      campoRowGap: 16,
+      campoLineOffsetY: 2.8
+    });
 
-    const lineaPregunta = 11.8;
-    const lineaOpcion = 10.4;
-    const lineaCodigoBloque = 9.8;
+    const sizeTitulo = 12.6;
+    const sizeMeta = 8.2;
+    const sizePregunta = 9.4;
+    const sizeOpcion = 8.3;
+    const sizeCodigoInline = 8.6;
+    const sizeCodigoBloque = 8.4;
+
+    const lineaPregunta = 10.1;
+    const lineaOpcion = 8.9;
+    const lineaCodigoBloque = 9;
     const separacionPregunta = 0;
 
     const omrTotalLetras = 5;
     const omrRadio = perfilOmr.burbujaRadio;
     const omrPasoY = perfilOmr.burbujaPasoY;
-    const omrPadding = 3.4;
-    const omrExtraTitulo = 8;
+    const omrPadding = 1.4;
+    const omrExtraTitulo = 2;
 
-    const anchoColRespuesta = perfilOmr.cajaOmrAncho;
-    const gutterRespuesta = 11;
+    const anchoColRespuesta = Math.max(40, perfilOmr.cajaOmrAncho - 4);
+    const gutterRespuesta = 8;
     const xColRespuesta = ANCHO_CARTA - margen - anchoColRespuesta;
     const xDerechaTexto = xColRespuesta - gutterRespuesta;
 
@@ -662,7 +675,7 @@ export class PdfKitRenderer {
     const docente = String(examen.encabezado?.docente ?? '').trim();
     const mostrarInstrucciones = examen.encabezado?.mostrarInstrucciones !== false;
     const instrucciones = String(examen.encabezado?.instrucciones ?? '').trim() || instruccionesDefault;
-    const altoEncabezadoPrimeraMinimo = 130;
+    const altoEncabezadoPrimeraMinimo = 98;
 
     const logoIzqSrc = examen.encabezado?.logos?.izquierdaPath ?? process.env.EXAMEN_LOGO_IZQ_PATH ?? '';
     const logoDerSrc = examen.encabezado?.logos?.derechaPath ?? process.env.EXAMEN_LOGO_DER_PATH ?? '';
@@ -729,6 +742,7 @@ export class PdfKitRenderer {
       let preguntasDel = 0;
       let preguntasAl = 0;
       const mapaPagina: PaginaOmr['preguntas'] = [];
+      const headerTextBlocks: Array<{ x: number; y: number; width: number; height: number; id: string }> = [];
 
       const yTop = ALTO_CARTA - margen;
       const esPrimera = numeroPagina === 1;
@@ -736,6 +750,8 @@ export class PdfKitRenderer {
       const xCaja = margen + 2;
       const wCaja = ANCHO_CARTA - 2 * margen - 4;
       const yCaja = yTop - altoEncabezado;
+
+      let yFinHeaderPrimera = yCaja - 8;
 
       if (esPrimera) {
         if (this.perfilLayout.usarRellenosDecorativos) {
@@ -845,58 +861,144 @@ export class PdfKitRenderer {
       if (esPrimera) {
         const xMaxEnc = xQr - (qrPadding + 8);
         const maxWidthEnc = Math.max(160, xMaxEnc - xTexto);
+        const innerTop = yTop - PLANTILLA_PX.headerPadTop;
+        const innerBottom = yCaja + PLANTILLA_PX.headerPadBottom;
 
-        const insti = (partirEnLineas({ texto: institucion, maxWidth: maxWidthEnc, font: fuenteBold, size: 12 })[0] ?? '').trim();
-        const tit = (partirEnLineas({ texto: examen.titulo, maxWidth: maxWidthEnc, font: fuenteBold, size: sizeTitulo })[0] ?? '').trim();
-        const lem = lema
-          ? (partirEnLineas({ texto: lema, maxWidth: maxWidthEnc, font: fuenteItalica, size: 9 })[0] ?? '').trim()
-          : '';
+        const ajustarLinea = (texto: string, font: PDFFont, size: number) =>
+          (partirEnLineas({ texto, maxWidth: maxWidthEnc, font, size })[0] ?? '').trim();
 
-        const yInsti = yTop - 24;
-        page.drawText(insti, { x: xTexto, y: yInsti, size: 12, font: fuenteBold, color: colorAcento });
-        page.drawText(tit, { x: xTexto, y: yInsti - 20, size: sizeTitulo, font: fuenteBold, color: colorPrimario });
-        if (lem) {
-          page.drawText(lem, { x: xTexto, y: yInsti - 36, size: 9, font: fuenteItalica, color: colorGris });
+        let escala = 1;
+        let yNombre = innerBottom + 24;
+        let yGrupo = innerBottom + 8;
+        let metaLineas: string[] = [];
+        let insti = '';
+        let tit = '';
+        let lem = '';
+        let sizeInst = 12;
+        let sizeTit = sizeTitulo;
+        let sizeLem = 9;
+        let sizeMetaEsc = sizeMeta;
+        let sizeCampo = 9.6;
+
+        for (let i = 0; i < 8; i += 1) {
+          sizeInst = 12 * escala;
+          sizeTit = sizeTitulo * escala;
+          sizeLem = 9 * escala;
+          sizeMetaEsc = sizeMeta * escala;
+          sizeCampo = 9.6 * escala;
+
+          insti = ajustarLinea(institucion, fuenteBold, sizeInst);
+          tit = ajustarLinea(examen.titulo, fuenteBold, sizeTit);
+          lem = lema ? ajustarLinea(lema, fuenteItalica, sizeLem) : '';
+
+          const yInst = innerTop - sizeInst;
+          const yTit = yInst - PLANTILLA_PX.titleGap * escala;
+          const yLem = lem ? yTit - PLANTILLA_PX.lemaGap * escala : yTit - 2;
+          const yMeta = yLem - PLANTILLA_PX.metaGapTop * escala;
+          const meta = [materia ? `Materia: ${materia}` : '', docente ? `Docente: ${docente}` : ''].filter(Boolean).join('   |   ');
+          metaLineas = partirEnLineas({ texto: meta, maxWidth: maxWidthEnc, font: fuente, size: sizeMetaEsc }).slice(0, 2);
+          const yMetaUlt = yMeta - (Math.max(1, metaLineas.length) - 1) * PLANTILLA_PX.metaLine * escala;
+          yNombre = yMetaUlt - PLANTILLA_PX.camposGapTop * escala;
+          yGrupo = yNombre - PLANTILLA_PX.campoRowGap * escala;
+
+          if (yGrupo - 8 >= innerBottom) {
+            break;
+          }
+          escala = Math.max(0.78, escala - 0.06);
         }
 
-        const metaY = yTop - 68;
-        const lineaMeta = 10.5;
-        const meta = [materia ? `Materia: ${materia}` : '', docente ? `Docente: ${docente}` : ''].filter(Boolean).join('   |   ');
-        const metaLineas = partirEnLineas({ texto: meta, maxWidth: maxWidthEnc, font: fuente, size: sizeMeta }).slice(0, 2);
+        const yInsti = innerTop - sizeInst;
+        const yTitulo = yInsti - PLANTILLA_PX.titleGap * escala;
+        const yLema = lem ? yTitulo - PLANTILLA_PX.lemaGap * escala : yTitulo - 2;
+        const yMeta = yLema - PLANTILLA_PX.metaGapTop * escala;
+
+        page.drawText(insti, { x: xTexto, y: yInsti, size: sizeInst, font: fuenteBold, color: colorAcento });
+        headerTextBlocks.push({
+          id: 'institucion',
+          x: xTexto,
+          y: yInsti,
+          width: fuenteBold.widthOfTextAtSize(insti, sizeInst),
+          height: sizeInst + 2
+        });
+        page.drawText(tit, { x: xTexto, y: yTitulo, size: sizeTit, font: fuenteBold, color: colorPrimario });
+        headerTextBlocks.push({
+          id: 'titulo',
+          x: xTexto,
+          y: yTitulo,
+          width: fuenteBold.widthOfTextAtSize(tit, sizeTit),
+          height: sizeTit + 2
+        });
+        if (lem) {
+          page.drawText(lem, { x: xTexto, y: yLema, size: sizeLem, font: fuenteItalica, color: colorGris });
+          headerTextBlocks.push({
+            id: 'lema',
+            x: xTexto,
+            y: yLema,
+            width: fuenteItalica.widthOfTextAtSize(lem, sizeLem),
+            height: sizeLem + 2
+          });
+        }
+
         metaLineas.forEach((linea, indice) => {
           if (!linea) return;
-          page.drawText(linea, { x: xTexto, y: metaY - indice * lineaMeta, size: sizeMeta, font: fuente, color: colorGris });
+          const yLinea = yMeta - indice * PLANTILLA_PX.metaLine * escala;
+          page.drawText(linea, {
+            x: xTexto,
+            y: yLinea,
+            size: sizeMetaEsc,
+            font: fuente,
+            color: colorGris
+          });
+          headerTextBlocks.push({
+            id: `meta-${indice + 1}`,
+            x: xTexto,
+            y: yLinea,
+            width: fuente.widthOfTextAtSize(linea, sizeMetaEsc),
+            height: sizeMetaEsc + 2
+          });
         });
 
-        const yCamposBase = Math.max(yCaja + 18, metaY - metaLineas.length * lineaMeta - 24);
         const etiquetaNombre = 'Nombre del alumno:';
-        const anchoEtiquetaNombre = fuenteBold.widthOfTextAtSize(etiquetaNombre, 9.6);
-        const xLineaNombre = Math.min(xTexto + anchoEtiquetaNombre + 8, xMaxEnc - 40);
-        const xLineaNombreEnd = xMaxEnc;
-        const yNombre = yCamposBase + 12;
-        page.drawText(etiquetaNombre, { x: xTexto, y: yNombre, size: 9.6, font: fuenteBold, color: colorPrimario });
+        const etiquetaGrupo = 'Grupo:';
+        const anchoEtiquetaNombre = fuenteBold.widthOfTextAtSize(etiquetaNombre, sizeCampo);
+        const anchoEtiquetaGrupo = fuenteBold.widthOfTextAtSize(etiquetaGrupo, sizeCampo);
+        const xLineaNombre = Math.min(xTexto + anchoEtiquetaNombre + 8, xMaxEnc - 44);
+        const xLineaGrupo = Math.min(xTexto + anchoEtiquetaGrupo + 8, xMaxEnc - 44);
+
+        page.drawText(etiquetaNombre, { x: xTexto, y: yNombre, size: sizeCampo, font: fuenteBold, color: colorPrimario });
+        headerTextBlocks.push({
+          id: 'nombre-etiqueta',
+          x: xTexto,
+          y: yNombre,
+          width: fuenteBold.widthOfTextAtSize(etiquetaNombre, sizeCampo),
+          height: sizeCampo + 2
+        });
         page.drawLine({
-          start: { x: xLineaNombre, y: yNombre + 3 },
-          end: { x: xLineaNombreEnd, y: yNombre + 3 },
+          start: { x: xLineaNombre, y: yNombre + PLANTILLA_PX.campoLineOffsetY },
+          end: { x: xMaxEnc, y: yNombre + PLANTILLA_PX.campoLineOffsetY },
+          color: colorLinea,
+          thickness: 1
+        });
+        page.drawText(etiquetaGrupo, { x: xTexto, y: yGrupo, size: sizeCampo, font: fuenteBold, color: colorPrimario });
+        headerTextBlocks.push({
+          id: 'grupo-etiqueta',
+          x: xTexto,
+          y: yGrupo,
+          width: fuenteBold.widthOfTextAtSize(etiquetaGrupo, sizeCampo),
+          height: sizeCampo + 2
+        });
+        page.drawLine({
+          start: { x: xLineaGrupo, y: yGrupo + PLANTILLA_PX.campoLineOffsetY },
+          end: { x: xMaxEnc, y: yGrupo + PLANTILLA_PX.campoLineOffsetY },
           color: colorLinea,
           thickness: 1
         });
 
-        const etiquetaGrupo = 'Grupo:';
-        const anchoEtiquetaGrupo = fuenteBold.widthOfTextAtSize(etiquetaGrupo, 9.6);
-        const xLineaGrupo = Math.min(xTexto + anchoEtiquetaGrupo + 8, xMaxEnc - 40);
-        const yGrupo = yCamposBase - 4;
-        page.drawText(etiquetaGrupo, { x: xTexto, y: yGrupo, size: 9.6, font: fuenteBold, color: colorPrimario });
-        page.drawLine({
-          start: { x: xLineaGrupo, y: yGrupo + 3 },
-          end: { x: xMaxEnc, y: yGrupo + 3 },
-          color: colorLinea,
-          thickness: 1
-        });
+        yFinHeaderPrimera = Math.min(yCaja - 8, yGrupo - 10);
       }
 
       // Reserva separacion visual clara entre encabezado y primera pregunta.
-      const yZonaContenidoBase = esPrimera ? yCaja - 30 : yTop - 28;
+      const yZonaContenidoBase = esPrimera ? yFinHeaderPrimera : yTop - 16;
       const yZonaContenidoSeguro = yQr - (qrPadding + 8);
       const yZonaContenido = esPrimera ? yZonaContenidoBase : Math.min(yZonaContenidoBase, yZonaContenidoSeguro);
       const cursorYInicio = snapToGrid(yZonaContenido);
@@ -1040,9 +1142,24 @@ export class PdfKitRenderer {
         }
       }
 
+      const minPreguntasPorPagina = Math.max(
+        1,
+        Number.parseInt(String(process.env.EXAMEN_MIN_PREGUNTAS_POR_PAGINA ?? '8'), 10) || 8
+      );
+      const maxPreguntasPorPagina = Math.max(
+        minPreguntasPorPagina,
+        Number.parseInt(String(process.env.EXAMEN_MAX_PREGUNTAS_POR_PAGINA ?? '9'), 10) || 9
+      );
+      const paginasRestantesIncluyendoActual = Math.max(1, paginasObjetivo - numeroPagina + 1);
+      const preguntasRestantesIncluyendoActual = Math.max(0, totalPreguntas - indicePregunta);
+      const objetivoBalance = Math.ceil(preguntasRestantesIncluyendoActual / paginasRestantesIncluyendoActual);
+      const topePaginaActual = Math.max(minPreguntasPorPagina, Math.min(maxPreguntasPorPagina, objetivoBalance));
+
       while (indicePregunta < preguntasOrdenadas.length && cursorY > alturaDisponibleMin) {
+        if (mapaPagina.length >= topePaginaActual) break;
         const pregunta = preguntasOrdenadas[indicePregunta];
         const numero = indicePregunta + 1;
+        const yPreguntaTop = cursorY;
 
         const alturaNecesaria = calcularAlturaPregunta(pregunta);
         if (cursorY - alturaNecesaria < alturaDisponibleMin) break;
@@ -1136,11 +1253,11 @@ export class PdfKitRenderer {
 
         const letras = Array.from({ length: omrTotalLetras }, (_valor, idx) => String.fromCharCode(65 + idx));
         const yPrimeraBurbuja = yInicioOpciones - perfilOmr.omrHeaderGap;
-        const top = yPrimeraBurbuja + omrRadio + omrExtraTitulo + 8;
+        const top = yPrimeraBurbuja + omrRadio + omrExtraTitulo + 2;
         const yUltimaBurbuja = yPrimeraBurbuja - (omrTotalLetras - 1) * omrPasoY;
-        const omrExtraBottom = 6;
-        const bottom = yUltimaBurbuja - omrRadio - 4 - omrExtraBottom;
-        const hCaja = Math.max(38, top - bottom);
+        const omrExtraBottom = 1;
+        const bottom = yUltimaBurbuja - omrRadio - 2 - omrExtraBottom;
+        const hCaja = Math.max(22, top - bottom);
         const panelPad = perfilOmr.omrPanelPadding;
 
         if (panelPad > 0) {
@@ -1191,7 +1308,7 @@ export class PdfKitRenderer {
         const labelWidth = fuenteBold.widthOfTextAtSize(label, labelSize);
         const maxLabelSpace = anchoColRespuesta - wTag - 8;
         if (labelWidth <= maxLabelSpace) {
-          page.drawText(label, { x: xColRespuesta + wTag + 2, y: yTag + 2.1, size: labelSize, font: fuenteBold, color: colorPrimario });
+          page.drawText(label, { x: xColRespuesta + wTag + 1.2, y: yTag + 1.2, size: labelSize, font: fuenteBold, color: colorPrimario });
         }
 
         const xBurbuja = xColRespuesta + omrPadding + perfilOmr.burbujaOffsetX;
@@ -1207,8 +1324,8 @@ export class PdfKitRenderer {
           });
           page.drawText(letra, {
             x: xBurbuja + omrRadio + mmAPuntos(perfilOmr.labelToBubbleMm ?? 5),
-            y: yBurbuja - 3.2,
-            size: 8.8,
+            y: yBurbuja - 2.4,
+            size: 7.9,
             font: fuente,
             color: rgb(0.12, 0.12, 0.12)
           });
@@ -1230,7 +1347,7 @@ export class PdfKitRenderer {
         dibujarFiducialOmr(page, xFidRight, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
         dibujarFiducialOmr(page, xFidRight, yFidBottom, fidSize, perfilOmr.fiducialQuietZone);
 
-        cursorY = Math.min(yCol1, yCol2, bottom - 6);
+        cursorY = Math.min(yCol1, yCol2, bottom - 2);
         cursorY -= separacionPregunta;
         cursorY = snapToGrid(cursorY);
 
@@ -1239,6 +1356,12 @@ export class PdfKitRenderer {
         mapaPagina.push({
           numeroPregunta: numero,
           idPregunta: pregunta.id,
+          bboxPregunta: {
+            x: xNumeroPregunta,
+            y: cursorY,
+            width: xColRespuesta + anchoColRespuesta - xNumeroPregunta,
+            height: Math.max(1, yPreguntaTop - cursorY)
+          },
           opciones: opcionesOmr,
           cajaOmr: { x: xColRespuesta, y: bottom, width: anchoColRespuesta, height: hCaja },
           perfilOmr: { radio: omrRadio, pasoY: omrPasoY, cajaAncho: anchoColRespuesta },
@@ -1256,12 +1379,32 @@ export class PdfKitRenderer {
       const fraccionVacia = Math.max(0, Math.min(1, alturaRestante / alturaUtil));
       metricasPaginas.push({ numero: numeroPagina, fraccionVacia, preguntas: mapaPagina.length });
 
+      if (mapaPagina.length === 0 && (preguntasDel !== 0 || preguntasAl !== 0)) {
+        throw new Error(`Layout invalido: rangos inconsistentes en pagina ${numeroPagina}`);
+      }
+      if (mapaPagina.length > 0) {
+        const esperadoDel = mapaPagina[0]?.numeroPregunta ?? 0;
+        const esperadoAl = mapaPagina[mapaPagina.length - 1]?.numeroPregunta ?? 0;
+        if (preguntasDel !== esperadoDel || preguntasAl !== esperadoAl) {
+          throw new Error(
+            `Layout invalido: pagina ${numeroPagina} calculada ${preguntasDel}-${preguntasAl} pero render ${esperadoDel}-${esperadoAl}`
+          );
+        }
+      }
+
       paginasMeta.push({ numero: numeroPagina, qrTexto: qrTextoPagina, preguntasDel, preguntasAl });
       paginasOmr.push({
         numeroPagina,
         qr: { texto: qrTextoPagina, x: xQr, y: yQr, size: qrSize, padding: qrPadding },
         marcasPagina,
-        preguntas: mapaPagina
+        preguntas: mapaPagina,
+        layoutDebug: {
+          header: { x: rectHeader.x, y: rectHeader.y, width: rectHeader.width, height: rectHeader.height },
+          qr: { x: rectQr.x, y: rectQr.y, width: rectQr.width, height: rectQr.height },
+          headerTextBlocks,
+          contentStartY: cursorYInicio,
+          contentEndY: cursorY
+        }
       });
 
       numeroPagina += 1;
@@ -1269,6 +1412,26 @@ export class PdfKitRenderer {
 
     const pdfBytes = Buffer.from(await pdfDoc.save());
     const preguntasRestantes = Math.max(0, totalPreguntas - indicePregunta);
+    const minPreguntasPorPagina = Math.max(
+      1,
+      Number.parseInt(String(process.env.EXAMEN_MIN_PREGUNTAS_POR_PAGINA ?? '8'), 10) || 8
+    );
+    const umbralTotal = minPreguntasPorPagina * paginasObjetivo;
+    if (totalPreguntas >= umbralTotal) {
+      const paginasEsperadas = paginasMeta.slice(0, paginasObjetivo);
+      const paginaConBajaDensidad = paginasEsperadas.find((p) => {
+        const del = Number(p.preguntasDel ?? 0);
+        const al = Number(p.preguntasAl ?? 0);
+        const total = del > 0 && al >= del ? al - del + 1 : 0;
+        return total < minPreguntasPorPagina;
+      });
+      if (paginaConBajaDensidad) {
+        throw new Error(
+          `Layout invalido: densidad insuficiente en pagina ${paginaConBajaDensidad.numero}. ` +
+            `Minimo requerido ${minPreguntasPorPagina} preguntas por pagina.`
+        );
+      }
+    }
 
     return {
       pdfBytes,

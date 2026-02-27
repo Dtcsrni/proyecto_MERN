@@ -223,6 +223,32 @@ export async function archivarPregunta(req: SolicitudDocente, res: Response) {
 }
 
 /**
+ * Elimina de forma permanente una pregunta del banco.
+ * Tambien limpia referencias en plantillas que la incluyan.
+ */
+export async function eliminarPregunta(req: SolicitudDocente, res: Response) {
+  const docenteId = obtenerDocenteId(req);
+  const preguntaId = String(req.params.preguntaId ?? '').trim();
+
+  const pregunta = await BancoPregunta.findOne({ _id: preguntaId, docenteId });
+  if (!pregunta) {
+    throw new ErrorAplicacion('PREGUNTA_NO_ENCONTRADA', 'Pregunta no encontrada', 404);
+  }
+
+  const periodoId = String((pregunta as unknown as { periodoId?: unknown }).periodoId ?? '');
+
+  await Promise.all([
+    BancoPregunta.deleteOne({ _id: preguntaId, docenteId }),
+    ExamenPlantilla.updateMany(
+      { docenteId, periodoId, preguntasIds: preguntaId },
+      { $pull: { preguntasIds: preguntaId } }
+    )
+  ]);
+
+  res.json({ ok: true, preguntaId });
+}
+
+/**
  * Mueve (reasigna) multiples preguntas a otro tema.
  * Util para "quitar" preguntas de un tema sin borrarlas.
  */

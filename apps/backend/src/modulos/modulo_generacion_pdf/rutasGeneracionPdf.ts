@@ -7,7 +7,7 @@ import {
   actualizarPlantilla,
   archivarPlantilla,
   crearPlantilla,
-  eliminarPlantillaDev,
+  eliminarPlantilla,
   generarExamen,
   generarExamenesLote,
   descargarPdfLote,
@@ -45,9 +45,9 @@ router.post(
 );
 router.post(
   '/plantillas/:id/eliminar',
-  requerirPermiso('plantillas:eliminar_dev'),
+  requerirPermiso('plantillas:archivar'),
   validarCuerpo(esquemaBodyVacioOpcional, { strict: true }),
-  eliminarPlantillaDev
+  eliminarPlantilla
 );
 router.get('/plantillas/:id/previsualizar', requerirPermiso('plantillas:previsualizar'), previsualizarPlantilla);
 router.get('/plantillas/:id/previsualizar/pdf', requerirPermiso('plantillas:previsualizar'), previsualizarPlantillaPdf);

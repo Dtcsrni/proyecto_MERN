@@ -3,12 +3,20 @@
  */
 import { Schema, model, models } from 'mongoose';
 
+export function normalizarTituloPlantilla(titulo: string): string {
+  return String(titulo ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
 const ExamenPlantillaSchema = new Schema(
   {
     docenteId: { type: Schema.Types.ObjectId, ref: 'Docente', required: true },
     periodoId: { type: Schema.Types.ObjectId, ref: 'Periodo' },
     tipo: { type: String, enum: ['parcial', 'global'], required: true },
     titulo: { type: String, required: true },
+    tituloNormalizado: { type: String, required: true },
     instrucciones: { type: String },
     // El tamaño del examen se define por páginas.
     numeroPaginas: { type: Number, required: true, default: 1 },
@@ -22,5 +30,10 @@ const ExamenPlantillaSchema = new Schema(
   },
   { timestamps: true, collection: 'examenesPlantilla' }
 );
+
+ExamenPlantillaSchema.pre('validate', function () {
+  const self = this as unknown as { titulo?: unknown; tituloNormalizado?: string };
+  self.tituloNormalizado = normalizarTituloPlantilla(String(self.titulo ?? ''));
+});
 
 export const ExamenPlantilla = models.ExamenPlantilla ?? model('ExamenPlantilla', ExamenPlantillaSchema);

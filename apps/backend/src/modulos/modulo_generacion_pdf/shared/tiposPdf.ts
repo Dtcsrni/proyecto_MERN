@@ -146,6 +146,7 @@ export interface PaginaOmr {
     numeroPregunta: number;
     idPregunta: string;
     opciones: Array<{ letra: string; x: number; y: number }>;
+    bboxPregunta?: { x: number; y: number; width: number; height: number };
     cajaOmr?: { x: number; y: number; width: number; height: number };
     perfilOmr?: { radio: number; pasoY: number; cajaAncho: number };
     fiduciales?: {
@@ -155,6 +156,13 @@ export interface PaginaOmr {
       rightBottom: { x: number; y: number };
     };
   }>;
+  layoutDebug?: {
+    header?: { x: number; y: number; width: number; height: number };
+    qr?: { x: number; y: number; width: number; height: number };
+    headerTextBlocks?: Array<{ x: number; y: number; width: number; height: number; id: string }>;
+    contentStartY?: number;
+    contentEndY?: number;
+  };
 }
 
 // Constantes de formato carta (puntos PostScript)

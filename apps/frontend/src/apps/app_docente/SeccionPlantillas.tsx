@@ -1,7 +1,7 @@
 /** Seccion de plantillas y generacion de examenes (orquestacion UI + handlers). */
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ErrorRemoto, accionToastSesionParaError } from '../../servicios_api/clienteComun';
+import { accionToastSesionParaError } from '../../servicios_api/clienteComun';
 import { obtenerTokenDocente } from '../../servicios_api/clienteApi';
 import { emitToast } from '../../ui/toast/toastBus';
 import { Icono } from '../../ui/iconos';
@@ -32,7 +32,6 @@ export function SeccionPlantillas({
   preguntas,
   alumnos,
   permisos,
-  puedeEliminarPlantillaDev,
   enviarConPermiso,
   avisarSinPermiso,
   previewPorPlantillaId,
@@ -52,7 +51,6 @@ export function SeccionPlantillas({
   preguntas: Pregunta[];
   alumnos: Alumno[];
   permisos: PermisosUI;
-  puedeEliminarPlantillaDev: boolean;
   enviarConPermiso: EnviarConPermiso;
   avisarSinPermiso: (mensaje: string) => void;
   previewPorPlantillaId: Record<string, PreviewPlantilla>;
@@ -99,7 +97,6 @@ export function SeccionPlantillas({
   const [plantillaEditandoId, setPlantillaEditandoId] = useState<string | null>(null);
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
   const [archivandoPlantillaId, setArchivandoPlantillaId] = useState<string | null>(null);
-  const [eliminandoPlantillaId, setEliminandoPlantillaId] = useState<string | null>(null);
   const [filtroPlantillas, setFiltroPlantillas] = useState('');
   const [refrescandoPlantillas, setRefrescandoPlantillas] = useState(false);
   const puedeLeerExamenes = permisos.examenes.leer;
@@ -261,6 +258,16 @@ export function SeccionPlantillas({
       numeroPaginas > 0
   );
   const puedeGenerar = Boolean(plantillaId) && puedeGenerarExamenes;
+  const normalizarTituloPlantillaUi = (valor: string) => String(valor || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const existeTituloPlantillaDuplicado = (tituloCandidato: string, excluirId?: string) => {
+    const candidato = normalizarTituloPlantillaUi(tituloCandidato);
+    if (!candidato) return false;
+    const lista = Array.isArray(plantillas) ? plantillas : [];
+    return lista.some((p) => {
+      if (excluirId && p._id === excluirId) return false;
+      return normalizarTituloPlantillaUi(String(p.titulo || '')) === candidato;
+    });
+  };
 
   // Búsqueda local por título/id/temas (case-insensitive) para UX reactiva.
   const plantillasFiltradas = useMemo(() => {
@@ -339,6 +346,13 @@ export function SeccionPlantillas({
       setGuardandoPlantilla(true);
       setMensaje('');
 
+      if (existeTituloPlantillaDuplicado(titulo, plantillaEditandoId)) {
+        const msgDup = 'Ya existe una plantilla activa con ese nombre.';
+        setMensaje(msgDup);
+        emitToast({ level: 'warn', title: 'Plantillas', message: msgDup, durationMs: 4200 });
+        return;
+      }
+
       const payload: Record<string, unknown> = {
         titulo: titulo.trim(),
         tipo,
@@ -384,11 +398,11 @@ export function SeccionPlantillas({
   async function archivarPlantilla(plantilla: Plantilla) {
     if (archivandoPlantillaId === plantilla._id) return;
     if (!puedeArchivarPlantillas) {
-      avisarSinPermiso('No tienes permiso para archivar plantillas.');
+      avisarSinPermiso('No tienes permiso para eliminar plantillas.');
       return;
     }
     const ok = globalThis.confirm(
-      `¿Archivar la plantilla "${String(plantilla.titulo || '').trim()}"?\n\nSe ocultará del listado activo, pero no se borrarán sus datos.`
+      `¿Eliminar la plantilla "${String(plantilla.titulo || '').trim()}"?\n\nSe borrará junto con examenes y calificaciones relacionadas. Confirma para continuar.`
     );
     if (!ok) return;
     try {
@@ -397,85 +411,9 @@ export function SeccionPlantillas({
       setMensaje('');
       await enviarConPermiso(
         'plantillas:archivar',
-        `/examenes/plantillas/${encodeURIComponent(plantilla._id)}/archivar`,
-        {},
-        'No tienes permiso para archivar plantillas.'
-      );
-      emitToast({ level: 'ok', title: 'Plantillas', message: 'Plantilla archivada', durationMs: 2200 });
-      registrarAccionDocente('archivar_plantilla', true, Date.now() - inicio);
-      if (plantillaId === plantilla._id) setPlantillaId('');
-      if (plantillaEditandoId === plantilla._id) cancelarEdicion();
-      if (plantillaPreviewId === plantilla._id) setPlantillaPreviewId(null);
-      onRefrescar();
-    } catch (error) {
-      const msg = mensajeDeError(error, 'No se pudo archivar la plantilla');
-      setMensaje(msg);
-
-      // Caso especial: plantilla con exámenes generados (409). Ofrecemos atajo a la lista.
-      if (error instanceof ErrorRemoto) {
-        const codigo = String(error.detalle?.codigo || '').toUpperCase();
-        if (codigo.includes('PLANTILLA_CON_EXAMENES')) {
-          const detalles = error.detalle?.detalles as { totalGenerados?: unknown } | undefined;
-          const total = Number(detalles?.totalGenerados ?? NaN);
-          const totalOk = Number.isFinite(total) && total > 0;
-          const msgDetallado = totalOk
-            ? `No se puede archivar: hay ${total} examenes generados con esta plantilla. Archivarlos primero.`
-            : msg;
-
-          emitToast({
-            level: 'warn',
-            title: 'Plantilla con examenes',
-            message: msgDetallado,
-            durationMs: 6500,
-            action: {
-              label: 'Ver generados',
-              onClick: () => {
-                setPlantillaId(plantilla._id);
-                // Esperar un tick para que renderice la sección.
-                window.setTimeout(() => {
-                  document.getElementById('examenes-generados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 200);
-              }
-            }
-          });
-
-          registrarAccionDocente('archivar_plantilla', false);
-          return;
-        }
-      }
-
-      emitToast({
-        level: 'error',
-        title: 'No se pudo archivar',
-        message: msg,
-        durationMs: 5200,
-        action: accionToastSesionParaError(error, 'docente')
-      });
-      registrarAccionDocente('archivar_plantilla', false);
-    } finally {
-      setArchivandoPlantillaId(null);
-    }
-  }
-
-  async function eliminarPlantillaDev(plantilla: Plantilla) {
-    if (!puedeEliminarPlantillaDev) {
-      avisarSinPermiso('No tienes permiso para eliminar plantillas en desarrollo.');
-      return;
-    }
-    if (eliminandoPlantillaId === plantilla._id) return;
-    const ok = globalThis.confirm(
-      `¿Eliminar definitivamente la plantilla "${String(plantilla.titulo || '').trim()}"?\n\nEsta acción es solo para desarrollo y no se puede deshacer.`
-    );
-    if (!ok) return;
-    try {
-      const inicio = Date.now();
-      setEliminandoPlantillaId(plantilla._id);
-      setMensaje('');
-      await enviarConPermiso(
-        'plantillas:eliminar_dev',
         `/examenes/plantillas/${encodeURIComponent(plantilla._id)}/eliminar`,
         {},
-        'No tienes permiso para eliminar plantillas en desarrollo.'
+        'No tienes permiso para eliminar plantillas.'
       );
       emitToast({ level: 'ok', title: 'Plantillas', message: 'Plantilla eliminada', durationMs: 2200 });
       registrarAccionDocente('eliminar_plantilla', true, Date.now() - inicio);
@@ -486,16 +424,17 @@ export function SeccionPlantillas({
     } catch (error) {
       const msg = mensajeDeError(error, 'No se pudo eliminar la plantilla');
       setMensaje(msg);
+
       emitToast({
         level: 'error',
-        title: 'Plantillas',
+        title: 'No se pudo eliminar',
         message: msg,
         durationMs: 5200,
         action: accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('eliminar_plantilla', false);
     } finally {
-      setEliminandoPlantillaId(null);
+      setArchivandoPlantillaId(null);
     }
   }
 
@@ -509,6 +448,13 @@ export function SeccionPlantillas({
       }
       setCreando(true);
       setMensaje('');
+
+      if (existeTituloPlantillaDuplicado(titulo)) {
+        const msgDup = 'Ya existe una plantilla activa con ese nombre.';
+        setMensaje(msgDup);
+        emitToast({ level: 'warn', title: 'Plantillas', message: msgDup, durationMs: 4200 });
+        return;
+      }
 
       const payload: Record<string, unknown> = {
         tipo,
@@ -750,9 +696,6 @@ export function SeccionPlantillas({
           togglePreviewPlantilla={togglePreviewPlantilla}
           iniciarEdicion={iniciarEdicion}
           puedeGestionarPlantillas={puedeGestionarPlantillas}
-          puedeEliminarPlantillaDev={puedeEliminarPlantillaDev}
-          eliminandoPlantillaId={eliminandoPlantillaId}
-          eliminarPlantillaDev={eliminarPlantillaDev}
           archivandoPlantillaId={archivandoPlantillaId}
           archivarPlantilla={archivarPlantilla}
           puedeArchivarPlantillas={puedeArchivarPlantillas}

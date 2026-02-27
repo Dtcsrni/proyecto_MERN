@@ -1416,6 +1416,15 @@ p {
   justify-content: flex-start;
 }
 
+.banco-listado__imagen {
+  margin-top: 0.65rem;
+}
+
+.banco-listado__imagen .preview {
+  max-height: 260px;
+  width: auto;
+}
+
 .materias-panel,
 .alumnos-panel {
   display: grid;

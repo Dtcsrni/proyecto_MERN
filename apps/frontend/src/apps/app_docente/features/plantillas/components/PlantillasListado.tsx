@@ -33,9 +33,6 @@ export function PlantillasListado({
   togglePreviewPlantilla,
   iniciarEdicion,
   puedeGestionarPlantillas,
-  puedeEliminarPlantillaDev,
-  eliminandoPlantillaId,
-  eliminarPlantillaDev,
   archivandoPlantillaId,
   archivarPlantilla,
   puedeArchivarPlantillas,
@@ -62,9 +59,6 @@ export function PlantillasListado({
   togglePreviewPlantilla: (plantillaId: string) => Promise<void>;
   iniciarEdicion: (plantilla: Plantilla) => void;
   puedeGestionarPlantillas: boolean;
-  puedeEliminarPlantillaDev: boolean;
-  eliminandoPlantillaId: string | null;
-  eliminarPlantillaDev: (plantilla: Plantilla) => Promise<void>;
   archivandoPlantillaId: string | null;
   archivarPlantilla: (plantilla: Plantilla) => Promise<void>;
   puedeArchivarPlantillas: boolean;
@@ -300,27 +294,15 @@ export function PlantillasListado({
                       >
                         Editar
                       </Boton>
-                      {puedeEliminarPlantillaDev && (
-                        <Boton
-                          type="button"
-                          variante="secundario"
-                          cargando={eliminandoPlantillaId === plantilla._id}
-                          onClick={() => void eliminarPlantillaDev(plantilla)}
-                          disabled={!puedeEliminarPlantillaDev}
-                          data-tooltip="Elimina la plantilla (solo modo dev)."
-                        >
-                          Eliminar (DEV)
-                        </Boton>
-                      )}
                       <Boton
                         type="button"
                         variante="secundario"
                         cargando={archivandoPlantillaId === plantilla._id}
                         onClick={() => void archivarPlantilla(plantilla)}
                         disabled={!puedeArchivarPlantillas}
-                        data-tooltip="Archiva la plantilla para ocultarla."
+                        data-tooltip="Elimina la plantilla con confirmacion previa."
                       >
-                        Archivar
+                        Eliminar
                       </Boton>
                     </div>
                   </div>

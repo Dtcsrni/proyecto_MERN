@@ -30,7 +30,7 @@ import { BanderaRevision } from '../modulo_analiticas/modeloBanderaRevision';
 import { Calificacion } from '../modulo_calificacion/modeloCalificacion';
 import { Entrega } from '../modulo_vinculacion_entrega/modeloEntrega';
 import { ExamenGenerado } from './modeloExamenGenerado';
-import { ExamenPlantilla } from './modeloExamenPlantilla';
+import { ExamenPlantilla, normalizarTituloPlantilla } from './modeloExamenPlantilla';
 import { generarPdfExamen } from './servicioGeneracionPdf';
 import { generarVariante } from './servicioVariantes';
 import { resolverNumeroPaginasPlantilla } from './domain/resolverNumeroPaginasPlantilla';
@@ -71,15 +71,6 @@ function normalizarNombreTemaPreview(valor: unknown): string {
  */
 function claveTemaPreview(valor: unknown): string {
   return normalizarNombreTemaPreview(valor).toLowerCase();
-}
-
-/**
- * Endpoints de mantenimiento destructivo habilitados solo en desarrollo.
- */
-function validarAdminDev() {
-  if (String(configuracion.entorno).toLowerCase() !== 'development') {
-    throw new ErrorAplicacion('SOLO_DEV', 'Accion disponible solo en modo desarrollo', 403);
-  }
 }
 
 /**
@@ -132,6 +123,41 @@ function formatearDocente(nombreCompleto: unknown): string {
 function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 3 {
   void params;
   return TEMPLATE_VERSION_TV3;
+}
+
+async function validarTituloPlantillaDisponible(params: {
+  docenteId: unknown;
+  titulo: unknown;
+  excluirPlantillaId?: string;
+}) {
+  const titulo = String(params.titulo ?? '').trim();
+  const tituloNormalizado = normalizarTituloPlantilla(titulo);
+  if (!tituloNormalizado) return;
+
+  const filtroBase: Record<string, unknown> = {
+    docenteId: params.docenteId,
+    archivadoEn: { $exists: false }
+  };
+  if (params.excluirPlantillaId) {
+    filtroBase._id = { $ne: params.excluirPlantillaId };
+  }
+
+  const existente = await ExamenPlantilla.findOne({
+    ...filtroBase,
+    $or: [
+      { tituloNormalizado },
+      {
+        // Compatibilidad con documentos legacy que no tengan tituloNormalizado.
+        titulo: { $regex: `^\\s*${titulo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')}\\s*$`, $options: 'i' }
+      }
+    ]
+  })
+    .select({ _id: 1 })
+    .lean();
+
+  if (existente) {
+    throw new ErrorAplicacion('PLANTILLA_DUPLICADA', 'Ya existe una plantilla activa con ese nombre', 409);
+  }
 }
 
 /**
@@ -237,6 +263,7 @@ export async function listarPlantillas(req: SolicitudDocente, res: Response) {
  */
 export async function crearPlantilla(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
+  const titulo = String((req.body as { titulo?: unknown }).titulo ?? '').trim();
 
   const periodoId = (req.body as { periodoId?: string }).periodoId;
   if (periodoId) {
@@ -261,7 +288,14 @@ export async function crearPlantilla(req: SolicitudDocente, res: Response) {
       )
     : undefined;
 
-  const plantilla = await ExamenPlantilla.create({ ...req.body, temas, docenteId });
+  await validarTituloPlantillaDisponible({ docenteId, titulo });
+  const plantilla = await ExamenPlantilla.create({
+    ...req.body,
+    titulo,
+    tituloNormalizado: normalizarTituloPlantilla(titulo),
+    temas,
+    docenteId
+  });
   res.status(201).json({ plantilla });
 }
 
@@ -414,9 +448,21 @@ export async function actualizarPlantilla(req: SolicitudDocente, res: Response) 
     throw new ErrorAplicacion('PLANTILLA_INVALIDA', 'periodoId es obligatorio cuando se usan temas', 400);
   }
 
+  await validarTituloPlantillaDisponible({
+    docenteId,
+    titulo: merged.titulo,
+    excluirPlantillaId: plantillaId
+  });
+
   const actualizado = await ExamenPlantilla.findOneAndUpdate(
     { _id: plantillaId, docenteId },
-    { $set: patch },
+    {
+      $set: {
+        ...patch,
+        titulo: String(merged.titulo ?? '').trim(),
+        tituloNormalizado: normalizarTituloPlantilla(String(merged.titulo ?? ''))
+      }
+    },
     { new: true }
   ).lean();
 
@@ -453,9 +499,8 @@ export async function archivarPlantilla(req: SolicitudDocente, res: Response) {
 /**
  * Elimina una plantilla y sus examenes asociados (solo admin en desarrollo).
  */
-export async function eliminarPlantillaDev(req: SolicitudDocente, res: Response) {
+export async function eliminarPlantilla(req: SolicitudDocente, res: Response) {
   const docenteId = obtenerDocenteId(req);
-  validarAdminDev();
   const plantillaId = String(req.params.id || '').trim();
   const plantilla = await ExamenPlantilla.findById(plantillaId).lean();
   if (!plantilla) {

@@ -98,6 +98,7 @@ export function BancoListadoPreguntas({
             const version = obtenerVersionPregunta(pregunta);
             const opcionesActuales = Array.isArray(version?.opciones) ? version?.opciones : [];
             const tieneCodigo = preguntaTieneCodigo(pregunta);
+            const imagenPregunta = String(version?.imagenUrl ?? '').trim();
             return (
               <li key={pregunta._id}>
                 <div className="item-glass banco-listado__item">
@@ -119,10 +120,24 @@ export function BancoListadoPreguntas({
                         Editar
                       </Boton>
                       <Boton type="button" cargando={archivandoPreguntaId === pregunta._id} onClick={() => void archivarPregunta(pregunta._id)} disabled={!puedeArchivar}>
-                        Archivar
+                        Eliminar
                       </Boton>
                     </div>
                   </div>
+                  {imagenPregunta && (
+                    <div className="imagen-preview banco-listado__imagen">
+                      <img
+                        className="preview"
+                        src={imagenPregunta}
+                        alt={`Imagen de apoyo de la pregunta ${idCortoMateria(pregunta._id)}`}
+                        loading="lazy"
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                   {opcionesActuales.length === 5 && (
                     <ul className="item-options">
                       {opcionesActuales.map((op, idx) => (
