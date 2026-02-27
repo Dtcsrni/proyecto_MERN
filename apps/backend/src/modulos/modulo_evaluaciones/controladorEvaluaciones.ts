@@ -218,7 +218,7 @@ function faltantesLisc(params: {
     }
   }
 
-  if (Boolean(reglas.requiereContinuaMinima)) {
+  if (reglas.requiereContinuaMinima === true) {
     const minima = numeroSeguro(reglas.continuaMinima);
     if (numeroSeguro(params.continuaPorCorte.c1) < minima) faltantes.push('continua.c1.minima');
     if (numeroSeguro(params.continuaPorCorte.c2) < minima) faltantes.push('continua.c2.minima');
