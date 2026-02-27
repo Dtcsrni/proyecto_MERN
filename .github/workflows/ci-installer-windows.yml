@@ -36,10 +36,10 @@ jobs:
       - name: Etapa setup
         run: npm ci
 
-      - name: Instalar WiX CLI 6.0.2
+      - name: Instalar WiX CLI estable (v6+)
         shell: powershell
         run: |
-          winget install --id WiXToolset.WiXCLI --version 6.0.2 --exact --accept-source-agreements --accept-package-agreements
+          winget install --id WiXToolset.WiXCLI --accept-source-agreements --accept-package-agreements
 
       - name: Registrar WiX en PATH
         shell: powershell

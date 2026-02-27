@@ -100,6 +100,12 @@ jobs:
       - name: Etapa generacion dataset OMR TV3 real simulado
         run: npm -C apps/backend run omr:tv3:generate:real
 
+      - name: Etapa generacion dataset OMR TV3 synthetic
+        run: npm -C apps/backend run omr:tv3:generate:synthetic
+
+      - name: Verificar dataset OMR TV3 synthetic
+        run: test -f omr_samples_tv3/manifest.json
+
       - name: Etapa benchmark OMR TV3 synthetic gate
         run: npm -C apps/backend run omr:tv3:eval:synthetic
 
