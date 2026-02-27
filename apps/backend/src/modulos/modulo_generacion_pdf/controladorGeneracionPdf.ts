@@ -316,10 +316,25 @@ function barajarDeterminista<T>(items: T[], seed: number): T[] {
   return copia;
 }
 
+function mezclaOpcionesPreguntasHabilitada(): boolean {
+  const raw = String(process.env.EXAMEN_MEZCLAR_PREGUNTAS_OPCIONES ?? '1').trim().toLowerCase();
+  if (!raw) return true;
+  return !['0', 'false', 'no', 'off'].includes(raw);
+}
+
 /**
  * Variante determinista por semilla textual (folio/lote/plantilla).
  */
 function generarVarianteDeterminista(preguntas: Array<{ id: string; opciones: Array<unknown> }>, seedTexto: string): MapaVariante {
+  if (!mezclaOpcionesPreguntasHabilitada()) {
+    const ordenPreguntas = preguntas.map((p) => p.id);
+    const ordenOpcionesPorPregunta: Record<string, number[]> = {};
+    for (const pregunta of preguntas) {
+      ordenOpcionesPorPregunta[pregunta.id] = Array.from({ length: pregunta.opciones.length }, (_v, i) => i);
+    }
+    return { ordenPreguntas, ordenOpcionesPorPregunta };
+  }
+
   const seedBase = hash32(seedTexto);
   const ordenPreguntas = barajarDeterminista(
     preguntas.map((p) => p.id),
@@ -331,6 +346,16 @@ function generarVarianteDeterminista(preguntas: Array<{ id: string; opciones: Ar
     ordenOpcionesPorPregunta[pregunta.id] = barajarDeterminista(indices, hash32(`${seedTexto}:${pregunta.id}`));
   }
   return { ordenPreguntas, ordenOpcionesPorPregunta };
+}
+
+function ordenarPreguntasDeterminista<T extends { id: string; opciones: Array<unknown> }>(preguntas: T[], seed: number): T[] {
+  if (!mezclaOpcionesPreguntasHabilitada()) return preguntas.slice();
+  return barajarDeterminista(preguntas, seed);
+}
+
+function ordenarPreguntasAleatorio<T extends { id: string; opciones: Array<unknown> }>(preguntas: T[]): T[] {
+  if (!mezclaOpcionesPreguntasHabilitada()) return preguntas.slice();
+  return barajar(preguntas);
 }
 
 /**
@@ -592,7 +617,7 @@ export async function previsualizarPlantilla(req: SolicitudDocente, res: Respons
   );
 
   const seed = hash32(String(plantilla._id));
-  const preguntasCandidatas = barajarDeterminista(preguntasBase, seed);
+  const preguntasCandidatas = ordenarPreguntasDeterminista(preguntasBase, seed);
   const mapaVarianteDet = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}`);
 
   const [periodo, docenteDb] = await Promise.all([
@@ -812,7 +837,7 @@ export async function previsualizarPlantillaPdf(req: SolicitudDocente, res: Resp
   }
 
   const seed = hash32(String(plantilla._id));
-  const preguntasCandidatas = barajarDeterminista(preguntasBase, seed);
+  const preguntasCandidatas = ordenarPreguntasDeterminista(preguntasBase, seed);
   const mapaVarianteDet = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}`);
 
   const [periodo, docenteDb] = await Promise.all([
@@ -951,7 +976,7 @@ export async function generarExamen(req: SolicitudDocente, res: Response) {
     })
   );
 
-  const preguntasCandidatas = barajar(preguntasBase);
+  const preguntasCandidatas = ordenarPreguntasAleatorio(preguntasBase);
   const mapaVariante = generarVariante(preguntasCandidatas);
   const loteId = randomUUID().split('-')[0].toUpperCase();
   const folio = randomUUID().split('-')[0].toUpperCase();
@@ -1141,7 +1166,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
     plantillaId: plantilla._id
   });
   {
-    const preguntasCandidatas = barajarDeterminista(preguntasBase, hash32(String(plantilla._id)));
+    const preguntasCandidatas = ordenarPreguntasDeterminista(preguntasBase, hash32(String(plantilla._id)));
     const mapaVariante = generarVarianteDeterminista(preguntasCandidatas, `plantilla:${plantilla._id}:lote-precheck`);
     const { metricasPaginas, mapaOmr } = await generarPdfExamen({
       titulo: plantilla.titulo,
@@ -1175,7 +1200,7 @@ export async function generarExamenesLote(req: SolicitudDocente, res: Response) 
   }
 
   async function crearExamenSinAlumno() {
-    const preguntasCandidatas = barajar(preguntasBase);
+    const preguntasCandidatas = ordenarPreguntasAleatorio(preguntasBase);
     const mapaVariante = generarVariante(preguntasCandidatas);
 
     let folio = randomUUID().split('-')[0].toUpperCase();

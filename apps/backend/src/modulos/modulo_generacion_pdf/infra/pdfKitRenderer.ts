@@ -52,23 +52,24 @@ const PERFIL_OMR_V3_RENDER: PerfilPlantillaRender = {
   marcasEsquina: 'cuadrados',
   marcaCuadradoSize: 14 * MM_A_PUNTOS,
   marcaCuadradoQuietZone: 2.6 * MM_A_PUNTOS,
-  burbujaRadio: (6.6 * MM_A_PUNTOS) / 2,
-  burbujaPasoY: 10.2 * MM_A_PUNTOS,
+  burbujaRadio: (6.1 * MM_A_PUNTOS) / 2,
+  burbujaPasoY: 9.4 * MM_A_PUNTOS,
   burbujaStroke: 1.2,
   burbujaOffsetX: 14.2,
   omrHeaderGap: 16,
-  omrTagWidth: 30,
-  omrTagHeight: 12,
-  omrTagFontSize: 7.6,
-  omrLabelFontSize: 6.2,
+  omrTagWidth: 26,
+  omrTagHeight: 10,
+  omrTagFontSize: 6.9,
+  omrLabelFontSize: 6.0,
   omrBoxBorderWidth: 1.45,
   omrPanelPadding: 4.5,
-  cajaOmrAncho: 84,
-  fiducialSize: 14 * MM_A_PUNTOS,
-  fiducialMargin: 5.6,
-  fiducialQuietZone: 3 * MM_A_PUNTOS,
+  cajaOmrAncho: 78,
+  // Fiduciales compactos para evitar recortes y mejorar deteccion.
+  fiducialSize: 4.2 * MM_A_PUNTOS,
+  fiducialMargin: 3.6,
+  fiducialQuietZone: 1.2 * MM_A_PUNTOS,
   bubbleStrokePt: 1.2,
-  labelToBubbleMm: 5.4,
+  labelToBubbleMm: 4.0,
   preguntasPorBloque: 10,
   opcionesPorPregunta: 5
 };
@@ -622,21 +623,21 @@ export class PdfKitRenderer {
 
     const sizeTitulo = 12.4;
     const sizeMeta = 7.6;
-    const sizePregunta = 8.2;
-    const sizeOpcion = 7.2;
+    const sizePregunta = 7.8;
+    const sizeOpcion = 6.8;
     const sizeCodigoInline = 7.6;
     const sizeCodigoBloque = 7.2;
 
-    const lineaPregunta = 8.7;
-    const lineaOpcion = 7.8;
+    const lineaPregunta = 8.2;
+    const lineaOpcion = 7.2;
     const lineaCodigoBloque = 7.8;
     const separacionPregunta = 0;
 
     const omrTotalLetras = 5;
     const omrRadio = perfilOmr.burbujaRadio;
     const omrPasoY = perfilOmr.burbujaPasoY;
-    const omrPadding = 5.6;
-    const omrExtraTitulo = 14;
+    const omrPadding = 4.2;
+    const omrExtraTitulo = 9;
 
     const anchoColRespuesta = perfilOmr.cajaOmrAncho;
     const gutterRespuesta = 11;
@@ -709,7 +710,10 @@ export class PdfKitRenderer {
     const paginasOmr: PaginaOmr[] = [];
 
     const maxWidthIndicaciones = Math.max(120, xDerechaTexto - (margen + 10));
-    const indicacionesPendientes = mostrarInstrucciones && instrucciones.length > 0;
+    const mostrarBloqueIndicaciones = ['1', 'true', 'yes', 'si'].includes(
+      String(process.env.EXAMEN_LAYOUT_MOSTRAR_BLOQUE_INDICACIONES ?? '0').trim().toLowerCase()
+    );
+    const indicacionesPendientes = mostrarBloqueIndicaciones && mostrarInstrucciones && instrucciones.length > 0;
 
     const headerHeightFirst = this.perfilLayout.headerHeightFirst;
     const headerHeightOther = this.perfilLayout.headerHeightOther;
@@ -865,7 +869,7 @@ export class PdfKitRenderer {
         });
 
         const yCamposBase = Math.max(yCaja + 18, metaY - metaLineas.length * lineaMeta - 24);
-        const etiquetaNombre = 'Nombre del alumno (escribir a mano):';
+        const etiquetaNombre = 'Nombre del alumno:';
         const anchoEtiquetaNombre = fuenteBold.widthOfTextAtSize(etiquetaNombre, 9.6);
         const xLineaNombre = Math.min(xTexto + anchoEtiquetaNombre + 8, xMaxEnc - 40);
         const xLineaNombreEnd = xMaxEnc;
@@ -878,7 +882,7 @@ export class PdfKitRenderer {
           thickness: 1
         });
 
-        const etiquetaGrupo = 'Grupo (escribir a mano):';
+        const etiquetaGrupo = 'Grupo:';
         const anchoEtiquetaGrupo = fuenteBold.widthOfTextAtSize(etiquetaGrupo, 9.6);
         const xLineaGrupo = Math.min(xTexto + anchoEtiquetaGrupo + 8, xMaxEnc - 40);
         const yGrupo = yCamposBase - 4;
@@ -1208,10 +1212,11 @@ export class PdfKitRenderer {
 
         const fidSize = perfilOmr.fiducialSize;
         const fidMargin = perfilOmr.fiducialMargin;
-        const xFid = xColRespuesta + fidMargin;
-        const xFidRight = xColRespuesta + anchoColRespuesta - fidMargin;
-        const yFidTop = top - fidMargin;
-        const yFidBottom = bottom + fidMargin;
+        const halfFid = fidSize / 2;
+        const xFid = xColRespuesta + halfFid + fidMargin;
+        const xFidRight = xColRespuesta + anchoColRespuesta - (halfFid + fidMargin);
+        const yFidTop = top - (halfFid + fidMargin);
+        const yFidBottom = bottom + halfFid + fidMargin;
         dibujarFiducialOmr(page, xFid, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
         dibujarFiducialOmr(page, xFid, yFidBottom, fidSize, perfilOmr.fiducialQuietZone);
         dibujarFiducialOmr(page, xFidRight, yFidTop, fidSize, perfilOmr.fiducialQuietZone);
