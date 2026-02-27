@@ -99,3 +99,14 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
 Notas:
 - Varios scripts asumen Docker Desktop iniciado.
 - Ver README principal para el flujo completo: `../README.md`.
+
+<!-- AUTO:COMMERCIAL-CONTEXT:START -->
+## Contexto Comercial y Soporte
+
+- Rol de este documento: Automatizaciones de operacion, QA, release y cumplimiento.
+- Edicion Free (AGPL): flujo operativo base para uso real.
+- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Catalogo dinamico de capacidades: [FEATURE_CATALOG](../docs/comercial/FEATURE_CATALOG.md).
+- Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](../docs/comercial/LICENSING_TIERS.md).
+- Ultima sincronizacion automatica: 2026-02-27.
+<!-- AUTO:COMMERCIAL-CONTEXT:END -->

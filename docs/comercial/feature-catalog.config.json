@@ -1,0 +1,140 @@
+{
+  "tiers": [
+    {
+      "id": "free",
+      "label": "Free (AGPL)",
+      "description": "Flujo minimo util para operar evaluacion universitaria real."
+    },
+    {
+      "id": "pro",
+      "label": "Commercial Pro",
+      "description": "Automatizacion y productividad para equipos docentes."
+    },
+    {
+      "id": "enterprise",
+      "label": "Commercial Enterprise",
+      "description": "Gobernanza avanzada, cumplimiento y operacion institucional."
+    }
+  ],
+  "capabilities": [
+    {
+      "routePrefix": "/salud",
+      "name": "Monitoreo de salud del sistema",
+      "category": "Plataforma",
+      "tier": "free",
+      "evidence": "tests/salud.test.ts"
+    },
+    {
+      "routePrefix": "/metrics",
+      "name": "Metricas Prometheus",
+      "category": "Plataforma",
+      "tier": "pro",
+      "evidence": "apps/backend/src/compartido/observabilidad/metrics.ts"
+    },
+    {
+      "routePrefix": "/autenticacion",
+      "name": "Autenticacion docente y sesion segura",
+      "category": "Seguridad",
+      "tier": "free",
+      "evidence": "tests/integracion/autenticacionSesion.test.ts"
+    },
+    {
+      "routePrefix": "/alumnos",
+      "name": "Gestion de alumnos",
+      "category": "Operacion Academica",
+      "tier": "free",
+      "evidence": "tests/integracion/alumnosEdicion.test.ts"
+    },
+    {
+      "routePrefix": "/periodos",
+      "name": "Gestion de periodos y materias",
+      "category": "Operacion Academica",
+      "tier": "free",
+      "evidence": "tests/integracion/periodosBorradoDuplicados.test.ts"
+    },
+    {
+      "routePrefix": "/banco-preguntas",
+      "name": "Banco de preguntas y asignacion",
+      "category": "Preparacion de Examenes",
+      "tier": "free",
+      "evidence": "tests/integracion/bancoPreguntasAsignarMateria.test.ts"
+    },
+    {
+      "routePrefix": "/examenes",
+      "name": "Generacion de examenes PDF",
+      "category": "Preparacion de Examenes",
+      "tier": "free",
+      "evidence": "tests/integracion/pdfImpresionContrato.test.ts"
+    },
+    {
+      "routePrefix": "/entregas",
+      "name": "Vinculacion por QR y entregas",
+      "category": "Aplicacion y Captura",
+      "tier": "free",
+      "evidence": "tests/integracion/flujoExamen.test.ts"
+    },
+    {
+      "routePrefix": "/omr",
+      "name": "Lectura OMR y validacion de respuestas",
+      "category": "Aplicacion y Captura",
+      "tier": "free",
+      "evidence": "tests/omr.contrato.test.ts"
+    },
+    {
+      "routePrefix": "/calificaciones",
+      "name": "Calificacion global y reglas institucionales",
+      "category": "Calificacion",
+      "tier": "free",
+      "evidence": "tests/calificacion.global.reglas.test.ts"
+    },
+    {
+      "routePrefix": "/analiticas",
+      "name": "Analiticas y exportables",
+      "category": "Calificacion",
+      "tier": "pro",
+      "evidence": "tests/analiticas.xlsx.sv.contract.test.ts"
+    },
+    {
+      "routePrefix": "/evaluaciones",
+      "name": "Politicas de evaluacion por periodo",
+      "category": "Calificacion",
+      "tier": "pro",
+      "evidence": "tests/integracion/evaluaciones.modulo.test.ts"
+    },
+    {
+      "routePrefix": "/integraciones/classroom",
+      "name": "Integracion con Google Classroom",
+      "category": "Integraciones",
+      "tier": "pro",
+      "evidence": "tests/integracion/classroom.pull.test.ts"
+    },
+    {
+      "routePrefix": "/sincronizaciones",
+      "name": "Sincronizacion local-cloud entre equipos",
+      "category": "Operacion Distribuida",
+      "tier": "pro",
+      "evidence": "tests/sincronizacion.contrato.test.ts"
+    },
+    {
+      "routePrefix": "/papelera",
+      "name": "Papelera y recuperacion de registros",
+      "category": "Operacion Distribuida",
+      "tier": "enterprise",
+      "evidence": "apps/backend/src/modulos/modulo_papelera"
+    },
+    {
+      "routePrefix": "/compliance",
+      "name": "Cumplimiento (ARCO/DSR, retencion y auditoria)",
+      "category": "Cumplimiento",
+      "tier": "enterprise",
+      "evidence": "tests/integracion/compliance.arco.test.ts"
+    },
+    {
+      "routePrefix": "/admin",
+      "name": "Administracion de docentes",
+      "category": "Gobernanza",
+      "tier": "enterprise",
+      "evidence": "apps/backend/src/modulos/modulo_admin_docentes"
+    }
+  ]
+}

@@ -1,17 +1,28 @@
 # apps/
 
-Carpeta de aplicaciones del monorepo (workspaces).
+Workspaces de producto EvaluaPro.
 
-Estado: MVP en Beta (`1.0.0-beta.0`). La definición de versión estable está en `../docs/VERSIONADO.md`.
+- `backend/`: API docente y contratos funcionales del negocio.
+- `frontend/`: experiencia web docente/alumno.
+- `portal_alumno_cloud/`: portal cloud de consulta del alumno.
 
-- `backend/`: API Docente Local (Express + TypeScript).
-- `frontend/`: UI (React + Vite) para Docente y Alumno.
-- `portal_alumno_cloud/`: API del Portal Alumno (solo lectura / cloud).
-
-## Comandos útiles (desde la raíz)
-- `npm run dev` (stack dev)
+## Operacion local rapida
 - `npm run dev:backend`
 - `npm run dev:frontend`
 - `npm run dev:portal`
 
-Más detalles: ver el README principal en `../README.md` y la documentación en `../docs/`.
+## Referencias
+- Producto/licencias: `../README.md`
+- Catalogo dinamico de capacidades: `../docs/comercial/FEATURE_CATALOG.md`
+- Versionado y release: `../docs/VERSIONADO.md`
+
+<!-- AUTO:COMMERCIAL-CONTEXT:START -->
+## Contexto Comercial y Soporte
+
+- Rol de este documento: Referencia local del modulo/carpeta dentro del monorepo.
+- Edicion Free (AGPL): flujo operativo base para uso real.
+- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Catalogo dinamico de capacidades: [FEATURE_CATALOG](../docs/comercial/FEATURE_CATALOG.md).
+- Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](../docs/comercial/LICENSING_TIERS.md).
+- Ultima sincronizacion automatica: 2026-02-27.
+<!-- AUTO:COMMERCIAL-CONTEXT:END -->

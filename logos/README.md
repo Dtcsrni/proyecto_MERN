@@ -14,3 +14,14 @@ Notas:
 - El backend también soporta *data URIs* base64, por ejemplo:
   - `EXAMEN_LOGO_IZQ_PATH=data:image/png;base64,<...>`
 - Si no se encuentran los logos, el PDF muestra placeholders “LOGO”.
+
+<!-- AUTO:COMMERCIAL-CONTEXT:START -->
+## Contexto Comercial y Soporte
+
+- Rol de este documento: Referencia local del modulo/carpeta dentro del monorepo.
+- Edicion Free (AGPL): flujo operativo base para uso real.
+- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Catalogo dinamico de capacidades: [FEATURE_CATALOG](../docs/comercial/FEATURE_CATALOG.md).
+- Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](../docs/comercial/LICENSING_TIERS.md).
+- Ultima sincronizacion automatica: 2026-02-27.
+<!-- AUTO:COMMERCIAL-CONTEXT:END -->

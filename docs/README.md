@@ -1,61 +1,30 @@
 # docs/
 
-Documentacion oficial de Sistema EvaluaPro.
+Centro documental de producto, operacion, cumplimiento y arquitectura de EvaluaPro.
 
-Ultima actualizacion integral: 2026-02-27.
-
-## Arranque para agentes IA
-- `../AGENTS.md`
-- `../.github/copilot-instructions.md`
-- `IA_TRAZABILIDAD_AGENTES.md`
-
-## Lectura recomendada
-- `ARQUITECTURA.md`
-- `ARQUITECTURA_C4.md`
-- `FLUJO_EXAMEN.md`
-- `FORMATO_PDF.md`
-- `ROLES_PERMISOS.md`
-- `SEGURIDAD.md`
-- `CUMPLIMIENTO.md`
-- `SINCRONIZACION_ENTRE_COMPUTADORAS.md`
-- `PRUEBAS.md`
-- `DESPLIEGUE.md`
-- `INSTALLER_HUB.md`
-- `SECURITY_POLICY.md`
-- `legal/aviso-privacidad-integral.md`
-- `legal/procedimiento-arco.md`
-- `comercial/playbook-demo-35d.md`
-- `VERSIONADO.md`
-- `ENGINEERING_BASELINE.md`
-- `INVENTARIO_PROYECTO.md`
-- `DEVOPS_BASELINE.md`
-- `RELEASE_GATE_STABLE.md`
-- `ROADMAP_REQUISITOS.md`
+## Lectura por objetivo
+- Negocio/licencia: `comercial/FEATURE_CATALOG.md`, `comercial/LICENSING_TIERS.md`, `comercial/playbook-demo-35d.md`.
+- Seguridad/cumplimiento: `SECURITY_POLICY.md`, `CUMPLIMIENTO.md`, `legal/*`.
+- Operacion tecnica: `DESPLIEGUE.md`, `INSTALLER_HUB.md`, `SINCRONIZACION_ENTRE_COMPUTADORAS.md`.
+- Arquitectura/calidad: `ARQUITECTURA.md`, `ARQUITECTURA_C4.md`, `PRUEBAS.md`, `RELEASE_GATE_STABLE.md`.
 
 ## Documentos auto-generados
 - `AUTO_DOCS_INDEX.md`
 - `AUTO_ENV.md`
+- `comercial/FEATURE_CATALOG.md`
 
-## Calidad y CI
-Pipeline principal:
-- `CI Checks`
-- `CI Frontend Module`
-- `Package Images`
+## Comandos de sincronizacion documental
+- `npm run docs:generate`
+- `npm run docs:commercial:sync`
+- `npm run docs:sync`
 
-Gates principales:
-- `lint`, `typecheck`, `test`, `coverage-check`
-- `perf-check`, `perf-business-check`
-- `qa-manifest`
-- `clean-architecture-check`
+<!-- AUTO:COMMERCIAL-CONTEXT:START -->
+## Contexto Comercial y Soporte
 
-Comandos canonicos:
-- `npm run pipeline:contract:check`
-- `npm run qa:clean-architecture:strict`
-- `npm run qa:full`
-
-## UI y Temas (actualizado)
-- `UX_QUALITY_CRITERIA.md` define criterios UX verificables y gates.
-- La GUI docente/alumno se encuentra unificada en:
-  - sistema de colores y superficies en `apps/frontend/src/styles.css`
-  - diseño responsive contractual en `apps/frontend/tests/gui.responsive.contract.test.tsx`
-  - cobertura funcional de secciones en `apps/frontend/tests/appDocente.dominiosCobertura.test.tsx`.
+- Rol de este documento: Documentacion funcional/operativa para despliegue, seguridad y cumplimiento.
+- Edicion Free (AGPL): flujo operativo base para uso real.
+- Edicion Commercial: mas automatizacion, soporte SLA, hardening y roadmap prioritario por tier.
+- Catalogo dinamico de capacidades: [FEATURE_CATALOG](comercial/FEATURE_CATALOG.md).
+- Licenciamiento comercial y modalidades de pago: [LICENSING_TIERS](comercial/LICENSING_TIERS.md).
+- Ultima sincronizacion automatica: 2026-02-27.
+<!-- AUTO:COMMERCIAL-CONTEXT:END -->
