@@ -42,9 +42,8 @@ test('workflow de installer publica contratos nuevos de release', () => {
   assert.match(workflow, /build-installer-hub\.ps1/);
   assert.match(workflow, /generate-installer-hashes\.ps1/);
   assert.match(workflow, /sign-installer-artifacts\.ps1/);
-  assert.match(workflow, /EvaluaPro\.msi\.sha256/);
-  assert.match(workflow, /EvaluaPro-InstallerHub\.exe/);
-  assert.match(workflow, /EvaluaPro-release-manifest\.json/);
+  assert.match(workflow, /Publicar release assets \(tags v\*\)/);
+  assert.match(workflow, /dist\/installer\/EvaluaPro-Setup\.exe/);
 });
 
 test('installer hub incluye fase de configuracion operativa y blindaje de licencia configurable', () => {

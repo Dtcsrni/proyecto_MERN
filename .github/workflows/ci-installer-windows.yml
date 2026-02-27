@@ -116,10 +116,4 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           make_latest: ${{ !(contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc')) }}
           files: |
-            dist/installer/EvaluaPro.msi
-            dist/installer/EvaluaPro.msi.sha256
             dist/installer/EvaluaPro-Setup.exe
-            dist/installer/EvaluaPro-InstallerHub.exe
-            dist/installer/EvaluaPro-InstallerHub.exe.sha256
-            dist/installer/EvaluaPro-release-manifest.json
-            dist/installer/SIGNING-NOT-PRODUCTION.txt
