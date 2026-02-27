@@ -53,6 +53,35 @@ function Find-SignTool {
   return ''
 }
 
+function ConvertFrom-PossiblyWrappedBase64 {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$RawValue
+  )
+
+  $normalized = [string]$RawValue
+  if ($normalized -match '^[A-Z0-9_]+=') {
+    $normalized = $normalized.Substring($normalized.IndexOf('=') + 1)
+  }
+
+  $normalized = ($normalized -replace '\s', '').Trim()
+  if ([string]::IsNullOrWhiteSpace($normalized)) {
+    throw 'Valor base64 vacio para certificado de firma.'
+  }
+
+  try {
+    return [Convert]::FromBase64String($normalized)
+  } catch {
+    # Intento de compatibilidad base64url.
+    $urlSafe = $normalized.Replace('-', '+').Replace('_', '/')
+    $pad = $urlSafe.Length % 4
+    if ($pad -ne 0) {
+      $urlSafe = $urlSafe.PadRight($urlSafe.Length + (4 - $pad), '=')
+    }
+    return [Convert]::FromBase64String($urlSafe)
+  }
+}
+
 $signtool = Find-SignTool
 if (-not $signtool) {
   throw 'No se encontro signtool.exe para firmar artefactos.'
@@ -60,7 +89,7 @@ if (-not $signtool) {
 
 $pfxPath = Join-Path $env:TEMP ('evaluapro-sign-' + [Guid]::NewGuid().ToString('N') + '.pfx')
 try {
-  [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($certBase64))
+  [IO.File]::WriteAllBytes($pfxPath, (ConvertFrom-PossiblyWrappedBase64 -RawValue $certBase64))
 
   $targets = @(
     (Join-Path $InstallerDir 'EvaluaPro.msi'),
