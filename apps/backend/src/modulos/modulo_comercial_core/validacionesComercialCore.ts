@@ -222,6 +222,12 @@ export const esquemaCrearPreferenciaMercadoPago = z
   })
   .strict();
 
+export const esquemaEjecutarCicloCobranza = z
+  .object({})
+  .strict();
+
+export const esquemaWebhookMercadoPago = z.record(z.string(), z.unknown());
+
 export const esquemaCrearPlantillaNotificacion = z
   .object({
     clave: z.string().trim().min(3).max(120),

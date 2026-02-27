@@ -50,6 +50,7 @@ import {
   esquemaConsentimientoComercial,
   esquemaCrearCampana,
   esquemaCrearCupon,
+  esquemaEjecutarCicloCobranza,
   esquemaCrearPlantillaNotificacion,
   esquemaCrearPreferenciaMercadoPago,
   esquemaCrearPlan,
@@ -116,7 +117,12 @@ router.post(
   validarCuerpo(esquemaCrearPreferenciaMercadoPago, { strict: true }),
   crearPreferenciaCobroMercadoPago
 );
-router.post('/cobranza/ciclo/ejecutar', requerirPermiso('comercial:cobranza:gestionar'), ejecutarCicloCobranzaManual);
+router.post(
+  '/cobranza/ciclo/ejecutar',
+  requerirPermiso('comercial:cobranza:gestionar'),
+  validarCuerpo(esquemaEjecutarCicloCobranza, { strict: true }),
+  ejecutarCicloCobranzaManual
+);
 router.post('/consentimientos', requerirPermiso('comercial:suscripciones:gestionar'), validarCuerpo(esquemaConsentimientoComercial, { strict: true }), registrarConsentimiento);
 router.get('/auditoria', requerirPermiso('comercial:auditoria:leer'), listarAuditoria);
 
