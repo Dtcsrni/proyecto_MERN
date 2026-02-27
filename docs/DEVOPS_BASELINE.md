@@ -40,7 +40,7 @@ Fecha de baseline: 2026-02-13.
 - `CI Checks` se mantiene como señal integradora global para release gating.
 
 ## Proteccion de rama main (Ruleset activo)
-- Ruleset: `main-1-0-beta-minimo` (target `branch`, enforcement `active`).
+- Ruleset objetivo: `main-v1b-minimo` (target `branch`, enforcement `active`).
 - Alcance: `refs/heads/main`.
 - Reglas vigentes:
   - bloqueo de borrado de rama (`deletion`),
@@ -49,10 +49,16 @@ Fecha de baseline: 2026-02-13.
   - descarte de approvals stale al recibir nuevos commits,
   - resolucion obligatoria de conversaciones,
   - branch actualizado obligatoriamente antes de merge (`strict required status checks policy`).
-- Status check requerido para merge en `main`:
-  - `Verificaciones Core (PR bloqueante)` (workflow integrador `CI Checks`).
+- Status checks requeridos para merge en `main`:
+  - `Verificaciones Core (PR bloqueante)` (workflow `CI Checks`).
+  - `Verificaciones Extendidas (Main/Release)` (workflow `CI Checks`, en `main/release`).
+  - `Installer Windows (MSI + Bundle)` (workflow `CI Installer Windows`).
+  - `Security CodeQL (JS/TS)` (workflow `Security CodeQL`).
 - Criterio operativo:
   - los workflows modulares con filtros por `paths` no se marcan como required para evitar bloqueos por checks no disparados.
+  - validacion automatizada del ruleset con:
+    - `npm run ruleset:check`
+    - `npm run ruleset:apply` (idempotente, requiere token mantenedor).
 
 ## Fallback y resiliencia
 - Fallback de pipeline: aislamiento por workflow (degradacion por dominio, no falla sistémica de toda la malla).
@@ -71,6 +77,11 @@ Fecha de baseline: 2026-02-13.
 - Cloud: secretos en secret manager del proveedor.
 - Validación de entorno:
   - `npm run security:env:check`
+ - SAST:
+   - `.github/workflows/security-codeql.yml` (`Security CodeQL`).
+ - Secret scanning:
+   - habilitar en GitHub Advanced Security cuando el plan lo permita.
+   - fallback operativo: auditoria de secretos por proceso manual documentado en PR/release.
 
 ## Observabilidad mínima
 - Health:

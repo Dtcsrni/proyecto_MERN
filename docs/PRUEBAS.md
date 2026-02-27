@@ -44,7 +44,7 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
   - `CI Backend Module` prepara runtime `sharp` en linux (`npm install --no-save --include=optional --os=linux --cpu=x64 sharp`) para evitar fallos de dependencias nativas.
 
 ## Proteccion de rama main (Ruleset)
-- Ruleset activo: `main-1-0-beta-minimo`.
+- Ruleset objetivo: `main-v1b-minimo`.
 - Alcance: `refs/heads/main`.
 - Reglas activas:
   - bloqueo de borrado de rama (`deletion`),
@@ -53,8 +53,11 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
   - descarte de approvals stale al recibir nuevos commits,
   - resolucion obligatoria de conversaciones,
   - branch actualizado obligatoriamente antes de merge (`strict required status checks policy`).
-- Check requerido para merge:
-  - `Verificaciones Core (PR bloqueante)` (workflow integrador `CI Checks`).
+- Checks requeridos para merge:
+  - `Verificaciones Core (PR bloqueante)` (`CI Checks`).
+  - `Verificaciones Extendidas (Main/Release)` (`CI Checks`, `main/release`).
+  - `Installer Windows (MSI + Bundle)` (`CI Installer Windows`).
+  - `Security CodeQL (JS/TS)` (`Security CodeQL`).
 - Nota operativa:
   - los workflows modulares por `paths` no se marcan como `required` para evitar PR bloqueados por checks no disparados.
 
@@ -67,6 +70,28 @@ Asegurar confiabilidad funcional y de seguridad del sistema completo en cada cam
 - Aislamiento entre docentes.
 - Publicacion/sincronizacion hacia portal.
 - Gate mixto OMR TV3 con dataset sintético (`omr_samples_tv3`) y real (`omr_samples_tv3_real`).
+
+## Matriz unica de gates MVP comercial
+### Gate de merge (main)
+- `Verificaciones Core (PR bloqueante)`
+- `Verificaciones Extendidas (Main/Release)`
+- `Installer Windows (MSI + Bundle)`
+- `Security CodeQL (JS/TS)`
+
+### Gate extendido (nightly/main/release)
+- `npm run test:omr:tv3:gate:ci`
+- `npm run test:e2e:docente-alumno:ci`
+- `npm run test:global-grade:ci`
+- `npm run test:pdf-print:ci`
+- `npm run test:ux-visual:ci`
+- `npm run perf:check`
+- `npm run perf:check:business`
+- `npm run qa:clean-architecture:strict`
+
+### Gate de promocion estable (tag v* sin prerelease)
+- `npm run release:validate:stable -- --version=<version>`
+- Racha de 10 corridas `CI Checks` en verde.
+- Evidencia obligatoria en `docs/release/evidencias/<version>/`.
 
 ## Criterio de calidad para release
 Se considera candidato estable cuando pasan:
@@ -87,6 +112,11 @@ npm run docs:check
 npm run diagramas:check
 npm run diagramas:render:check
 npm run diagramas:consistencia:check
+npm run test:wix:policy
+npm run test:wix:bundle
+npm run test:ruleset:policy
+npm run test:release:policy
+npm run test:security:policy
 ```
 
 Adicional obligatorio para promover a estable:

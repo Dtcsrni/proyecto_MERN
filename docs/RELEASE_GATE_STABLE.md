@@ -15,6 +15,10 @@ Se promueve a estable solo si se cumplen todos:
 
 Si falla cualquier punto: **No-Go**.
 
+Automatizacion bloqueante:
+- workflow `.github/workflows/release-stable-gate.yml` (tags `v*` sin `-alpha/-beta/-rc` y `workflow_dispatch`).
+- script orquestador: `npm run release:validate:stable -- --version=<version>`.
+
 ## Flujo docente humano obligatorio (produccion)
 Pasos:
 
@@ -50,6 +54,9 @@ El script genera:
 - `docs/release/evidencias/<version>/timeline.md`
 - `docs/release/evidencias/<version>/metrics_snapshot.txt`
 - `docs/release/evidencias/<version>/integridad_sha256.json`
+
+El gate estable genera ademas:
+- `reports/release/stable-gate/<version>/decision.json` con decision `Go/No-Go`.
 
 ## Entrada manual requerida
 Archivo JSON de validacion humana (plantilla base):

@@ -1,6 +1,6 @@
 # 🎓 EvaluaPro Sistema Universitario
 
-Plataforma MERN para evaluacion universitaria: generacion de examenes PDF, vinculacion por QR, analisis OMR TV3, calificacion asistida y operacion local/cloud.
+Plataforma MERN para evaluacion universitaria: generacion de examenes PDF, vinculacion por QR, analisis OMR, calificacion asistida y operacion local/cloud.
 
 > Estado documental actualizado: **2026-02-27**
 
@@ -11,11 +11,9 @@ EvaluaPro unifica en un solo flujo el ciclo docente completo:
 - calificacion y reportes,
 - sincronizacion entre equipos y portal alumno.
 
-El objetivo operativo actual es garantizar un **arranque desde cero para docentes en Windows** con instalacion guiada, robusta y verificable.
-
 ## ✨ Ventajas clave
 - 🧩 **Flujo integral**: de la creacion del examen a la publicacion de resultados.
-- 🧠 **OMR TV3 contractual**: validaciones sinteticas y reales con gates bloqueantes.
+- 🧠 **OMR contractual**: validaciones sinteticas y reales con gates bloqueantes.
 - 🔒 **Integridad de instalacion**: artefactos con `SHA-256` y verificaciones automáticas.
 - 🛠️ **Installer Hub online**: instalar, reparar o desinstalar desde una misma GUI.
 - 🔄 **Canal estable por defecto**: el actualizador interno consume `stable`.
@@ -133,7 +131,7 @@ flowchart LR
 Objetivo: pasar de beta operativa a release estable auditada.
 
 1. **Consolidacion de contratos**
-   API canonica `/api/*`, OMR/PDF TV3, sync contractual.
+   API canonica `/api/*`, OMR/PDF contractuales, sync contractual.
 2. **Cierre de calidad automatizada**
    QA full, perf tecnico y perf de negocio, evidencia verificable.
 3. **Promocion a estable**
@@ -146,7 +144,7 @@ Roadmap detallado: [docs/ROADMAP_REQUISITOS.md](docs/ROADMAP_REQUISITOS.md)
 - [docs/INSTALLER_HUB.md](docs/INSTALLER_HUB.md)
 - [docs/ENGINEERING_BASELINE.md](docs/ENGINEERING_BASELINE.md)
 - [docs/RELEASE_GATE_STABLE.md](docs/RELEASE_GATE_STABLE.md)
-- [docs/OMR_TV3_REAL_GATE_RUNBOOK.md](docs/OMR_TV3_REAL_GATE_RUNBOOK.md)
+- [docs/OMR_GATE_RUNBOOK.md](docs/OMR_GATE_RUNBOOK.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## 👨‍🏫 Enfoque docente
@@ -155,3 +153,4 @@ Este repositorio prioriza confiabilidad operativa para docentes:
 - recuperacion por reparacion,
 - desinstalacion controlada,
 - soporte basado en logs y evidencias reproducibles.
+

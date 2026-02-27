@@ -13,6 +13,9 @@ Estado de controles de seguridad implementados en el sistema.
 - Sanitizacion de entrada para prevenir operadores inseguros en consultas.
 - Manejo central de errores sin fuga de detalle interno.
 - API key para operaciones internas de sync/push/pull con portal cloud.
+- SAST con CodeQL en CI:
+  - workflow `.github/workflows/security-codeql.yml`
+  - check requerido: `Security CodeQL (JS/TS)` para merge a `main`.
 
 ## Seguridad OMR y calificacion
 - OMR entrega estado de analisis (`ok`, `requiere_revision`, `rechazado_calidad`).
@@ -29,7 +32,9 @@ Estado de controles de seguridad implementados en el sistema.
 - Rotar API keys y secretos JWT periodicamente.
 - Restringir CORS por ambiente.
 - Ejecutar `npm run test:ci` antes de desplegar.
+- Ejecutar `npm run test:security:policy` al cambiar workflows de seguridad.
 - Monitorear logs de errores y de accesos fallidos.
+- Habilitar secret scanning en GitHub Advanced Security cuando el plan lo permita; si no, registrar fallback manual en checklist de release.
 
 ## Riesgos conocidos
 - Captura OMR depende de calidad de imagen fisica (enfoque, iluminacion, encuadre).

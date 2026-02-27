@@ -33,6 +33,7 @@ Debe pasar:
 - `npm run diagramas:check`
 - `npm run diagramas:render:check`
 - `npm run diagramas:consistencia:check`
+- `npm run release:validate:stable -- --version=<version>`
 - 10 corridas CI consecutivas verdes.
 - Flujo docente humano activo en produccion con evidencia de integridad y metricas.
 
@@ -78,3 +79,5 @@ Debe pasar:
    - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
 6. Versionar evidencias en:
    - `docs/release/evidencias/<version>/`
+7. Validar decision automatica de estable:
+   - workflow `Release Stable Gate` en verde y artefacto `decision.json` publicado.

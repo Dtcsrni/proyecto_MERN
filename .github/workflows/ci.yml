@@ -48,6 +48,12 @@ jobs:
       - name: Etapa contract-check
         run: npm run pipeline:contract:check
 
+      - name: Etapa governance-policy-check
+        run: |
+          npm run test:ruleset:policy
+          npm run test:release:policy
+          npm run test:security:policy
+
       - name: Etapa lint
         run: npm run lint
 
