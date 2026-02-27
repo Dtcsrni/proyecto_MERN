@@ -7,6 +7,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+try {
+  Import-Module Microsoft.PowerShell.Security -ErrorAction Stop | Out-Null
+} catch {
+  # Continue with .NET fallback for SecureString creation.
+}
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 if (-not $OutputDir) {
@@ -29,21 +34,51 @@ if ([string]::IsNullOrWhiteSpace($PfxPassword)) {
   $PfxPassword = $sb.ToString()
 }
 
-$securePassword = ConvertTo-SecureString -String $PfxPassword -AsPlainText -Force
+try {
+  $securePassword = ConvertTo-SecureString -String $PfxPassword -AsPlainText -Force
+} catch {
+  $securePassword = New-Object System.Security.SecureString
+  foreach ($ch in $PfxPassword.ToCharArray()) {
+    $securePassword.AppendChar($ch)
+  }
+  $securePassword.MakeReadOnly()
+}
 $notAfter = (Get-Date).AddYears($YearsValid)
+$notBefore = (Get-Date).AddDays(-1)
 
-$cert = New-SelfSignedCertificate `
-  -Type CodeSigningCert `
-  -Subject $Subject `
-  -KeyAlgorithm RSA `
-  -KeyLength 3072 `
-  -HashAlgorithm SHA256 `
-  -CertStoreLocation 'Cert:\CurrentUser\My' `
-  -NotAfter $notAfter `
-  -FriendlyName 'EvaluaPro Internal Signing'
+$rsa = [System.Security.Cryptography.RSA]::Create(3072)
+try {
+  $dn = New-Object System.Security.Cryptography.X509Certificates.X500DistinguishedName($Subject)
+  $request = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest(
+    $dn,
+    $rsa,
+    [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+    [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+  )
 
-if (-not $cert) {
-  throw 'No se pudo generar certificado interno de firma.'
+  $ekuOids = New-Object System.Security.Cryptography.OidCollection
+  [void]$ekuOids.Add((New-Object System.Security.Cryptography.Oid('1.3.6.1.5.5.7.3.3', 'Code Signing')))
+  $ekuExt = New-Object System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension($ekuOids, $false)
+  $request.CertificateExtensions.Add($ekuExt)
+
+  $keyUsage = [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature
+  $keyUsageExt = New-Object System.Security.Cryptography.X509Certificates.X509KeyUsageExtension($keyUsage, $true)
+  $request.CertificateExtensions.Add($keyUsageExt)
+
+  $basicConstraints = New-Object System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension($false, $false, 0, $true)
+  $request.CertificateExtensions.Add($basicConstraints)
+
+  $subjectKeyId = New-Object System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension($request.PublicKey, $false)
+  $request.CertificateExtensions.Add($subjectKeyId)
+
+  $cert = $request.CreateSelfSigned($notBefore, $notAfter)
+  if (-not $cert) {
+    throw 'No se pudo generar certificado interno de firma.'
+  }
+
+  $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $PfxPassword), $PfxPassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+} finally {
+  if ($rsa) { $rsa.Dispose() }
 }
 
 $thumbprint = [string]$cert.Thumbprint
@@ -52,8 +87,10 @@ $cerPath = Join-Path $OutputDir 'evaluapro-internal-signing.cer'
 $metaPath = Join-Path $OutputDir 'evaluapro-internal-signing.meta.json'
 $secretsPath = Join-Path $OutputDir 'github-secrets.internal-signing.env'
 
-Export-PfxCertificate -Cert ("Cert:\CurrentUser\My\" + $thumbprint) -FilePath $pfxPath -Password $securePassword | Out-Null
-Export-Certificate -Cert ("Cert:\CurrentUser\My\" + $thumbprint) -FilePath $cerPath | Out-Null
+$pfxBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $PfxPassword)
+$cerBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+[IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
+[IO.File]::WriteAllBytes($cerPath, $cerBytes)
 
 $pfxBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($pfxPath))
 
