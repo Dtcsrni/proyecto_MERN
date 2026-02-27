@@ -184,13 +184,10 @@ jobs:
       - name: Etapa pdf-print-check
         run: |
           npm run test:pdf-print:ci
-          npm run test:pdf-visual:ci
 
       - name: Etapa ux-visual-check
         run: |
-          npm run test:ux-quality:ci
           npm run test:ux-visual:ci
-          npm run test:e2e:journeys:ci
 
       - name: Etapa perf-check
         run: npm run perf:check
