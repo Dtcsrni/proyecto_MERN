@@ -27,6 +27,9 @@ function Normalize-OperationalConfig {
   $cfg = [ordered]@{
     mongoUri = [string]($InputConfig.mongoUri ?? '')
     jwtSecreto = [string]($InputConfig.jwtSecreto ?? '')
+    nodeEnv = [string]($InputConfig.nodeEnv ?? 'production')
+    puertoApi = [string]($InputConfig.puertoApi ?? '4000')
+    puertoPortal = [string]($InputConfig.puertoPortal ?? '4518')
     corsOrigenes = [string]($InputConfig.corsOrigenes ?? '')
     portalAlumnoUrl = [string]($InputConfig.portalAlumnoUrl ?? '')
     portalAlumnoApiKey = [string]($InputConfig.portalAlumnoApiKey ?? '')
@@ -46,6 +49,14 @@ function Normalize-OperationalConfig {
     apiComercialBaseUrl = [string]($InputConfig.apiComercialBaseUrl ?? '')
     tenantId = [string]($InputConfig.tenantId ?? '')
     codigoActivacion = [string]($InputConfig.codigoActivacion ?? '')
+    licenciaAccountEmail = [string]($InputConfig.licenciaAccountEmail ?? '')
+    updateChannel = [string]($InputConfig.updateChannel ?? 'stable')
+    updateOwner = [string]($InputConfig.updateOwner ?? 'Dtcsrni')
+    updateRepo = [string]($InputConfig.updateRepo ?? 'EvaluaPro_Sistema_Universitario')
+    updateAssetName = [string]($InputConfig.updateAssetName ?? 'EvaluaPro-Setup.exe')
+    updateShaAssetName = [string]($InputConfig.updateShaAssetName ?? 'EvaluaPro-Setup.exe.sha256')
+    updateFeedUrl = [string]($InputConfig.updateFeedUrl ?? '')
+    updateRequireSha256 = ConvertTo-InstallerHubBool -Value ([string]($InputConfig.updateRequireSha256 ?? '1'))
   }
   if ([string]::IsNullOrWhiteSpace($cfg.jwtSecreto)) {
     $cfg.jwtSecreto = New-GeneratedSecret
@@ -64,6 +75,21 @@ function Test-OperationalConfig {
   }
 
   $errors = @()
+  $envAllowed = @('development', 'test', 'production')
+  if (-not ($envAllowed -contains [string]$Config.nodeEnv)) {
+    $errors += "nodeEnv invalido: '$($Config.nodeEnv)'. Valores permitidos: development|test|production."
+  }
+  foreach ($portSpec in @(
+    @{ key = 'puertoApi'; min = 1; max = 65535 },
+    @{ key = 'puertoPortal'; min = 1; max = 65535 }
+  )) {
+    $raw = [string]$Config[$portSpec.key]
+    $n = 0
+    if (-not [int]::TryParse($raw, [ref]$n) -or $n -lt $portSpec.min -or $n -gt $portSpec.max) {
+      $errors += "Puerto invalido para $($portSpec.key): '$raw'"
+    }
+  }
+
   foreach ($key in @('mongoUri', 'jwtSecreto', 'corsOrigenes', 'portalAlumnoUrl', 'portalAlumnoApiKey', 'portalApiKey')) {
     if ([string]::IsNullOrWhiteSpace([string]$Config[$key])) {
       $errors += "Falta configuracion operativa obligatoria: $key"
@@ -114,6 +140,21 @@ function Test-OperationalConfig {
     if ([string]::IsNullOrWhiteSpace([string]$Config.codigoActivacion)) {
       $errors += 'Activacion de licencia requerida: falta codigoActivacion.'
     }
+    if ([string]::IsNullOrWhiteSpace([string]$Config.licenciaAccountEmail)) {
+      $errors += 'Activacion de licencia requerida: falta licenciaAccountEmail (correo del titular).'
+    } elseif ([string]$Config.licenciaAccountEmail -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') {
+      $errors += 'Activacion de licencia requerida: licenciaAccountEmail no es valido.'
+    }
+  }
+
+  if ([string]::IsNullOrWhiteSpace([string]$Config.updateChannel)) {
+    $errors += 'Falta updateChannel para actualizaciones automaticas.'
+  }
+  if ([string]::IsNullOrWhiteSpace([string]$Config.updateOwner)) {
+    $errors += 'Falta updateOwner para actualizaciones automaticas.'
+  }
+  if ([string]::IsNullOrWhiteSpace([string]$Config.updateRepo)) {
+    $errors += 'Falta updateRepo para actualizaciones automaticas.'
   }
 
   return [pscustomobject]@{
@@ -162,6 +203,30 @@ function Write-EnvMap {
   [IO.File]::WriteAllText($Path, ($content -join [Environment]::NewLine) + [Environment]::NewLine, [System.Text.Encoding]::UTF8)
 }
 
+function Read-JsonMap {
+  param([string]$Path)
+  if (-not (Test-Path $Path)) { return @{} }
+  try {
+    $raw = Get-Content -Path $Path -Encoding utf8 -Raw
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
+    $parsed = $raw | ConvertFrom-Json -Depth 12
+    if ($null -eq $parsed) { return @{} }
+    return $parsed
+  } catch {
+    return @{}
+  }
+}
+
+function Write-JsonFile {
+  param(
+    [string]$Path,
+    [Parameter(Mandatory = $true)]
+    [object]$Data
+  )
+  $json = $Data | ConvertTo-Json -Depth 12
+  [IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.Encoding]::UTF8)
+}
+
 function Invoke-EvaluaProOperationalConfiguration {
   param(
     [ValidateSet('install', 'repair', 'uninstall')]
@@ -191,6 +256,9 @@ function Invoke-EvaluaProOperationalConfiguration {
   $envMap = Read-EnvMap -Path $envPath
   Set-OrReplaceEnvLine -Map $envMap -Key 'MONGODB_URI' -Value $normalized.mongoUri
   Set-OrReplaceEnvLine -Map $envMap -Key 'JWT_SECRETO' -Value $normalized.jwtSecreto
+  Set-OrReplaceEnvLine -Map $envMap -Key 'NODE_ENV' -Value $normalized.nodeEnv
+  Set-OrReplaceEnvLine -Map $envMap -Key 'PUERTO_API' -Value $normalized.puertoApi
+  Set-OrReplaceEnvLine -Map $envMap -Key 'PUERTO_PORTAL' -Value $normalized.puertoPortal
   Set-OrReplaceEnvLine -Map $envMap -Key 'CORS_ORIGENES' -Value $normalized.corsOrigenes
   Set-OrReplaceEnvLine -Map $envMap -Key 'PORTAL_ALUMNO_URL' -Value $normalized.portalAlumnoUrl
   Set-OrReplaceEnvLine -Map $envMap -Key 'PORTAL_ALUMNO_API_KEY' -Value $normalized.portalAlumnoApiKey
@@ -203,6 +271,7 @@ function Invoke-EvaluaProOperationalConfiguration {
   Set-OrReplaceEnvLine -Map $envMap -Key 'GOOGLE_CLASSROOM_CLIENT_SECRET' -Value $normalized.googleClassroomClientSecret
   Set-OrReplaceEnvLine -Map $envMap -Key 'GOOGLE_CLASSROOM_REDIRECT_URI' -Value $normalized.googleClassroomRedirectUri
   Set-OrReplaceEnvLine -Map $envMap -Key 'REQUIRE_GOOGLE_OAUTH' -Value ($(if ($normalized.requireGoogleOAuth) { '1' } else { '0' }))
+  Set-OrReplaceEnvLine -Map $envMap -Key 'LICENCIA_ACCOUNT_EMAIL' -Value $normalized.licenciaAccountEmail
   Set-OrReplaceEnvLine -Map $envMap -Key 'CORREO_MODULO_ACTIVO' -Value ($(if ($normalized.correoModuloActivo) { '1' } else { '0' }))
 
   if ($normalized.correoModuloActivo) {
@@ -214,6 +283,39 @@ function Invoke-EvaluaProOperationalConfiguration {
   }
 
   Write-EnvMap -Path $envPath -Map $envMap
+
+  $updateConfigPath = Join-Path $InstallDir 'config\update-config.json'
+  $updateCfg = Read-JsonMap -Path $updateConfigPath
+  if ($updateCfg -isnot [hashtable] -and $updateCfg -isnot [pscustomobject]) {
+    $updateCfg = @{}
+  }
+  $syncPreflight = $null
+  try { $syncPreflight = $updateCfg.syncPreflight } catch { $syncPreflight = $null }
+  if ($null -eq $syncPreflight) {
+    $syncPreflight = [ordered]@{
+      enabled = $true
+      baseUrl = 'http://127.0.0.1:4000/api/sincronizaciones'
+      tokenEnv = 'EVALUAPRO_SYNC_BEARER'
+      exportPayload = @{}
+      pushPayload = @{}
+      pullPayload = @{}
+    }
+  }
+
+  $newUpdateCfg = [ordered]@{
+    owner = $normalized.updateOwner
+    repo = $normalized.updateRepo
+    channel = $normalized.updateChannel
+    assetName = $normalized.updateAssetName
+    sha256AssetName = $normalized.updateShaAssetName
+    requireSha256 = [bool]$normalized.updateRequireSha256
+    checkIntervalMs = 900000
+    syncPreflight = $syncPreflight
+  }
+  if (-not [string]::IsNullOrWhiteSpace($normalized.updateFeedUrl)) {
+    $newUpdateCfg.feedUrl = $normalized.updateFeedUrl
+  }
+  Write-JsonFile -Path $updateConfigPath -Data $newUpdateCfg
 
   $programDataRoot = Join-Path $env:ProgramData 'EvaluaPro\installer-hub'
   if (-not (Test-Path $programDataRoot)) {
@@ -246,6 +348,17 @@ function Invoke-EvaluaProOperationalConfiguration {
       apiComercialBaseUrl = $normalized.apiComercialBaseUrl
       tenantId = $normalized.tenantId
       codigoActivacionSet = -not [string]::IsNullOrWhiteSpace($normalized.codigoActivacion)
+      licenciaAccountEmail = $normalized.licenciaAccountEmail
+      nodeEnv = $normalized.nodeEnv
+      puertoApi = $normalized.puertoApi
+      puertoPortal = $normalized.puertoPortal
+      updateChannel = $normalized.updateChannel
+      updateOwner = $normalized.updateOwner
+      updateRepo = $normalized.updateRepo
+      updateAssetName = $normalized.updateAssetName
+      updateShaAssetName = $normalized.updateShaAssetName
+      updateFeedUrl = $normalized.updateFeedUrl
+      updateRequireSha256 = [bool]$normalized.updateRequireSha256
     }
   }
   [IO.File]::WriteAllText($profilePath, ($profile | ConvertTo-Json -Depth 8), [System.Text.Encoding]::UTF8)

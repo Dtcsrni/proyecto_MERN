@@ -54,6 +54,9 @@ Recomendaciones:
 Backend docente:
 - `MONGODB_URI`
 - `JWT_SECRETO`
+- `NODE_ENV`
+- `PUERTO_API`
+- `PUERTO_PORTAL`
 - `PORTAL_ALUMNO_URL`
 - `PORTAL_ALUMNO_API_KEY`
 - `PASSWORD_RESET_ENABLED` (`0`/`1`)
@@ -64,6 +67,7 @@ Backend docente:
 - `GOOGLE_CLASSROOM_CLIENT_ID` (si se habilita Classroom)
 - `GOOGLE_CLASSROOM_CLIENT_SECRET` (si se habilita Classroom)
 - `GOOGLE_CLASSROOM_REDIRECT_URI` (si se habilita Classroom)
+- `LICENCIA_ACCOUNT_EMAIL` (cuando se exige activacion de licencia)
 
 Portal cloud:
 - `MONGODB_URI`

@@ -20,8 +20,23 @@ import {
 
 const LIMITE_ANOMALIA_BLOQUEO = 3;
 
+type LicenciaMutable = {
+  _id: unknown;
+  tenantId: string;
+  intentosFallidos?: number;
+  puntajeAnomalia?: number;
+  estado?: string;
+  revocadaRazon?: string;
+  metaDispositivo?: {
+    huella?: string;
+    host?: string;
+    versionInstalada?: string;
+  };
+  save: () => Promise<unknown>;
+};
+
 async function registrarIntentoLicenciaInvalida(params: {
-  licencia: any;
+  licencia: LicenciaMutable | null | undefined;
   tenantId?: string;
   motivo: string;
   huella?: string;

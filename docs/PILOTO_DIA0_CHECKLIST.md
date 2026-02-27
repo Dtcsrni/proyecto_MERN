@@ -51,6 +51,7 @@ Objetivo: dejar operativo el piloto (1 institucion, 1-3 docentes) con backend lo
 - [ ] En entorno docente definir:
   - [ ] `MONGODB_URI`
   - [ ] `JWT_SECRETO`
+  - [ ] `NODE_ENV`, `PUERTO_API`, `PUERTO_PORTAL`
   - [ ] `PORTAL_ALUMNO_URL` (URL cloud real)
   - [ ] `PORTAL_ALUMNO_API_KEY` (misma clave del portal)
   - [ ] `PORTAL_API_KEY` (para operaciones portal cloud)
@@ -63,6 +64,8 @@ Objetivo: dejar operativo el piloto (1 institucion, 1-3 docentes) con backend lo
   - [ ] `CORREO_MODULO_ACTIVO` (`0`/`1`)
   - [ ] Si correo activo: `NOTIFICACIONES_WEBHOOK_URL` y `NOTIFICACIONES_WEBHOOK_TOKEN`
   - [ ] Si licencia requerida: `TenantId` + `CodigoActivacion` en Installer Hub
+  - [ ] Si licencia requerida: `LICENCIA_ACCOUNT_EMAIL` (correo titular)
+  - [ ] Configurar actualizaciones automaticas (canal/owner/repo/assets/SHA/feed) en instalador
 - [ ] Iniciar stack:
   - [ ] `npm run stack:prod`
   - [ ] `npm run portal:prod` (si aplica en host local)

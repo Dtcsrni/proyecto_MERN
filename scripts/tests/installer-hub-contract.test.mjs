@@ -52,10 +52,21 @@ test('installer hub incluye fase de configuracion operativa y blindaje de licenc
   assert.match(hub, /OperationalConfig\.psm1/);
   assert.match(hub, /configuracion_operativa/);
   assert.match(hub, /MONGODB_URI|MongoUri/);
+  assert.match(hub, /NODE_ENV|NodeEnv/);
+  assert.match(hub, /PUERTO_API|PuertoApi/);
+  assert.match(hub, /PUERTO_PORTAL|PuertoPortal/);
   assert.match(hub, /PORTAL_ALUMNO_API_KEY|PortalAlumnoApiKey/);
   assert.match(hub, /GOOGLE_OAUTH_CLIENT_ID|GoogleOauthClientId/);
   assert.match(hub, /GOOGLE_CLASSROOM_CLIENT_ID|GoogleClassroomClientId/);
   assert.match(hub, /RequireLicenseActivation/);
+  assert.match(hub, /LicenciaAccountEmail/);
+  assert.match(hub, /UpdateChannel/);
+  assert.match(hub, /UpdateOwner/);
+  assert.match(hub, /UpdateRepo/);
+  assert.match(hub, /UpdateAssetName/);
+  assert.match(hub, /UpdateShaAssetName/);
+  assert.match(hub, /UpdateFeedUrl/);
+  assert.match(hub, /UpdateRequireSha256/);
 });
 
 test('script de release manifest incluye contrato extendido de build/deployment/artifacts', () => {

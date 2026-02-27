@@ -9,6 +9,9 @@ param(
   [string]$CodigoActivacion = '',
   [string]$MongoUri = '',
   [string]$JwtSecreto = '',
+  [string]$NodeEnv = '',
+  [string]$PuertoApi = '',
+  [string]$PuertoPortal = '',
   [string]$CorsOrigenes = '',
   [string]$PortalAlumnoUrl = '',
   [string]$PortalAlumnoApiKey = '',
@@ -25,6 +28,14 @@ param(
   [string]$NotificacionesWebhookUrl = '',
   [string]$NotificacionesWebhookToken = '',
   [string]$RequireLicenseActivation = '0',
+  [string]$LicenciaAccountEmail = '',
+  [string]$UpdateChannel = '',
+  [string]$UpdateOwner = '',
+  [string]$UpdateRepo = '',
+  [string]$UpdateAssetName = '',
+  [string]$UpdateShaAssetName = '',
+  [string]$UpdateFeedUrl = '',
+  [string]$UpdateRequireSha256 = '',
   [switch]$Headless,
   [switch]$NoElevation
 )
@@ -112,10 +123,41 @@ function Resolve-DetectedOperationalConfig {
   return Read-EnvValueMap -Path $envPath
 }
 
+function Resolve-DetectedUpdateConfig {
+  param(
+    [string]$InstallDir,
+    [pscustomobject]$Installation
+  )
+  $candidates = @()
+  if ($InstallDir) { $candidates += (Join-Path $InstallDir 'config\update-config.json') }
+  if ($Installation -and $Installation.InstallLocation) { $candidates += (Join-Path ([string]$Installation.InstallLocation) 'config\update-config.json') }
+  $repoCfg = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptRoot)) 'config\update-config.json'
+  $candidates += $repoCfg
+  $cfgPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $cfgPath) { return @{} }
+  try {
+    $raw = Get-Content -Path $cfgPath -Encoding utf8 -Raw
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
+    $parsed = $raw | ConvertFrom-Json -Depth 12
+    return @{
+      channel = [string]($parsed.channel ?? '')
+      owner = [string]($parsed.owner ?? '')
+      repo = [string]($parsed.repo ?? '')
+      assetName = [string]($parsed.assetName ?? '')
+      sha256AssetName = [string]($parsed.sha256AssetName ?? '')
+      feedUrl = [string]($parsed.feedUrl ?? '')
+      requireSha256 = if ($null -ne $parsed.requireSha256) { [string]$parsed.requireSha256 } else { '' }
+    }
+  } catch {
+    return @{}
+  }
+}
+
 function New-FlowState {
   $installation = Get-EvaluaProInstallationInfo
   $resolvedMode = Resolve-InstallerMode -RequestedMode $Mode -Installation $installation
   $detected = Resolve-DetectedOperationalConfig -InstallDir $InstallDir -Installation $installation
+  $detectedUpdate = Resolve-DetectedUpdateConfig -InstallDir $InstallDir -Installation $installation
 
   return [pscustomobject]@{
     requestedMode = $Mode
@@ -129,6 +171,9 @@ function New-FlowState {
     codigoActivacion = $CodigoActivacion
     mongoUri = if ($MongoUri) { $MongoUri } else { [string]($detected.MONGODB_URI ?? '') }
     jwtSecreto = if ($JwtSecreto) { $JwtSecreto } else { [string]($detected.JWT_SECRETO ?? '') }
+    nodeEnv = if ($NodeEnv) { $NodeEnv } else { [string]($detected.NODE_ENV ?? 'production') }
+    puertoApi = if ($PuertoApi) { $PuertoApi } else { [string]($detected.PUERTO_API ?? '4000') }
+    puertoPortal = if ($PuertoPortal) { $PuertoPortal } else { [string]($detected.PUERTO_PORTAL ?? '4518') }
     corsOrigenes = if ($CorsOrigenes) { $CorsOrigenes } else { [string]($detected.CORS_ORIGENES ?? '') }
     portalAlumnoUrl = if ($PortalAlumnoUrl) { $PortalAlumnoUrl } else { [string]($detected.PORTAL_ALUMNO_URL ?? '') }
     portalAlumnoApiKey = if ($PortalAlumnoApiKey) { $PortalAlumnoApiKey } else { [string]($detected.PORTAL_ALUMNO_API_KEY ?? '') }
@@ -145,6 +190,14 @@ function New-FlowState {
     notificacionesWebhookUrl = if ($NotificacionesWebhookUrl) { $NotificacionesWebhookUrl } else { [string]($detected.NOTIFICACIONES_WEBHOOK_URL ?? '') }
     notificacionesWebhookToken = if ($NotificacionesWebhookToken) { $NotificacionesWebhookToken } else { [string]($detected.NOTIFICACIONES_WEBHOOK_TOKEN ?? '') }
     requireLicenseActivation = $RequireLicenseActivation
+    licenciaAccountEmail = if ($LicenciaAccountEmail) { $LicenciaAccountEmail } else { [string]($detected.LICENCIA_ACCOUNT_EMAIL ?? '') }
+    updateChannel = if ($UpdateChannel) { $UpdateChannel } else { [string]($detectedUpdate.channel ?? 'stable') }
+    updateOwner = if ($UpdateOwner) { $UpdateOwner } else { [string]($detectedUpdate.owner ?? 'Dtcsrni') }
+    updateRepo = if ($UpdateRepo) { $UpdateRepo } else { [string]($detectedUpdate.repo ?? 'EvaluaPro_Sistema_Universitario') }
+    updateAssetName = if ($UpdateAssetName) { $UpdateAssetName } else { [string]($detectedUpdate.assetName ?? 'EvaluaPro-Setup.exe') }
+    updateShaAssetName = if ($UpdateShaAssetName) { $UpdateShaAssetName } else { [string]($detectedUpdate.sha256AssetName ?? 'EvaluaPro-Setup.exe.sha256') }
+    updateFeedUrl = if ($UpdateFeedUrl) { $UpdateFeedUrl } else { [string]($detectedUpdate.feedUrl ?? '') }
+    updateRequireSha256 = if ($UpdateRequireSha256) { $UpdateRequireSha256 } else { [string]($detectedUpdate.requireSha256 ?? '1') }
     internetOk = $false
     requirementReport = $null
     prereqManifest = $null
@@ -326,6 +379,9 @@ function Invoke-InstallerFlowCore {
       -Config @{
         mongoUri = $flow.mongoUri
         jwtSecreto = $flow.jwtSecreto
+        nodeEnv = $flow.nodeEnv
+        puertoApi = $flow.puertoApi
+        puertoPortal = $flow.puertoPortal
         corsOrigenes = $flow.corsOrigenes
         portalAlumnoUrl = $flow.portalAlumnoUrl
         portalAlumnoApiKey = $flow.portalAlumnoApiKey
@@ -342,6 +398,14 @@ function Invoke-InstallerFlowCore {
         notificacionesWebhookUrl = $flow.notificacionesWebhookUrl
         notificacionesWebhookToken = $flow.notificacionesWebhookToken
         requireLicenseActivation = $flow.requireLicenseActivation
+        licenciaAccountEmail = $flow.licenciaAccountEmail
+        updateChannel = $flow.updateChannel
+        updateOwner = $flow.updateOwner
+        updateRepo = $flow.updateRepo
+        updateAssetName = $flow.updateAssetName
+        updateShaAssetName = $flow.updateShaAssetName
+        updateFeedUrl = $flow.updateFeedUrl
+        updateRequireSha256 = $flow.updateRequireSha256
         apiComercialBaseUrl = $flow.apiComercialBaseUrl
         tenantId = $flow.tenantId
         codigoActivacion = $flow.codigoActivacion
@@ -539,9 +603,15 @@ $configGroup = New-Object System.Windows.Forms.GroupBox
 $configGroup.Text = 'Configuracion de ejecucion'
 $configGroup.Dock = 'Top'
 $configGroup.Height = 620
+$configGroup.AutoScroll = $true
 $configGroup.ForeColor = [System.Drawing.Color]::FromArgb(208, 230, 255)
 $configGroup.BackColor = [System.Drawing.Color]::FromArgb(10, 25, 45)
 $rightPanel.Controls.Add($configGroup)
+
+$toolTip = New-Object System.Windows.Forms.ToolTip
+$toolTip.AutoPopDelay = 12000
+$toolTip.InitialDelay = 400
+$toolTip.ReshowDelay = 150
 
 $lblMode = New-Object System.Windows.Forms.Label
 $lblMode.Text = 'Modo:'
@@ -628,6 +698,18 @@ $textCodigoActivacion.Width = 280
 $textCodigoActivacion.Text = $flow.codigoActivacion
 $configGroup.Controls.Add($textCodigoActivacion)
 
+$lblLicenciaCuenta = New-Object System.Windows.Forms.Label
+$lblLicenciaCuenta.Text = 'Cuenta licencia (correo):'
+$lblLicenciaCuenta.AutoSize = $true
+$lblLicenciaCuenta.Location = New-Object System.Drawing.Point(470, 206)
+$configGroup.Controls.Add($lblLicenciaCuenta)
+
+$textLicenciaCuenta = New-Object System.Windows.Forms.TextBox
+$textLicenciaCuenta.Location = New-Object System.Drawing.Point(620, 201)
+$textLicenciaCuenta.Width = 217
+$textLicenciaCuenta.Text = $flow.licenciaAccountEmail
+$configGroup.Controls.Add($textLicenciaCuenta)
+
 $lblMongoUri = New-Object System.Windows.Forms.Label
 $lblMongoUri.Text = 'MONGODB_URI:'
 $lblMongoUri.AutoSize = $true
@@ -653,14 +735,55 @@ $textJwtSecreto.Text = $flow.jwtSecreto
 $textJwtSecreto.UseSystemPasswordChar = $true
 $configGroup.Controls.Add($textJwtSecreto)
 
+$lblNodeEnv = New-Object System.Windows.Forms.Label
+$lblNodeEnv.Text = 'NODE_ENV:'
+$lblNodeEnv.AutoSize = $true
+$lblNodeEnv.Location = New-Object System.Drawing.Point(18, 302)
+$configGroup.Controls.Add($lblNodeEnv)
+
+$comboNodeEnv = New-Object System.Windows.Forms.ComboBox
+$comboNodeEnv.DropDownStyle = 'DropDownList'
+$comboNodeEnv.Location = New-Object System.Drawing.Point(130, 297)
+$comboNodeEnv.Width = 140
+[void]$comboNodeEnv.Items.Add('production')
+[void]$comboNodeEnv.Items.Add('development')
+[void]$comboNodeEnv.Items.Add('test')
+$comboNodeEnv.SelectedItem = [string]$flow.nodeEnv
+if (-not $comboNodeEnv.SelectedItem) { $comboNodeEnv.SelectedItem = 'production' }
+$configGroup.Controls.Add($comboNodeEnv)
+
+$lblPuertoApi = New-Object System.Windows.Forms.Label
+$lblPuertoApi.Text = 'PUERTO_API:'
+$lblPuertoApi.AutoSize = $true
+$lblPuertoApi.Location = New-Object System.Drawing.Point(290, 302)
+$configGroup.Controls.Add($lblPuertoApi)
+
+$textPuertoApi = New-Object System.Windows.Forms.TextBox
+$textPuertoApi.Location = New-Object System.Drawing.Point(380, 297)
+$textPuertoApi.Width = 70
+$textPuertoApi.Text = [string]$flow.puertoApi
+$configGroup.Controls.Add($textPuertoApi)
+
+$lblPuertoPortal = New-Object System.Windows.Forms.Label
+$lblPuertoPortal.Text = 'PUERTO_PORTAL:'
+$lblPuertoPortal.AutoSize = $true
+$lblPuertoPortal.Location = New-Object System.Drawing.Point(470, 302)
+$configGroup.Controls.Add($lblPuertoPortal)
+
+$textPuertoPortal = New-Object System.Windows.Forms.TextBox
+$textPuertoPortal.Location = New-Object System.Drawing.Point(585, 297)
+$textPuertoPortal.Width = 70
+$textPuertoPortal.Text = [string]$flow.puertoPortal
+$configGroup.Controls.Add($textPuertoPortal)
+
 $lblCors = New-Object System.Windows.Forms.Label
 $lblCors.Text = 'CORS_ORIGENES:'
 $lblCors.AutoSize = $true
-$lblCors.Location = New-Object System.Drawing.Point(18, 271)
+$lblCors.Location = New-Object System.Drawing.Point(18, 333)
 $configGroup.Controls.Add($lblCors)
 
 $textCors = New-Object System.Windows.Forms.TextBox
-$textCors.Location = New-Object System.Drawing.Point(130, 266)
+$textCors.Location = New-Object System.Drawing.Point(130, 328)
 $textCors.Width = 707
 $textCors.Text = $flow.corsOrigenes
 $configGroup.Controls.Add($textCors)
@@ -668,11 +791,11 @@ $configGroup.Controls.Add($textCors)
 $lblPortalUrl = New-Object System.Windows.Forms.Label
 $lblPortalUrl.Text = 'PORTAL_ALUMNO_URL:'
 $lblPortalUrl.AutoSize = $true
-$lblPortalUrl.Location = New-Object System.Drawing.Point(18, 302)
+$lblPortalUrl.Location = New-Object System.Drawing.Point(18, 364)
 $configGroup.Controls.Add($lblPortalUrl)
 
 $textPortalUrl = New-Object System.Windows.Forms.TextBox
-$textPortalUrl.Location = New-Object System.Drawing.Point(180, 297)
+$textPortalUrl.Location = New-Object System.Drawing.Point(180, 359)
 $textPortalUrl.Width = 270
 $textPortalUrl.Text = $flow.portalAlumnoUrl
 $configGroup.Controls.Add($textPortalUrl)
@@ -680,11 +803,11 @@ $configGroup.Controls.Add($textPortalUrl)
 $lblPortalAlumnoKey = New-Object System.Windows.Forms.Label
 $lblPortalAlumnoKey.Text = 'PORTAL_ALUMNO_API_KEY:'
 $lblPortalAlumnoKey.AutoSize = $true
-$lblPortalAlumnoKey.Location = New-Object System.Drawing.Point(470, 302)
+$lblPortalAlumnoKey.Location = New-Object System.Drawing.Point(470, 364)
 $configGroup.Controls.Add($lblPortalAlumnoKey)
 
 $textPortalAlumnoKey = New-Object System.Windows.Forms.TextBox
-$textPortalAlumnoKey.Location = New-Object System.Drawing.Point(640, 297)
+$textPortalAlumnoKey.Location = New-Object System.Drawing.Point(640, 359)
 $textPortalAlumnoKey.Width = 197
 $textPortalAlumnoKey.Text = $flow.portalAlumnoApiKey
 $textPortalAlumnoKey.UseSystemPasswordChar = $true
@@ -693,11 +816,11 @@ $configGroup.Controls.Add($textPortalAlumnoKey)
 $lblPortalApiKey = New-Object System.Windows.Forms.Label
 $lblPortalApiKey.Text = 'PORTAL_API_KEY (portal cloud):'
 $lblPortalApiKey.AutoSize = $true
-$lblPortalApiKey.Location = New-Object System.Drawing.Point(18, 333)
+$lblPortalApiKey.Location = New-Object System.Drawing.Point(18, 395)
 $configGroup.Controls.Add($lblPortalApiKey)
 
 $textPortalApiKey = New-Object System.Windows.Forms.TextBox
-$textPortalApiKey.Location = New-Object System.Drawing.Point(220, 328)
+$textPortalApiKey.Location = New-Object System.Drawing.Point(220, 390)
 $textPortalApiKey.Width = 230
 $textPortalApiKey.Text = $flow.portalApiKey
 $textPortalApiKey.UseSystemPasswordChar = $true
@@ -706,18 +829,18 @@ $configGroup.Controls.Add($textPortalApiKey)
 $checkCorreoModulo = New-Object System.Windows.Forms.CheckBox
 $checkCorreoModulo.Text = 'Activar modulo de correo (requiere webhook)'
 $checkCorreoModulo.AutoSize = $true
-$checkCorreoModulo.Location = New-Object System.Drawing.Point(470, 331)
+$checkCorreoModulo.Location = New-Object System.Drawing.Point(470, 393)
 $checkCorreoModulo.Checked = (@('1', 'true', 'yes', 'on') -contains ([string]$flow.correoModuloActivo).Trim().ToLowerInvariant())
 $configGroup.Controls.Add($checkCorreoModulo)
 
 $lblWebhookUrl = New-Object System.Windows.Forms.Label
 $lblWebhookUrl.Text = 'NOTIFICACIONES_WEBHOOK_URL:'
 $lblWebhookUrl.AutoSize = $true
-$lblWebhookUrl.Location = New-Object System.Drawing.Point(18, 364)
+$lblWebhookUrl.Location = New-Object System.Drawing.Point(18, 426)
 $configGroup.Controls.Add($lblWebhookUrl)
 
 $textWebhookUrl = New-Object System.Windows.Forms.TextBox
-$textWebhookUrl.Location = New-Object System.Drawing.Point(220, 359)
+$textWebhookUrl.Location = New-Object System.Drawing.Point(220, 421)
 $textWebhookUrl.Width = 350
 $textWebhookUrl.Text = $flow.notificacionesWebhookUrl
 $configGroup.Controls.Add($textWebhookUrl)
@@ -725,11 +848,11 @@ $configGroup.Controls.Add($textWebhookUrl)
 $lblWebhookToken = New-Object System.Windows.Forms.Label
 $lblWebhookToken.Text = 'NOTIFICACIONES_WEBHOOK_TOKEN:'
 $lblWebhookToken.AutoSize = $true
-$lblWebhookToken.Location = New-Object System.Drawing.Point(18, 392)
+$lblWebhookToken.Location = New-Object System.Drawing.Point(18, 454)
 $configGroup.Controls.Add($lblWebhookToken)
 
 $textWebhookToken = New-Object System.Windows.Forms.TextBox
-$textWebhookToken.Location = New-Object System.Drawing.Point(250, 387)
+$textWebhookToken.Location = New-Object System.Drawing.Point(250, 449)
 $textWebhookToken.Width = 320
 $textWebhookToken.Text = $flow.notificacionesWebhookToken
 $textWebhookToken.UseSystemPasswordChar = $true
@@ -738,25 +861,25 @@ $configGroup.Controls.Add($textWebhookToken)
 $checkRequireLicense = New-Object System.Windows.Forms.CheckBox
 $checkRequireLicense.Text = 'Requerir activacion de licencia en esta instalacion'
 $checkRequireLicense.AutoSize = $true
-$checkRequireLicense.Location = New-Object System.Drawing.Point(580, 390)
+$checkRequireLicense.Location = New-Object System.Drawing.Point(580, 452)
 $checkRequireLicense.Checked = (@('1', 'true', 'yes', 'on') -contains ([string]$flow.requireLicenseActivation).Trim().ToLowerInvariant())
 $configGroup.Controls.Add($checkRequireLicense)
 
 $checkPasswordResetEnabled = New-Object System.Windows.Forms.CheckBox
 $checkPasswordResetEnabled.Text = 'Activar recuperacion de contrasena segura'
 $checkPasswordResetEnabled.AutoSize = $true
-$checkPasswordResetEnabled.Location = New-Object System.Drawing.Point(18, 424)
+$checkPasswordResetEnabled.Location = New-Object System.Drawing.Point(18, 486)
 $checkPasswordResetEnabled.Checked = (@('1', 'true', 'yes', 'on') -contains ([string]$flow.passwordResetEnabled).Trim().ToLowerInvariant())
 $configGroup.Controls.Add($checkPasswordResetEnabled)
 
 $lblPasswordResetMinutes = New-Object System.Windows.Forms.Label
 $lblPasswordResetMinutes.Text = 'PASSWORD_RESET_TOKEN_MINUTES:'
 $lblPasswordResetMinutes.AutoSize = $true
-$lblPasswordResetMinutes.Location = New-Object System.Drawing.Point(320, 425)
+$lblPasswordResetMinutes.Location = New-Object System.Drawing.Point(320, 487)
 $configGroup.Controls.Add($lblPasswordResetMinutes)
 
 $textPasswordResetMinutes = New-Object System.Windows.Forms.TextBox
-$textPasswordResetMinutes.Location = New-Object System.Drawing.Point(550, 420)
+$textPasswordResetMinutes.Location = New-Object System.Drawing.Point(550, 482)
 $textPasswordResetMinutes.Width = 60
 $textPasswordResetMinutes.Text = [string]$flow.passwordResetTokenMinutes
 $configGroup.Controls.Add($textPasswordResetMinutes)
@@ -764,11 +887,11 @@ $configGroup.Controls.Add($textPasswordResetMinutes)
 $lblPasswordResetUrl = New-Object System.Windows.Forms.Label
 $lblPasswordResetUrl.Text = 'PASSWORD_RESET_URL_BASE:'
 $lblPasswordResetUrl.AutoSize = $true
-$lblPasswordResetUrl.Location = New-Object System.Drawing.Point(620, 425)
+$lblPasswordResetUrl.Location = New-Object System.Drawing.Point(620, 487)
 $configGroup.Controls.Add($lblPasswordResetUrl)
 
 $textPasswordResetUrl = New-Object System.Windows.Forms.TextBox
-$textPasswordResetUrl.Location = New-Object System.Drawing.Point(18, 452)
+$textPasswordResetUrl.Location = New-Object System.Drawing.Point(18, 514)
 $textPasswordResetUrl.Width = 819
 $textPasswordResetUrl.Text = $flow.passwordResetUrlBase
 $configGroup.Controls.Add($textPasswordResetUrl)
@@ -776,18 +899,18 @@ $configGroup.Controls.Add($textPasswordResetUrl)
 $checkRequireGoogleOauth = New-Object System.Windows.Forms.CheckBox
 $checkRequireGoogleOauth.Text = 'Requerir OAuth Google/Classroom en esta instalacion'
 $checkRequireGoogleOauth.AutoSize = $true
-$checkRequireGoogleOauth.Location = New-Object System.Drawing.Point(18, 482)
+$checkRequireGoogleOauth.Location = New-Object System.Drawing.Point(18, 544)
 $checkRequireGoogleOauth.Checked = (@('1', 'true', 'yes', 'on') -contains ([string]$flow.requireGoogleOAuth).Trim().ToLowerInvariant())
 $configGroup.Controls.Add($checkRequireGoogleOauth)
 
 $lblGoogleOauthClientId = New-Object System.Windows.Forms.Label
 $lblGoogleOauthClientId.Text = 'GOOGLE_OAUTH_CLIENT_ID:'
 $lblGoogleOauthClientId.AutoSize = $true
-$lblGoogleOauthClientId.Location = New-Object System.Drawing.Point(18, 512)
+$lblGoogleOauthClientId.Location = New-Object System.Drawing.Point(18, 574)
 $configGroup.Controls.Add($lblGoogleOauthClientId)
 
 $textGoogleOauthClientId = New-Object System.Windows.Forms.TextBox
-$textGoogleOauthClientId.Location = New-Object System.Drawing.Point(220, 507)
+$textGoogleOauthClientId.Location = New-Object System.Drawing.Point(220, 569)
 $textGoogleOauthClientId.Width = 617
 $textGoogleOauthClientId.Text = $flow.googleOauthClientId
 $configGroup.Controls.Add($textGoogleOauthClientId)
@@ -795,11 +918,11 @@ $configGroup.Controls.Add($textGoogleOauthClientId)
 $lblClassroomClientId = New-Object System.Windows.Forms.Label
 $lblClassroomClientId.Text = 'GOOGLE_CLASSROOM_CLIENT_ID:'
 $lblClassroomClientId.AutoSize = $true
-$lblClassroomClientId.Location = New-Object System.Drawing.Point(18, 543)
+$lblClassroomClientId.Location = New-Object System.Drawing.Point(18, 605)
 $configGroup.Controls.Add($lblClassroomClientId)
 
 $textClassroomClientId = New-Object System.Windows.Forms.TextBox
-$textClassroomClientId.Location = New-Object System.Drawing.Point(250, 538)
+$textClassroomClientId.Location = New-Object System.Drawing.Point(250, 600)
 $textClassroomClientId.Width = 220
 $textClassroomClientId.Text = $flow.googleClassroomClientId
 $configGroup.Controls.Add($textClassroomClientId)
@@ -807,11 +930,11 @@ $configGroup.Controls.Add($textClassroomClientId)
 $lblClassroomSecret = New-Object System.Windows.Forms.Label
 $lblClassroomSecret.Text = 'GOOGLE_CLASSROOM_CLIENT_SECRET:'
 $lblClassroomSecret.AutoSize = $true
-$lblClassroomSecret.Location = New-Object System.Drawing.Point(480, 543)
+$lblClassroomSecret.Location = New-Object System.Drawing.Point(480, 605)
 $configGroup.Controls.Add($lblClassroomSecret)
 
 $textClassroomSecret = New-Object System.Windows.Forms.TextBox
-$textClassroomSecret.Location = New-Object System.Drawing.Point(710, 538)
+$textClassroomSecret.Location = New-Object System.Drawing.Point(710, 600)
 $textClassroomSecret.Width = 127
 $textClassroomSecret.Text = $flow.googleClassroomClientSecret
 $textClassroomSecret.UseSystemPasswordChar = $true
@@ -820,14 +943,135 @@ $configGroup.Controls.Add($textClassroomSecret)
 $lblClassroomRedirect = New-Object System.Windows.Forms.Label
 $lblClassroomRedirect.Text = 'GOOGLE_CLASSROOM_REDIRECT_URI:'
 $lblClassroomRedirect.AutoSize = $true
-$lblClassroomRedirect.Location = New-Object System.Drawing.Point(18, 574)
+$lblClassroomRedirect.Location = New-Object System.Drawing.Point(18, 636)
 $configGroup.Controls.Add($lblClassroomRedirect)
 
 $textClassroomRedirect = New-Object System.Windows.Forms.TextBox
-$textClassroomRedirect.Location = New-Object System.Drawing.Point(260, 569)
+$textClassroomRedirect.Location = New-Object System.Drawing.Point(260, 631)
 $textClassroomRedirect.Width = 577
 $textClassroomRedirect.Text = $flow.googleClassroomRedirectUri
 $configGroup.Controls.Add($textClassroomRedirect)
+
+$lblUpdatesTitulo = New-Object System.Windows.Forms.Label
+$lblUpdatesTitulo.Text = 'Actualizaciones automaticas (Updater)'
+$lblUpdatesTitulo.AutoSize = $true
+$lblUpdatesTitulo.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 10)
+$lblUpdatesTitulo.ForeColor = [System.Drawing.Color]::FromArgb(183, 218, 247)
+$lblUpdatesTitulo.Location = New-Object System.Drawing.Point(18, 668)
+$configGroup.Controls.Add($lblUpdatesTitulo)
+
+$lblUpdateChannel = New-Object System.Windows.Forms.Label
+$lblUpdateChannel.Text = 'Canal:'
+$lblUpdateChannel.AutoSize = $true
+$lblUpdateChannel.Location = New-Object System.Drawing.Point(18, 696)
+$configGroup.Controls.Add($lblUpdateChannel)
+
+$comboUpdateChannel = New-Object System.Windows.Forms.ComboBox
+$comboUpdateChannel.DropDownStyle = 'DropDownList'
+$comboUpdateChannel.Location = New-Object System.Drawing.Point(80, 691)
+$comboUpdateChannel.Width = 120
+[void]$comboUpdateChannel.Items.Add('stable')
+[void]$comboUpdateChannel.Items.Add('rc')
+[void]$comboUpdateChannel.Items.Add('beta')
+[void]$comboUpdateChannel.Items.Add('alpha')
+$comboUpdateChannel.SelectedItem = [string]$flow.updateChannel
+if (-not $comboUpdateChannel.SelectedItem) { $comboUpdateChannel.SelectedItem = 'stable' }
+$configGroup.Controls.Add($comboUpdateChannel)
+
+$lblUpdateOwner = New-Object System.Windows.Forms.Label
+$lblUpdateOwner.Text = 'Owner:'
+$lblUpdateOwner.AutoSize = $true
+$lblUpdateOwner.Location = New-Object System.Drawing.Point(220, 696)
+$configGroup.Controls.Add($lblUpdateOwner)
+
+$textUpdateOwner = New-Object System.Windows.Forms.TextBox
+$textUpdateOwner.Location = New-Object System.Drawing.Point(270, 691)
+$textUpdateOwner.Width = 120
+$textUpdateOwner.Text = $flow.updateOwner
+$configGroup.Controls.Add($textUpdateOwner)
+
+$lblUpdateRepo = New-Object System.Windows.Forms.Label
+$lblUpdateRepo.Text = 'Repo:'
+$lblUpdateRepo.AutoSize = $true
+$lblUpdateRepo.Location = New-Object System.Drawing.Point(410, 696)
+$configGroup.Controls.Add($lblUpdateRepo)
+
+$textUpdateRepo = New-Object System.Windows.Forms.TextBox
+$textUpdateRepo.Location = New-Object System.Drawing.Point(455, 691)
+$textUpdateRepo.Width = 220
+$textUpdateRepo.Text = $flow.updateRepo
+$configGroup.Controls.Add($textUpdateRepo)
+
+$checkUpdateSha = New-Object System.Windows.Forms.CheckBox
+$checkUpdateSha.Text = 'Exigir SHA-256'
+$checkUpdateSha.AutoSize = $true
+$checkUpdateSha.Location = New-Object System.Drawing.Point(690, 693)
+$checkUpdateSha.Checked = (@('1', 'true', 'yes', 'on') -contains ([string]$flow.updateRequireSha256).Trim().ToLowerInvariant())
+$configGroup.Controls.Add($checkUpdateSha)
+
+$lblUpdateAsset = New-Object System.Windows.Forms.Label
+$lblUpdateAsset.Text = 'Asset instalador:'
+$lblUpdateAsset.AutoSize = $true
+$lblUpdateAsset.Location = New-Object System.Drawing.Point(18, 726)
+$configGroup.Controls.Add($lblUpdateAsset)
+
+$textUpdateAsset = New-Object System.Windows.Forms.TextBox
+$textUpdateAsset.Location = New-Object System.Drawing.Point(125, 721)
+$textUpdateAsset.Width = 260
+$textUpdateAsset.Text = $flow.updateAssetName
+$configGroup.Controls.Add($textUpdateAsset)
+
+$lblUpdateShaAsset = New-Object System.Windows.Forms.Label
+$lblUpdateShaAsset.Text = 'Asset SHA:'
+$lblUpdateShaAsset.AutoSize = $true
+$lblUpdateShaAsset.Location = New-Object System.Drawing.Point(400, 726)
+$configGroup.Controls.Add($lblUpdateShaAsset)
+
+$textUpdateShaAsset = New-Object System.Windows.Forms.TextBox
+$textUpdateShaAsset.Location = New-Object System.Drawing.Point(475, 721)
+$textUpdateShaAsset.Width = 200
+$textUpdateShaAsset.Text = $flow.updateShaAssetName
+$configGroup.Controls.Add($textUpdateShaAsset)
+
+$lblUpdateFeed = New-Object System.Windows.Forms.Label
+$lblUpdateFeed.Text = 'Feed URL (opcional):'
+$lblUpdateFeed.AutoSize = $true
+$lblUpdateFeed.Location = New-Object System.Drawing.Point(18, 754)
+$configGroup.Controls.Add($lblUpdateFeed)
+
+$textUpdateFeed = New-Object System.Windows.Forms.TextBox
+$textUpdateFeed.Location = New-Object System.Drawing.Point(155, 749)
+$textUpdateFeed.Width = 682
+$textUpdateFeed.Text = $flow.updateFeedUrl
+$configGroup.Controls.Add($textUpdateFeed)
+
+$lblConfigHelp = New-Object System.Windows.Forms.Label
+$lblConfigHelp.Text = 'Ayuda rapida: cada campo muestra tooltip con su funcion operativa (OAuth, licencia, stack, entorno y updates).'
+$lblConfigHelp.AutoSize = $true
+$lblConfigHelp.Location = New-Object System.Drawing.Point(18, 780)
+$lblConfigHelp.ForeColor = [System.Drawing.Color]::FromArgb(139, 186, 226)
+$configGroup.Controls.Add($lblConfigHelp)
+
+$toolTip.SetToolTip($textMongoUri, 'Conexion principal MongoDB del backend local.')
+$toolTip.SetToolTip($textJwtSecreto, 'Secreto para firmar sesiones JWT del backend.')
+$toolTip.SetToolTip($comboNodeEnv, 'Entorno operativo del backend local.')
+$toolTip.SetToolTip($textPuertoApi, 'Puerto HTTP del backend docente.')
+$toolTip.SetToolTip($textPuertoPortal, 'Puerto HTTP del portal local/dashboard.')
+$toolTip.SetToolTip($textPortalUrl, 'URL publica del portal alumno cloud para publicar resultados.')
+$toolTip.SetToolTip($textPortalAlumnoKey, 'API key con la que backend local se autentica contra portal cloud.')
+$toolTip.SetToolTip($checkPasswordResetEnabled, 'Activa recuperacion segura de contrasena por token.')
+$toolTip.SetToolTip($textPasswordResetUrl, 'Base URL del frontend para enlace de recuperacion (ej. https://portal/reset-password).')
+$toolTip.SetToolTip($checkRequireGoogleOauth, 'Si esta activo, OAuth Google/Classroom es obligatorio para operar.')
+$toolTip.SetToolTip($textGoogleOauthClientId, 'Client ID OAuth de Google para login docente.')
+$toolTip.SetToolTip($textClassroomClientId, 'Client ID de Google Classroom.')
+$toolTip.SetToolTip($textClassroomSecret, 'Client Secret de Google Classroom.')
+$toolTip.SetToolTip($textClassroomRedirect, 'Redirect URI registrada en Google Cloud Console.')
+$toolTip.SetToolTip($checkRequireLicense, 'Bloquea instalacion si no se puede activar licencia.')
+$toolTip.SetToolTip($textLicenciaCuenta, 'Correo de la cuenta titular para vincular soporte y licencia.')
+$toolTip.SetToolTip($comboUpdateChannel, 'Canal de actualizacion automatica a consumir.')
+$toolTip.SetToolTip($textUpdateOwner, 'Owner del repositorio de releases.')
+$toolTip.SetToolTip($textUpdateRepo, 'Nombre del repositorio de releases.')
+$toolTip.SetToolTip($checkUpdateSha, 'Exige verificacion SHA-256 antes de aplicar update.')
 
 $statusPanel = New-Object System.Windows.Forms.Panel
 $statusPanel.Dock = 'Top'
@@ -1041,6 +1285,9 @@ function Run-InstallerFlowUi {
     $flow.codigoActivacion = [string]$textCodigoActivacion.Text
     $flow.mongoUri = [string]$textMongoUri.Text
     $flow.jwtSecreto = [string]$textJwtSecreto.Text
+    $flow.nodeEnv = [string]$comboNodeEnv.SelectedItem
+    $flow.puertoApi = [string]$textPuertoApi.Text
+    $flow.puertoPortal = [string]$textPuertoPortal.Text
     $flow.corsOrigenes = [string]$textCors.Text
     $flow.portalAlumnoUrl = [string]$textPortalUrl.Text
     $flow.portalAlumnoApiKey = [string]$textPortalAlumnoKey.Text
@@ -1057,6 +1304,14 @@ function Run-InstallerFlowUi {
     $flow.notificacionesWebhookUrl = [string]$textWebhookUrl.Text
     $flow.notificacionesWebhookToken = [string]$textWebhookToken.Text
     $flow.requireLicenseActivation = if ($checkRequireLicense.Checked) { '1' } else { '0' }
+    $flow.licenciaAccountEmail = [string]$textLicenciaCuenta.Text
+    $flow.updateChannel = [string]$comboUpdateChannel.SelectedItem
+    $flow.updateOwner = [string]$textUpdateOwner.Text
+    $flow.updateRepo = [string]$textUpdateRepo.Text
+    $flow.updateAssetName = [string]$textUpdateAsset.Text
+    $flow.updateShaAssetName = [string]$textUpdateShaAsset.Text
+    $flow.updateFeedUrl = [string]$textUpdateFeed.Text
+    $flow.updateRequireSha256 = if ($checkUpdateSha.Checked) { '1' } else { '0' }
     $flow.installation = Get-EvaluaProInstallationInfo
     $flow.resolvedMode = Resolve-InstallerMode -RequestedMode $flow.requestedMode -Installation $flow.installation
 
