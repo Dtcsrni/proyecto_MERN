@@ -1,9 +1,9 @@
 name: Auto-Generate Docs
 
 on:
-  push:
-    branches:
-      - "**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
 
 permissions:
   contents: write

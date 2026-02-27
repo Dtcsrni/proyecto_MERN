@@ -1,36 +1,6 @@
 name: CI Backend Module
 
 on:
-  push:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-backend.yml"
-      - "apps/backend/**"
-      - "omr_samples_tv3/**"
-      - "omr_samples_tv3_real/**"
-      - "omr_samples_tv3_real_manual_min/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
-  pull_request:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-backend.yml"
-      - "apps/backend/**"
-      - "omr_samples_tv3/**"
-      - "omr_samples_tv3_real/**"
-      - "omr_samples_tv3_real_manual_min/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
   workflow_dispatch:
 
 concurrency:

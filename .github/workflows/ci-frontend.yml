@@ -1,32 +1,6 @@
 name: CI Frontend Module
 
 on:
-  push:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-frontend.yml"
-      - "apps/frontend/**"
-      - "client/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
-  pull_request:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-frontend.yml"
-      - "apps/frontend/**"
-      - "client/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
   workflow_dispatch:
 
 concurrency:

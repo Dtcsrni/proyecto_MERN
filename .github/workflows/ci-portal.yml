@@ -1,30 +1,6 @@
 name: CI Portal Module
 
 on:
-  push:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-portal.yml"
-      - "apps/portal_alumno_cloud/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
-  pull_request:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-portal.yml"
-      - "apps/portal_alumno_cloud/**"
-      - "scripts/**"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.base.json"
-      - "vitest.base.ts"
-      - "docs/tdd-exclusions-debt.json"
   workflow_dispatch:
 
 concurrency:

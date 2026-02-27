@@ -1,36 +1,6 @@
 name: CI Docs Module
 
 on:
-  push:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-docs.yml"
-      - "docs/**"
-      - "ci/pipeline.contract.md"
-      - "ci/pipeline.matrix.json"
-      - "scripts/docs.mjs"
-      - "scripts/diagramas.mjs"
-      - "scripts/diagramas-render-linux.mjs"
-      - "scripts/diagramas-consistencia.mjs"
-      - "scripts/routes-check.mjs"
-      - "package.json"
-      - "package-lock.json"
-  pull_request:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/ci-docs.yml"
-      - "docs/**"
-      - "ci/pipeline.contract.md"
-      - "ci/pipeline.matrix.json"
-      - "scripts/docs.mjs"
-      - "scripts/diagramas.mjs"
-      - "scripts/diagramas-render-linux.mjs"
-      - "scripts/diagramas-consistencia.mjs"
-      - "scripts/routes-check.mjs"
-      - "package.json"
-      - "package-lock.json"
   workflow_dispatch:
 
 concurrency:
