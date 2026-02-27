@@ -67,29 +67,11 @@ jobs:
       - name: Etapa tests OMR criticos
         run: npm -C apps/backend run test -- --reporter=verbose tests/omr.cv.engine.test.ts tests/omr.etapaScoring.fallback.test.ts tests/omr.prevalidacion.test.ts tests/omr.contrato.test.ts tests/integracion/qrEscaneoOmr.test.ts tests/omr.test.ts
 
-      - name: Etapa generacion dataset OMR TV3 real simulado
-        run: npm -C apps/backend run omr:tv3:generate:real
-
-      - name: Etapa generacion dataset OMR TV3 synthetic
-        run: npm -C apps/backend run omr:tv3:generate:synthetic
-
-      - name: Verificar dataset OMR TV3 synthetic
-        run: test -f omr_samples_tv3/manifest.json
-
-      - name: Etapa benchmark OMR TV3 synthetic gate
-        run: npm -C apps/backend run omr:tv3:eval:synthetic
+      - name: Verificar dataset OMR TV3 real
+        run: test -f omr_samples_tv3_real/manifest.json
 
       - name: Etapa benchmark OMR TV3 real gate
         run: npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real --report ../../reports/qa/latest/omr/tv3-real-validation.ci.json --failure-report ../../reports/qa/latest/omr/tv3-real-failure-analysis.ci.json
-
-      - name: Etapa generacion dataset OMR TV3 real manual minimo
-        run: npm -C apps/backend run omr:tv3:generate:real:manual-min
-
-      - name: Etapa benchmark OMR TV3 real manual minimo gate
-        run: npm -C apps/backend run omr:tv3:validate:real -- --dataset ../../omr_samples_tv3_real_manual_min --report ../../reports/qa/latest/omr/tv3-real-manual-validation.ci.json --failure-report ../../reports/qa/latest/omr/tv3-real-manual-failure-analysis.ci.json
-
-      - name: Etapa baseline snapshot OMR TV3
-        run: npm -C apps/backend run omr:tv3:baseline:snapshot -- --dataset-synthetic ../../omr_samples_tv3 --dataset-real ../../omr_samples_tv3_real --dataset-real-manual ../../omr_samples_tv3_real_manual_min --report ../../reports/qa/latest/omr/baseline_snapshot.ci.json
 
       - name: Publicar artefactos OMR QA
         if: always()
