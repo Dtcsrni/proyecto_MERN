@@ -119,7 +119,7 @@ services:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:4000/api}
+        - VITE_API_BASE_URL=http://localhost:4000/api
         - VITE_APP_DESTINO=docente
     depends_on:
       api_docente_prod:
