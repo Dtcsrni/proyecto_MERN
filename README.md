@@ -84,6 +84,8 @@ Para cotizacion de licencias comerciales, despliegue institucional y soporte, es
 - modalidad (local, hibrido, cloud),
 - requerimientos de cumplimiento y SLA.
 
+Sitio comercial para GitHub Pages (landing de promocion/licencias): `site/`.
+
 <!-- AUTO:COMMERCIAL-CONTEXT:START -->
 ## Contexto Comercial y Soporte
 

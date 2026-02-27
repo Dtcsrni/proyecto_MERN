@@ -47,7 +47,7 @@
     }
     .wrap{height:100%;display:grid;place-items:center;padding:18px;}
     .card{
-      width: 560px;
+      width: 620px;
       border-radius: 22px;
       padding: 18px 18px 16px;
       border: 1px solid rgba(255,255,255,0.18);
@@ -171,6 +171,65 @@
     .pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid rgba(15,23,42,0.10);background:rgba(255,255,255,0.72);}
     .pill strong{font-weight:900;letter-spacing:0.02em;color:rgba(15,23,42,0.92);}
     .mono{font-family:Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;}
+
+    .pipeline{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.10);
+      background: rgba(255,255,255,0.74);
+      display:grid;
+      gap:8px;
+    }
+    .pipeline-title{
+      margin:0;
+      color:rgba(15,23,42,0.90);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:0.01em;
+    }
+    .pipe-list{
+      margin:0;
+      padding:0;
+      list-style:none;
+      display:grid;
+      gap:6px;
+    }
+    .pipe-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:rgba(15,23,42,0.82);
+      font-size:12px;
+    }
+    .pipe-dot{
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      background:rgba(15,23,42,0.16);
+      border:1px solid rgba(15,23,42,0.12);
+    }
+    .pipe-item.active .pipe-dot{
+      background: rgba(37,99,235,0.72);
+      border-color: rgba(37,99,235,0.25);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .pipe-item.done .pipe-dot{
+      background: rgba(34,197,94,0.85);
+      border-color: rgba(34,197,94,0.28);
+    }
+    .pipe-item .pipe-text{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 520px;
+    }
+
+    .hint{
+      margin-top:8px;
+      color:rgba(30,41,59,0.68);
+      font-size:11px;
+    }
   </style>
 </head>
 <body>
@@ -236,6 +295,16 @@
         <div class="status" id="status">Cargando...</div>
       </div>
 
+      <div class="pipeline" id="pipeline" aria-live="polite">
+        <p class="pipeline-title">Progreso de arranque desde acceso directo</p>
+        <ul class="pipe-list">
+          <li class="pipe-item active" id="p1"><span class="pipe-dot"></span><span class="pipe-text">Inicializando runtime local</span></li>
+          <li class="pipe-item" id="p2"><span class="pipe-dot"></span><span class="pipe-text">Validando Docker y stack</span></li>
+          <li class="pipe-item" id="p3"><span class="pipe-dot"></span><span class="pipe-text">Levantando API y portal</span></li>
+          <li class="pipe-item" id="p4"><span class="pipe-dot"></span><span class="pipe-text">Abriendo dashboard</span></li>
+        </ul>
+      </div>
+
       <div class="meta" id="meta">
         <span class="pill"><strong id="metaMode">DEV</strong></span>
         <span class="pill mono" id="metaUrl">http://127.0.0.1:4519/</span>
@@ -258,14 +327,15 @@
           <button class="btn danger" type="button" id="btnClose">Cerrar</button>
         </div>
       </div>
+      <div class="hint" id="hint">Tip: este splash se cierra automaticamente cuando el panel responda.</div>
     </div>
   </div>
 
   <script>
-    window.resizeTo(600, 370);
+    window.resizeTo(660, 470);
     try {
-      var x = (screen.availWidth - 600) / 2;
-      var y = (screen.availHeight - 370) / 2;
+      var x = (screen.availWidth - 660) / 2;
+      var y = (screen.availHeight - 470) / 2;
       window.moveTo(x, y);
     } catch (e) {}
 
@@ -307,15 +377,21 @@
       return dir;
     }
 
-    function httpOk(url) {
+    function httpStatus(url) {
       try {
         var req = new ActiveXObject('WinHttp.WinHttpRequest.5.1');
         req.Open('GET', url, false);
         req.SetTimeouts(300, 300, 300, 700);
         req.Send();
         var st = Number(req.Status);
-        if (st >= 200 && st < 500) return { ok: true, status: st };
-        return { ok: false, status: st };
+        var txt = '';
+        try { txt = String(req.ResponseText || ''); } catch (eTxt) {}
+        var body = null;
+        if (txt) {
+          try { body = JSON.parse(txt); } catch (eJson) {}
+        }
+        if (st >= 200 && st < 500) return { ok: true, status: st, body: body };
+        return { ok: false, status: st, body: body };
       } catch (e) {
         return { ok: false, error: String(e && e.message ? e.message : e) };
       }
@@ -361,6 +437,28 @@
     var noticeBox = document.getElementById('noticeBox');
     var noticeTitle = document.getElementById('noticeTitle');
     var noticeText = document.getElementById('noticeText');
+    var hint = document.getElementById('hint');
+    var pipe = [
+      document.getElementById('p1'),
+      document.getElementById('p2'),
+      document.getElementById('p3'),
+      document.getElementById('p4')
+    ];
+
+    function setPipeState(activeIdx, doneIdx, details) {
+      for (var i = 0; i < pipe.length; i++) {
+        if (!pipe[i]) continue;
+        if (i <= doneIdx) pipe[i].className = 'pipe-item done';
+        else if (i === activeIdx) pipe[i].className = 'pipe-item active';
+        else pipe[i].className = 'pipe-item';
+      }
+      if (details) {
+        try {
+          var textEl = pipe[activeIdx] ? pipe[activeIdx].getElementsByClassName('pipe-text')[0] : null;
+          if (textEl) textEl.innerText = details;
+        } catch (e) {}
+      }
+    }
 
     function setMeta() {
       try {
@@ -394,11 +492,12 @@
         'No hubo respuesta en <code>' + urlStatus + '</code>.<br/>' +
         'Sugerencias: confirma que Docker/servicios esten levantados, y que el puerto <code>' + port + '</code> no este ocupado.<br/>' +
         (detalles ? (detalles + '<br/>') : '') +
-        'Puedes reintentar o abrir la carpeta de logs para ver el detalle.';
+        'Si iniciaste por acceso directo, usa "Reintentar" o revisa logs para diagnostico.';
       errorBox.style.display = 'block';
       status.textContent = 'Sin conexi\u00f3n.';
       try { metaTime.innerText = (elapsedSec()).toFixed(1) + 's'; } catch (e) {}
       for (var i=0;i<dots.length;i++) dots[i].className = 'dot';
+      setPipeState(1, -1, 'Esperando respuesta del stack');
     }
 
     function openDashboard() {
@@ -431,6 +530,7 @@
       subtitle.textContent = 'Preparando dashboard local y verificando servicios...';
       startedAt = new Date().getTime();
       intervalId = setInterval(tick, 650);
+      setPipeState(0, -1, 'Inicializando runtime local');
       poll();
     }
 
@@ -556,13 +656,43 @@
       var now = new Date().getTime();
       attempts = attempts + 1;
       renderStatus();
-      var last = httpOk(urlStatus);
+      var last = httpStatus(urlStatus);
+      if (!last.ok) {
+        setPipeState(1, 0, 'Validando Docker y stack');
+      }
       if (last.ok) {
+        var payload = last.body || {};
+        var dockerState = payload.dockerState || {};
+        var stackState = dockerState.stack || {};
+        var stackDisplay = String(payload.stackDisplay || '');
+        var running = payload.running || [];
+        var isMode = String(mode || '').toLowerCase();
+        var stackRunning = !!stackState.running || stackDisplay.toLowerCase().indexOf('activo') >= 0 || running.indexOf(isMode) >= 0;
+
+        if (String(stackState.state || '') === 'starting' || stackDisplay.toLowerCase().indexOf('iniciando') >= 0) {
+          setPipeState(1, 0, 'Iniciando stack Docker...');
+          baseStatus = 'Levantando stack...';
+        } else if (!stackRunning && String(stackState.state || '') === 'checking') {
+          setPipeState(1, 0, 'Comprobando stack Docker');
+          baseStatus = 'Comprobando stack...';
+        } else if (stackRunning) {
+          setPipeState(2, 1, 'API y portal respondiendo');
+          baseStatus = 'Servicios en linea';
+        } else {
+          setPipeState(1, 0, stackDisplay || 'Validando stack');
+        }
+
+        if (hint) {
+          var dockerTxt = String(payload.dockerDisplay || payload.docker || '');
+          hint.innerText = dockerTxt ? ('Estado Docker: ' + dockerTxt) : 'Esperando validacion de Docker...';
+        }
+
         // El launcher VBS abre el navegador, pero por robustez nos autocerramos.
         try {
           baseStatus = 'Listo. Abriendo portal...';
           for (var i=0;i<dots.length;i++) dots[i].className = 'dot on';
           status.innerText = baseStatus;
+          setPipeState(3, 3, 'Dashboard disponible');
         } catch (e) {}
         setTimeout(function(){
           try { window.close(); } catch (ex) {}
@@ -579,6 +709,7 @@
     // Start polling immediately.
     setMeta();
     renderStatus();
+    setPipeState(0, -1, 'Inicializando runtime local');
     setTimeout(maybeWarnCertificate, 250);
     poll();
   </script>

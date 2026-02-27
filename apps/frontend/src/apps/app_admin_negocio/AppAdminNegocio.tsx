@@ -33,6 +33,17 @@ type Vista =
   | 'cobranza'
   | 'auditoria';
 
+type DashboardResumen = {
+  margenBrutoMinimo?: number;
+  totalTenants?: number;
+  suscripcionesActivas?: number;
+  suscripcionesPastDue?: number;
+  mrrMxn?: number;
+  cobranzaPendienteMxn?: number;
+  conversionTrial?: number;
+  churnMensual?: number;
+};
+
 const VISTAS: Array<{ id: Vista; label: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'tenants', label: 'Tenants' },
@@ -52,6 +63,7 @@ export function AppAdminNegocio() {
   const [data, setData] = useState<unknown>(null);
   const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [resumenDashboard, setResumenDashboard] = useState<DashboardResumen | null>(null);
 
   const [nuevoTenant, setNuevoTenant] = useState({
     tenantId: '',
@@ -156,6 +168,10 @@ export function AppAdminNegocio() {
     try {
       const payload = await clienteAdminNegocioApi.obtener<unknown>(rutas[v]);
       setData(payload);
+      if (v === 'dashboard') {
+        const dashboard = payload as { resumen?: DashboardResumen } | null;
+        if (dashboard?.resumen) setResumenDashboard(dashboard.resumen);
+      }
       setMensaje('');
     } catch (error) {
       setMensaje(clienteAdminNegocioApi.mensajeUsuarioDeError(error, 'No se pudo cargar la vista'));
@@ -163,6 +179,22 @@ export function AppAdminNegocio() {
       setCargando(false);
     }
   }
+
+  async function cargarResumenDashboard() {
+    try {
+      const payload = await clienteAdminNegocioApi.obtener<{ resumen?: DashboardResumen }>('/admin-negocio/dashboard/resumen');
+      if (payload?.resumen) setResumenDashboard(payload.resumen);
+    } catch {
+      // Evitar ruido visual: el resumen principal es complementario al resto del panel.
+    }
+  }
+
+  const formatearMoneda = useCallback((valor: number | undefined) => {
+    const numero = Number(valor || 0);
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(numero);
+  }, []);
+
+  const formatearPct = useCallback((valor: number | undefined) => `${(Number(valor || 0) * 100).toFixed(1)}%`, []);
 
   async function crearTenant() {
     try {
@@ -358,6 +390,11 @@ export function AppAdminNegocio() {
   }, [vista, puedeVer]);
 
   useEffect(() => {
+    if (!puedeVer) return;
+    void cargarResumenDashboard();
+  }, [puedeVer]);
+
+  useEffect(() => {
     if (vista !== 'plantillas_notificacion') return;
     if (plantillasNotificacion.length === 0) {
       if (plantillaSeleccionadaId) setPlantillaSeleccionadaId('');
@@ -386,13 +423,89 @@ export function AppAdminNegocio() {
         </div>
       ) : (
         <>
+          <div className="subpanel superadmin-overview">
+            <div className="superadmin-overview__head">
+              <div>
+                <h3>Control Maestro Superadmin</h3>
+                <p className="nota">
+                  Esta vista amplía el dashboard operativo con poderes comerciales, licenciamiento, cobranza y auditoría.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="chip"
+                onClick={() => {
+                  void cargarResumenDashboard();
+                  void cargarVistaActual(vista);
+                }}
+              >
+                Actualizar todo
+              </button>
+            </div>
+            <div className="superadmin-kpis">
+              <article className="superadmin-kpi">
+                <span>Tenants</span>
+                <b>{resumenDashboard?.totalTenants ?? 0}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Suscripciones activas</span>
+                <b>{resumenDashboard?.suscripcionesActivas ?? 0}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Past due</span>
+                <b>{resumenDashboard?.suscripcionesPastDue ?? 0}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>MRR</span>
+                <b>{formatearMoneda(resumenDashboard?.mrrMxn)}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Cobranza pendiente</span>
+                <b>{formatearMoneda(resumenDashboard?.cobranzaPendienteMxn)}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Conversión trial</span>
+                <b>{formatearPct(resumenDashboard?.conversionTrial)}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Churn mensual</span>
+                <b>{formatearPct(resumenDashboard?.churnMensual)}</b>
+              </article>
+              <article className="superadmin-kpi">
+                <span>Margen bruto mínimo</span>
+                <b>{formatearPct(resumenDashboard?.margenBrutoMinimo)}</b>
+              </article>
+            </div>
+            <div className="acciones acciones--mt">
+              <button type="button" className="chip" onClick={() => setVista('dashboard')}>
+                Vista ejecutiva
+              </button>
+              <button type="button" className="chip" onClick={() => setVista('licencias')}>
+                Poder: licencias
+              </button>
+              <button type="button" className="chip" onClick={() => setVista('cobranza')}>
+                Poder: cobranza
+              </button>
+              <button type="button" className="chip" onClick={() => setVista('auditoria')}>
+                Poder: auditoría
+              </button>
+            </div>
+          </div>
+
           <div className="acciones acciones--mt">
             {VISTAS.map((item) => (
               <button key={item.id} type="button" className="chip" disabled={cargando} onClick={() => setVista(item.id)}>
                 {item.label}
               </button>
             ))}
-            <button type="button" className="chip" onClick={() => void cargarVistaActual(vista)}>
+            <button
+              type="button"
+              className="chip"
+              onClick={() => {
+                void cargarVistaActual(vista);
+                void cargarResumenDashboard();
+              }}
+            >
               Recargar
             </button>
           </div>

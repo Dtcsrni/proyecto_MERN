@@ -88,6 +88,38 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
     setMensaje('No existe una cuenta para ese correo. Completa tus datos para registrarte.');
   }
 
+  function invitarARegistrarDesdeGoogle(credential: string) {
+    const payload = decodificarPayloadJwt(credential);
+    const correoGoogle = typeof payload?.email === 'string' ? payload.email : '';
+    const nombreCompletoGoogle = typeof payload?.name === 'string' ? payload.name : '';
+    const nombreGoogle = typeof payload?.given_name === 'string' ? payload.given_name : '';
+    const apellidoGoogle = typeof payload?.family_name === 'string' ? payload.family_name : '';
+
+    setModo('registrar');
+    setMostrarFormularioRegistrar(false);
+    setCredentialRegistroGoogle(credential);
+    setCrearContrasenaAhora(false);
+    setContrasena('');
+    setCorreo(correoGoogle);
+
+    if (nombreGoogle) setNombres(nombreGoogle);
+    if (apellidoGoogle) setApellidos(apellidoGoogle);
+    if (!nombreGoogle && !apellidoGoogle && nombreCompletoGoogle) {
+      const partes = nombreCompletoGoogle
+        .split(' ')
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (partes.length >= 2) {
+        setNombres(partes.slice(0, -1).join(' '));
+        setApellidos(partes.slice(-1).join(' '));
+      } else if (partes.length === 1) {
+        setNombres(partes[0]);
+      }
+    }
+
+    setMensaje('No existe una cuenta para ese correo. Completa tus datos para registrarte.');
+  }
+
   function iniciarCooldown(ms: number) {
     const duracion = Math.max(1000, ms);
     const restante = Math.ceil(duracion / 1000);
@@ -138,6 +170,9 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
 
       const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
       const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
+      if (esNoRegistrado) {
+        invitarARegistrar();
+      }
 
       emitToast({
         level: 'error',
@@ -145,7 +180,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         message: msg,
         durationMs: 5200,
         action: esNoRegistrado
-          ? { label: 'Registrar', onClick: invitarARegistrar }
+          ? undefined
           : accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('login', false);
@@ -183,6 +218,9 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
 
       const codigo = error instanceof ErrorRemoto ? error.detalle?.codigo : undefined;
       const esNoRegistrado = typeof codigo === 'string' && codigo.toUpperCase() === 'DOCENTE_NO_REGISTRADO';
+      if (esNoRegistrado) {
+        invitarARegistrarDesdeGoogle(credential);
+      }
 
       emitToast({
         level: 'error',
@@ -190,7 +228,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         message: msg,
         durationMs: 5200,
         action: esNoRegistrado
-          ? { label: 'Registrar', onClick: () => setModo('registrar') }
+          ? undefined
           : accionToastSesionParaError(error, 'docente')
       });
       registrarAccionDocente('login_google', false);
@@ -314,13 +352,18 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
     : Boolean(nombres.trim() && apellidos.trim() && correo.trim() && contrasena.trim());
 
   return (
-    <div className="auth-grid">
+    <div className="auth-grid auth-grid--docente">
       <div className="auth-hero">
         <p className="eyebrow">Acceso</p>
         <h2>
           <Icono nombre="docente" /> Acceso docente
         </h2>
         <p className="auth-subtitulo">Entra al banco, examenes y calificacion.</p>
+        <div className="auth-hero-stats" aria-label="Estado de plataforma">
+          <span>Sesion segura</span>
+          <span>Flujo guiado</span>
+          <span>Soporte Google</span>
+        </div>
         <ul className="auth-beneficios" aria-label="Beneficios">
           <li>
             <Icono nombre="ok" /> Sesion persistente segura (refresh token httpOnly).
@@ -344,9 +387,13 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         </div>
       </div>
 
-      <div className="auth-form">
+      <div className={`auth-form ${modo === 'ingresar' ? 'auth-form--ingresar' : 'auth-form--registrar'}`}>
+        <div className="auth-form-head">
+          <p className="eyebrow">{modo === 'ingresar' ? 'Iniciar sesion' : 'Crear cuenta'}</p>
+          <h3>{modo === 'ingresar' ? 'Bienvenido de nuevo' : 'Registro docente'}</h3>
+        </div>
         {modo === 'registrar' && (
-          <div className="panel" aria-label="Ayuda de registro">
+          <div className="panel auth-panel" aria-label="Ayuda de registro">
             <p className="nota">
               Para registrar tu cuenta completa <b>nombres</b>, <b>apellidos</b> y <b>correo</b>. La contrasena requiere minimo 8 caracteres.
             </p>
@@ -363,7 +410,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
           </InlineMensaje>
         )}
         {googleDisponible && modo === 'ingresar' && (
-          <div className="auth-google auth-google--mb">
+          <div className="auth-google auth-google--mb auth-panel">
             <GoogleLogin
               onSuccess={(cred) => {
                 const token = cred.credential;
@@ -407,7 +454,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
             </div>
 
             {mostrarRecuperar && (
-              <div className="panel mt-10">
+              <div className="panel mt-10 auth-panel auth-panel--inset">
                 <p className="nota">Si tu cuenta tiene Google vinculado, puedes establecer una nueva contrasena.</p>
                 {dominiosPermitidos.length > 0 && (
                   <p className="nota nota--mt">Solo se permiten: {politicaDominiosTexto}</p>
@@ -450,9 +497,9 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
           </div>
         )}
 
-        <div className="acciones">
+        <div className="acciones auth-tabs">
           <button
-            className={modo === 'ingresar' ? 'boton' : 'boton secundario'}
+            className={modo === 'ingresar' ? 'boton auth-tab auth-tab--activo' : 'boton secundario auth-tab'}
             type="button"
             onClick={() => {
               setModo('ingresar');
@@ -467,7 +514,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
             Ingresar
           </button>
           <button
-            className={modo === 'registrar' ? 'boton' : 'boton secundario'}
+            className={modo === 'registrar' ? 'boton auth-tab auth-tab--activo' : 'boton secundario auth-tab'}
             type="button"
             onClick={() => {
               setModo('registrar');
@@ -483,7 +530,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         </div>
 
         {googleDisponible && modo === 'registrar' && !mostrarFormularioRegistrar && (
-          <div className="auth-google auth-google--mb">
+          <div className="auth-google auth-google--mb auth-panel">
             <GoogleLogin
               onSuccess={(cred) => {
                 const token = cred.credential;
@@ -572,7 +619,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         )}
 
         {googleDisponible && modo === 'registrar' && mostrarFormularioRegistrar && (
-          <div className="panel">
+          <div className="panel auth-panel auth-panel--inset">
             <p className="nota">
               Registro por formulario (fallback). Recomendado: usa Google para correo institucional.
             </p>
@@ -593,7 +640,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
 
         {modo === 'registrar' && mostrarFormulario && (
           <>
-            <label className="campo">
+            <label className="campo auth-campo">
               Nombres
               <input
                 value={nombres}
@@ -602,7 +649,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
                 placeholder="Ej. Juan Carlos"
               />
             </label>
-            <label className="campo">
+            <label className="campo auth-campo">
               Apellidos
               <input
                 value={apellidos}
@@ -615,7 +662,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         )}
 
         {mostrarFormulario && (
-          <label className="campo">
+          <label className="campo auth-campo">
             Correo
             <input
               type="email"
@@ -629,7 +676,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         )}
 
         {modo === 'registrar' && credentialRegistroGoogle && mostrarFormulario && (
-          <label className="campo">
+          <label className="campo auth-campo">
             Crear contrasena ahora (opcional)
             <span className="ayuda">Si no, podras definirla luego desde Cuenta.</span>
             <input
@@ -644,7 +691,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         )}
 
         {mostrarFormulario && (modo === 'ingresar' || !credentialRegistroGoogle || crearContrasenaAhora) && (
-          <label className="campo">
+          <label className="campo auth-campo">
             Contrasena
             {modo === 'ingresar' ? (
               <input
@@ -668,7 +715,7 @@ export function SeccionAutenticacion({ onIngresar }: { onIngresar: (token: strin
         )}
 
         {mostrarFormulario && (
-          <div className="acciones">
+          <div className="acciones auth-submit">
               <Boton
                 type="button"
                 icono={<Icono nombre={modo === 'ingresar' ? 'entrar' : 'nuevo'} />}
