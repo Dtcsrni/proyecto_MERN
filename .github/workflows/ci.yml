@@ -151,6 +151,12 @@ jobs:
       - name: Etapa dataset-prodlike-check
         run: npm run test:dataset-prodlike:ci
 
+      - name: Etapa generacion dataset OMR TV3 real (extendido)
+        run: npm -C apps/backend run omr:tv3:generate:real
+
+      - name: Verificar dataset OMR TV3 real (extendido)
+        run: test -f omr_samples_tv3_real/manifest.json
+
       - name: Etapa omr-tv3-extended-gate
         run: npm run test:omr:tv3:gate:ci
 
