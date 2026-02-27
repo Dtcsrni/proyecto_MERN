@@ -12,6 +12,9 @@ concurrency:
   group: ci-installer-windows-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   installer_windows:
     name: Installer Windows (MSI + Bundle)
@@ -52,15 +55,45 @@ jobs:
       - name: Etapa policy-check WiX
         run: npm run test:wix:policy
 
+      - name: Etapa contract-check Installer Hub
+        run: npm run test:installer-hub:contract
+
       - name: Etapa build MSI + Bundle
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1 -SkipStabilityChecks -IncludeBundle
+
+      - name: Etapa build Installer Hub EXE
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer-hub.ps1
+
+      - name: Etapa hash/manifest de release instalador
+        shell: powershell
+        run: |
+          $isTag = "${{ startsWith(github.ref, 'refs/tags/v') }}" -eq "true"
+          if ($isTag) {
+            $tag = "${{ github.ref_name }}"
+            $base = "https://github.com/${{ github.repository }}/releases/download/$tag"
+            powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-installer-hashes.ps1 -MsiUrl "$base/EvaluaPro.msi" -MsiSha256Url "$base/EvaluaPro.msi.sha256"
+          } else {
+            powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-installer-hashes.ps1
+          }
+
+      - name: Etapa signing gate (opcional)
+        shell: powershell
+        env:
+          EVALUAPRO_SIGN_CERT_BASE64: ${{ secrets.EVALUAPRO_SIGN_CERT_BASE64 }}
+          EVALUAPRO_SIGN_CERT_PASSWORD: ${{ secrets.EVALUAPRO_SIGN_CERT_PASSWORD }}
+          EVALUAPRO_SIGN_TIMESTAMP_URL: ${{ secrets.EVALUAPRO_SIGN_TIMESTAMP_URL }}
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sign-installer-artifacts.ps1
 
       - name: Verificar artefactos
         shell: powershell
         run: |
           if (-not (Test-Path "dist/installer/EvaluaPro.msi")) { throw "No existe dist/installer/EvaluaPro.msi" }
           if (-not (Test-Path "dist/installer/EvaluaPro-Setup.exe")) { throw "No existe dist/installer/EvaluaPro-Setup.exe" }
+          if (-not (Test-Path "dist/installer/EvaluaPro-InstallerHub.exe")) { throw "No existe dist/installer/EvaluaPro-InstallerHub.exe" }
+          if (-not (Test-Path "dist/installer/EvaluaPro.msi.sha256")) { throw "No existe dist/installer/EvaluaPro.msi.sha256" }
+          if (-not (Test-Path "dist/installer/EvaluaPro-release-manifest.json")) { throw "No existe dist/installer/EvaluaPro-release-manifest.json" }
 
       - name: Publicar artefactos instalador
         uses: actions/upload-artifact@v4
@@ -68,5 +101,23 @@ jobs:
           name: installer-windows
           path: |
             dist/installer/EvaluaPro.msi
+            dist/installer/EvaluaPro.msi.sha256
             dist/installer/EvaluaPro-Setup.exe
+            dist/installer/EvaluaPro-InstallerHub.exe
+            dist/installer/EvaluaPro-InstallerHub.exe.sha256
+            dist/installer/EvaluaPro-release-manifest.json
+            dist/installer/SIGNING-NOT-PRODUCTION.txt
             dist/installer/*.wixpdb
+
+      - name: Publicar release assets (tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/installer/EvaluaPro.msi
+            dist/installer/EvaluaPro.msi.sha256
+            dist/installer/EvaluaPro-Setup.exe
+            dist/installer/EvaluaPro-InstallerHub.exe
+            dist/installer/EvaluaPro-InstallerHub.exe.sha256
+            dist/installer/EvaluaPro-release-manifest.json
+            dist/installer/SIGNING-NOT-PRODUCTION.txt
