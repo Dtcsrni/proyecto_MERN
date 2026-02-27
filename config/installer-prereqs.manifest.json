@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "prerequisites": [
+    {
+      "name": "Node.js",
+      "version": "24.x",
+      "downloadUrl": "https://nodejs.org/dist/latest-v24.x/node-v24.11.1-x64.msi",
+      "sha256": "DYNAMIC_FROM_URL",
+      "sha256Url": "https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt",
+      "sha256Pattern": "node-v24.11.1-x64.msi",
+      "silentArgs": "/qn /norestart",
+      "detectRule": {
+        "type": "node_major",
+        "minMajor": 24
+      }
+    },
+    {
+      "name": "Docker Desktop",
+      "version": "stable",
+      "downloadUrl": "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe",
+      "sha256": "DYNAMIC_FROM_URL",
+      "sha256Url": "https://desktop.docker.com/win/main/amd64/checksums.txt",
+      "sha256Pattern": "Docker Desktop Installer.exe",
+      "silentArgs": "install --quiet --accept-license",
+      "detectRule": {
+        "type": "docker_desktop"
+      }
+    }
+  ]
+}

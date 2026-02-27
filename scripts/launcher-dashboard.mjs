@@ -247,7 +247,7 @@ function readUpdateConfig() {
   const defaults = {
     owner: 'Dtcsrni',
     repo: 'EvaluaPro_Sistema_Universitario',
-    channel: 'beta+stable',
+    channel: 'stable',
     assetName: 'EvaluaPro-Setup.exe',
     sha256AssetName: 'EvaluaPro-Setup.exe.sha256',
     requireSha256: false,

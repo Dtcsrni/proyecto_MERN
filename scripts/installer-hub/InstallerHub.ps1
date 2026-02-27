@@ -1,0 +1,730 @@
+param(
+  [ValidateSet('auto', 'install', 'repair', 'uninstall')]
+  [string]$Mode = 'auto',
+  [string]$InstallDir = '',
+  [string]$RepoOwner = 'Dtcsrni',
+  [string]$RepoName = 'EvaluaPro_Sistema_Universitario',
+  [switch]$Headless,
+  [switch]$NoElevation
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$moduleCandidates = @(
+  (Join-Path $scriptRoot 'modules'),
+  $scriptRoot
+)
+$modulesPath = $moduleCandidates | Where-Object {
+  Test-Path (Join-Path $_ 'Common.psm1')
+} | Select-Object -First 1
+
+if (-not $modulesPath) {
+  throw 'No se encontro carpeta de modulos del Installer Hub.'
+}
+
+Import-Module (Join-Path $modulesPath 'Common.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'PrereqDetector.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'PrereqInstaller.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'ReleaseResolver.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'ProductInstaller.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'PostInstallVerifier.psm1') -Force -Global -DisableNameChecking
+
+if (-not $NoElevation) {
+  $shouldContinue = Ensure-ElevatedSession -ScriptPath $MyInvocation.MyCommand.Path -PassthroughArgs $args
+  if (-not $shouldContinue) {
+    exit 0
+  }
+}
+
+if (-not $InstallDir) {
+  $InstallDir = Join-Path ${env:ProgramFiles} 'EvaluaPro'
+}
+
+$manifestCandidates = @(
+  (Join-Path $scriptRoot 'installer-prereqs.manifest.json'),
+  (Join-Path $scriptRoot 'config\installer-prereqs.manifest.json'),
+  (Join-Path (Split-Path -Parent $scriptRoot) 'config\installer-prereqs.manifest.json'),
+  (Join-Path (Split-Path -Parent (Split-Path -Parent $scriptRoot)) 'config\installer-prereqs.manifest.json')
+)
+$prereqManifestPath = $manifestCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $prereqManifestPath) {
+  throw 'No se encontro config/installer-prereqs.manifest.json.'
+}
+
+$logContext = New-InstallerHubLogContext
+$tempRoot = Join-Path $env:TEMP ('EvaluaProInstallerHub-' + $logContext.SessionId)
+New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+function New-FlowState {
+  $installation = Get-EvaluaProInstallationInfo
+  $resolvedMode = Resolve-InstallerMode -RequestedMode $Mode -Installation $installation
+
+  return [pscustomobject]@{
+    requestedMode = $Mode
+    resolvedMode = $resolvedMode
+    installation = $installation
+    installDir = $InstallDir
+    repoOwner = $RepoOwner
+    repoName = $RepoName
+    internetOk = $false
+    requirementReport = $null
+    prereqManifest = $null
+    prereqResult = $null
+    release = $null
+    msiPackage = $null
+    productAction = $null
+    postVerify = $null
+    exitCode = 0
+    lastPhase = ''
+    failureMessage = ''
+    rebootRequired = $false
+    logPath = $logContext.FilePath
+    tempRoot = $tempRoot
+  }
+}
+
+$flow = New-FlowState
+
+function Invoke-FlowLog {
+  param(
+    [string]$Level,
+    [string]$Message,
+    [hashtable]$Meta
+  )
+
+  Write-InstallerHubLog -Context $logContext -Level $Level -Message $Message -Meta $Meta
+}
+
+function Invoke-FlowPhase {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Name,
+    [Parameter(Mandatory = $true)]
+    [int]$FailCode,
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$Action
+  )
+
+  $flow.lastPhase = $Name
+  Invoke-FlowLog -Level 'info' -Message ("Fase iniciada: $Name")
+
+  try {
+    & $Action
+    Invoke-FlowLog -Level 'ok' -Message ("Fase completada: $Name")
+  } catch {
+    $flow.exitCode = $FailCode
+    $flow.failureMessage = $_.Exception.Message
+    Invoke-FlowLog -Level 'error' -Message ("Fase fallida: $Name") -Meta @{ error = $_.Exception.Message; failCode = $FailCode }
+    throw
+  }
+}
+
+function Invoke-InstallerFlowCore {
+  param(
+    [scriptblock]$OnUiLog,
+    [scriptblock]$OnStepUpdate
+  )
+
+  $flow.prereqManifest = Read-PrereqManifest -ManifestPath $prereqManifestPath
+
+  Invoke-FlowPhase -Name 'analisis_requisitos' -FailCode 10 -Action {
+    if ($OnStepUpdate) { & $OnStepUpdate 2 'running' 'Analizando requisitos del equipo...' }
+    $flow.internetOk = Test-InstallerHubInternet
+    $flow.requirementReport = Get-SystemRequirementReport -InstallPath $flow.installDir -MinDiskGb 6 -InternetOk $flow.internetOk
+
+    if (-not $flow.requirementReport.IsReadyForFlow) {
+      $joined = ($flow.requirementReport.Issues -join ' | ')
+      throw "Requisitos no cumplidos: $joined"
+    }
+
+    if ($OnUiLog) {
+      & $OnUiLog 'ok' ("Requisitos OK. Node detectado: $($flow.requirementReport.NodeMajor). Docker detectado: $($flow.requirementReport.DockerOk)")
+    }
+    if ($OnStepUpdate) { & $OnStepUpdate 2 'done' 'Requisitos verificados.' }
+  }
+
+  Invoke-FlowPhase -Name 'carpeta_recursos' -FailCode 10 -Action {
+    if ($OnStepUpdate) { & $OnStepUpdate 3 'running' 'Validando carpeta de instalacion...' }
+
+    if ([string]::IsNullOrWhiteSpace($flow.installDir)) {
+      throw 'La carpeta de instalacion esta vacia.'
+    }
+
+    if ($flow.resolvedMode -ne 'uninstall') {
+      if (-not (Test-Path $flow.installDir)) {
+        New-Item -ItemType Directory -Path $flow.installDir -Force | Out-Null
+      }
+    }
+
+    if ($OnUiLog) {
+      & $OnUiLog 'info' ("Carpeta objetivo: $($flow.installDir)")
+    }
+
+    if ($OnStepUpdate) { & $OnStepUpdate 3 'done' 'Carpeta validada.' }
+  }
+
+  if ($flow.resolvedMode -ne 'uninstall') {
+    Invoke-FlowPhase -Name 'prerequisitos' -FailCode 10 -Action {
+      if ($OnStepUpdate) { & $OnStepUpdate 4 'running' 'Instalando prerequisitos faltantes...' }
+
+      $downloadRoot = Join-Path $flow.tempRoot 'prereqs'
+      $flow.prereqResult = Invoke-PrerequisiteInstallationFlow -Manifest $flow.prereqManifest -DownloadRoot $downloadRoot -OnLog {
+        param($lvl, $msg)
+        if ($OnUiLog) { & $OnUiLog $lvl $msg }
+      }
+
+      $remaining = @($flow.prereqResult.missing)
+      if ($remaining.Count -gt 0) {
+        $names = ($remaining | ForEach-Object { $_.name }) -join ', '
+        throw "Persisten prerequisitos faltantes: $names"
+      }
+
+      if ($OnStepUpdate) { & $OnStepUpdate 4 'done' 'Prerequisitos completos.' }
+    }
+
+    Invoke-FlowPhase -Name 'release_estable' -FailCode 20 -Action {
+      if ($OnStepUpdate) { & $OnStepUpdate 5 'running' 'Resolviendo release estable y MSI...' }
+
+      $flow.release = Get-LatestStableReleaseAssets -Owner $flow.repoOwner -Repo $flow.repoName -OnLog {
+        param($lvl, $msg)
+        if ($OnUiLog) { & $OnUiLog $lvl $msg }
+      }
+
+      $downloadRoot = Join-Path $flow.tempRoot 'release'
+      $flow.msiPackage = Download-VerifiedMsiPackage -Release $flow.release -DestinationDir $downloadRoot -OnLog {
+        param($lvl, $msg)
+        if ($OnUiLog) { & $OnUiLog $lvl $msg }
+      }
+
+      if ($OnUiLog) {
+        & $OnUiLog 'ok' ("MSI listo: $($flow.msiPackage.msiPath)")
+      }
+
+      if ($OnStepUpdate) { & $OnStepUpdate 5 'done' 'Release estable verificada.' }
+    }
+  } else {
+    if ($OnStepUpdate) {
+      & $OnStepUpdate 4 'done' 'Prerequisitos omitidos en desinstalacion.'
+      & $OnStepUpdate 5 'done' 'Descarga MSI omitida en desinstalacion.'
+    }
+  }
+
+  Invoke-FlowPhase -Name 'accion_producto' -FailCode 30 -Action {
+    if ($OnStepUpdate) { & $OnStepUpdate 6 'running' 'Ejecutando instalacion/reparacion/desinstalacion...' }
+
+    $cleanup = $false
+    if (Get-Variable -Name uiCleanupCheckbox -Scope Script -ErrorAction SilentlyContinue) {
+      $cleanup = [bool]$script:uiCleanupCheckbox.Checked
+    }
+
+    $msiPath = ''
+    if ($flow.msiPackage) { $msiPath = [string]$flow.msiPackage.msiPath }
+
+    $flow.productAction = Invoke-EvaluaProProductAction `
+      -Mode $flow.resolvedMode `
+      -MsiPath $msiPath `
+      -ProductCode ([string]$flow.installation.ProductCode) `
+      -InstallDir $flow.installDir `
+      -CleanupData $cleanup `
+      -OnLog {
+        param($lvl, $msg)
+        if ($OnUiLog) { & $OnUiLog $lvl $msg }
+      }
+
+    $flow.rebootRequired = [bool]$flow.productAction.rebootRequired
+    if ($OnStepUpdate) { & $OnStepUpdate 6 'done' 'Accion de producto finalizada.' }
+  }
+
+  Invoke-FlowPhase -Name 'verificacion_final' -FailCode 40 -Action {
+    if ($OnStepUpdate) { & $OnStepUpdate 7 'running' 'Validando estado final del sistema...' }
+
+    $flow.postVerify = Invoke-PostInstallVerification -Mode $flow.resolvedMode -InstallDir $flow.installDir -OnLog {
+      param($lvl, $msg)
+      if ($OnUiLog) { & $OnUiLog $lvl $msg }
+    }
+
+    if (-not $flow.postVerify.ok) {
+      $joined = ($flow.postVerify.issues -join ' | ')
+      throw "Verificacion final fallo: $joined"
+    }
+
+    if ($OnStepUpdate) { & $OnStepUpdate 7 'done' 'Verificacion completada.' }
+  }
+
+  $flow.exitCode = 0
+  if ($OnStepUpdate) { & $OnStepUpdate 8 'done' 'Proceso completado.' }
+}
+
+function Invoke-HeadlessFlow {
+  Invoke-FlowLog -Level 'system' -Message 'Ejecucion en modo headless iniciada.'
+  try {
+    Invoke-InstallerFlowCore
+    $result = [pscustomobject]@{
+      ok = $true
+      exitCode = 0
+      mode = $flow.resolvedMode
+      rebootRequired = $flow.rebootRequired
+      logPath = $flow.logPath
+      message = 'Installer Hub completado.'
+    }
+    $result | ConvertTo-Json -Depth 6
+    exit 0
+  } catch {
+    $code = if ($flow.exitCode -gt 0) { $flow.exitCode } else { 1 }
+    $result = [pscustomobject]@{
+      ok = $false
+      exitCode = $code
+      mode = $flow.resolvedMode
+      logPath = $flow.logPath
+      phase = $flow.lastPhase
+      message = $_.Exception.Message
+    }
+    $result | ConvertTo-Json -Depth 6
+    exit $code
+  }
+}
+
+if ($Headless) {
+  Invoke-HeadlessFlow
+  return
+}
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = 'EvaluaPro Installer Hub'
+$form.StartPosition = 'CenterScreen'
+$form.Width = 1120
+$form.Height = 760
+$form.MinimumSize = New-Object System.Drawing.Size(1020, 700)
+$form.BackColor = [System.Drawing.Color]::FromArgb(18, 26, 46)
+$form.ForeColor = [System.Drawing.Color]::White
+$form.Font = New-Object System.Drawing.Font('Segoe UI', 10)
+
+$headerPanel = New-Object System.Windows.Forms.Panel
+$headerPanel.Dock = 'Top'
+$headerPanel.Height = 88
+$headerPanel.BackColor = [System.Drawing.Color]::FromArgb(7, 18, 40)
+$form.Controls.Add($headerPanel)
+
+$titleLabel = New-Object System.Windows.Forms.Label
+$titleLabel.Text = 'EvaluaPro Installer Hub'
+$titleLabel.AutoSize = $true
+$titleLabel.Font = New-Object System.Drawing.Font('Segoe UI', 20, [System.Drawing.FontStyle]::Bold)
+$titleLabel.ForeColor = [System.Drawing.Color]::FromArgb(214, 241, 255)
+$titleLabel.Location = New-Object System.Drawing.Point(24, 18)
+$headerPanel.Controls.Add($titleLabel)
+
+$subtitleLabel = New-Object System.Windows.Forms.Label
+$subtitleLabel.Text = 'Instalacion desde cero, reparacion y desinstalacion con validaciones automaticas.'
+$subtitleLabel.AutoSize = $true
+$subtitleLabel.Font = New-Object System.Drawing.Font('Segoe UI', 10)
+$subtitleLabel.ForeColor = [System.Drawing.Color]::FromArgb(148, 183, 216)
+$subtitleLabel.Location = New-Object System.Drawing.Point(28, 56)
+$headerPanel.Controls.Add($subtitleLabel)
+
+$mainPanel = New-Object System.Windows.Forms.Panel
+$mainPanel.Dock = 'Fill'
+$mainPanel.Padding = New-Object System.Windows.Forms.Padding(14)
+$form.Controls.Add($mainPanel)
+
+$leftPanel = New-Object System.Windows.Forms.Panel
+$leftPanel.Width = 280
+$leftPanel.Dock = 'Left'
+$leftPanel.Padding = New-Object System.Windows.Forms.Padding(0, 0, 12, 0)
+$mainPanel.Controls.Add($leftPanel)
+
+$stepsTitle = New-Object System.Windows.Forms.Label
+$stepsTitle.Text = 'Fases del proceso'
+$stepsTitle.AutoSize = $true
+$stepsTitle.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 11)
+$stepsTitle.ForeColor = [System.Drawing.Color]::FromArgb(201, 230, 255)
+$stepsTitle.Location = New-Object System.Drawing.Point(2, 2)
+$leftPanel.Controls.Add($stepsTitle)
+
+$stepsList = New-Object System.Windows.Forms.ListBox
+$stepsList.Location = New-Object System.Drawing.Point(0, 30)
+$stepsList.Size = New-Object System.Drawing.Size(260, 540)
+$stepsList.BackColor = [System.Drawing.Color]::FromArgb(13, 33, 56)
+$stepsList.ForeColor = [System.Drawing.Color]::FromArgb(225, 238, 252)
+$stepsList.BorderStyle = 'FixedSingle'
+$leftPanel.Controls.Add($stepsList)
+
+$stepItems = @(
+  '[ ] 1. Splash introductorio',
+  '[ ] 2. Modo instalacion/reparacion/desinstalacion',
+  '[ ] 3. Analisis de requisitos de equipo',
+  '[ ] 4. Carpeta y recursos requeridos',
+  '[ ] 5. Prerequisitos Node y Docker',
+  '[ ] 6. Descarga release estable + hash MSI',
+  '[ ] 7. Ejecucion de accion MSI',
+  '[ ] 8. Verificacion final'
+)
+$stepItems | ForEach-Object { [void]$stepsList.Items.Add($_) }
+$stepsList.SelectedIndex = 0
+
+$rightPanel = New-Object System.Windows.Forms.Panel
+$rightPanel.Dock = 'Fill'
+$mainPanel.Controls.Add($rightPanel)
+
+$configGroup = New-Object System.Windows.Forms.GroupBox
+$configGroup.Text = 'Configuracion de ejecucion'
+$configGroup.Dock = 'Top'
+$configGroup.Height = 190
+$configGroup.ForeColor = [System.Drawing.Color]::FromArgb(208, 230, 255)
+$configGroup.BackColor = [System.Drawing.Color]::FromArgb(10, 25, 45)
+$rightPanel.Controls.Add($configGroup)
+
+$lblMode = New-Object System.Windows.Forms.Label
+$lblMode.Text = 'Modo:'
+$lblMode.AutoSize = $true
+$lblMode.Location = New-Object System.Drawing.Point(18, 34)
+$configGroup.Controls.Add($lblMode)
+
+$comboMode = New-Object System.Windows.Forms.ComboBox
+$comboMode.DropDownStyle = 'DropDownList'
+$comboMode.Location = New-Object System.Drawing.Point(130, 30)
+$comboMode.Width = 230
+[void]$comboMode.Items.Add('auto')
+[void]$comboMode.Items.Add('install')
+[void]$comboMode.Items.Add('repair')
+[void]$comboMode.Items.Add('uninstall')
+$comboMode.SelectedItem = $flow.resolvedMode
+$configGroup.Controls.Add($comboMode)
+
+$lblInstallPath = New-Object System.Windows.Forms.Label
+$lblInstallPath.Text = 'Carpeta destino:'
+$lblInstallPath.AutoSize = $true
+$lblInstallPath.Location = New-Object System.Drawing.Point(18, 75)
+$configGroup.Controls.Add($lblInstallPath)
+
+$textInstallPath = New-Object System.Windows.Forms.TextBox
+$textInstallPath.Location = New-Object System.Drawing.Point(130, 70)
+$textInstallPath.Width = 600
+$textInstallPath.Text = $flow.installDir
+$configGroup.Controls.Add($textInstallPath)
+
+$btnBrowse = New-Object System.Windows.Forms.Button
+$btnBrowse.Text = 'Explorar'
+$btnBrowse.Location = New-Object System.Drawing.Point(742, 67)
+$btnBrowse.Width = 95
+$configGroup.Controls.Add($btnBrowse)
+
+$script:uiCleanupCheckbox = New-Object System.Windows.Forms.CheckBox
+$script:uiCleanupCheckbox.Text = 'Desinstalacion con limpieza total de datos residuales'
+$script:uiCleanupCheckbox.AutoSize = $true
+$script:uiCleanupCheckbox.Location = New-Object System.Drawing.Point(130, 110)
+$script:uiCleanupCheckbox.Checked = $false
+$configGroup.Controls.Add($script:uiCleanupCheckbox)
+
+$lblRepo = New-Object System.Windows.Forms.Label
+$lblRepo.Text = "Repositorio release: $($flow.repoOwner)/$($flow.repoName)"
+$lblRepo.AutoSize = $true
+$lblRepo.Location = New-Object System.Drawing.Point(18, 145)
+$lblRepo.ForeColor = [System.Drawing.Color]::FromArgb(136, 184, 226)
+$configGroup.Controls.Add($lblRepo)
+
+$statusPanel = New-Object System.Windows.Forms.Panel
+$statusPanel.Dock = 'Top'
+$statusPanel.Height = 98
+$statusPanel.Padding = New-Object System.Windows.Forms.Padding(0, 12, 0, 0)
+$rightPanel.Controls.Add($statusPanel)
+
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Width = 820
+$progressBar.Height = 24
+$progressBar.Location = New-Object System.Drawing.Point(0, 14)
+$progressBar.Minimum = 0
+$progressBar.Maximum = 100
+$progressBar.Value = 0
+$statusPanel.Controls.Add($progressBar)
+
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Text = 'Listo para iniciar el flujo de instalacion.'
+$statusLabel.AutoSize = $true
+$statusLabel.Location = New-Object System.Drawing.Point(0, 46)
+$statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(197, 223, 248)
+$statusPanel.Controls.Add($statusLabel)
+
+$logBox = New-Object System.Windows.Forms.TextBox
+$logBox.Multiline = $true
+$logBox.ScrollBars = 'Vertical'
+$logBox.Dock = 'Fill'
+$logBox.ReadOnly = $true
+$logBox.BackColor = [System.Drawing.Color]::FromArgb(7, 16, 30)
+$logBox.ForeColor = [System.Drawing.Color]::FromArgb(201, 241, 213)
+$logBox.Font = New-Object System.Drawing.Font('Consolas', 9)
+$rightPanel.Controls.Add($logBox)
+
+$actionsPanel = New-Object System.Windows.Forms.Panel
+$actionsPanel.Dock = 'Bottom'
+$actionsPanel.Height = 62
+$actionsPanel.Padding = New-Object System.Windows.Forms.Padding(0, 8, 0, 0)
+$rightPanel.Controls.Add($actionsPanel)
+
+$btnRun = New-Object System.Windows.Forms.Button
+$btnRun.Text = 'Iniciar instalacion'
+$btnRun.Width = 190
+$btnRun.Height = 38
+$btnRun.Location = New-Object System.Drawing.Point(0, 10)
+$btnRun.BackColor = [System.Drawing.Color]::FromArgb(28, 114, 196)
+$btnRun.ForeColor = [System.Drawing.Color]::White
+$btnRun.FlatStyle = 'Popup'
+$actionsPanel.Controls.Add($btnRun)
+
+$btnRetry = New-Object System.Windows.Forms.Button
+$btnRetry.Text = 'Reintentar'
+$btnRetry.Width = 120
+$btnRetry.Height = 38
+$btnRetry.Location = New-Object System.Drawing.Point(204, 10)
+$btnRetry.Enabled = $false
+$actionsPanel.Controls.Add($btnRetry)
+
+$btnOpenLogs = New-Object System.Windows.Forms.Button
+$btnOpenLogs.Text = 'Abrir logs'
+$btnOpenLogs.Width = 120
+$btnOpenLogs.Height = 38
+$btnOpenLogs.Location = New-Object System.Drawing.Point(336, 10)
+$actionsPanel.Controls.Add($btnOpenLogs)
+
+$btnOpenDashboard = New-Object System.Windows.Forms.Button
+$btnOpenDashboard.Text = 'Abrir dashboard'
+$btnOpenDashboard.Width = 150
+$btnOpenDashboard.Height = 38
+$btnOpenDashboard.Location = New-Object System.Drawing.Point(468, 10)
+$btnOpenDashboard.Enabled = $false
+$actionsPanel.Controls.Add($btnOpenDashboard)
+
+$btnExit = New-Object System.Windows.Forms.Button
+$btnExit.Text = 'Finalizar'
+$btnExit.Width = 120
+$btnExit.Height = 38
+$btnExit.Location = New-Object System.Drawing.Point(632, 10)
+$actionsPanel.Controls.Add($btnExit)
+
+$splashPanel = New-Object System.Windows.Forms.Panel
+$splashPanel.Dock = 'Fill'
+$splashPanel.BackColor = [System.Drawing.Color]::FromArgb(11, 26, 52)
+$rightPanel.Controls.Add($splashPanel)
+$splashPanel.BringToFront()
+
+$splashTitle = New-Object System.Windows.Forms.Label
+$splashTitle.Text = 'Bienvenido a EvaluaPro Installer Hub'
+$splashTitle.Font = New-Object System.Drawing.Font('Segoe UI', 24, [System.Drawing.FontStyle]::Bold)
+$splashTitle.AutoSize = $true
+$splashTitle.ForeColor = [System.Drawing.Color]::FromArgb(230, 245, 255)
+$splashTitle.Location = New-Object System.Drawing.Point(64, 76)
+$splashPanel.Controls.Add($splashTitle)
+
+$splashText = New-Object System.Windows.Forms.Label
+$splashText.Text = 'Instala, repara o desinstala EvaluaPro desde cero con verificacion de requisitos, descarga segura de la version estable y control completo del proceso para docentes.'
+$splashText.Size = New-Object System.Drawing.Size(760, 90)
+$splashText.Location = New-Object System.Drawing.Point(68, 144)
+$splashText.ForeColor = [System.Drawing.Color]::FromArgb(173, 212, 238)
+$splashText.Font = New-Object System.Drawing.Font('Segoe UI', 11)
+$splashPanel.Controls.Add($splashText)
+
+$splashBullets = New-Object System.Windows.Forms.Label
+$splashBullets.Text = "- Analisis de requisitos del equipo`n- Autoinstalacion de prerequisitos (Node + Docker)`n- Descarga y verificacion SHA256 de release estable`n- Instalacion, reparacion y desinstalacion con seguimiento por fases"
+$splashBullets.Size = New-Object System.Drawing.Size(760, 120)
+$splashBullets.Location = New-Object System.Drawing.Point(72, 242)
+$splashBullets.ForeColor = [System.Drawing.Color]::FromArgb(188, 226, 255)
+$splashBullets.Font = New-Object System.Drawing.Font('Segoe UI', 10)
+$splashPanel.Controls.Add($splashBullets)
+
+$btnSplashStart = New-Object System.Windows.Forms.Button
+$btnSplashStart.Text = 'Comenzar'
+$btnSplashStart.Width = 160
+$btnSplashStart.Height = 42
+$btnSplashStart.Location = New-Object System.Drawing.Point(72, 392)
+$btnSplashStart.BackColor = [System.Drawing.Color]::FromArgb(31, 148, 111)
+$btnSplashStart.ForeColor = [System.Drawing.Color]::White
+$btnSplashStart.FlatStyle = 'Popup'
+$splashPanel.Controls.Add($btnSplashStart)
+
+$labelLogPath = New-Object System.Windows.Forms.Label
+$labelLogPath.Text = "Log de sesion: $($flow.logPath)"
+$labelLogPath.AutoSize = $true
+$labelLogPath.Location = New-Object System.Drawing.Point(72, 452)
+$labelLogPath.ForeColor = [System.Drawing.Color]::FromArgb(132, 183, 221)
+$labelLogPath.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+$splashPanel.Controls.Add($labelLogPath)
+
+function Update-StepUi {
+  param(
+    [int]$Index,
+    [ValidateSet('pending', 'running', 'done', 'error')]
+    [string]$State,
+    [string]$StatusText
+  )
+
+  $prefix = '[ ]'
+  switch ($State) {
+    'running' { $prefix = '[~]' }
+    'done' { $prefix = '[OK]' }
+    'error' { $prefix = '[X]' }
+    default { $prefix = '[ ]' }
+  }
+
+  if ($Index -ge 0 -and $Index -lt $stepsList.Items.Count) {
+    $original = [string]$stepItems[$Index]
+    $clean = ($original -replace '^\[[^\]]+\]\s*', '')
+    $stepsList.Items[$Index] = "$prefix $clean"
+    $stepsList.SelectedIndex = $Index
+  }
+
+  if ($StatusText) {
+    $statusLabel.Text = $StatusText
+  }
+
+  $doneCount = 0
+  for ($i = 0; $i -lt $stepsList.Items.Count; $i++) {
+    if ([string]$stepsList.Items[$i] -like '[OK]*') { $doneCount += 1 }
+  }
+
+  $progress = [math]::Round(($doneCount / [math]::Max(1, $stepsList.Items.Count)) * 100)
+  $progressBar.Value = [math]::Min(100, [math]::Max(0, $progress))
+  [System.Windows.Forms.Application]::DoEvents()
+}
+
+function Add-UiLog {
+  param([string]$Level, [string]$Message)
+
+  $ts = (Get-Date).ToString('HH:mm:ss')
+  $line = "[$ts] [$Level] $Message"
+  $logBox.AppendText($line + [Environment]::NewLine)
+  $logBox.SelectionStart = $logBox.TextLength
+  $logBox.ScrollToCaret()
+  Invoke-FlowLog -Level $Level -Message $Message
+  [System.Windows.Forms.Application]::DoEvents()
+}
+
+$btnBrowse.Add_Click({
+  $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+  $dialog.SelectedPath = $textInstallPath.Text
+  $dialog.Description = 'Selecciona carpeta de instalacion de EvaluaPro'
+  if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $textInstallPath.Text = $dialog.SelectedPath
+  }
+})
+
+$btnSplashStart.Add_Click({
+  Update-StepUi -Index 0 -State 'done' -StatusText 'Splash completado. Configura y ejecuta el flujo.'
+  $splashPanel.Hide()
+  Add-UiLog 'info' 'Splash completado. Inicio de wizard operativo.'
+})
+
+$comboMode.Add_SelectedIndexChanged({
+  $selected = [string]$comboMode.SelectedItem
+  $script:uiCleanupCheckbox.Enabled = ($selected -eq 'uninstall')
+})
+
+function Run-InstallerFlowUi {
+  try {
+    $btnRun.Enabled = $false
+    $btnRetry.Enabled = $false
+    $btnOpenDashboard.Enabled = $false
+
+    for ($i = 1; $i -lt $stepsList.Items.Count; $i++) {
+      Update-StepUi -Index $i -State 'pending' -StatusText 'Preparando ejecucion...'
+    }
+
+    $flow.installDir = [string]$textInstallPath.Text
+    $flow.requestedMode = [string]$comboMode.SelectedItem
+    $flow.installation = Get-EvaluaProInstallationInfo
+    $flow.resolvedMode = Resolve-InstallerMode -RequestedMode $flow.requestedMode -Installation $flow.installation
+
+    Add-UiLog 'system' ("Modo solicitado: $($flow.requestedMode) | modo efectivo: $($flow.resolvedMode)")
+
+    Update-StepUi -Index 1 -State 'running' -StatusText 'Determinando modo efectivo de operacion...'
+    Start-Sleep -Milliseconds 250
+    Update-StepUi -Index 1 -State 'done' -StatusText ("Modo seleccionado: $($flow.resolvedMode)")
+
+    Invoke-InstallerFlowCore -OnUiLog {
+      param($lvl, $msg)
+      Add-UiLog $lvl $msg
+    } -OnStepUpdate {
+      param($idx, $state, $txt)
+      Update-StepUi -Index $idx -State $state -StatusText $txt
+    }
+
+    $summary = "Proceso completado correctamente (exit=0)."
+    if ($flow.rebootRequired) {
+      $summary += ' Reinicio recomendado por msiexec (3010).'
+    }
+    $statusLabel.Text = $summary
+    Add-UiLog 'ok' $summary
+
+    $btnOpenDashboard.Enabled = ($flow.resolvedMode -ne 'uninstall')
+    $btnRetry.Enabled = $true
+
+    [System.Windows.Forms.MessageBox]::Show(
+      $summary,
+      'EvaluaPro Installer Hub',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Information
+    ) | Out-Null
+  } catch {
+    $code = if ($flow.exitCode -gt 0) { $flow.exitCode } else { 1 }
+    Update-StepUi -Index 7 -State 'error' -StatusText "Proceso fallido (exit=$code)."
+
+    $message = $_.Exception.Message
+    Add-UiLog 'error' ("Fallo en fase '$($flow.lastPhase)': $message")
+
+    $btnRetry.Enabled = $true
+    [System.Windows.Forms.MessageBox]::Show(
+      "Ocurrio un error (exit=$code):`n$message`n`nRevisa el log:`n$($flow.logPath)",
+      'EvaluaPro Installer Hub',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Error
+    ) | Out-Null
+  } finally {
+    $btnRun.Enabled = $true
+  }
+}
+
+$btnRun.Add_Click({ Run-InstallerFlowUi })
+$btnRetry.Add_Click({ Run-InstallerFlowUi })
+$btnExit.Add_Click({ $form.Close() })
+
+$btnOpenLogs.Add_Click({
+  $logDir = Split-Path -Parent $flow.logPath
+  if (Test-Path $logDir) {
+    Start-Process explorer.exe -ArgumentList ('"{0}"' -f $logDir) | Out-Null
+  }
+})
+
+$btnOpenDashboard.Add_Click({
+  try {
+    $installation = Get-EvaluaProInstallationInfo
+    $installLocation = [string]$installation.InstallLocation
+    if (-not $installLocation) {
+      $installLocation = $flow.installDir
+    }
+
+    $launcher = Join-Path $installLocation 'scripts\launcher-tray-hidden.vbs'
+    if (Test-Path $launcher) {
+      Start-Process -FilePath 'wscript.exe' -ArgumentList ('//nologo "{0}" prod 4519' -f $launcher) -WindowStyle Hidden | Out-Null
+    } else {
+      Start-Process 'http://127.0.0.1:4519/' | Out-Null
+    }
+  } catch {
+    [System.Windows.Forms.MessageBox]::Show(
+      'No se pudo abrir el dashboard automaticamente.',
+      'EvaluaPro Installer Hub',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Warning
+    ) | Out-Null
+  }
+})
+
+Add-UiLog 'system' ("Sesion iniciada. Log: $($flow.logPath)")
+Add-UiLog 'info' ("Prereq manifest: $prereqManifestPath")
+
+[void]$form.ShowDialog()
+
+exit 0

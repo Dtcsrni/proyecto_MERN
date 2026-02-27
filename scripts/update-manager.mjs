@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 export function createDefaultUpdateState(currentVersion = '0.0.0') {
   return {
     state: 'idle',
-    channel: 'beta+stable',
+    channel: 'stable',
     currentVersion: String(currentVersion || '0.0.0'),
     availableVersion: '',
     releaseUrl: '',
@@ -178,7 +178,7 @@ export function createUpdateManager(opts = {}) {
   const config = {
     owner: String(opts.owner || ''),
     repo: String(opts.repo || ''),
-    channel: String(opts.channel || 'beta+stable'),
+    channel: String(opts.channel || 'stable'),
     assetName: String(opts.assetName || 'EvaluaPro-Setup.exe'),
     sha256AssetName: String(opts.sha256AssetName || `${String(opts.assetName || 'EvaluaPro-Setup.exe')}.sha256`),
     requireSha256: Boolean(opts.requireSha256),

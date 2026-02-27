@@ -61,9 +61,9 @@ function startFakeReleaseServer() {
     if (req.url === '/releases') {
       const payload = [
         {
-          tag_name: 'v9.9.9-beta.1',
-          prerelease: true,
-          html_url: 'https://example/releases/v9.9.9-beta.1',
+          tag_name: 'v9.9.9',
+          prerelease: false,
+          html_url: 'https://example/releases/v9.9.9',
           body: 'release test',
           assets: [
             { name: 'EvaluaPro-Setup.exe', browser_download_url: `http://127.0.0.1:${server.address().port}/asset.exe` },
@@ -149,7 +149,7 @@ test('update API expone check y download con transición válida', { timeout: 18
   assert.equal(checkRes.status, 200);
   const checked = await checkRes.json();
   assert.equal(checked.state, 'available');
-  assert.equal(checked.availableVersion, '9.9.9-beta.1');
+  assert.equal(checked.availableVersion, '9.9.9');
 
   const downloadRes = await fetch(`http://127.0.0.1:${port}/api/update/download`, {
     method: 'POST',
