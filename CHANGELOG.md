@@ -59,12 +59,12 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
     - `omr:tv3:generate:real:manual-min`
     - `omr:tv3:validate:real:manual-min`
   - métricas canónicas de validación real incluyen `autoCoverageRate`.
-  - runbook actualizado para gate dual real (simulado + manual mínimo) en `docs/OMR_TV3_REAL_GATE_RUNBOOK.md`.
+  - runbook actualizado para gate dual real (simulado + manual mínimo) en `docs/OMR_GATE_RUNBOOK.md`.
 - Cierre de confiabilidad real OMR TV3:
   - generador de dataset golden real simulado `apps/backend/scripts/omr-tv3-generate-real-golden.ts`.
   - baseline reproducible `apps/backend/scripts/omr-tv3-baseline-snapshot.ts`.
   - calibración iterativa con decisión `apps/backend/scripts/omr-tv3-calibrate-real.ts`.
-  - runbook operativo `docs/OMR_TV3_REAL_GATE_RUNBOOK.md`.
+  - runbook operativo `docs/OMR_GATE_RUNBOOK.md`.
 - Gate real OMR TV3 endurecido:
   - `apps/backend/scripts/omr-tv3-validate-real.ts` exporta contrato canónico con reporte de fallas (`tv3-real-failure-analysis`).
   - scripts backend:

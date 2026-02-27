@@ -1,7 +1,7 @@
-# Runbook OMR TV3 Real Gate
+# Runbook OMR Real Gate
 
 ## Objetivo
-Ejecutar y validar el gate mixto de confiabilidad OMR TV3 (sintético + real) para liberar autocalificación con evidencia trazable.
+Ejecutar y validar el gate mixto de confiabilidad OMR (sintetico + real) para liberar autocalificacion con evidencia trazable.
 
 ## Prerrequisitos
 - Node 24.
