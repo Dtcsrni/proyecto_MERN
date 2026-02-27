@@ -12,6 +12,23 @@ Herramientas de operación local (principalmente Windows) para **Sistema EvaluaP
   - progreso: `GET /api/repair/progress`
   - alcance v1 no destructivo: build portal si falta, recrear accesos directos y recuperar stack/portal.
 
+## Installer Hub (Windows)
+- UI principal: `installer-hub/InstallerHub.ps1`
+- Modulos:
+  - `installer-hub/modules/ReleaseResolver.psm1`
+  - `installer-hub/modules/PrereqDetector.psm1`
+  - `installer-hub/modules/PrereqInstaller.psm1`
+  - `installer-hub/modules/ProductInstaller.psm1`
+  - `installer-hub/modules/PostInstallVerifier.psm1`
+- Manifiesto de prerequisitos:
+  - `../config/installer-prereqs.manifest.json`
+- Build de bootstrapper EXE:
+  - `npm run installer:hub:build`
+- Contratos release (hash + manifiesto):
+  - `npm run installer:hashes`
+- Signing gate opcional:
+  - `npm run installer:sign`
+
 ## Accesos directos / bandeja
 - Generación de accesos: `create-shortcuts.ps1`
 - Operaciones por acceso directo: `shortcut-ops.ps1`

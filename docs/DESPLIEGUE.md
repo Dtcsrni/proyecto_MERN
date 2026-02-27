@@ -85,6 +85,21 @@ Build local de bundle EXE (ademas del MSI):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1 -IncludeBundle
 ```
 
+Build local de Installer Hub (bootstrapper online con GUI):
+```powershell
+npm run installer:hub:build
+```
+
+Generar contratos de release (hashes + manifiesto):
+```powershell
+npm run installer:hashes
+```
+
+Signing gate opcional (si hay certificado en variables de entorno):
+```powershell
+npm run installer:sign
+```
+
 Garantia de estabilidad para distribuible:
 - `msi:build` ejecuta checks obligatorios antes de empaquetar:
   - `lint`
@@ -98,7 +113,12 @@ Garantia de estabilidad para distribuible:
 
 Artefactos:
 - `dist/installer/EvaluaPro.msi`
+- `dist/installer/EvaluaPro.msi.sha256`
 - `dist/installer/EvaluaPro-Setup.exe` (cuando bundle esta habilitado)
+- `dist/installer/EvaluaPro-InstallerHub.exe`
+- `dist/installer/EvaluaPro-InstallerHub.exe.sha256`
+- `dist/installer/EvaluaPro-release-manifest.json`
+- `dist/installer/SIGNING-NOT-PRODUCTION.txt` (solo cuando no se firma)
 
 Prerequisitos de instalacion:
 - Node.js 24+
@@ -109,7 +129,13 @@ Prerequisitos de instalacion:
 CI de instalador Windows:
 - Workflow: `.github/workflows/ci-installer-windows.yml`.
 - Trigger: `main`, tags `v*` y `workflow_dispatch`.
-- Valida `test:wix:policy` y compila MSI + bundle (`-SkipStabilityChecks -IncludeBundle`).
+- Valida `test:wix:policy` + `test:installer-hub:contract`.
+- Compila MSI + bundle (`-SkipStabilityChecks -IncludeBundle`), compila `Installer Hub`, genera hashes/manifiesto y ejecuta signing gate opcional.
+- En tags `v*` publica automáticamente assets en GitHub Releases:
+  - `EvaluaPro.msi`, `EvaluaPro.msi.sha256`
+  - `EvaluaPro-Setup.exe`
+  - `EvaluaPro-InstallerHub.exe`, `EvaluaPro-InstallerHub.exe.sha256`
+  - `EvaluaPro-release-manifest.json`
 
 Autoconfiguracion durante uso:
 - shortcuts Dev/Prod instalados automaticamente.

@@ -111,6 +111,8 @@ npm run dev:portal
   - `npm run qa:clean-architecture:strict`
 - Empaquetado:
   - `npm run msi:build`
+  - `npm run installer:hub:build`
+  - `npm run installer:hashes`
 
 ## UI Docente/Alumno (2026-02-25)
 - Se completó un refresh visual transversal en todas las pestañas docentes:

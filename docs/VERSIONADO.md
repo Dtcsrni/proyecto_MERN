@@ -69,7 +69,12 @@ Debe pasar:
 2. Verificar pipeline contract:
    - `npm run pipeline:contract:check`
 3. Actualizar `CHANGELOG.md` y publicar versión SemVer.
-4. Ejecutar gate de estable:
+4. Publicar contrato de instalador Windows estable:
+   - `EvaluaPro.msi`
+   - `EvaluaPro.msi.sha256`
+   - `EvaluaPro-InstallerHub.exe`
+   - `EvaluaPro-release-manifest.json`
+5. Ejecutar gate de estable:
    - `npm run release:gate:prod-flow -- --version=<version> --periodo-id=<periodoId> --manual=docs/release/manual/prod-flow.json`
-5. Versionar evidencias en:
+6. Versionar evidencias en:
    - `docs/release/evidencias/<version>/`

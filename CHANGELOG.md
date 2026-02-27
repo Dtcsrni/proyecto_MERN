@@ -5,6 +5,30 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
 ## [Unreleased]
 
 ### Added
+- Installer Hub Windows para flujo docente desde cero:
+  - UI guiada con splash introductorio en `scripts/installer-hub/InstallerHub.ps1`.
+  - arquitectura modular (`ReleaseResolver`, `PrereqDetector`, `PrereqInstaller`, `ProductInstaller`, `PostInstallVerifier`).
+  - contrato de prerequisitos versionado en `config/installer-prereqs.manifest.json`.
+  - scripts de build/hash/signing para artefactos de release:
+    - `scripts/build-installer-hub.ps1`
+    - `scripts/generate-installer-hashes.ps1`
+    - `scripts/generate-installer-release-manifest.ps1`
+    - `scripts/sign-installer-artifacts.ps1`
+  - nuevo artefacto `EvaluaPro-InstallerHub.exe` y contrato `EvaluaPro.msi.sha256`.
+- Pipeline CI Windows de instalador ampliado:
+  - build de `Installer Hub`, generación de hashes/manifiesto release y signing gate opcional.
+  - publicación automática de assets en GitHub Releases para tags `v*`.
+  - verificación/publicación de:
+    - `EvaluaPro.msi`, `EvaluaPro.msi.sha256`
+    - `EvaluaPro-Setup.exe`
+    - `EvaluaPro-InstallerHub.exe`, `EvaluaPro-InstallerHub.exe.sha256`
+    - `EvaluaPro-release-manifest.json`
+- Canal por defecto de actualizaciones alineado a estable (`stable`) en:
+  - `config/update-config.json`
+  - `scripts/update-manager.mjs`
+  - `scripts/launcher-dashboard.mjs`
+- Desinstalación idempotente en Installer Hub:
+  - si no se detecta instalación previa, `uninstall` termina en éxito sin error técnico.
 - Documentación actualizada y regenerada al estado UX/UI 2026-02-25:
   - `docs/AUTO_ENV.md` (regenerado)
   - `docs/AUTO_DOCS_INDEX.md` (regenerado)

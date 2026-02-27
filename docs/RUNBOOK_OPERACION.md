@@ -53,6 +53,22 @@ Alcance de la reparación v1:
   - Node.js 24+
   - Docker Desktop
 
+### Instalador docente desde cero (Installer Hub)
+1. Descargar `EvaluaPro-InstallerHub.exe` desde la release estable.
+2. Ejecutar con permisos de administrador (UAC).
+3. Flujo esperado:
+   - splash introductorio,
+   - deteccion automatica de modo (`install` / `repair` / `uninstall`),
+   - analisis de requisitos del equipo,
+   - autoinstalacion silenciosa de prerequisitos faltantes (Node 24+ y Docker Desktop),
+   - descarga de `EvaluaPro.msi` + verificacion `SHA-256`,
+   - ejecucion MSI y verificacion final.
+4. Criterio de integridad:
+   - `EvaluaPro.msi.sha256` coincide con hash local del MSI descargado.
+5. Desinstalacion:
+   - por defecto conserva datos,
+   - opcion de limpieza total disponible solo en modo `uninstall`.
+
 ## 3. Síntoma: incremento de errores 5xx
 1. Revisar métrica de errores y latencia p95.
 2. Filtrar logs por `level=error` y `requestId`.
