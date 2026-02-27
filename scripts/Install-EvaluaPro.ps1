@@ -1,0 +1,58 @@
+param(
+  [string]$SourcePath = '',
+  [string]$InstallersDir = 'C:\Instaladores',
+  [string]$ExpectedSha256 = '',
+  [switch]$SkipHashCheck
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Resolve-DefaultSourcePath {
+  param([string]$Candidate)
+
+  if ($Candidate -and (Test-Path $Candidate)) {
+    return (Resolve-Path $Candidate).Path
+  }
+
+  $downloads = [Environment]::GetFolderPath('UserProfile') + '\Downloads'
+  $fallback = Join-Path $downloads 'EvaluaPro-Setup.exe'
+  if (Test-Path $fallback) {
+    return (Resolve-Path $fallback).Path
+  }
+
+  throw 'No se encontro el instalador. Usa -SourcePath "ruta\\EvaluaPro-Setup.exe".'
+}
+
+$resolvedSource = Resolve-DefaultSourcePath -Candidate $SourcePath
+
+if (-not (Test-Path $InstallersDir)) {
+  New-Item -ItemType Directory -Path $InstallersDir -Force | Out-Null
+}
+
+$targetPath = Join-Path $InstallersDir 'EvaluaPro-Setup.exe'
+Copy-Item -LiteralPath $resolvedSource -Destination $targetPath -Force
+Unblock-File -LiteralPath $targetPath -ErrorAction SilentlyContinue
+
+if (-not $SkipHashCheck) {
+  if ([string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+    Write-Host '[install-evaluapro] SHA256 esperado no definido; se omite validacion estricta. Usa -ExpectedSha256 para exigirlo.'
+  } else {
+    $actual = (Get-FileHash -LiteralPath $targetPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $expected = $ExpectedSha256.Trim().ToLowerInvariant()
+    if ($actual -ne $expected) {
+      throw "SHA256 invalido. Esperado=$expected Actual=$actual"
+    }
+    Write-Host "[install-evaluapro] SHA256 OK: $actual"
+  }
+}
+
+Write-Host "[install-evaluapro] Ejecutando instalador desde: $targetPath"
+Write-Host "[install-evaluapro] Fuente Burn: $InstallersDir"
+
+$args = @(
+  '-burn.source'
+  ('"{0}"' -f $InstallersDir)
+)
+
+Start-Process -FilePath $targetPath -ArgumentList $args -Verb RunAs
