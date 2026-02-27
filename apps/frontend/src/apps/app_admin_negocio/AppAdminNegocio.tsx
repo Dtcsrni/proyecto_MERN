@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { clienteAdminNegocioApi } from './clienteAdminNegocioApi';
 
 type Perfil = {
@@ -266,7 +266,7 @@ export function AppAdminNegocio() {
     }
   }
 
-  function seleccionarPlantillaNotificacion(id: string) {
+  const seleccionarPlantillaNotificacion = useCallback((id: string) => {
     const plantilla = plantillasNotificacion.find((item) => String(item._id || item.id || '') === id);
     if (!plantilla) return;
     setPlantillaSeleccionadaId(id);
@@ -278,7 +278,7 @@ export function AppAdminNegocio() {
       contenido: String(plantilla.contenido || ''),
       activo: Boolean(plantilla.activo ?? true)
     });
-  }
+  }, [plantillasNotificacion]);
 
   async function actualizarPlantillaNotificacion() {
     if (!plantillaSeleccionadaId) {
@@ -369,7 +369,7 @@ export function AppAdminNegocio() {
     if (!existeSeleccion) {
       seleccionarPlantillaNotificacion(String(plantillasNotificacion[0]._id || plantillasNotificacion[0].id || ''));
     }
-  }, [vista, plantillasNotificacion, plantillaSeleccionadaId]);
+  }, [vista, plantillasNotificacion, plantillaSeleccionadaId, seleccionarPlantillaNotificacion]);
 
   return (
     <div className="panel cuenta-panel">
