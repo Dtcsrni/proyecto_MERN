@@ -10,6 +10,11 @@ const TenantSchema = new Schema(
     pais: { type: String, default: 'MX', trim: true, uppercase: true },
     moneda: { type: String, default: 'MXN', trim: true, uppercase: true },
     ownerDocenteId: { type: Schema.Types.ObjectId, ref: 'Docente', required: true },
+    contacto: {
+      correo: { type: String, trim: true, lowercase: true },
+      telefono: { type: String, trim: true },
+      nombre: { type: String, trim: true }
+    },
     configAislamiento: {
       estrategia: { type: String, enum: ['shared', 'dedicated'], default: 'shared' },
       databaseUri: { type: String },

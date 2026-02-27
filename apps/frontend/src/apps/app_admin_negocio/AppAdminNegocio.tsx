@@ -9,6 +9,18 @@ type Perfil = {
   };
 };
 
+type PlantillaNotificacion = {
+  _id?: string;
+  id?: string;
+  clave?: string;
+  evento?: string;
+  canal?: string;
+  idioma?: string;
+  asunto?: string;
+  contenido?: string;
+  activo?: boolean;
+};
+
 type Vista =
   | 'dashboard'
   | 'tenants'
@@ -17,6 +29,7 @@ type Vista =
   | 'licencias'
   | 'cupones'
   | 'campanas'
+  | 'plantillas_notificacion'
   | 'cobranza'
   | 'auditoria';
 
@@ -28,6 +41,7 @@ const VISTAS: Array<{ id: Vista; label: string }> = [
   { id: 'licencias', label: 'Licencias' },
   { id: 'cupones', label: 'Cupones' },
   { id: 'campanas', label: 'Campanas' },
+  { id: 'plantillas_notificacion', label: 'Plantillas Msg' },
   { id: 'cobranza', label: 'Cobranza' },
   { id: 'auditoria', label: 'Auditoria' }
 ];
@@ -43,7 +57,9 @@ export function AppAdminNegocio() {
     tenantId: '',
     nombre: '',
     modalidad: 'saas',
-    ownerDocenteId: ''
+    ownerDocenteId: '',
+    contactoCorreo: '',
+    contactoTelefono: ''
   });
   const [nuevoPlan, setNuevoPlan] = useState({
     planId: '',
@@ -70,6 +86,23 @@ export function AppAdminNegocio() {
     nombre: '',
     canal: 'email'
   });
+  const [nuevaPlantillaNotificacion, setNuevaPlantillaNotificacion] = useState({
+    clave: '',
+    evento: 'cobranza_recordatorio',
+    canal: 'email',
+    idioma: 'es-MX',
+    asunto: 'Recordatorio de pago - {{tenantNombre}}',
+    contenido: 'Tu suscripcion EvaluaPro tiene {{diasVencidos}} dia(s) de atraso.'
+  });
+  const [plantillaSeleccionadaId, setPlantillaSeleccionadaId] = useState('');
+  const [edicionPlantillaNotificacion, setEdicionPlantillaNotificacion] = useState({
+    evento: 'cobranza_recordatorio',
+    canal: 'email',
+    idioma: 'es-MX',
+    asunto: '',
+    contenido: '',
+    activo: true
+  });
   const [nuevaLicencia, setNuevaLicencia] = useState({
     tenantId: '',
     tipo: 'onprem',
@@ -81,9 +114,19 @@ export function AppAdminNegocio() {
     monto: 1000
   });
   const [ultimoInitPoint, setUltimoInitPoint] = useState('');
+  const [resumenCicloCobranza, setResumenCicloCobranza] = useState<null | {
+    revisadas?: number;
+    recordatorios?: number;
+    suspensionesParciales?: number;
+    suspensionesTotales?: number;
+  }>(null);
 
   const permisos = useMemo(() => new Set(perfil?.docente?.permisos ?? []), [perfil]);
   const puedeVer = permisos.has('comercial:metricas:leer') || permisos.has('comercial:tenants:leer');
+  const plantillasNotificacion = useMemo(() => {
+    const payload = data as { plantillas?: PlantillaNotificacion[] } | null;
+    return Array.isArray(payload?.plantillas) ? payload.plantillas : [];
+  }, [data]);
 
   async function cargarPerfil() {
     try {
@@ -104,6 +147,7 @@ export function AppAdminNegocio() {
       licencias: '/admin-negocio/licencias',
       cupones: '/admin-negocio/cupones',
       campanas: '/admin-negocio/campanas',
+      plantillas_notificacion: '/admin-negocio/plantillas-notificacion',
       cobranza: '/admin-negocio/cobranza',
       auditoria: '/admin-negocio/auditoria'
     };
@@ -123,11 +167,18 @@ export function AppAdminNegocio() {
   async function crearTenant() {
     try {
       await clienteAdminNegocioApi.enviar('/admin-negocio/tenants', {
-        ...nuevoTenant,
+        tenantId: nuevoTenant.tenantId,
+        nombre: nuevoTenant.nombre,
+        modalidad: nuevoTenant.modalidad,
+        ownerDocenteId: nuevoTenant.ownerDocenteId,
         tipoTenant: 'smb',
         pais: 'MX',
         moneda: 'MXN',
-        configAislamiento: { estrategia: 'shared' }
+        configAislamiento: { estrategia: 'shared' },
+        contacto: {
+          correo: nuevoTenant.contactoCorreo || undefined,
+          telefono: nuevoTenant.contactoTelefono || undefined
+        }
       });
       setMensaje('Tenant creado');
       await cargarVistaActual('tenants');
@@ -201,6 +252,50 @@ export function AppAdminNegocio() {
     }
   }
 
+  async function crearPlantillaNotificacion() {
+    try {
+      await clienteAdminNegocioApi.enviar('/admin-negocio/plantillas-notificacion', {
+        ...nuevaPlantillaNotificacion,
+        activo: true,
+        variables: ['tenantNombre', 'tenantId', 'diasVencidos', 'estadoSuscripcion']
+      });
+      setMensaje('Plantilla de notificacion creada');
+      await cargarVistaActual('plantillas_notificacion');
+    } catch (error) {
+      setMensaje(clienteAdminNegocioApi.mensajeUsuarioDeError(error, 'No se pudo crear plantilla de notificacion'));
+    }
+  }
+
+  function seleccionarPlantillaNotificacion(id: string) {
+    const plantilla = plantillasNotificacion.find((item) => String(item._id || item.id || '') === id);
+    if (!plantilla) return;
+    setPlantillaSeleccionadaId(id);
+    setEdicionPlantillaNotificacion({
+      evento: String(plantilla.evento || 'cobranza_recordatorio'),
+      canal: String(plantilla.canal || 'email'),
+      idioma: String(plantilla.idioma || 'es-MX'),
+      asunto: String(plantilla.asunto || ''),
+      contenido: String(plantilla.contenido || ''),
+      activo: Boolean(plantilla.activo ?? true)
+    });
+  }
+
+  async function actualizarPlantillaNotificacion() {
+    if (!plantillaSeleccionadaId) {
+      setMensaje('Selecciona una plantilla para editar');
+      return;
+    }
+    try {
+      await clienteAdminNegocioApi.enviar(`/admin-negocio/plantillas-notificacion/${plantillaSeleccionadaId}`, {
+        ...edicionPlantillaNotificacion
+      });
+      setMensaje('Plantilla actualizada');
+      await cargarVistaActual('plantillas_notificacion');
+    } catch (error) {
+      setMensaje(clienteAdminNegocioApi.mensajeUsuarioDeError(error, 'No se pudo actualizar plantilla'));
+    }
+  }
+
   async function generarLicencia() {
     try {
       const fin = new Date();
@@ -235,6 +330,24 @@ export function AppAdminNegocio() {
     }
   }
 
+  async function ejecutarCicloCobranza() {
+    try {
+      const payload = await clienteAdminNegocioApi.enviar<{
+        resumen?: {
+          revisadas?: number;
+          recordatorios?: number;
+          suspensionesParciales?: number;
+          suspensionesTotales?: number;
+        };
+      }>('/admin-negocio/cobranza/ciclo/ejecutar', {});
+      setResumenCicloCobranza(payload.resumen || null);
+      setMensaje('Ciclo de cobranza ejecutado');
+      await cargarVistaActual('cobranza');
+    } catch (error) {
+      setMensaje(clienteAdminNegocioApi.mensajeUsuarioDeError(error, 'No se pudo ejecutar ciclo de cobranza'));
+    }
+  }
+
   useEffect(() => {
     void cargarPerfil();
   }, []);
@@ -243,6 +356,20 @@ export function AppAdminNegocio() {
     if (!puedeVer) return;
     void cargarVistaActual(vista);
   }, [vista, puedeVer]);
+
+  useEffect(() => {
+    if (vista !== 'plantillas_notificacion') return;
+    if (plantillasNotificacion.length === 0) {
+      if (plantillaSeleccionadaId) setPlantillaSeleccionadaId('');
+      return;
+    }
+    const existeSeleccion = plantillasNotificacion.some(
+      (item) => String(item._id || item.id || '') === plantillaSeleccionadaId
+    );
+    if (!existeSeleccion) {
+      seleccionarPlantillaNotificacion(String(plantillasNotificacion[0]._id || plantillasNotificacion[0].id || ''));
+    }
+  }, [vista, plantillasNotificacion, plantillaSeleccionadaId]);
 
   return (
     <div className="panel cuenta-panel">
@@ -276,6 +403,8 @@ export function AppAdminNegocio() {
               <label className="campo">Tenant ID<input value={nuevoTenant.tenantId} onChange={(e) => setNuevoTenant({ ...nuevoTenant, tenantId: e.target.value })} /></label>
               <label className="campo">Nombre<input value={nuevoTenant.nombre} onChange={(e) => setNuevoTenant({ ...nuevoTenant, nombre: e.target.value })} /></label>
               <label className="campo">Owner Docente ID<input value={nuevoTenant.ownerDocenteId} onChange={(e) => setNuevoTenant({ ...nuevoTenant, ownerDocenteId: e.target.value })} /></label>
+              <label className="campo">Correo contacto<input value={nuevoTenant.contactoCorreo} onChange={(e) => setNuevoTenant({ ...nuevoTenant, contactoCorreo: e.target.value })} /></label>
+              <label className="campo">Teléfono contacto<input value={nuevoTenant.contactoTelefono} onChange={(e) => setNuevoTenant({ ...nuevoTenant, contactoTelefono: e.target.value })} /></label>
               <div className="acciones"><button type="button" className="chip" onClick={() => void crearTenant()}>Crear tenant</button></div>
             </div>
           )}
@@ -338,6 +467,76 @@ export function AppAdminNegocio() {
             </div>
           )}
 
+          {vista === 'plantillas_notificacion' && (
+            <div className="subpanel">
+              <h3>Nueva plantilla de notificación</h3>
+              <label className="campo">Clave<input value={nuevaPlantillaNotificacion.clave} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, clave: e.target.value })} /></label>
+              <label className="campo">Evento
+                <select value={nuevaPlantillaNotificacion.evento} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, evento: e.target.value })}>
+                  <option value="cobranza_recordatorio">cobranza_recordatorio</option>
+                  <option value="cobranza_suspension_parcial">cobranza_suspension_parcial</option>
+                  <option value="cobranza_suspension_total">cobranza_suspension_total</option>
+                </select>
+              </label>
+              <label className="campo">Canal
+                <select value={nuevaPlantillaNotificacion.canal} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, canal: e.target.value })}>
+                  <option value="email">email</option>
+                  <option value="whatsapp">whatsapp</option>
+                  <option value="crm">crm</option>
+                </select>
+              </label>
+              <label className="campo">Idioma<input value={nuevaPlantillaNotificacion.idioma} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, idioma: e.target.value })} /></label>
+              <label className="campo">Asunto<input value={nuevaPlantillaNotificacion.asunto} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, asunto: e.target.value })} /></label>
+              <label className="campo">Contenido
+                <textarea value={nuevaPlantillaNotificacion.contenido} onChange={(e) => setNuevaPlantillaNotificacion({ ...nuevaPlantillaNotificacion, contenido: e.target.value })} rows={4} />
+              </label>
+              <div className="acciones"><button type="button" className="chip" onClick={() => void crearPlantillaNotificacion()}>Crear plantilla</button></div>
+              <h3 style={{ marginTop: 18 }}>Editor de plantilla existente</h3>
+              <label className="campo">Plantilla
+                <select value={plantillaSeleccionadaId} onChange={(e) => seleccionarPlantillaNotificacion(e.target.value)}>
+                  {plantillasNotificacion.length === 0 ? <option value="">Sin plantillas</option> : null}
+                  {plantillasNotificacion.map((item) => {
+                    const id = String(item._id || item.id || '');
+                    const nombre = `${item.clave || id} (${item.evento || '-'} / ${item.canal || '-'})`;
+                    return <option key={id} value={id}>{nombre}</option>;
+                  })}
+                </select>
+              </label>
+              <label className="campo">Evento
+                <select value={edicionPlantillaNotificacion.evento} onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, evento: e.target.value })}>
+                  <option value="cobranza_recordatorio">cobranza_recordatorio</option>
+                  <option value="cobranza_suspension_parcial">cobranza_suspension_parcial</option>
+                  <option value="cobranza_suspension_total">cobranza_suspension_total</option>
+                </select>
+              </label>
+              <label className="campo">Canal
+                <select value={edicionPlantillaNotificacion.canal} onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, canal: e.target.value })}>
+                  <option value="email">email</option>
+                  <option value="whatsapp">whatsapp</option>
+                  <option value="crm">crm</option>
+                </select>
+              </label>
+              <label className="campo">Idioma<input value={edicionPlantillaNotificacion.idioma} onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, idioma: e.target.value })} /></label>
+              <label className="campo">Asunto<input value={edicionPlantillaNotificacion.asunto} onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, asunto: e.target.value })} /></label>
+              <label className="campo">Contenido
+                <textarea value={edicionPlantillaNotificacion.contenido} onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, contenido: e.target.value })} rows={5} />
+              </label>
+              <label className="campo">
+                <input
+                  type="checkbox"
+                  checked={edicionPlantillaNotificacion.activo}
+                  onChange={(e) => setEdicionPlantillaNotificacion({ ...edicionPlantillaNotificacion, activo: e.target.checked })}
+                />
+                Activa
+              </label>
+              <div className="acciones">
+                <button type="button" className="chip" onClick={() => void actualizarPlantillaNotificacion()} disabled={!plantillaSeleccionadaId}>
+                  Guardar cambios
+                </button>
+              </div>
+            </div>
+          )}
+
           {vista === 'licencias' && (
             <div className="subpanel">
               <h3>Generar licencia</h3>
@@ -365,12 +564,22 @@ export function AppAdminNegocio() {
                 <button type="button" className="chip" onClick={() => void crearPreferenciaMercadoPago()}>
                   Crear preferencia
                 </button>
+                <button type="button" className="chip" onClick={() => void ejecutarCicloCobranza()}>
+                  Ejecutar ciclo mora
+                </button>
                 {ultimoInitPoint ? (
                   <a className="chip" href={ultimoInitPoint} target="_blank" rel="noreferrer">
                     Abrir checkout
                   </a>
                 ) : null}
               </div>
+              {resumenCicloCobranza ? (
+                <p className="nota">
+                  Revisadas: {resumenCicloCobranza.revisadas ?? 0} · Recordatorios: {resumenCicloCobranza.recordatorios ?? 0} ·
+                  Suspensión parcial: {resumenCicloCobranza.suspensionesParciales ?? 0} ·
+                  Suspensión total: {resumenCicloCobranza.suspensionesTotales ?? 0}
+                </p>
+              ) : null}
             </div>
           )}
 

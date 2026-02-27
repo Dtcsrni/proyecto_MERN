@@ -9,6 +9,7 @@ import { logError, log } from './infraestructura/logging/logger';
 import { seedAdminDocente } from './modulos/modulo_autenticacion/seedAdmin';
 import { ErrorOmrCvNoDisponible, ejecutarSmokeTestOmrCv } from './modulos/modulo_escaneo_omr/infra/omrCvEngine';
 import { asegurarIndicesEscaneoOmrArchivado } from './modulos/modulo_escaneo_omr/modeloEscaneoOmrArchivado';
+import { iniciarSchedulerCobranzaAutomatica } from './modulos/modulo_comercial_core/schedulerCobranza';
 
 async function iniciar() {
   await conectarBaseDatos();
@@ -28,6 +29,7 @@ async function iniciar() {
   });
 
   const app = crearApp();
+  iniciarSchedulerCobranzaAutomatica();
   app.listen(configuracion.puerto, () => {
     log('ok', 'API docente escuchando', { puerto: configuracion.puerto });
   });

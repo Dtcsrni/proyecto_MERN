@@ -4,6 +4,9 @@ param(
   [string]$InstallDir = '',
   [string]$RepoOwner = 'Dtcsrni',
   [string]$RepoName = 'EvaluaPro_Sistema_Universitario',
+  [string]$ApiComercialBaseUrl = 'http://127.0.0.1:4000',
+  [string]$TenantId = '',
+  [string]$CodigoActivacion = '',
   [switch]$Headless,
   [switch]$NoElevation
 )
@@ -30,6 +33,7 @@ Import-Module (Join-Path $modulesPath 'PrereqInstaller.psm1') -Force -Global -Di
 Import-Module (Join-Path $modulesPath 'ReleaseResolver.psm1') -Force -Global -DisableNameChecking
 Import-Module (Join-Path $modulesPath 'ProductInstaller.psm1') -Force -Global -DisableNameChecking
 Import-Module (Join-Path $modulesPath 'PostInstallVerifier.psm1') -Force -Global -DisableNameChecking
+Import-Module (Join-Path $modulesPath 'LicenseClientSecurity.psm1') -Force -Global -DisableNameChecking
 
 if (-not $NoElevation) {
   $shouldContinue = Ensure-ElevatedSession -ScriptPath $MyInvocation.MyCommand.Path -PassthroughArgs $args
@@ -68,6 +72,9 @@ function New-FlowState {
     installDir = $InstallDir
     repoOwner = $RepoOwner
     repoName = $RepoName
+    apiComercialBaseUrl = $ApiComercialBaseUrl
+    tenantId = $TenantId
+    codigoActivacion = $CodigoActivacion
     internetOk = $false
     requirementReport = $null
     prereqManifest = $null
@@ -76,6 +83,8 @@ function New-FlowState {
     msiPackage = $null
     productAction = $null
     postVerify = $null
+    licenciaSegura = $null
+    integridadBaseline = $null
     exitCode = 0
     lastPhase = ''
     failureMessage = ''
@@ -253,8 +262,49 @@ function Invoke-InstallerFlowCore {
     if ($OnStepUpdate) { & $OnStepUpdate 7 'done' 'Verificacion completada.' }
   }
 
+  Invoke-FlowPhase -Name 'blindaje_licencia_local' -FailCode 50 -Action {
+    if ($OnStepUpdate) { & $OnStepUpdate 8 'running' 'Aplicando blindaje local de licencia...' }
+
+    if ($flow.resolvedMode -eq 'uninstall') {
+      if ($OnUiLog) { & $OnUiLog 'info' 'Blindaje local omitido en desinstalacion.' }
+      if ($OnStepUpdate) { & $OnStepUpdate 8 'done' 'Blindaje omitido (desinstalacion).' }
+      return
+    }
+
+    $integrityTargets = @(
+      (Join-Path $flow.installDir 'scripts\launcher-dashboard.mjs'),
+      (Join-Path $flow.installDir 'scripts\launcher-tray-hidden.vbs'),
+      (Join-Path $flow.installDir 'scripts\update-manager.mjs')
+    ) | Where-Object { Test-Path $_ }
+
+    if ($integrityTargets.Count -gt 0) {
+      $flow.integridadBaseline = Register-EvaluaProIntegrityBaseline -Paths $integrityTargets
+      if ($OnUiLog) { & $OnUiLog 'ok' "Baseline de integridad generado: $($flow.integridadBaseline)" }
+    } else {
+      if ($OnUiLog) { & $OnUiLog 'info' 'No se detectaron archivos para baseline de integridad.' }
+    }
+
+    $tenant = [string]$flow.tenantId
+    $codigo = [string]$flow.codigoActivacion
+    if ($tenant -and $codigo) {
+      $version = if ($flow.release) { [string]$flow.release.tag } else { 'desconocida' }
+      $flow.licenciaSegura = Invoke-EvaluaProLicenseActivationSecure `
+        -ApiBaseUrl $flow.apiComercialBaseUrl `
+        -TenantId $tenant `
+        -CodigoActivacion $codigo `
+        -VersionInstalada $version
+      if ($OnUiLog) {
+        & $OnUiLog 'ok' ("Licencia activada y almacenada con DPAPI: $($flow.licenciaSegura.securePath)")
+      }
+    } else {
+      if ($OnUiLog) { & $OnUiLog 'info' 'Activacion de licencia omitida (faltan TenantId/CodigoActivacion).' }
+    }
+
+    if ($OnStepUpdate) { & $OnStepUpdate 8 'done' 'Blindaje local completado.' }
+  }
+
   $flow.exitCode = 0
-  if ($OnStepUpdate) { & $OnStepUpdate 8 'done' 'Proceso completado.' }
+  if ($OnStepUpdate) { & $OnStepUpdate 9 'done' 'Proceso completado.' }
 }
 
 function Invoke-HeadlessFlow {
@@ -362,7 +412,8 @@ $stepItems = @(
   '[ ] 5. Prerequisitos Node y Docker',
   '[ ] 6. Descarga release estable + hash MSI',
   '[ ] 7. Ejecucion de accion MSI',
-  '[ ] 8. Verificacion final'
+  '[ ] 8. Verificacion final',
+  '[ ] 9. Blindaje local de licencia'
 )
 $stepItems | ForEach-Object { [void]$stepsList.Items.Add($_) }
 $stepsList.SelectedIndex = 0
@@ -374,7 +425,7 @@ $mainPanel.Controls.Add($rightPanel)
 $configGroup = New-Object System.Windows.Forms.GroupBox
 $configGroup.Text = 'Configuracion de ejecucion'
 $configGroup.Dock = 'Top'
-$configGroup.Height = 190
+$configGroup.Height = 250
 $configGroup.ForeColor = [System.Drawing.Color]::FromArgb(208, 230, 255)
 $configGroup.BackColor = [System.Drawing.Color]::FromArgb(10, 25, 45)
 $rightPanel.Controls.Add($configGroup)
@@ -427,6 +478,42 @@ $lblRepo.AutoSize = $true
 $lblRepo.Location = New-Object System.Drawing.Point(18, 145)
 $lblRepo.ForeColor = [System.Drawing.Color]::FromArgb(136, 184, 226)
 $configGroup.Controls.Add($lblRepo)
+
+$lblApiComercial = New-Object System.Windows.Forms.Label
+$lblApiComercial.Text = 'API comercial:'
+$lblApiComercial.AutoSize = $true
+$lblApiComercial.Location = New-Object System.Drawing.Point(18, 175)
+$configGroup.Controls.Add($lblApiComercial)
+
+$textApiComercial = New-Object System.Windows.Forms.TextBox
+$textApiComercial.Location = New-Object System.Drawing.Point(130, 170)
+$textApiComercial.Width = 320
+$textApiComercial.Text = $flow.apiComercialBaseUrl
+$configGroup.Controls.Add($textApiComercial)
+
+$lblTenantId = New-Object System.Windows.Forms.Label
+$lblTenantId.Text = 'TenantId (opt):'
+$lblTenantId.AutoSize = $true
+$lblTenantId.Location = New-Object System.Drawing.Point(470, 175)
+$configGroup.Controls.Add($lblTenantId)
+
+$textTenantId = New-Object System.Windows.Forms.TextBox
+$textTenantId.Location = New-Object System.Drawing.Point(570, 170)
+$textTenantId.Width = 160
+$textTenantId.Text = $flow.tenantId
+$configGroup.Controls.Add($textTenantId)
+
+$lblCodigoActivacion = New-Object System.Windows.Forms.Label
+$lblCodigoActivacion.Text = 'Codigo activacion (opt):'
+$lblCodigoActivacion.AutoSize = $true
+$lblCodigoActivacion.Location = New-Object System.Drawing.Point(18, 206)
+$configGroup.Controls.Add($lblCodigoActivacion)
+
+$textCodigoActivacion = New-Object System.Windows.Forms.TextBox
+$textCodigoActivacion.Location = New-Object System.Drawing.Point(180, 201)
+$textCodigoActivacion.Width = 280
+$textCodigoActivacion.Text = $flow.codigoActivacion
+$configGroup.Controls.Add($textCodigoActivacion)
 
 $statusPanel = New-Object System.Windows.Forms.Panel
 $statusPanel.Dock = 'Top'
@@ -635,6 +722,9 @@ function Run-InstallerFlowUi {
 
     $flow.installDir = [string]$textInstallPath.Text
     $flow.requestedMode = [string]$comboMode.SelectedItem
+    $flow.apiComercialBaseUrl = [string]$textApiComercial.Text
+    $flow.tenantId = [string]$textTenantId.Text
+    $flow.codigoActivacion = [string]$textCodigoActivacion.Text
     $flow.installation = Get-EvaluaProInstallationInfo
     $flow.resolvedMode = Resolve-InstallerMode -RequestedMode $flow.requestedMode -Installation $flow.installation
 

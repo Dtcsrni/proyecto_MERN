@@ -1,15 +1,65 @@
-/**
- * Servicio de correo (placeholder para integraciones futuras).
- *
- * Nota:
- * - En este repositorio se deja como stub para mantener el core sin dependencias
- *   externas (SMTP/API providers).
- * - En produccion se recomienda implementar este modulo y manejar fallas como
- *   best-effort cuando el envio sea un efecto secundario no critico.
- */
-export async function enviarCorreo(_destinatario: string, _asunto: string, _contenido: string) {
-  void _destinatario;
-  void _asunto;
-  void _contenido;
-  throw new Error('Servicio de correo no configurado');
+import { configuracion } from '../../configuracion';
+import { log, logError } from '../logging/logger';
+
+type PayloadNotificacionWebhook = {
+  canal: 'email' | 'whatsapp' | 'crm';
+  destinatario: string;
+  asunto: string;
+  contenido: string;
+  meta?: Record<string, unknown>;
+};
+
+export async function enviarCorreo(destinatario: string, asunto: string, contenido: string): Promise<boolean> {
+  const email = String(destinatario || '').trim();
+  if (!email) return false;
+
+  // Modo best-effort: deja evidencia operativa y delega entrega real a webhook si existe.
+  log('info', 'Notificacion correo solicitada', {
+    destino: email,
+    asunto: String(asunto || '').slice(0, 120)
+  });
+
+  if (!configuracion.notificacionesWebhookUrl) {
+    return true;
+  }
+
+  return enviarNotificacionWebhook({
+    canal: 'email',
+    destinatario: email,
+    asunto,
+    contenido
+  });
+}
+
+export async function enviarNotificacionWebhook(payload: PayloadNotificacionWebhook): Promise<boolean> {
+  const url = String(configuracion.notificacionesWebhookUrl || '').trim();
+  if (!url) return false;
+
+  try {
+    const respuesta = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(configuracion.notificacionesWebhookToken ? { Authorization: `Bearer ${configuracion.notificacionesWebhookToken}` } : {})
+      },
+      body: JSON.stringify({
+        ...payload,
+        source: 'evaluapro_comercial',
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (!respuesta.ok) {
+      const detalle = await respuesta.text().catch(() => '');
+      logError('Webhook de notificaciones devolvio error', undefined, {
+        status: respuesta.status,
+        detalle: detalle.slice(0, 300)
+      });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logError('Fallo webhook de notificaciones', error);
+    return false;
+  }
 }

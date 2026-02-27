@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import { Types } from 'mongoose';
 import { ErrorAplicacion } from '../../compartido/errores/errorAplicacion';
 import { obtenerDocenteId, type SolicitudDocente } from '../modulo_autenticacion/middlewareAutenticacion';
 import {
@@ -14,13 +15,17 @@ import {
   calcularMargen,
   crearPreferenciaMercadoPago,
   construirResumenDashboard,
+  construirHuellaDispositivo,
   emitirTokenLicencia,
   generarCodigoActivacion,
+  generarHashSeguro,
   registrarAuditoriaComercial,
   validarConsentimientoTrial,
   validarMargenMinimo,
-  validarYAplicarCupon
+  validarYAplicarCupon,
+  ejecutarCicloCobranzaAutomatica
 } from './servicioComercialCore';
+import { PlantillaNotificacion } from './modeloPlantillaNotificacion';
 
 function obtenerIp(req: SolicitudDocente): string {
   const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0]?.trim();
@@ -376,6 +381,49 @@ export async function actualizarCampana(req: SolicitudDocente, res: Response) {
   res.json({ campana });
 }
 
+export async function listarPlantillasNotificacion(_req: SolicitudDocente, res: Response) {
+  const plantillas = await PlantillaNotificacion.find({}).sort({ evento: 1, canal: 1, idioma: 1 }).lean();
+  res.json({ plantillas });
+}
+
+export async function crearPlantillaNotificacion(req: SolicitudDocente, res: Response) {
+  const actorDocenteId = obtenerDocenteId(req);
+  const payload = {
+    ...req.body,
+    clave: String(req.body.clave || '').trim().toLowerCase()
+  };
+  const plantilla = await PlantillaNotificacion.create(payload);
+
+  await registrarAuditoriaComercial({
+    actorDocenteId,
+    accion: 'crear_plantilla_notificacion',
+    recurso: 'plantilla_notificacion',
+    recursoId: String(plantilla._id),
+    ip: obtenerIp(req),
+    diff: payload
+  });
+
+  res.status(201).json({ plantilla });
+}
+
+export async function actualizarPlantillaNotificacion(req: SolicitudDocente, res: Response) {
+  const actorDocenteId = obtenerDocenteId(req);
+  const id = String(req.params.id || '').trim();
+  const plantilla = await PlantillaNotificacion.findByIdAndUpdate(id, { $set: req.body }, { new: true }).lean();
+  if (!plantilla) throw new ErrorAplicacion('PLANTILLA_NOTIFICACION_NO_ENCONTRADA', 'Plantilla no encontrada', 404);
+
+  await registrarAuditoriaComercial({
+    actorDocenteId,
+    accion: 'actualizar_plantilla_notificacion',
+    recurso: 'plantilla_notificacion',
+    recursoId: id,
+    ip: obtenerIp(req),
+    diff: req.body
+  });
+
+  res.json({ plantilla });
+}
+
 export async function obtenerMetricasMrr(_req: SolicitudDocente, res: Response) {
   const activas = await Suscripcion.find({ estado: 'activo' }).lean();
   const totalMrr = activas.reduce((sum, item) => sum + Number(item.precioAplicado || 0), 0);
@@ -418,24 +466,25 @@ export async function generarLicencia(req: SolicitudDocente, res: Response) {
 
   const tipo = req.body.tipo;
   const codigoActivacion = generarCodigoActivacion();
+  const licenciaId = new Types.ObjectId();
+  const tokenLicencia = emitirTokenLicencia({
+    licenciaId: String(licenciaId),
+    tenantId,
+    tipo,
+    canalRelease: req.body.canalRelease
+  });
   const licencia = await Licencia.create({
+    _id: licenciaId,
     tenantId,
     tipo,
     codigoActivacion,
-    tokenLicencia: 'pendiente',
+    tokenLicencia,
+    tokenLicenciaHash: generarHashSeguro(tokenLicencia),
     expiraEn: req.body.expiraEn,
     graciaOfflineDias: 7,
     estado: 'generada',
     ultimoCanalRelease: req.body.canalRelease
   });
-
-  licencia.tokenLicencia = emitirTokenLicencia({
-    licenciaId: String(licencia._id),
-    tenantId,
-    tipo,
-    canalRelease: req.body.canalRelease
-  });
-  await licencia.save();
 
   await registrarAuditoriaComercial({
     actorDocenteId,
@@ -466,7 +515,13 @@ export async function revocarLicencia(req: SolicitudDocente, res: Response) {
   const id = String(req.params.id || '').trim();
   const licencia = await Licencia.findByIdAndUpdate(
     id,
-    { $set: { estado: 'revocada' } },
+    {
+      $set: {
+        estado: 'revocada',
+        revocadaRazon: 'revocacion_manual',
+        puntajeAnomalia: 100
+      }
+    },
     { new: true }
   ).lean();
   if (!licencia) throw new ErrorAplicacion('LICENCIA_NO_ENCONTRADA', 'Licencia no encontrada', 404);
@@ -478,6 +533,38 @@ export async function revocarLicencia(req: SolicitudDocente, res: Response) {
     recurso: 'licencia',
     recursoId: id,
     ip: obtenerIp(req)
+  });
+
+  res.json({ licencia });
+}
+
+export async function reasignarLicenciaDispositivo(req: SolicitudDocente, res: Response) {
+  const actorDocenteId = obtenerDocenteId(req);
+  const id = String(req.params.id || '').trim();
+  const licencia = await Licencia.findById(id);
+  if (!licencia) throw new ErrorAplicacion('LICENCIA_NO_ENCONTRADA', 'Licencia no encontrada', 404);
+  if (licencia.estado === 'revocada') throw new ErrorAplicacion('LICENCIA_REVOCADA', 'No se puede reasignar una licencia revocada', 422);
+
+  licencia.dispositivoVinculadoHash = construirHuellaDispositivo(licencia.tenantId, req.body.huella, req.body.host);
+  licencia.metaDispositivo = {
+    huella: req.body.huella,
+    host: req.body.host,
+    versionInstalada: req.body.versionInstalada
+  };
+  licencia.nonceUltimo = undefined;
+  licencia.contadorHeartbeat = 0;
+  licencia.intentosFallidos = 0;
+  licencia.puntajeAnomalia = 0;
+  await licencia.save();
+
+  await registrarAuditoriaComercial({
+    actorDocenteId,
+    tenantId: licencia.tenantId,
+    accion: 'reasignar_licencia_dispositivo',
+    recurso: 'licencia',
+    recursoId: id,
+    ip: obtenerIp(req),
+    diff: { motivo: req.body.motivo, host: req.body.host, versionInstalada: req.body.versionInstalada }
   });
 
   res.json({ licencia });
@@ -539,6 +626,25 @@ export async function crearPreferenciaCobroMercadoPago(req: SolicitudDocente, re
   });
 
   res.status(201).json({ preferencia });
+}
+
+export async function ejecutarCicloCobranzaManual(req: SolicitudDocente, res: Response) {
+  const actorDocenteId = obtenerDocenteId(req);
+  const resumen = await ejecutarCicloCobranzaAutomatica({
+    origen: 'manual',
+    actorDocenteId
+  });
+
+  await registrarAuditoriaComercial({
+    actorDocenteId,
+    accion: 'cobranza.ejecucion_manual',
+    recurso: 'cobranza',
+    recursoId: 'ciclo',
+    ip: obtenerIp(req),
+    diff: resumen
+  });
+
+  res.json({ resumen });
 }
 
 export async function registrarConsentimiento(req: SolicitudDocente, res: Response) {

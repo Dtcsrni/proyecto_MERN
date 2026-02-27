@@ -12,6 +12,13 @@ export const esquemaCrearTenant = z
     pais: z.string().trim().min(2).max(2).default('MX'),
     moneda,
     ownerDocenteId: z.string().trim().min(12),
+    contacto: z
+      .object({
+        correo: z.string().trim().email().optional(),
+        telefono: z.string().trim().min(7).max(30).optional(),
+        nombre: z.string().trim().min(2).max(120).optional()
+      })
+      .optional(),
     configAislamiento: z
       .object({
         estrategia: z.enum(['shared', 'dedicated']).default('shared'),
@@ -156,8 +163,8 @@ export const esquemaActivarLicencia = z
   .object({
     tenantId: z.string().trim().min(3),
     codigoActivacion: z.string().trim().min(10),
-    huella: z.string().trim().min(4).optional(),
-    host: z.string().trim().min(2).optional(),
+    huella: z.string().trim().min(8),
+    host: z.string().trim().min(2),
     versionInstalada: z.string().trim().min(1).optional()
   })
   .strict();
@@ -166,9 +173,20 @@ export const esquemaHeartbeatLicencia = z
   .object({
     tokenLicencia: z.string().trim().min(10),
     tenantId: z.string().trim().min(3),
-    huella: z.string().trim().min(4).optional(),
-    host: z.string().trim().min(2).optional(),
-    versionInstalada: z.string().trim().min(1).optional()
+    huella: z.string().trim().min(8),
+    host: z.string().trim().min(2),
+    versionInstalada: z.string().trim().min(1).optional(),
+    nonce: z.string().trim().min(8).max(180),
+    contador: z.number().int().nonnegative()
+  })
+  .strict();
+
+export const esquemaReasignarLicenciaDispositivo = z
+  .object({
+    huella: z.string().trim().min(8),
+    host: z.string().trim().min(2),
+    versionInstalada: z.string().trim().min(1).optional(),
+    motivo: z.string().trim().min(5).max(300)
   })
   .strict();
 
@@ -202,4 +220,22 @@ export const esquemaCrearPreferenciaMercadoPago = z
     correoComprador: z.string().trim().email().optional(),
     referenciaExterna: z.string().trim().min(3).max(200).optional()
   })
+  .strict();
+
+export const esquemaCrearPlantillaNotificacion = z
+  .object({
+    clave: z.string().trim().min(3).max(120),
+    evento: z.enum(['cobranza_recordatorio', 'cobranza_suspension_parcial', 'cobranza_suspension_total']),
+    canal: z.enum(['email', 'whatsapp', 'crm']),
+    idioma: z.string().trim().min(2).max(12).default('es-MX'),
+    asunto: z.string().trim().min(3).max(200),
+    contenido: z.string().trim().min(3).max(5000),
+    activo: z.boolean().optional(),
+    variables: z.array(z.string().trim().min(1).max(80)).optional()
+  })
+  .strict();
+
+export const esquemaActualizarPlantillaNotificacion = esquemaCrearPlantillaNotificacion
+  .omit({ clave: true })
+  .partial()
   .strict();

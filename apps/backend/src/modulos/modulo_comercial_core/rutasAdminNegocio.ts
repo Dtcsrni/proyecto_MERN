@@ -4,6 +4,7 @@ import { requerirPermiso } from '../modulo_autenticacion/middlewarePermisos';
 import {
   actualizarCampana,
   actualizarCupon,
+  actualizarPlantillaNotificacion,
   actualizarPlan,
   actualizarEstadoSuscripcion,
   actualizarTenant,
@@ -12,9 +13,11 @@ import {
   crearPreferenciaCobroMercadoPago,
   crearCampana,
   crearCupon,
+  crearPlantillaNotificacion,
   crearPlan,
   crearSuscripcion,
   crearTenant,
+  ejecutarCicloCobranzaManual,
   generarLicencia,
   listarAuditoria,
   listarCampanas,
@@ -22,6 +25,7 @@ import {
   listarCupones,
   listarLicencias,
   listarPlanes,
+  listarPlantillasNotificacion,
   listarSuscripciones,
   listarTenants,
   obtenerMetricasChurn,
@@ -30,12 +34,14 @@ import {
   obtenerMetricasLtvCac,
   obtenerMetricasMrr,
   obtenerResumenDashboard,
+  reasignarLicenciaDispositivo,
   registrarConsentimiento,
   revocarLicencia
 } from './controladorAdminNegocio';
 import {
   esquemaActualizarCampana,
   esquemaActualizarCupon,
+  esquemaActualizarPlantillaNotificacion,
   esquemaActualizarPlan,
   esquemaActualizarEstadoSuscripcion,
   esquemaActualizarTenant,
@@ -44,11 +50,13 @@ import {
   esquemaConsentimientoComercial,
   esquemaCrearCampana,
   esquemaCrearCupon,
+  esquemaCrearPlantillaNotificacion,
   esquemaCrearPreferenciaMercadoPago,
   esquemaCrearPlan,
   esquemaCrearSuscripcion,
   esquemaCrearTenant,
-  esquemaGenerarLicencia
+  esquemaGenerarLicencia,
+  esquemaReasignarLicenciaDispositivo
 } from './validacionesComercialCore';
 
 const router = Router();
@@ -80,6 +88,10 @@ router.get('/campanas', requerirPermiso('comercial:campanas:leer'), listarCampan
 router.post('/campanas', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaCrearCampana, { strict: true }), crearCampana);
 router.patch('/campanas/:id', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaActualizarCampana, { strict: true }), actualizarCampana);
 router.post('/campanas/:id', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaActualizarCampana, { strict: true }), actualizarCampana);
+router.get('/plantillas-notificacion', requerirPermiso('comercial:campanas:leer'), listarPlantillasNotificacion);
+router.post('/plantillas-notificacion', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaCrearPlantillaNotificacion, { strict: true }), crearPlantillaNotificacion);
+router.patch('/plantillas-notificacion/:id', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaActualizarPlantillaNotificacion, { strict: true }), actualizarPlantillaNotificacion);
+router.post('/plantillas-notificacion/:id', requerirPermiso('comercial:campanas:gestionar'), validarCuerpo(esquemaActualizarPlantillaNotificacion, { strict: true }), actualizarPlantillaNotificacion);
 
 router.get('/metricas/mrr', requerirPermiso('comercial:metricas:leer'), obtenerMetricasMrr);
 router.get('/metricas/conversion', requerirPermiso('comercial:metricas:leer'), obtenerMetricasConversion);
@@ -90,6 +102,12 @@ router.get('/metricas/guardrails', requerirPermiso('comercial:metricas:leer'), o
 router.get('/licencias', requerirPermiso('comercial:licencias:leer'), listarLicencias);
 router.post('/licencias/generar', requerirPermiso('comercial:licencias:gestionar'), validarCuerpo(esquemaGenerarLicencia, { strict: true }), generarLicencia);
 router.post('/licencias/:id/revocar', requerirPermiso('comercial:licencias:revocar'), revocarLicencia);
+router.post(
+  '/licencias/:id/reasignar-dispositivo',
+  requerirPermiso('comercial:licencias:gestionar'),
+  validarCuerpo(esquemaReasignarLicenciaDispositivo, { strict: true }),
+  reasignarLicenciaDispositivo
+);
 
 router.get('/cobranza', requerirPermiso('comercial:cobranza:leer'), listarCobranza);
 router.post(
@@ -98,6 +116,7 @@ router.post(
   validarCuerpo(esquemaCrearPreferenciaMercadoPago, { strict: true }),
   crearPreferenciaCobroMercadoPago
 );
+router.post('/cobranza/ciclo/ejecutar', requerirPermiso('comercial:cobranza:gestionar'), ejecutarCicloCobranzaManual);
 router.post('/consentimientos', requerirPermiso('comercial:suscripciones:gestionar'), validarCuerpo(esquemaConsentimientoComercial, { strict: true }), registrarConsentimiento);
 router.get('/auditoria', requerirPermiso('comercial:auditoria:leer'), listarAuditoria);
 

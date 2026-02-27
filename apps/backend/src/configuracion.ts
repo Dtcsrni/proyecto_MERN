@@ -94,9 +94,41 @@ const superadminGoogleEmails = (process.env.SUPERADMIN_GOOGLE_EMAILS ?? '')
   .filter(Boolean);
 const mercadoPagoAccessToken = String(process.env.MERCADOPAGO_ACCESS_TOKEN ?? '').trim();
 const mercadoPagoWebhookSecret = String(process.env.MERCADOPAGO_WEBHOOK_SECRET ?? '').trim();
+const mercadoPagoWebhookMaxEdadSegundos = parsearNumeroSeguro(process.env.MERCADOPAGO_WEBHOOK_MAX_EDAD_SEGUNDOS, 300, { min: 30, max: 3600 });
+const mercadoPagoWebhookFirmaEstrica = ['1', 'true', 'yes'].includes(String(process.env.MERCADOPAGO_WEBHOOK_FIRMA_ESTRICTA ?? 'true').toLowerCase());
+const cobranzaMontoToleranciaPct = parsearNumeroSeguro(process.env.COBRANZA_MONTO_TOLERANCIA_PCT, 0.03, { min: 0, max: 0.2 });
+const cobranzaMontoToleranciaAbs = parsearNumeroSeguro(process.env.COBRANZA_MONTO_TOLERANCIA_ABS, 1, { min: 0, max: 1000 });
 const licenciaJwtSecreto = String(process.env.LICENCIA_JWT_SECRETO ?? jwtSecretoEfectivo).trim();
+const licenciaJwtKidActivo = String(process.env.LICENCIA_JWT_KID_ACTIVO ?? '').trim();
+const licenciaJwtLlavePrivadaPem = String(process.env.LICENCIA_JWT_LLAVE_PRIVADA_PEM ?? '').trim().replace(/\\n/g, '\n');
+const licenciaJwtLlavePublicaPem = String(process.env.LICENCIA_JWT_LLAVE_PUBLICA_PEM ?? '').trim().replace(/\\n/g, '\n');
+const licenciaJwtPermitirLegacyHs256 = ['1', 'true', 'yes'].includes(String(process.env.LICENCIA_JWT_PERMITIR_LEGACY_HS256 ?? 'true').toLowerCase());
+const licenciaJwtLlavesPublicas: Record<string, string> = (() => {
+  const base: Record<string, string> = {};
+  if (licenciaJwtKidActivo && licenciaJwtLlavePublicaPem) {
+    base[licenciaJwtKidActivo] = licenciaJwtLlavePublicaPem;
+  }
+  const raw = String(process.env.LICENCIA_JWT_LLAVES_PUBLICAS_JSON ?? '').trim();
+  if (!raw) return base;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    for (const [kid, key] of Object.entries(parsed || {})) {
+      if (!kid || !key) continue;
+      base[String(kid).trim()] = String(key).replace(/\\n/g, '\n').trim();
+    }
+  } catch {
+    // Mantener fallback seguro sin romper arranque.
+  }
+  return base;
+})();
+const licenciaJwtAlgoritmo = licenciaJwtKidActivo && licenciaJwtLlavePrivadaPem ? 'RS256' : 'HS256';
 const licenciaHeartbeatHoras = parsearNumeroSeguro(process.env.LICENCIA_HEARTBEAT_HORAS, 12, { min: 1, max: 168 });
 const licenciaGraciaOfflineDias = parsearNumeroSeguro(process.env.LICENCIA_GRACIA_OFFLINE_DIAS, 7, { min: 1, max: 30 });
+const cobranzaAutomaticaIntervalMin = parsearNumeroSeguro(process.env.COBRANZA_AUTOMATICA_INTERVAL_MIN, 30, { min: 5, max: 1440 });
+const cobranzaDiasSuspensionParcial = parsearNumeroSeguro(process.env.COBRANZA_DIAS_SUSPENSION_PARCIAL, 3, { min: 1, max: 60 });
+const cobranzaDiasSuspensionTotal = parsearNumeroSeguro(process.env.COBRANZA_DIAS_SUSPENSION_TOTAL, 10, { min: 2, max: 120 });
+const notificacionesWebhookUrl = String(process.env.NOTIFICACIONES_WEBHOOK_URL ?? '').trim();
+const notificacionesWebhookToken = String(process.env.NOTIFICACIONES_WEBHOOK_TOKEN ?? '').trim();
 
 export const configuracion = {
   puerto,
@@ -130,7 +162,21 @@ export const configuracion = {
   superadminGoogleEmails,
   mercadoPagoAccessToken,
   mercadoPagoWebhookSecret,
+  mercadoPagoWebhookMaxEdadSegundos,
+  mercadoPagoWebhookFirmaEstrica,
+  cobranzaMontoToleranciaPct,
+  cobranzaMontoToleranciaAbs,
   licenciaJwtSecreto,
+  licenciaJwtAlgoritmo,
+  licenciaJwtKidActivo,
+  licenciaJwtLlavePrivadaPem,
+  licenciaJwtLlavesPublicas,
+  licenciaJwtPermitirLegacyHs256,
   licenciaHeartbeatHoras,
-  licenciaGraciaOfflineDias
+  licenciaGraciaOfflineDias,
+  cobranzaAutomaticaIntervalMin,
+  cobranzaDiasSuspensionParcial,
+  cobranzaDiasSuspensionTotal,
+  notificacionesWebhookUrl,
+  notificacionesWebhookToken
 };

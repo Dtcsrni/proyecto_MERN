@@ -22,7 +22,11 @@ Bootstrapper online para instalacion desde cero de EvaluaPro en entornos docente
 7. Verificacion de hash con `EvaluaPro.msi.sha256`.
 8. Ejecucion de `msiexec` segun modo.
 9. Verificacion post-instalacion.
-10. Pantalla de cierre con acciones (abrir dashboard, ver logs, reintentar).
+10. Blindaje local de licencia:
+   - almacenamiento cifrado de token con DPAPI (`LocalMachine`)
+   - baseline de integridad local (hash SHA-256 + MAC)
+   - activacion opcional contra `/api/comercial-publico/licencias/activar`
+11. Pantalla de cierre con acciones (abrir dashboard, ver logs, reintentar).
 
 ## Estructura y componentes
 - Entry UI:
@@ -33,6 +37,7 @@ Bootstrapper online para instalacion desde cero de EvaluaPro en entornos docente
   - `scripts/installer-hub/modules/PrereqInstaller.psm1`
   - `scripts/installer-hub/modules/ProductInstaller.psm1`
   - `scripts/installer-hub/modules/PostInstallVerifier.psm1`
+  - `scripts/installer-hub/modules/LicenseClientSecurity.psm1`
 
 ## Contratos de release
 Assets esperados en GitHub Release:
@@ -55,6 +60,15 @@ npm run installer:hub:build
 npm run installer:hashes
 npm run installer:sign
 ```
+
+Activacion segura opcional al instalar (GUI o headless):
+- `-ApiComercialBaseUrl`
+- `-TenantId`
+- `-CodigoActivacion`
+
+Si se proporcionan `TenantId` y `CodigoActivacion`, el Hub activa licencia y guarda token cifrado con DPAPI.
+Para cliente instalable macOS (cuando aplique), la estrategia equivalente es almacenamiento en Keychain del sistema.
+Utilitario cross-platform de referencia: `scripts/comercial/secure-license-store.mjs` (DPAPI/Keychain).
 
 ## Pipeline CI Windows
 Workflow: `.github/workflows/ci-installer-windows.yml`
@@ -80,6 +94,7 @@ Regla de publicacion:
 - `20`: descarga o verificacion fallida.
 - `30`: instalacion MSI fallida.
 - `40`: validacion post-instalacion fallida.
+- `50`: blindaje local de licencia/integridad fallido.
 
 ## Manejo de fallos y casos limite
 - Sin internet: bloqueo temprano y opcion de reintento.
