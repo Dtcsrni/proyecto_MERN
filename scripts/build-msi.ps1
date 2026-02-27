@@ -29,6 +29,29 @@ function Invoke-CheckedStep {
   }
 }
 
+function Resolve-BalExtensionDll {
+  param(
+    [string]$WixExecutable,
+    [Version]$WixVersion,
+    [string]$RootPath
+  )
+
+  $balPackageRef = "WixToolset.Bal.wixext/$($WixVersion.ToString())"
+  & $WixExecutable extension add $balPackageRef | Out-Null
+
+  $balDllCandidates = @(
+    (Join-Path $RootPath ".wix\extensions\WixToolset.Bal.wixext\$($WixVersion.ToString())\wixext6\WixToolset.BootstrapperApplications.wixext.dll"),
+    (Join-Path $RootPath ".wix\extensions\WixToolset.Bal.wixext\$($WixVersion.ToString())\wixext6\WixToolset.Bal.wixext.dll")
+  )
+
+  $balDll = $balDllCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $balDll) {
+    throw "No se pudo resolver extensión BAL de WiX 6. Esperado paquete $balPackageRef en .wix/extensions."
+  }
+
+  return $balDll
+}
+
 if (-not (Test-Path $wix)) {
   throw "No existe carpeta WiX en $wix"
 }
@@ -120,7 +143,8 @@ $idx += 1
 if ($buildBundle) {
   Write-Progress -Activity "EvaluaPro MSI (estable)" -Status "Compilar EXE Bundle.wxs" -PercentComplete ([Math]::Floor((($idx - 1) * 100) / [Math]::Max(1, $totalSteps)))
   Write-Host "[msi][step $idx/$totalSteps] Compilar EXE Bundle.wxs"
-  $bundleArgs = @("build", $bundle, "-arch", "x64", "-ext", "WixToolset.BootstrapperApplications.wixext", "-d", "SourceRoot=$root", "-o", (Join-Path $out "EvaluaPro-Setup.exe"))
+  $balExtDll = Resolve-BalExtensionDll -WixExecutable $wixExe -WixVersion $wixVersion -RootPath $root
+  $bundleArgs = @("build", $bundle, "-arch", "x64", "-ext", $balExtDll, "-d", "SourceRoot=$root", "-o", (Join-Path $out "EvaluaPro-Setup.exe"))
   if ($Version) { $bundleArgs += @("-d", "Version=$Version") }
   & $wixExe @bundleArgs
   if ($LASTEXITCODE -ne 0) { throw "Falló build de Bundle.wxs" }

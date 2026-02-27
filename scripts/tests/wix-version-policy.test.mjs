@@ -25,3 +25,16 @@ test('build-msi detecta wix.exe en rutas estandar de Windows sin depender del PA
   assert.match(buildScript, /Get-Command wix/i);
   assert.match(buildScript, /& \$wixExe @productArgs/i);
 });
+
+test('bundle usa sintaxis WixStdBA v6 y build-msi usa extension BAL de WiX 6', () => {
+  const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-msi.ps1'), 'utf8');
+  const bundleWxs = fs.readFileSync(path.join(root, 'packaging', 'wix', 'Bundle.wxs'), 'utf8');
+
+  assert.match(buildScript, /Resolve-BalExtensionDll/i);
+  assert.match(buildScript, /WixToolset\.Bal\.wixext/i);
+  assert.match(buildScript, /WixToolset\.BootstrapperApplications\.wixext\.dll/i);
+
+  assert.match(bundleWxs, /<BootstrapperApplication>/i);
+  assert.match(bundleWxs, /<bal:WixStandardBootstrapperApplication/i);
+  assert.doesNotMatch(bundleWxs, /<BootstrapperApplicationRef/i);
+});

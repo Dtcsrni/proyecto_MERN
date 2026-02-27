@@ -14,6 +14,7 @@ Responsable: `I.S.C. Erick Renato Vega Ceron`.
 - WiX Toolset v6+ estable (`wix` en PATH).
 - Node.js 24+.
 - Docker Desktop.
+- Para compilar bundle, el script resuelve automaticamente la extension BA de WiX 6 (`WixToolset.Bal.wixext` / `WixToolset.BootstrapperApplications.wixext.dll`).
 
 ## Build
 Desde la raiz:
@@ -24,9 +25,20 @@ npm run msi:build
 
 El build MSI ejecuta checks de estabilidad antes de empaquetar.
 
+`npm run msi:build`:
+- siempre compila `EvaluaPro.msi`.
+- compila `EvaluaPro-Setup.exe` solo si se habilita bundle:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1 -IncludeBundle`
+  - o `EVALUAPRO_BUILD_BUNDLE=1`.
+
 Artefactos esperados:
 - `dist/installer/EvaluaPro.msi`
-- `dist/installer/EvaluaPro-Setup.exe`
+- `dist/installer/EvaluaPro-Setup.exe` (solo con bundle habilitado)
+
+## CI Windows
+- Workflow: `.github/workflows/ci-installer-windows.yml`.
+- Se ejecuta en `main`, `tags v*` y manual.
+- Compila MSI + bundle (`-SkipStabilityChecks -IncludeBundle`) y publica artefactos.
 
 ## Notas
 - El acceso directo **Prod** ejecuta:

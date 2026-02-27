@@ -80,6 +80,11 @@ Build local:
 npm run msi:build
 ```
 
+Build local de bundle EXE (ademas del MSI):
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1 -IncludeBundle
+```
+
 Garantia de estabilidad para distribuible:
 - `msi:build` ejecuta checks obligatorios antes de empaquetar:
   - `lint`
@@ -93,12 +98,18 @@ Garantia de estabilidad para distribuible:
 
 Artefactos:
 - `dist/installer/EvaluaPro.msi`
-- `dist/installer/EvaluaPro-Setup.exe`
+- `dist/installer/EvaluaPro-Setup.exe` (cuando bundle esta habilitado)
 
 Prerequisitos de instalacion:
 - Node.js 24+
 - Docker Desktop
 - WiX Toolset v6+ estable (solo para generar instalador)
+- Extension BA WiX 6: resuelta automaticamente por `build-msi.ps1` (`WixToolset.Bal.wixext`).
+
+CI de instalador Windows:
+- Workflow: `.github/workflows/ci-installer-windows.yml`.
+- Trigger: `main`, tags `v*` y `workflow_dispatch`.
+- Valida `test:wix:policy` y compila MSI + bundle (`-SkipStabilityChecks -IncludeBundle`).
 
 Autoconfiguracion durante uso:
 - shortcuts Dev/Prod instalados automaticamente.

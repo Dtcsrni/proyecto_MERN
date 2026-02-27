@@ -9,7 +9,9 @@
     <Variable Name="InstallDesktopShortcuts" Type="numeric" Value="1" Persisted="yes" />
     <Variable Name="InstallStartMenuShortcuts" Type="numeric" Value="1" Persisted="yes" />
 
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication" />
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense" LicenseUrl="" SuppressOptionsUI="no" />
+    </BootstrapperApplication>
 
     <Chain>
       <MsiPackage
