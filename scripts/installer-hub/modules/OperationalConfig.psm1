@@ -25,13 +25,13 @@ function Normalize-OperationalConfig {
     [hashtable]$InputConfig
   )
   $cfg = [ordered]@{
-    mongoUri = [string]($InputConfig.mongoUri ?? '')
+    mongoUri = [string]($InputConfig.mongoUri ?? 'mongodb://mongo_local:27017/mern_app')
     jwtSecreto = [string]($InputConfig.jwtSecreto ?? '')
     nodeEnv = [string]($InputConfig.nodeEnv ?? 'production')
     puertoApi = [string]($InputConfig.puertoApi ?? '4000')
     puertoPortal = [string]($InputConfig.puertoPortal ?? '4518')
-    corsOrigenes = [string]($InputConfig.corsOrigenes ?? '')
-    portalAlumnoUrl = [string]($InputConfig.portalAlumnoUrl ?? '')
+    corsOrigenes = [string]($InputConfig.corsOrigenes ?? 'http://localhost:4173,http://127.0.0.1:4173')
+    portalAlumnoUrl = [string]($InputConfig.portalAlumnoUrl ?? 'https://portal-alumno.example.edu')
     portalAlumnoApiKey = [string]($InputConfig.portalAlumnoApiKey ?? '')
     portalApiKey = [string]($InputConfig.portalApiKey ?? '')
     passwordResetEnabled = ConvertTo-InstallerHubBool -Value ([string]($InputConfig.passwordResetEnabled ?? '1'))
@@ -49,7 +49,7 @@ function Normalize-OperationalConfig {
     apiComercialBaseUrl = [string]($InputConfig.apiComercialBaseUrl ?? '')
     tenantId = [string]($InputConfig.tenantId ?? '')
     codigoActivacion = [string]($InputConfig.codigoActivacion ?? '')
-    licenciaAccountEmail = [string]($InputConfig.licenciaAccountEmail ?? '')
+    licenciaAccountEmail = [string]($InputConfig.licenciaAccountEmail ?? 'soporte@tu-institucion.mx')
     updateChannel = [string]($InputConfig.updateChannel ?? 'stable')
     updateOwner = [string]($InputConfig.updateOwner ?? 'Dtcsrni')
     updateRepo = [string]($InputConfig.updateRepo ?? 'EvaluaPro_Sistema_Universitario')
@@ -60,6 +60,15 @@ function Normalize-OperationalConfig {
   }
   if ([string]::IsNullOrWhiteSpace($cfg.jwtSecreto)) {
     $cfg.jwtSecreto = New-GeneratedSecret
+  }
+  if ([string]::IsNullOrWhiteSpace($cfg.portalAlumnoApiKey) -and -not [string]::IsNullOrWhiteSpace($cfg.portalApiKey)) {
+    $cfg.portalAlumnoApiKey = $cfg.portalApiKey
+  } elseif ([string]::IsNullOrWhiteSpace($cfg.portalApiKey) -and -not [string]::IsNullOrWhiteSpace($cfg.portalAlumnoApiKey)) {
+    $cfg.portalApiKey = $cfg.portalAlumnoApiKey
+  } elseif ([string]::IsNullOrWhiteSpace($cfg.portalApiKey) -and [string]::IsNullOrWhiteSpace($cfg.portalAlumnoApiKey)) {
+    $sharedPortalKey = New-GeneratedSecret -Length 36
+    $cfg.portalApiKey = $sharedPortalKey
+    $cfg.portalAlumnoApiKey = $sharedPortalKey
   }
   return $cfg
 }

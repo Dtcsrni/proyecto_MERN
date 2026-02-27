@@ -67,6 +67,15 @@ npm run installer:sign
 ## Configuracion operativa obligatoria en instalacion
 - El Hub detecta automaticamente valores existentes desde `.env` previo (si existe) y los precarga en la UI.
 - Si falta configuracion critica, el flujo falla en `configuracion_operativa` (fail-fast) y no permite dejar instalacion incompleta.
+- Defaults estandar recomendados (si no hay config previa):
+  - `MONGODB_URI=mongodb://mongo_local:27017/mern_app`
+  - `NODE_ENV=production`
+  - `PUERTO_API=4000`
+  - `PUERTO_PORTAL=4518`
+  - `CORS_ORIGENES=http://localhost:4173,http://127.0.0.1:4173`
+  - `PORTAL_ALUMNO_URL=https://portal-alumno.example.edu` (debe ajustarse a URL real)
+  - `PORTAL_ALUMNO_API_KEY` y `PORTAL_API_KEY`: si faltan, se autogenera una clave compartida.
+  - `update.channel=stable`, `requireSha256=true`.
 - Variables cubiertas por instalador:
   - backend/portal: `MONGODB_URI`, `JWT_SECRETO`, `CORS_ORIGENES`, `PORTAL_ALUMNO_URL`, `PORTAL_ALUMNO_API_KEY`, `PORTAL_API_KEY`
   - entorno/stack local: `NODE_ENV`, `PUERTO_API`, `PUERTO_PORTAL`

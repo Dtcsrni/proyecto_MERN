@@ -190,6 +190,10 @@ export const esquemaReasignarLicenciaDispositivo = z
   })
   .strict();
 
+export const esquemaRevocarLicencia = z
+  .object({})
+  .strict();
+
 export const esquemaConsentimientoComercial = z
   .object({
     tenantId: z.string().trim().min(3),

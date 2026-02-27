@@ -4,7 +4,7 @@
 Se usa SemVer en raiz del monorepo.
 
 ## Estado actual
-- Version declarada actual: `1.0.0-beta.0`.
+- Version declarada actual: `1.0.0-beta.1`.
 - Canal operativo: beta funcional (MVP extendido).
 - Politica objetivo: `1.0-beta` con cero fallos de gates; promoción a estable con gate humano en produccion.
 - Seguimiento de olas y bloqueos vigente: `docs/INVENTARIO_PROYECTO.md`.

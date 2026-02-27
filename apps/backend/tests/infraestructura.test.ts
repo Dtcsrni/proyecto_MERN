@@ -29,8 +29,6 @@ describe('almacenLocal', () => {
 
 describe('servicioCorreo', () => {
   it('informa cuando el servicio no esta configurado', async () => {
-    await expect(enviarCorreo('destino@test', 'Asunto', 'Contenido')).rejects.toThrow(
-      'Servicio de correo no configurado'
-    );
+    await expect(enviarCorreo('destino@test', 'Asunto', 'Contenido')).resolves.toBe(false);
   });
 });

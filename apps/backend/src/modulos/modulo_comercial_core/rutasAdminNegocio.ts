@@ -57,6 +57,7 @@ import {
   esquemaCrearSuscripcion,
   esquemaCrearTenant,
   esquemaGenerarLicencia,
+  esquemaRevocarLicencia,
   esquemaReasignarLicenciaDispositivo
 } from './validacionesComercialCore';
 
@@ -102,7 +103,12 @@ router.get('/metricas/guardrails', requerirPermiso('comercial:metricas:leer'), o
 
 router.get('/licencias', requerirPermiso('comercial:licencias:leer'), listarLicencias);
 router.post('/licencias/generar', requerirPermiso('comercial:licencias:gestionar'), validarCuerpo(esquemaGenerarLicencia, { strict: true }), generarLicencia);
-router.post('/licencias/:id/revocar', requerirPermiso('comercial:licencias:revocar'), revocarLicencia);
+router.post(
+  '/licencias/:id/revocar',
+  requerirPermiso('comercial:licencias:revocar'),
+  validarCuerpo(esquemaRevocarLicencia, { strict: true }),
+  revocarLicencia
+);
 router.post(
   '/licencias/:id/reasignar-dispositivo',
   requerirPermiso('comercial:licencias:gestionar'),

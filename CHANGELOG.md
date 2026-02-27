@@ -84,7 +84,7 @@ Este archivo sigue el formato "Keep a Changelog" (alto nivel) y SemVer.
   - API canonica unificada en `/api/*`.
   - Rutas `/api/v2/*` retiradas (404 esperado).
   - OMR operativo TV3-only.
-  - baseline de version consolidado en `1.0.0-beta.0`.
+  - baseline de version consolidado en `1.0.0-beta.1`.
 - Trazabilidad historica de release:
   - el tag `v1b` se conserva como hito historico de transicion.
   - `1.0.0-beta.0` queda como baseline operativo actual.

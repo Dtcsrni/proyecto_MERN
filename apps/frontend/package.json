@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "description": "UI React (Vite) para portal docente/alumno: autenticación, gestión de evaluaciones y flujos de aplicación/calificación.",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.1",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",
@@ -9,7 +9,14 @@
     "type": "git",
     "url": "https://github.com/Dtcsrni/EvaluaPro_Sistema_Universitario"
   },
-  "keywords": ["react", "vite", "frontend", "docente", "alumno", "evaluacion"],
+  "keywords": [
+    "react",
+    "vite",
+    "frontend",
+    "docente",
+    "alumno",
+    "evaluacion"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:alumno": "node -e \"const {spawnSync}=require('child_process');const env={...process.env,VITE_APP_DESTINO:'alumno'};const r=spawnSync('vite',[],{stdio:'inherit',shell:true,env});process.exit(r.status??1);\"",

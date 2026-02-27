@@ -169,13 +169,13 @@ function New-FlowState {
     apiComercialBaseUrl = $ApiComercialBaseUrl
     tenantId = $TenantId
     codigoActivacion = $CodigoActivacion
-    mongoUri = if ($MongoUri) { $MongoUri } else { [string]($detected.MONGODB_URI ?? '') }
+    mongoUri = if ($MongoUri) { $MongoUri } else { [string]($detected.MONGODB_URI ?? 'mongodb://mongo_local:27017/mern_app') }
     jwtSecreto = if ($JwtSecreto) { $JwtSecreto } else { [string]($detected.JWT_SECRETO ?? '') }
     nodeEnv = if ($NodeEnv) { $NodeEnv } else { [string]($detected.NODE_ENV ?? 'production') }
     puertoApi = if ($PuertoApi) { $PuertoApi } else { [string]($detected.PUERTO_API ?? '4000') }
     puertoPortal = if ($PuertoPortal) { $PuertoPortal } else { [string]($detected.PUERTO_PORTAL ?? '4518') }
-    corsOrigenes = if ($CorsOrigenes) { $CorsOrigenes } else { [string]($detected.CORS_ORIGENES ?? '') }
-    portalAlumnoUrl = if ($PortalAlumnoUrl) { $PortalAlumnoUrl } else { [string]($detected.PORTAL_ALUMNO_URL ?? '') }
+    corsOrigenes = if ($CorsOrigenes) { $CorsOrigenes } else { [string]($detected.CORS_ORIGENES ?? 'http://localhost:4173,http://127.0.0.1:4173') }
+    portalAlumnoUrl = if ($PortalAlumnoUrl) { $PortalAlumnoUrl } else { [string]($detected.PORTAL_ALUMNO_URL ?? 'https://portal-alumno.example.edu') }
     portalAlumnoApiKey = if ($PortalAlumnoApiKey) { $PortalAlumnoApiKey } else { [string]($detected.PORTAL_ALUMNO_API_KEY ?? '') }
     portalApiKey = if ($PortalApiKey) { $PortalApiKey } else { [string]($detected.PORTAL_API_KEY ?? '') }
     passwordResetEnabled = if ($PasswordResetEnabled) { $PasswordResetEnabled } else { [string]($detected.PASSWORD_RESET_ENABLED ?? '1') }
@@ -190,7 +190,7 @@ function New-FlowState {
     notificacionesWebhookUrl = if ($NotificacionesWebhookUrl) { $NotificacionesWebhookUrl } else { [string]($detected.NOTIFICACIONES_WEBHOOK_URL ?? '') }
     notificacionesWebhookToken = if ($NotificacionesWebhookToken) { $NotificacionesWebhookToken } else { [string]($detected.NOTIFICACIONES_WEBHOOK_TOKEN ?? '') }
     requireLicenseActivation = $RequireLicenseActivation
-    licenciaAccountEmail = if ($LicenciaAccountEmail) { $LicenciaAccountEmail } else { [string]($detected.LICENCIA_ACCOUNT_EMAIL ?? '') }
+    licenciaAccountEmail = if ($LicenciaAccountEmail) { $LicenciaAccountEmail } else { [string]($detected.LICENCIA_ACCOUNT_EMAIL ?? 'soporte@tu-institucion.mx') }
     updateChannel = if ($UpdateChannel) { $UpdateChannel } else { [string]($detectedUpdate.channel ?? 'stable') }
     updateOwner = if ($UpdateOwner) { $UpdateOwner } else { [string]($detectedUpdate.owner ?? 'Dtcsrni') }
     updateRepo = if ($UpdateRepo) { $UpdateRepo } else { [string]($detectedUpdate.repo ?? 'EvaluaPro_Sistema_Universitario') }
