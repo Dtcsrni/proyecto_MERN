@@ -28,6 +28,14 @@ export type RespuestaLiveness = RespuestaSalud & {
 };
 
 export type RespuestaReadiness = RespuestaSalud & {
+  dependencies?: {
+    mongodb: {
+      status: 'ok' | 'fail';
+      ready: boolean;
+      state: number;
+      description: string;
+    };
+  };
   dependencias: {
     db: {
       estado: number;

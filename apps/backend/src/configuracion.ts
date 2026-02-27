@@ -52,6 +52,16 @@ const classroomTokenCipherKey = process.env.CLASSROOM_TOKEN_CIPHER_KEY ?? '';
 const codigoAccesoHoras = Number(process.env.CODIGO_ACCESO_HORAS ?? 12);
 const portalAlumnoUrl = process.env.PORTAL_ALUMNO_URL ?? '';
 const portalApiKey = process.env.PORTAL_ALUMNO_API_KEY ?? '';
+const corsOrigenesRaw = String(process.env.CORS_ORIGENES ?? '').trim();
+if (entorno === 'production' && !portalAlumnoUrl) {
+  throw new Error('PORTAL_ALUMNO_URL es requerido en producción');
+}
+if (entorno === 'production' && !portalApiKey) {
+  throw new Error('PORTAL_ALUMNO_API_KEY es requerido en producción');
+}
+if (entorno === 'production' && !corsOrigenesRaw) {
+  throw new Error('CORS_ORIGENES es requerido en producción');
+}
 
 // Rate limit: configurable por entorno para tuning y para pruebas deterministas.
 // Defaults conservan el comportamiento anterior.

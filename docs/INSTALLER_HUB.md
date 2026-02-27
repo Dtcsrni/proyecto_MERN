@@ -53,6 +53,7 @@ Manifest de prerequisitos versionado:
 Manifest de release generado:
 - `dist/installer/EvaluaPro-release-manifest.json`
 - campos minimos: `version`, `channel`, `msiUrl`, `msiSha256Url`, `publishedAt`
+- campos extendidos piloto: `build.version`, `build.commit`, `artifacts[]` (`name`, `sha256`, `signed`), `deployment.target`
 
 ## Build local
 ```powershell

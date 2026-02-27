@@ -63,6 +63,10 @@ Portal cloud:
 - `CODIGO_ACCESO_HORAS`
 - `CORS_ORIGENES`
 
+Fail-fast en produccion:
+- Backend docente exige `MONGODB_URI`, `JWT_SECRETO`, `PORTAL_ALUMNO_URL`, `PORTAL_ALUMNO_API_KEY`, `CORS_ORIGENES`.
+- Portal cloud exige `MONGODB_URI`, `PORTAL_API_KEY`, `CORS_ORIGENES` y rechaza `CORS_ORIGENES=*`.
+
 Frontend alumno/docente (build separado):
 - `VITE_APP_DESTINO` (`alumno` | `docente`)
 - `VITE_PORTAL_BASE_URL`
@@ -157,6 +161,10 @@ No autoconfigurable por instalador:
 - Estado rapido:
 ```bash
 npm run status
+```
+- Smoke diario piloto (local + cloud):
+```bash
+npm run ops:smoke:pilot -- --backend-base=http://localhost:4000/api --portal-base=https://<tu-portal>/api/portal
 ```
 - Checks previos a liberar:
 ```bash

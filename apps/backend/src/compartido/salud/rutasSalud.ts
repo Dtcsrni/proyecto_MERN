@@ -81,7 +81,7 @@ function buscarRaizRepo(inicio: string) {
   return path.resolve(inicio, '../../../../..');
 }
 
-function leerVersionInfo() {
+export function obtenerVersionInfo() {
   const raiz = buscarRaizRepo(process.cwd());
   const pkg = leerPackageMetadata(raiz);
   const catalogo = leerCatalogoVersion(raiz, pkg.repositoryUrl);
@@ -139,6 +139,14 @@ router.get('/ready', (_req, res) => {
   const payload: RespuestaReadiness = {
     estado: lista ? 'ok' : 'degradado',
     tiempoActivo: process.uptime(),
+    dependencies: {
+      mongodb: {
+        status: lista ? 'ok' : 'fail',
+        ready: lista,
+        state: estado,
+        description: textoEstado
+      }
+    },
     dependencias: {
       db: {
         estado,
@@ -158,7 +166,7 @@ router.get('/metrics', (_req, res) => {
 });
 
 router.get('/version-info', (_req, res) => {
-  res.json(leerVersionInfo());
+  res.json(obtenerVersionInfo());
 });
 
 function esIpPrivada(ip: string) {

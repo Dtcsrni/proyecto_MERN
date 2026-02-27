@@ -5,11 +5,13 @@ Backend:
 - `GET /api/salud/live`
 - `GET /api/salud/ready`
 - `GET /api/salud/metrics`
+- `GET /api/version`
 
 Portal:
 - `GET /api/portal/salud/live`
 - `GET /api/portal/salud/ready`
 - `GET /api/portal/metrics`
+- `GET /api/portal/version`
 
 ## 2. Síntoma: API no responde
 1. Revisar contenedores/proceso:
@@ -18,6 +20,7 @@ Portal:
 - backend/portal en formato JSON con `requestId`.
 3. Comprobar readiness:
 - Si `ready` da 503, validar conectividad MongoDB.
+- Campo estandar: `dependencies.mongodb` (`status`, `ready`, `state`, `description`).
 
 ### Arranque estable local (Windows)
 1. Ejecutar acceso directo:
@@ -93,10 +96,15 @@ Alcance de la reparación v1:
 2. `GET /api/portal/salud/live` -> 200
 3. `GET /api/metrics` -> 200
 4. `GET /api/portal/metrics` -> 200
+5. `GET /api/version` -> 200
+6. `GET /api/portal/version` -> 200
 
 Si falla portal:
 - ejecutar `npm run portal:prod`
 - revisar logs de dashboard/tray para build/start de portal.
+
+Smoke automatizado sugerido:
+- `npm run ops:smoke:pilot -- --backend-base=http://localhost:4000/api --portal-base=https://<tu-portal>/api/portal`
 
 ## 6. Escalamiento
 - Si hay degradación sostenida (`ready` inestable + errores altos), activar rollback al último release estable.

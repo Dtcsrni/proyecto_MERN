@@ -122,6 +122,7 @@
     "ia:handoff:quick": "node scripts/ia-handoff.mjs --mode quick",
     "ia:handoff:full": "node scripts/ia-handoff.mjs --mode full",
     "release:gate:prod-flow": "node scripts/release/gate-prod-flow.mjs",
+    "ops:smoke:pilot": "node scripts/release/smoke-piloto-hibrido.mjs",
     "release:check:ci-streak": "node scripts/release/check-ci-streak.mjs",
     "release:check:evidence": "node scripts/release/check-release-evidence.mjs",
     "release:validate:stable": "node scripts/release/validate-stable-promotion.mjs",

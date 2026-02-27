@@ -36,6 +36,13 @@ describe('salud', () => {
     expect([200, 503]).toContain(ready.status);
     expect(ready.body).toEqual(
       expect.objectContaining({
+        dependencies: expect.objectContaining({
+          mongodb: expect.objectContaining({
+            status: expect.any(String),
+            ready: expect.any(Boolean),
+            state: expect.any(Number)
+          })
+        }),
         dependencias: expect.objectContaining({
           db: expect.objectContaining({
             estado: expect.any(Number),
@@ -61,6 +68,21 @@ describe('salud', () => {
     expect(String(res.text)).toContain('evaluapro_http_requests_total');
     expect(String(res.text)).toContain('evaluapro_omr_stage_duration_ms');
     expect(String(res.text)).toContain('evaluapro_omr_pipeline_total');
+  });
+
+  it('expone version en /api/version', async () => {
+    const app = crearApp();
+    const res = await request(app).get('/api/version').expect(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        name: expect.any(String),
+        version: expect.any(String),
+        build: expect.objectContaining({
+          commit: expect.any(String),
+          generatedAt: expect.any(String)
+        })
+      })
+    );
   });
 
   it('expone version-info con repositorio y tecnologías', async () => {

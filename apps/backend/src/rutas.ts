@@ -8,7 +8,7 @@
  * Nota: El orden de `router.use(...)` es parte del contrato de seguridad.
  */
 import { Router } from 'express';
-import rutasSalud from './compartido/salud/rutasSalud';
+import rutasSalud, { obtenerVersionInfo } from './compartido/salud/rutasSalud';
 import rutasAutenticacion from './modulos/modulo_autenticacion/rutasAutenticacion';
 import { requerirDocente } from './modulos/modulo_autenticacion/middlewareAutenticacion';
 import rutasAlumnos from './modulos/modulo_alumnos/rutasAlumnos';
@@ -36,6 +36,17 @@ export function crearRouterApi() {
 
   // Endpoints sin autenticacion (usados por health checks y login).
   router.use('/salud', rutasSalud);
+  router.get('/version', (_req, res) => {
+    const info = obtenerVersionInfo();
+    res.json({
+      name: info.app.name,
+      version: info.app.version,
+      build: {
+        commit: String(process.env.GITHUB_SHA || '').trim() || 'local',
+        generatedAt: info.system.generatedAt
+      }
+    });
+  });
   router.get('/metrics', (_req, res) => {
     res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
     res.send(exportarMetricasPrometheus());

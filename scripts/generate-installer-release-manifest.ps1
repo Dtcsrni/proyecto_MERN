@@ -3,7 +3,8 @@ param(
   [string]$Channel = 'stable',
   [string]$MsiUrl = '',
   [string]$MsiSha256Url = '',
-  [string]$OutputPath = ''
+  [string]$OutputPath = '',
+  [string]$DeploymentTarget = 'local-prod'
 )
 
 Set-StrictMode -Version Latest
@@ -20,12 +21,48 @@ if (-not $OutputPath) {
   $OutputPath = Join-Path $root 'dist\\installer\\EvaluaPro-release-manifest.json'
 }
 
+$commit = [string]$env:GITHUB_SHA
+if (-not $commit) {
+  try {
+    $commit = (& git rev-parse HEAD 2>$null | Select-Object -First 1)
+  } catch {
+    $commit = ''
+  }
+}
+if (-not $commit) {
+  $commit = 'local'
+}
+
+$installerDir = Split-Path -Parent $OutputPath
+$unsignedMarker = Join-Path $installerDir 'SIGNING-NOT-PRODUCTION.txt'
+$isSigned = -not (Test-Path $unsignedMarker)
+
+$artifacts = @()
+foreach ($name in @('EvaluaPro.msi', 'EvaluaPro-Setup.exe', 'EvaluaPro-InstallerHub.exe')) {
+  $artifactPath = Join-Path $installerDir $name
+  if (-not (Test-Path $artifactPath)) { continue }
+  $sha256 = (Get-FileHash -Path $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $artifacts += [ordered]@{
+    name = $name
+    sha256 = $sha256
+    signed = $isSigned
+  }
+}
+
 $payload = [ordered]@{
   version = $Version
   channel = $Channel
   msiUrl = $MsiUrl
   msiSha256Url = $MsiSha256Url
   publishedAt = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssZ')
+  build = [ordered]@{
+    version = $Version
+    commit = $commit
+  }
+  artifacts = $artifacts
+  deployment = [ordered]@{
+    target = $DeploymentTarget
+  }
 }
 
 $dir = Split-Path -Parent $OutputPath

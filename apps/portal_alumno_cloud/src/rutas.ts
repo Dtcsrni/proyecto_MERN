@@ -12,6 +12,8 @@
  */
 import { Router, type Request, type Response } from 'express';
 import mongoose from 'mongoose';
+import fs from 'node:fs';
+import path from 'node:path';
 import { gunzipSync } from 'zlib';
 import { configuracion } from './configuracion';
 import { CodigoAcceso } from './modelos/modeloCodigoAcceso';
@@ -30,6 +32,19 @@ import { requerirSesionAlumno, type SolicitudAlumno } from './servicios/middlewa
 import { exportarMetricasPrometheus } from './infraestructura/observabilidad/metrics';
 
 const router = Router();
+
+function leerVersionAppPortal() {
+  try {
+    const pkgPath = path.resolve(__dirname, '..', '..', '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    return {
+      name: String(pkg?.name || 'evaluapro'),
+      version: String(pkg?.version || '0.0.0')
+    };
+  } catch {
+    return { name: 'evaluapro', version: '0.0.0' };
+  }
+}
 
 function responderError(res: Response, status: number, codigo: string, mensaje: string) {
   res.status(status).json({ error: { codigo, mensaje } });
@@ -159,15 +174,37 @@ router.get('/salud/live', (_req, res) => {
 
 router.get('/salud/ready', (_req, res) => {
   const estadoDb = mongoose.connection.readyState;
+  const textoEstado = ['desconectado', 'conectado', 'conectando', 'desconectando'][estadoDb] ?? 'desconocido';
   const lista = estadoDb === 1 || !configuracion.mongoUri;
   res.status(lista ? 200 : 503).json({
     estado: lista ? 'ok' : 'degradado',
     tiempoActivo: process.uptime(),
+    dependencies: {
+      mongodb: {
+        status: lista ? 'ok' : 'fail',
+        ready: lista,
+        state: estadoDb,
+        description: textoEstado
+      }
+    },
     dependencias: {
       db: {
         estado: estadoDb,
+        descripcion: textoEstado,
         lista
       }
+    }
+  });
+});
+
+router.get('/version', (_req, res) => {
+  const app = leerVersionAppPortal();
+  res.json({
+    name: app.name,
+    version: app.version,
+    build: {
+      commit: String(process.env.GITHUB_SHA || '').trim() || 'local',
+      generatedAt: new Date().toISOString()
     }
   });
 });

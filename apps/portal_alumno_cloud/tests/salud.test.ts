@@ -20,6 +20,13 @@ describe('salud portal', () => {
 
     const ready = await request(app).get('/api/portal/salud/ready');
     expect([200, 503]).toContain(ready.status);
+    expect(ready.body?.dependencies?.mongodb).toEqual(
+      expect.objectContaining({
+        status: expect.any(String),
+        ready: expect.any(Boolean),
+        state: expect.any(Number)
+      })
+    );
     expect(ready.body?.dependencias?.db).toEqual(
       expect.objectContaining({
         estado: expect.any(Number),
@@ -34,5 +41,20 @@ describe('salud portal', () => {
     expect(res.headers['content-type']).toContain('text/plain');
     expect(String(res.text)).toContain('evaluapro_portal_http_requests_total');
     expect(String(res.text)).toContain('evaluapro_portal_db_ready_state');
+  });
+
+  it('expone version en /api/portal/version', async () => {
+    const app = crearApp();
+    const res = await request(app).get('/api/portal/version').expect(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        name: expect.any(String),
+        version: expect.any(String),
+        build: expect.objectContaining({
+          commit: expect.any(String),
+          generatedAt: expect.any(String)
+        })
+      })
+    );
   });
 });

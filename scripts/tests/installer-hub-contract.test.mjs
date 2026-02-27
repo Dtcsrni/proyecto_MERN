@@ -46,3 +46,12 @@ test('workflow de installer publica contratos nuevos de release', () => {
   assert.match(workflow, /EvaluaPro-InstallerHub\.exe/);
   assert.match(workflow, /EvaluaPro-release-manifest\.json/);
 });
+
+test('script de release manifest incluye contrato extendido de build/deployment/artifacts', () => {
+  const script = fs.readFileSync(path.join(root, 'scripts', 'generate-installer-release-manifest.ps1'), 'utf8');
+  assert.match(script, /build\s*=\s*\[ordered\]@{/);
+  assert.match(script, /commit\s*=\s*\$commit/);
+  assert.match(script, /artifacts\s*=\s*\$artifacts/);
+  assert.match(script, /deployment\s*=\s*\[ordered\]@{/);
+  assert.match(script, /target\s*=\s*\$DeploymentTarget/);
+});

@@ -14,6 +14,7 @@ dotenv.config({
 const puerto = Number(process.env.PUERTO_PORTAL ?? process.env.PORT ?? 8080);
 const mongoUri = process.env.MONGODB_URI ?? '';
 const entorno = process.env.NODE_ENV ?? 'development';
+const corsOrigenesRaw = String(process.env.CORS_ORIGENES ?? '').trim();
 const corsOrigenes = (process.env.CORS_ORIGENES ?? '*')
   .split(',')
   .map((origen) => origen.trim())
@@ -25,6 +26,12 @@ if (entorno === 'production' && !mongoUri) {
 }
 if (entorno === 'production' && !portalApiKey) {
   throw new Error('PORTAL_API_KEY es requerido en producción (portal)');
+}
+if (entorno === 'production' && !corsOrigenesRaw) {
+  throw new Error('CORS_ORIGENES es requerido en producción (portal)');
+}
+if (entorno === 'production' && corsOrigenes.includes('*')) {
+  throw new Error('CORS_ORIGENES no puede usar "*" en producción (portal)');
 }
 
 function parsearNumeroSeguro(valor: unknown, porDefecto: number, { min, max }: { min?: number; max?: number } = {}) {
