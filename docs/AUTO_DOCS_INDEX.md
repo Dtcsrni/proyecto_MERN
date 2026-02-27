@@ -6,6 +6,7 @@ No editar a mano: los cambios se pisan al regenerar.
 - [ARQUITECTURA.md](ARQUITECTURA.md) — Arquitectura
 - [ARQUITECTURA_C4.md](ARQUITECTURA_C4.md) — Arquitectura C4
 - [CICLO_DESARROLLO.md](CICLO_DESARROLLO.md) — Ciclo de desarrollo
+- [CUMPLIMIENTO.md](CUMPLIMIENTO.md) — Cumplimiento y Privacidad
 - [DESPLIEGUE.md](DESPLIEGUE.md) — Despliegue
 - [DEVOPS_BASELINE.md](DEVOPS_BASELINE.md) — DevOps Baseline
 - [DIAGRAMAS.md](DIAGRAMAS.md) — Diagramas
@@ -25,9 +26,11 @@ No editar a mano: los cambios se pisan al regenerar.
 - [README.md](README.md) — docs/
 - [RELEASE_BIGBANG_1_0_BETA.md](RELEASE_BIGBANG_1_0_BETA.md) — Cierre Beta `1.0.0-beta.0`
 - [RELEASE_GATE_STABLE.md](RELEASE_GATE_STABLE.md) — Gate de Promocion a Estable
+- [REPO_SANITIZATION_RUNBOOK.md](REPO_SANITIZATION_RUNBOOK.md) — Runbook de Saneamiento de Historial Git
 - [ROADMAP_REQUISITOS.md](ROADMAP_REQUISITOS.md) — Roadmap de Requisitos Verificables
 - [ROLES_PERMISOS.md](ROLES_PERMISOS.md) — Roles, accesos y permisos (RBAC)
 - [RUNBOOK_OPERACION.md](RUNBOOK_OPERACION.md) — Runbook Operación (Local + Cloud mínimo)
+- [SECURITY_POLICY.md](SECURITY_POLICY.md) — Security Policy Corporativa
 - [SEGURIDAD.md](SEGURIDAD.md) — Seguridad
 - [SEGURIDAD_OPERATIVA.md](SEGURIDAD_OPERATIVA.md) — Checklist de Seguridad Operativa
 - [SINCRONIZACION_ENTRE_COMPUTADORAS.md](SINCRONIZACION_ENTRE_COMPUTADORAS.md) — Sincronizacion entre computadoras
