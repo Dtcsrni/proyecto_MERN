@@ -55,6 +55,13 @@ export interface ResultadoGeneracionPdf {
     fraccionVacia: number;
     preguntas: number;
   }>;
+  metricasLayout?: {
+    minLineHeightApplied: number;
+    preguntasConFormatoRico: number;
+    imagenesIntentadas: number;
+    imagenesRenderizadas: number;
+    imagenesFallidas: number;
+  };
   mapaOmr: MapaOmr;
   preguntasRestantes: number;
 }
@@ -146,6 +153,14 @@ export interface PaginaOmr {
     numeroPregunta: number;
     idPregunta: string;
     opciones: Array<{ letra: string; x: number; y: number }>;
+    textRuns?: Array<{
+      tipo: 'texto' | 'codigo';
+      fuente: string;
+      size: number;
+      lineHeight: number;
+      bbox: { x: number; y: number; width: number; height: number };
+    }>;
+    imageRenderStatus?: 'ok' | 'error';
     bboxPregunta?: { x: number; y: number; width: number; height: number };
     cajaOmr?: { x: number; y: number; width: number; height: number };
     perfilOmr?: { radio: number; pasoY: number; cajaAncho: number };
@@ -157,9 +172,11 @@ export interface PaginaOmr {
     };
   }>;
   layoutDebug?: {
+    layoutTemplateVersion?: number;
     header?: { x: number; y: number; width: number; height: number };
     qr?: { x: number; y: number; width: number; height: number };
     headerTextBlocks?: Array<{ x: number; y: number; width: number; height: number; id: string }>;
+    lineHeightViolations?: Array<{ preguntaId: string; lineHeight: number; min: number }>;
     contentStartY?: number;
     contentEndY?: number;
   };

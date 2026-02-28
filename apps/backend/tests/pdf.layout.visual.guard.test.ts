@@ -47,6 +47,8 @@ function crearParametros(cantidadPreguntas = 24) {
 describe('pdf layout visual guard', () => {
   it('valida no solapes, cajas dentro de pagina y densidad 8-9 preguntas por pagina', async () => {
     const resultado = await generarPdfExamen(crearParametros(24));
+    expect(resultado.metricasLayout).toBeTruthy();
+    expect((resultado.metricasLayout?.minLineHeightApplied ?? 0) >= 10.4).toBe(true);
 
     const conteoPorPagina = resultado.paginas.map((pagina) => {
       const del = Number(pagina.preguntasDel ?? 0);
@@ -79,6 +81,8 @@ describe('pdf layout visual guard', () => {
       }
 
       const bloquesHeader = Array.isArray(dbg?.headerTextBlocks) ? dbg!.headerTextBlocks : [];
+      const violaciones = Array.isArray(dbg?.lineHeightViolations) ? dbg!.lineHeightViolations : [];
+      expect(violaciones.length).toBe(0);
       for (let i = 0; i < bloquesHeader.length; i += 1) {
         const a = bloquesHeader[i] as Rect;
         expect(a.x).toBeGreaterThanOrEqual(0);
@@ -94,6 +98,8 @@ describe('pdf layout visual guard', () => {
       const preguntas = Array.isArray(pagina.preguntas) ? pagina.preguntas : [];
       for (let i = 0; i < preguntas.length; i += 1) {
         const actual = preguntas[i];
+        expect(Array.isArray(actual.textRuns)).toBe(true);
+        expect((actual.textRuns ?? []).length).toBeGreaterThan(0);
         if (!actual.bboxPregunta) continue;
         const a = actual.bboxPregunta;
         expect(a.x).toBeGreaterThanOrEqual(0);
@@ -114,4 +120,3 @@ describe('pdf layout visual guard', () => {
     }
   });
 });
-

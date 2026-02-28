@@ -84,7 +84,8 @@ npm -C apps/backend run omr:tv3:calibrate:real
   - reducir `OMR_AUTO_AMBIGUAS_MAX`
   - subir `OMR_AUTO_DETECCION_MIN`
 - `autoCoverageRate < 1.0`:
-  - validar que `OMR_AUTO_FORCE_ALL_PAGES=1`
+  - NO forzar páginas por defecto; mantener `OMR_AUTO_FORCE_ALL_PAGES=0`
+  - usar `OMR_AUTO_FORCE_ALL_PAGES=1` solo en diagnóstico controlado (nunca en producción)
   - revisar páginas con `mismatches` altos en `tv3-real-*-failure-analysis.json`
 - `fuera_roi`/geometría:
   - revisar perfil geométrico y umbrales `OMR_ALIGN_RANGE`/`OMR_VERT_RANGE`.

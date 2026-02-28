@@ -372,6 +372,20 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     ratioAmbiguas,
     coberturaDeteccion
   });
+  if (respuestas.length > 0 && !autoCalificableOmr && !revisionConfirmada) {
+    throw new ErrorAplicacion(
+      'OMR_REQUIERE_REVISION_MANUAL',
+      'La detección OMR no cumple confianza mínima para calificación automática; confirma revisión manual para continuar',
+      422,
+      {
+        estadoAnalisis: analisisOmr?.estadoAnalisis ?? null,
+        calidadPagina,
+        confianzaPromedioPagina,
+        ratioAmbiguas,
+        coberturaDeteccion
+      }
+    );
+  }
 
   let aciertosCalculados = 0;
   let contestadasTotal = 0;
@@ -397,7 +411,7 @@ export async function calificarExamen(req: SolicitudDocente, res: Response) {
     }
   });
 
-  const usarAciertosDetectados = respuestas.length > 0;
+  const usarAciertosDetectados = respuestas.length > 0 && (autoCalificableOmr || revisionConfirmada);
   const aciertosFinal = usarAciertosDetectados ? aciertosCalculados : typeof aciertos === 'number' ? aciertos : aciertosCalculados;
   const totalFinal = total || totalReactivos || aciertosFinal || 1;
   const aciertosAjustados = Math.min(aciertosFinal, totalFinal);
