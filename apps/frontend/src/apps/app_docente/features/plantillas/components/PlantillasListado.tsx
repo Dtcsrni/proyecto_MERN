@@ -10,6 +10,7 @@ import type { Periodo, Plantilla, PreviewPlantilla } from '../../../tipos';
 import { etiquetaMateria, idCortoMateria } from '../../../utilidades';
 
 type PlantillaPreviewState = Record<string, PreviewPlantilla>;
+type PlantillaPreviewPdfState = Record<string, { booklet?: string; omrSheet?: string }>;
 
 export function PlantillasListado({
   totalPlantillasTodas,
@@ -46,13 +47,13 @@ export function PlantillasListado({
   periodos: Periodo[];
   previewPorPlantillaId: PlantillaPreviewState;
   plantillaPreviewId: string | null;
-  previewPdfUrlPorPlantillaId: Record<string, string>;
+  previewPdfUrlPorPlantillaId: PlantillaPreviewPdfState;
   cargandoPreviewPlantillaId: string | null;
   cargarPreviewPlantilla: (plantillaId: string) => Promise<void>;
   puedePrevisualizarPlantillas: boolean;
   cargandoPreviewPdfPlantillaId: string | null;
-  cargarPreviewPdfPlantilla: (plantillaId: string) => Promise<void>;
-  cerrarPreviewPdfPlantilla: (plantillaId: string) => void;
+  cargarPreviewPdfPlantilla: (plantillaId: string, kind?: 'booklet' | 'omrSheet') => Promise<void>;
+  cerrarPreviewPdfPlantilla: (plantillaId: string, kind?: 'booklet' | 'omrSheet') => void;
   abrirPdfFullscreen: (url: string) => void;
   pdfFullscreenUrl: string | null;
   cerrarPdfFullscreen: () => void;
@@ -95,7 +96,9 @@ export function PlantillasListado({
             const modo = temas.length > 0 ? `Temas: ${temas.join(', ')}` : 'Modo preguntasIds';
             const preview = previewPorPlantillaId[plantilla._id];
             const previewAbierta = plantillaPreviewId === plantilla._id;
-            const pdfUrl = previewPdfUrlPorPlantillaId[plantilla._id];
+            const pdfUrls = previewPdfUrlPorPlantillaId[plantilla._id] ?? {};
+            const bookletPdfUrl = pdfUrls.booklet;
+            const omrPdfUrl = pdfUrls.omrSheet;
             return (
               <li key={plantilla._id}>
                 <div className="item-glass plantillas-item">
@@ -121,11 +124,10 @@ export function PlantillasListado({
                       )}
                       {previewAbierta && (
                         <div className="resultado plantillas-preview">
-                          <h4 className="plantillas-preview__titulo">Previsualizacion (boceto por pagina)</h4>
+                          <h4 className="plantillas-preview__titulo">Previsualizacion OMR V1</h4>
                           {!preview && (
                             <div className="ayuda">
-                              Esta previsualizacion usa una seleccion determinista de preguntas (para que no cambie cada vez) y bosqueja el
-                              contenido por pagina.
+                              Esta previsualizacion separa el cuadernillo de la hoja OMR y expone diagnosticos de densidad, capacidad y lectura.
                             </div>
                           )}
                           {!preview && (
@@ -135,89 +137,156 @@ export function PlantillasListado({
                               cargando={cargandoPreviewPlantillaId === plantilla._id}
                               onClick={() => void cargarPreviewPlantilla(plantilla._id)}
                               disabled={!puedePrevisualizarPlantillas}
-                              data-tooltip="Genera el boceto de preguntas por pagina."
+                              data-tooltip="Genera el preview dual de cuadernillo y hoja OMR."
                             >
                               {cargandoPreviewPlantillaId === plantilla._id ? 'Generando…' : 'Generar previsualizacion'}
                             </Boton>
                           )}
                           {preview && (
                             <>
-                              {Array.isArray(preview.advertencias) && preview.advertencias.length > 0 && (
-                                <InlineMensaje tipo="info">{preview.advertencias.join(' ')}</InlineMensaje>
+                              {preview.blockingIssues.length > 0 && (
+                                <InlineMensaje tipo="error">{preview.blockingIssues.join(' ')}</InlineMensaje>
                               )}
-                              {Array.isArray(preview.conteoPorTema) && preview.conteoPorTema.length > 0 && (
+                              {preview.warnings.length > 0 && (
+                                <InlineMensaje tipo="info">{preview.warnings.join(' ')}</InlineMensaje>
+                              )}
+                              <div className="plantillas-preview__grid">
                                 <div className="resultado plantillas-preview__bloque">
-                                  <h4 className="plantillas-preview__subtitulo">Disponibles por tema</h4>
+                                  <h4 className="plantillas-preview__subtitulo">Cuadernillo</h4>
                                   <ul className="lista">
-                                    {preview.conteoPorTema.map((t) => (
-                                      <li key={t.tema}>
-                                        <b>{t.tema}:</b> {t.disponibles}
-                                      </li>
-                                    ))}
+                                    <li>
+                                      <b>Paginas objetivo:</b> {preview.bookletPreview.pagesConfigured}
+                                    </li>
+                                    <li>
+                                      <b>Paginas estimadas:</b> {preview.bookletPreview.pagesEstimated}
+                                    </li>
+                                    <li>
+                                      <b>Distribucion:</b> {preview.bookletPreview.questionsPerPage.join(' / ') || '-'}
+                                    </li>
+                                    <li>
+                                      <b>Reactivos con imagen:</b> {preview.bookletPreview.imageHeavyQuestions.length}
+                                    </li>
                                   </ul>
                                 </div>
-                              )}
-                              {Array.isArray(preview.temasDisponiblesEnMateria) && preview.temasDisponiblesEnMateria.length > 0 && (
                                 <div className="resultado plantillas-preview__bloque">
-                                  <h4 className="plantillas-preview__subtitulo">Temas con preguntas en la materia (top)</h4>
-                                  <div className="ayuda">Sirve para detectar temas mal escritos o con 0 reactivos.</div>
+                                  <h4 className="plantillas-preview__subtitulo">Hoja OMR</h4>
                                   <ul className="lista">
-                                    {preview.temasDisponiblesEnMateria.map((t) => (
-                                      <li key={`${t.tema}-${t.disponibles}`}>
-                                        <b>{t.tema}:</b> {t.disponibles}
-                                      </li>
-                                    ))}
+                                    <li>
+                                      <b>Familia:</b> {preview.omrSheetPreview.familyCode}
+                                    </li>
+                                    <li>
+                                      <b>Capacidad:</b> {preview.omrSheetPreview.questionCapacity}
+                                    </li>
+                                    <li>
+                                      <b>Usadas:</b> {preview.omrSheetPreview.questionsUsed}
+                                    </li>
+                                    <li>
+                                      <b>Ignoradas:</b> {preview.omrSheetPreview.unusedQuestionsIgnored}
+                                    </li>
                                   </ul>
                                 </div>
-                              )}
+                              </div>
+                              <div className="resultado plantillas-preview__bloque">
+                                <h4 className="plantillas-preview__subtitulo">Diagnostico</h4>
+                                <div className="item-meta">
+                                  <span>Densidad cuadernillo: {(preview.diagnostics.bookletDensityScore * 100).toFixed(0)}%</span>
+                                  <span>Legibilidad OMR: {(preview.diagnostics.omrReadabilityScore * 100).toFixed(0)}%</span>
+                                  <span>Huella anclas: {(preview.diagnostics.anchorFootprintRatio * 100).toFixed(2)}%</span>
+                                  <span>Huella QR: {(preview.diagnostics.qrFootprintRatio * 100).toFixed(2)}%</span>
+                                </div>
+                                {preview.diagnostics.pagesWithLowDensity.length > 0 && (
+                                  <div className="ayuda">
+                                    Paginas con baja densidad: {preview.diagnostics.pagesWithLowDensity.join(', ')}.
+                                  </div>
+                                )}
+                                {preview.diagnostics.hardLayoutWarnings.length > 0 && (
+                                  <InlineMensaje tipo="error">{preview.diagnostics.hardLayoutWarnings.join(' ')}</InlineMensaje>
+                                )}
+                              </div>
                               <div className="acciones acciones--mt">
-                                {!pdfUrl ? (
+                                {!bookletPdfUrl ? (
                                   <Boton
                                     type="button"
                                     variante="secundario"
                                     cargando={cargandoPreviewPdfPlantillaId === plantilla._id}
-                                    onClick={() => void cargarPreviewPdfPlantilla(plantilla._id)}
+                                    onClick={() => void cargarPreviewPdfPlantilla(plantilla._id, 'booklet')}
                                     disabled={!puedePrevisualizarPlantillas}
-                                    data-tooltip="Genera el PDF final para revisarlo."
+                                    data-tooltip="Genera el PDF del cuadernillo."
                                   >
-                                    {cargandoPreviewPdfPlantillaId === plantilla._id ? 'Generando PDF…' : 'Ver PDF exacto'}
+                                    {cargandoPreviewPdfPlantillaId === plantilla._id ? 'Generando PDF…' : 'Ver cuadernillo'}
                                   </Boton>
                                 ) : (
                                   <>
                                     <Boton
                                       type="button"
                                       variante="secundario"
-                                      onClick={() => cerrarPreviewPdfPlantilla(plantilla._id)}
-                                      data-tooltip="Oculta el PDF incrustado."
+                                      onClick={() => cerrarPreviewPdfPlantilla(plantilla._id, 'booklet')}
+                                      data-tooltip="Oculta el cuadernillo."
                                     >
-                                      Ocultar PDF
+                                      Ocultar cuadernillo
                                     </Boton>
                                     <Boton
                                       type="button"
                                       variante="secundario"
-                                      onClick={() => abrirPdfFullscreen(pdfUrl)}
-                                      data-tooltip="Abre el PDF en pantalla completa."
+                                      onClick={() => abrirPdfFullscreen(bookletPdfUrl)}
+                                      data-tooltip="Abre el cuadernillo en pantalla completa."
                                     >
-                                      Ver grande
+                                      Ver cuadernillo
+                                    </Boton>
+                                  </>
+                                )}
+                                {!omrPdfUrl ? (
+                                  <Boton
+                                    type="button"
+                                    variante="secundario"
+                                    cargando={cargandoPreviewPdfPlantillaId === plantilla._id}
+                                    onClick={() => void cargarPreviewPdfPlantilla(plantilla._id, 'omrSheet')}
+                                    disabled={!puedePrevisualizarPlantillas}
+                                    data-tooltip="Genera el PDF de hoja OMR."
+                                  >
+                                    {cargandoPreviewPdfPlantillaId === plantilla._id ? 'Generando PDF…' : 'Ver hoja OMR'}
+                                  </Boton>
+                                ) : (
+                                  <>
+                                    <Boton
+                                      type="button"
+                                      variante="secundario"
+                                      onClick={() => cerrarPreviewPdfPlantilla(plantilla._id, 'omrSheet')}
+                                      data-tooltip="Oculta la hoja OMR."
+                                    >
+                                      Ocultar hoja OMR
+                                    </Boton>
+                                    <Boton
+                                      type="button"
+                                      variante="secundario"
+                                      onClick={() => abrirPdfFullscreen(omrPdfUrl)}
+                                      data-tooltip="Abre la hoja OMR en pantalla completa."
+                                    >
+                                      Ver hoja OMR
                                     </Boton>
                                     <Boton
                                       type="button"
                                       variante="secundario"
                                       onClick={() => {
-                                        const u = String(pdfUrl || '').trim();
+                                        const u = String(omrPdfUrl || '').trim();
                                         if (!u) return;
                                         window.open(u, '_blank', 'noopener,noreferrer');
                                       }}
-                                      data-tooltip="Abre el PDF en una pestaña nueva."
+                                      data-tooltip="Abre la hoja OMR en una pestaña nueva."
                                     >
                                       Abrir en pestaña
                                     </Boton>
                                   </>
                                 )}
                               </div>
-                              {pdfUrl && (
+                              {bookletPdfUrl && (
                                 <div className="plantillas-preview__pdfWrap">
-                                  <iframe className="plantillas-preview__pdf" title="Previsualizacion PDF" src={pdfUrl} />
+                                  <iframe className="plantillas-preview__pdf" title="Previsualizacion cuadernillo" src={bookletPdfUrl} />
+                                </div>
+                              )}
+                              {omrPdfUrl && (
+                                <div className="plantillas-preview__pdfWrap">
+                                  <iframe className="plantillas-preview__pdf" title="Previsualizacion hoja OMR" src={omrPdfUrl} />
                                 </div>
                               )}
                               {pdfFullscreenUrl && (
@@ -235,40 +304,6 @@ export function PlantillasListado({
                                   <iframe className="pdf-overlay__frame" title="PDF (pantalla completa)" src={pdfFullscreenUrl} />
                                 </div>
                               )}
-                              <ul className="lista lista-items plantillas-preview__lista">
-                                {preview.paginas.map((p) => (
-                                  <li key={p.numero}>
-                                    <div className="item-glass">
-                                      <div className="item-row">
-                                        <div>
-                                          <div className="item-title">Pagina {p.numero}</div>
-                                          <div className="item-meta">
-                                            <span>Preguntas: {p.preguntasDel && p.preguntasAl ? `${p.preguntasDel}–${p.preguntasAl}` : '—'}</span>
-                                            <span>Elementos: {Array.isArray(p.elementos) ? p.elementos.length : 0}</span>
-                                          </div>
-                                          {Array.isArray(p.elementos) && p.elementos.length > 0 && (
-                                            <div className="item-sub">{p.elementos.join(' · ')}</div>
-                                          )}
-                                          {Array.isArray(p.preguntas) && p.preguntas.length > 0 ? (
-                                            <ul className="lista plantillas-preview__preguntas">
-                                              {p.preguntas.map((q) => (
-                                                <li key={q.numero}>
-                                                  <span>
-                                                    <b>{q.numero}.</b> {q.enunciadoCorto}{' '}
-                                                    {q.tieneImagen ? <span className="badge plantillas-preview__badgeImagen">Imagen</span> : null}
-                                                  </span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          ) : (
-                                            <div className="ayuda">Sin preguntas (pagina extra o rangos no disponibles).</div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </li>
-                                ))}
-                              </ul>
                             </>
                           )}
                         </div>

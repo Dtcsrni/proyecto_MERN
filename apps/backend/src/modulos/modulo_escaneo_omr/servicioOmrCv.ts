@@ -48,17 +48,17 @@ export type ResultadoOmr = {
   calidadPagina: number;
   estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
   motivosRevision: string[];
-  templateVersionDetectada: 3;
+  templateVersionDetectada: TemplateVersion;
   confianzaPromedioPagina: number;
   ratioAmbiguas: number;
-  engineVersion: 'omr-v3-cv';
+  engineVersion: 'omr-v1-cv' | 'omr-v3-cv';
   geomQuality: number;
   photoQuality: number;
   decisionPolicy: 'conservadora_v1';
 };
 
 type Punto = { x: number; y: number };
-type TemplateVersion = 3;
+type TemplateVersion = 1 | 3;
 type PerfilGeometriaOmr = 'actual' | 'geo_tight_search';
 
 type MapaOmrPagina = {
@@ -222,7 +222,32 @@ type PerfilDeteccionOmr = {
 };
 
 function resolverPerfilDeteccion(templateVersion: TemplateVersion): PerfilDeteccionOmr {
-  void templateVersion;
+  if (templateVersion === 1) {
+    return {
+      version: 1,
+      qrSizePts: 20 * MM_A_PUNTOS,
+      bubbleRadiusPts: (5 * MM_A_PUNTOS) / 2,
+      boxWidthPts: Math.max(54, OMR_BOX_WIDTH_PTS * 1.15),
+      centerToLeftPts: 9.5,
+      alignRange: Math.max(14, OMR_ALIGN_RANGE * 0.72),
+      vertRange: Math.max(8, OMR_VERT_RANGE * 0.72),
+      localSearchRatio: Math.max(0.18, OMR_LOCAL_SEARCH_RATIO * 0.72),
+      localDriftPenalty: Math.max(0.06, OMR_LOCAL_DRIFT_PENALTY * 0.85),
+      maxCenterDriftRatio: Math.max(0.18, OMR_MAX_CENTER_DRIFT_RATIO * 0.6),
+      minSafeRange: Math.max(4, OMR_MIN_SAFE_RANGE),
+      scoreMin: Math.max(0.035, OMR_SCORE_MIN * 0.92),
+      scoreStd: Math.max(0.5, OMR_SCORE_STD * 0.92),
+      strongScore: Math.max(0.05, OMR_STRONG_SCORE * 0.9),
+      secondRatio: Math.max(0.68, OMR_SECOND_RATIO * 0.92),
+      deltaMin: Math.max(0.008, OMR_DELTA_MIN * 0.92),
+      minTopZScore: 0.8,
+      ambiguityRatio: Math.max(0.92, OMR_AMBIGUITY_RATIO * 0.97),
+      minFillDelta: Math.max(0.075, OMR_MIN_FILL_DELTA * 0.88),
+      minCenterGap: Math.max(8.5, OMR_MIN_CENTER_GAP * 0.82),
+      minHybridConf: Math.max(0.2, OMR_MIN_HYBRID_CONF * 0.74),
+      reprojectionMaxErrorPx: 3.6
+    };
+  }
   return {
     version: 3,
     qrSizePts: 30 * MM_A_PUNTOS,
@@ -1188,7 +1213,10 @@ function prepararCentrosPregunta(
 
 function extraerTemplateVersionDesdeQr(qrTexto?: string): TemplateVersion | undefined {
   if (!qrTexto) return undefined;
-  return /:TV3\b/i.test(qrTexto) ? 3 : undefined;
+  if (/^OMR1:/i.test(qrTexto)) return 1;
+  if (/:TV1\b/i.test(qrTexto)) return 1;
+  if (/:TV3\b/i.test(qrTexto)) return 3;
+  return undefined;
 }
 
 function calcularMetricasImagen(gray: Uint8ClampedArray, width: number, height: number) {
@@ -1389,7 +1417,7 @@ export async function analizarOmr(
     imagenBase64,
     Boolean(opcionesInternas?.aggressivePreprocess)
   );
-  const templateInicial = 3;
+  const templateInicial = debugInfo?.templateVersionDetectada ?? mapaPagina.templateVersion ?? 1;
   const perfilInicial = ajustarPerfilConMapa(resolverPerfilDeteccion(templateInicial), mapaPagina);
   let qrDetalle = detectarQrMejorado(data, gray, width, height, {
     qrSizePtsHint: perfilInicial.qrSizePts,
@@ -1778,7 +1806,7 @@ export async function analizarOmr(
     templateVersionDetectada,
     confianzaPromedioPagina: confianzaMedia,
     ratioAmbiguas,
-    engineVersion: 'omr-v3-cv',
+    engineVersion: templateVersionDetectada === 1 ? 'omr-v1-cv' : 'omr-v3-cv',
     geomQuality,
     photoQuality: clamp01(photoQuality),
     decisionPolicy: 'conservadora_v1'

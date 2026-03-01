@@ -261,7 +261,7 @@ async function archivarEscaneoOmrIntento({
     plantillaId?: unknown;
   };
   estadoAnalisis?: 'ok' | 'rechazado_calidad' | 'requiere_revision' | string;
-  templateVersionDetectada: 3;
+  templateVersionDetectada: 1 | 3;
   engineVersion?: string;
   motivosRevision?: string[];
 }) {

@@ -20,6 +20,13 @@ const ExamenGeneradoSchema = new Schema(
     mapaOmr: { type: Schema.Types.Mixed },
     paginas: [{ numero: Number, qrTexto: String, preguntasDel: Number, preguntasAl: Number }],
     rutaPdf: { type: String },
+    bookletArtifact: { type: Schema.Types.Mixed },
+    omrSheetArtifact: { type: Schema.Types.Mixed },
+    studentPacketArtifacts: { type: [Schema.Types.Mixed], default: [] },
+    questionMap: { type: Schema.Types.Mixed },
+    answerKeySet: { type: Schema.Types.Mixed },
+    sheetInstances: { type: [Schema.Types.Mixed], default: [] },
+    omrRuntimeVersion: { type: Number },
     generadoEn: { type: Date, default: Date.now },
     descargadoEn: { type: Date },
     archivadoEn: { type: Date }

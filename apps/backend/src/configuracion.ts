@@ -4,16 +4,19 @@
 import dotenv from 'dotenv';
 import path from 'node:path';
 
-// Dotenv v17 puede emitir logs informativos; se silencian para mantener
-// pruebas y consola limpias.
-dotenv.config({
-  quiet: true,
-  path: path.resolve(__dirname, '..', '..', '..', '.env')
-});
+const entorno = process.env.NODE_ENV ?? 'development';
+if (entorno !== 'production') {
+  // Dotenv v17 puede emitir logs informativos; se silencian para mantener
+  // pruebas y consola limpias. En producción no se debe rellenar config crítica
+  // desde `.env`; solo se admite el entorno real del proceso.
+  dotenv.config({
+    quiet: true,
+    path: path.resolve(__dirname, '..', '..', '..', '.env')
+  });
+}
 
 const puerto = Number(process.env.PUERTO_API ?? process.env.PORT ?? 4000);
 const mongoUri = process.env.MONGODB_URI ?? process.env.MONGO_URI ?? '';
-const entorno = process.env.NODE_ENV ?? 'development';
 const limiteJson = process.env.LIMITE_JSON ?? '10mb';
 const corsOrigenes = (process.env.CORS_ORIGENES ?? 'http://localhost:5173')
   .split(',')

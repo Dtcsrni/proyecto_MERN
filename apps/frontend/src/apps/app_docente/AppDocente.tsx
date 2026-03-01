@@ -81,7 +81,7 @@ export function AppDocente() {
   const [previewPorPlantillaId, setPreviewPorPlantillaId] = useState<Record<string, PreviewPlantilla>>({});
   const [cargandoPreviewPlantillaId, setCargandoPreviewPlantillaId] = useState<string | null>(null);
   const [plantillaPreviewId, setPlantillaPreviewId] = useState<string | null>(null);
-  const [previewPdfUrlPorPlantillaId, setPreviewPdfUrlPorPlantillaId] = useState<Record<string, string>>({});
+  const [previewPdfUrlPorPlantillaId, setPreviewPdfUrlPorPlantillaId] = useState<Record<string, { booklet?: string; omrSheet?: string }>>({});
   const [cargandoPreviewPdfPlantillaId, setCargandoPreviewPdfPlantillaId] = useState<string | null>(null);
   const paginasEstimadasBackendPorTema = useMemo(() => {
     const mapa = new Map<string, number>();
@@ -95,7 +95,7 @@ export function AppDocente() {
       if (temas.length !== 1) continue;
       const preview = previewPorPlantillaId[plantilla._id];
       if (!preview) continue;
-      const paginas = Number((preview as { numeroPaginas?: unknown }).numeroPaginas);
+      const paginas = Number(preview.bookletPreview?.pagesEstimated ?? 0);
       if (!Number.isFinite(paginas) || paginas <= 0) continue;
       const key = String(temas[0] ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
       mapa.set(key, Math.floor(paginas));
@@ -993,7 +993,7 @@ export function AppDocente() {
                 calidadPagina: number;
                 confianzaPromedioPagina?: number;
                 ratioAmbiguas?: number;
-                templateVersionDetectada?: 3;
+                templateVersionDetectada?: 1 | 3;
                 motivosRevision?: string[];
                 revisionConfirmada?: boolean;
               };
@@ -1020,7 +1020,7 @@ export function AppDocente() {
                   calidadPagina: Number(payload.omrAnalisis.calidadPagina ?? 0),
                   confianzaPromedioPagina: Number(payload.omrAnalisis.confianzaPromedioPagina ?? 0),
                   ratioAmbiguas: Number(payload.omrAnalisis.ratioAmbiguas ?? 0),
-                  templateVersionDetectada: 3,
+                  templateVersionDetectada: payload.omrAnalisis.templateVersionDetectada ?? 1,
                   motivosRevision: Array.isArray(payload.omrAnalisis.motivosRevision)
                     ? payload.omrAnalisis.motivosRevision
                         .map((motivo) => String(motivo ?? '').trim())

@@ -3181,6 +3181,12 @@ p {
   margin-top: 10px;
 }
 
+.plantillas-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
 .plantillas-preview__lista {
   margin-top: 8px;
 }

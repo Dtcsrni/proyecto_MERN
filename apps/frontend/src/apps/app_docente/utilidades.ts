@@ -186,7 +186,7 @@ export function normalizarResultadoOmr(entrada: Partial<ResultadoOmr> | null | u
         ? entrada.estadoAnalisis
         : 'requiere_revision',
     motivosRevision: Array.isArray(entrada?.motivosRevision) ? entrada!.motivosRevision : [],
-    templateVersionDetectada: 3,
+    templateVersionDetectada: Number(entrada?.templateVersionDetectada) === 3 ? 3 : 1,
     confianzaPromedioPagina: Number.isFinite(Number(entrada?.confianzaPromedioPagina)) ? Number(entrada?.confianzaPromedioPagina) : 0,
     ratioAmbiguas: Number.isFinite(Number(entrada?.ratioAmbiguas)) ? Number(entrada?.ratioAmbiguas) : 0
   };

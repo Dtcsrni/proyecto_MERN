@@ -4,7 +4,7 @@
  * Define DTOs, types y constantes compartidas entre capas del modulo.
  */
 
-export type TemplateVersion = 3;
+export type TemplateVersion = 1 | 3;
 export type TipoExamen = 'parcial' | 'global';
 
 export interface EncabezadoExamen {
@@ -44,6 +44,8 @@ export interface MapaVariante {
 
 export interface ResultadoGeneracionPdf {
   pdfBytes: Buffer;
+  layoutEngine?: 'pdf-lib-legacy' | 'playwright-html-v1';
+  layoutTemplateVersion?: number;
   paginas: Array<{
     numero: number;
     qrTexto: string;
@@ -61,6 +63,15 @@ export interface ResultadoGeneracionPdf {
     imagenesIntentadas: number;
     imagenesRenderizadas: number;
     imagenesFallidas: number;
+  };
+  renderDiagnostics?: {
+    preguntasCalculadas: number;
+    preguntasRenderizadas: number;
+    pageFillRatios: number[];
+    collisionsDetected: Array<{ pagina: number; a: string; b: string }>;
+    imagesRequested: number;
+    imagesRendered: number;
+    imagesFailed: number;
   };
   mapaOmr: MapaOmr;
   preguntasRestantes: number;
@@ -172,13 +183,21 @@ export interface PaginaOmr {
     };
   }>;
   layoutDebug?: {
+    engine?: 'pdf-lib-legacy' | 'playwright-html-v1';
     layoutTemplateVersion?: number;
+    pageShell?: { x: number; y: number; width: number; height: number };
     header?: { x: number; y: number; width: number; height: number };
     qr?: { x: number; y: number; width: number; height: number };
     headerTextBlocks?: Array<{ x: number; y: number; width: number; height: number; id: string }>;
     lineHeightViolations?: Array<{ preguntaId: string; lineHeight: number; min: number }>;
     contentStartY?: number;
     contentEndY?: number;
+    headerSlots?: Array<{ id: string; x: number; y: number; width: number; height: number }>;
+    contentShell?: { x: number; y: number; width: number; height: number };
+    footerShell?: { x: number; y: number; width: number; height: number };
+    questionBlockBoxes?: Array<{ id: string; x: number; y: number; width: number; height: number }>;
+    omrPanelBoxes?: Array<{ id: string; x: number; y: number; width: number; height: number }>;
+    collisionBoxes?: Array<{ pagina: number; a: string; b: string }>;
   };
 }
 

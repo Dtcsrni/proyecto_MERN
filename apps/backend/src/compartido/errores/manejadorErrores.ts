@@ -11,6 +11,40 @@ import type { NextFunction, Request, Response } from 'express';
 import { ErrorAplicacion } from './errorAplicacion';
 import { logError } from '../../infraestructura/logging/logger';
 
+function obtenerNombreError(error: unknown): unknown {
+  return typeof error === 'object' && error ? (error as { name?: unknown }).name : undefined;
+}
+
+function esErrorIdInvalido(error: unknown): boolean {
+  const nombreError = obtenerNombreError(error);
+  return nombreError === 'CastError' || nombreError === 'BSONError' || nombreError === 'BSONTypeError';
+}
+
+function obtenerStatusYTipo(error: unknown): { status: unknown; type: unknown } {
+  if (typeof error !== 'object' || !error) {
+    return { status: undefined, type: undefined };
+  }
+
+  return {
+    status: (error as { status?: unknown; statusCode?: unknown }).status ?? (error as { statusCode?: unknown }).statusCode,
+    type: (error as { type?: unknown }).type
+  };
+}
+
+function esPayloadDemasiadoGrande(error: unknown): boolean {
+  const { status, type } = obtenerStatusYTipo(error);
+  return status === 413 || type === 'entity.too.large';
+}
+
+function responderErrorSimple(res: Response, status: number, codigo: string, mensaje: string) {
+  res.status(status).json({
+    error: {
+      codigo,
+      mensaje
+    }
+  });
+}
+
 export function manejadorErrores(
   error: unknown,
   req: Request,
@@ -21,39 +55,28 @@ export function manejadorErrores(
 
   // IDs malformados u otros errores de casteo (p. ej. CastError/BSONError).
   // Se normalizan como 400 para evitar 500 por input del cliente.
-  const nombreError = typeof error === 'object' && error ? (error as { name?: unknown }).name : undefined;
-  if (
-    nombreError === 'CastError' ||
-    nombreError === 'BSONError' ||
-    nombreError === 'BSONTypeError'
-  ) {
-    res.status(400).json({
-      error: {
-        codigo: 'DATOS_INVALIDOS',
-        mensaje: 'Id invalido'
-      }
-    });
+  if (esErrorIdInvalido(error)) {
+    responderErrorSimple(res, 400, 'DATOS_INVALIDOS', 'Id invalido');
     return;
   }
 
   // body-parser: payload demasiado grande (413).
-  const status =
-    typeof error === 'object' && error
-      ? ((error as { status?: unknown; statusCode?: unknown }).status ??
-          (error as { statusCode?: unknown }).statusCode)
-      : undefined;
-  const type = typeof error === 'object' && error ? (error as { type?: unknown }).type : undefined;
-  if (status === 413 || type === 'entity.too.large') {
-    res.status(413).json({
-      error: {
-        codigo: 'PAYLOAD_DEMASIADO_GRANDE',
-        mensaje: 'Payload demasiado grande'
-      }
-    });
+  if (esPayloadDemasiadoGrande(error)) {
+    responderErrorSimple(res, 413, 'PAYLOAD_DEMASIADO_GRANDE', 'Payload demasiado grande');
     return;
   }
 
   if (error instanceof ErrorAplicacion) {
+    if (error.estadoHttp >= 500 && process.env.NODE_ENV !== 'test') {
+      logError('Error controlado 5xx en request', error, {
+        requestId: (req as Request & { requestId?: string }).requestId,
+        route: req.path,
+        method: req.method,
+        status: error.estadoHttp,
+        codigo: error.codigo
+      });
+    }
+
     res.status(error.estadoHttp).json({
       error: {
         codigo: error.codigo,
@@ -77,10 +100,5 @@ export function manejadorErrores(
 
   const exponerMensaje = entorno !== 'production';
   const mensaje = exponerMensaje && error instanceof Error ? error.message : 'Error interno';
-  res.status(500).json({
-    error: {
-      codigo: 'ERROR_INTERNO',
-      mensaje
-    }
-  });
+  responderErrorSimple(res, 500, 'ERROR_INTERNO', mensaje);
 }

@@ -38,8 +38,7 @@ import { guardarEnPapelera } from '../modulo_papelera/servicioPapelera';
 import {
   construirMapaVarianteUsadaTv3,
   extraerPreguntasUsadasMapaOmr,
-  normalizarPreguntasParaTv3,
-  TEMPLATE_VERSION_TV3
+  normalizarPreguntasParaTv3
 } from './domain/tv3Compat';
 
 type MapaVariante = {
@@ -122,7 +121,7 @@ function formatearDocente(nombreCompleto: unknown): string {
 
 function resolverTemplateVersionOmr(params: { docenteId: unknown; periodoId?: unknown; plantillaId?: unknown }): 3 {
   void params;
-  return TEMPLATE_VERSION_TV3;
+  return 3;
 }
 
 async function validarTituloPlantillaDisponible(params: {
@@ -294,6 +293,32 @@ export async function crearPlantilla(req: SolicitudDocente, res: Response) {
     titulo,
     tituloNormalizado: normalizarTituloPlantilla(titulo),
     temas,
+    reactivosObjetivo: Number((req.body as { reactivosObjetivo?: unknown }).reactivosObjetivo ?? 20) || 20,
+    defaultVersionCount: Number((req.body as { defaultVersionCount?: unknown }).defaultVersionCount ?? 1) || 1,
+    answerKeyMode: String((req.body as { answerKeyMode?: unknown }).answerKeyMode ?? 'digital'),
+    bookletConfig: {
+      targetPages:
+        Number((req.body as { bookletConfig?: { targetPages?: unknown } }).bookletConfig?.targetPages ?? (req.body as { numeroPaginas?: unknown }).numeroPaginas ?? 2) || 2,
+      densityMode: String((req.body as { bookletConfig?: { densityMode?: unknown } }).bookletConfig?.densityMode ?? 'balanced'),
+      allowImages: (req.body as { bookletConfig?: { allowImages?: unknown } }).bookletConfig?.allowImages !== false,
+      imageBudgetPolicy: String((req.body as { bookletConfig?: { imageBudgetPolicy?: unknown } }).bookletConfig?.imageBudgetPolicy ?? 'balanced'),
+      headerStyle: String((req.body as { bookletConfig?: { headerStyle?: unknown } }).bookletConfig?.headerStyle ?? 'institutional'),
+      fontScale: Number((req.body as { bookletConfig?: { fontScale?: unknown } }).bookletConfig?.fontScale ?? 1) || 1,
+      lineSpacing: Number((req.body as { bookletConfig?: { lineSpacing?: unknown } }).bookletConfig?.lineSpacing ?? 1.1) || 1.1,
+      separateCoverPage: Boolean((req.body as { bookletConfig?: { separateCoverPage?: unknown } }).bookletConfig?.separateCoverPage)
+    },
+    omrConfig: {
+      sheetFamilyCode: String((req.body as { omrConfig?: { sheetFamilyCode?: unknown } }).omrConfig?.sheetFamilyCode ?? 'S50_5A_ID5_VR6'),
+      sheetRevisionId: (req.body as { omrConfig?: { sheetRevisionId?: unknown } }).omrConfig?.sheetRevisionId,
+      prefillMode: String((req.body as { omrConfig?: { prefillMode?: unknown } }).omrConfig?.prefillMode ?? 'none'),
+      identityMode: 'qr_plus_bubbled_id',
+      allowBlankGenericSheets:
+        (req.body as { omrConfig?: { allowBlankGenericSheets?: unknown } }).omrConfig?.allowBlankGenericSheets !== false,
+      versionMode: String((req.body as { omrConfig?: { versionMode?: unknown } }).omrConfig?.versionMode ?? 'single'),
+      ignoreUnusedTrailingQuestions:
+        (req.body as { omrConfig?: { ignoreUnusedTrailingQuestions?: unknown } }).omrConfig?.ignoreUnusedTrailingQuestions !== false,
+      captureMode: 'pdf_and_mobile'
+    },
     docenteId
   });
   res.status(201).json({ plantilla });
@@ -434,8 +459,19 @@ export async function actualizarPlantilla(req: SolicitudDocente, res: Response) 
     numeroPaginas:
       (patch as { numeroPaginas?: unknown }).numeroPaginas ??
       (actual as unknown as { numeroPaginas?: unknown }).numeroPaginas,
+    reactivosObjetivo:
+      (patch as { reactivosObjetivo?: unknown }).reactivosObjetivo ??
+      (actual as unknown as { reactivosObjetivo?: unknown }).reactivosObjetivo,
+    defaultVersionCount:
+      (patch as { defaultVersionCount?: unknown }).defaultVersionCount ??
+      (actual as unknown as { defaultVersionCount?: unknown }).defaultVersionCount,
+    answerKeyMode:
+      (patch as { answerKeyMode?: unknown }).answerKeyMode ?? (actual as unknown as { answerKeyMode?: unknown }).answerKeyMode,
     preguntasIds: (patch as { preguntasIds?: unknown }).preguntasIds ?? actual.preguntasIds,
     temas: (patch as { temas?: unknown }).temas ?? (actual as unknown as { temas?: unknown }).temas,
+    bookletConfig:
+      (patch as { bookletConfig?: unknown }).bookletConfig ?? (actual as unknown as { bookletConfig?: unknown }).bookletConfig,
+    omrConfig: (patch as { omrConfig?: unknown }).omrConfig ?? (actual as unknown as { omrConfig?: unknown }).omrConfig,
     configuracionPdf: (patch as { configuracionPdf?: unknown }).configuracionPdf ?? actual.configuracionPdf
   };
 

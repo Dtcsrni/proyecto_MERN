@@ -8,6 +8,30 @@ const normalizarTexto = (valor: string) => valor.trim().replace(/\s+/g, ' ');
 const esquemaTitulo = z.string().trim().min(3).max(120).transform(normalizarTexto);
 const esquemaInstrucciones = z.string().trim().max(2000).transform(normalizarTexto);
 const esquemaTema = z.string().trim().min(1).max(80).transform(normalizarTexto);
+const esquemaBookletConfig = z
+  .object({
+    targetPages: z.number().int().positive().max(50).optional(),
+    densityMode: z.enum(['balanced', 'compact', 'relaxed']).optional(),
+    allowImages: z.boolean().optional(),
+    imageBudgetPolicy: z.enum(['strict', 'balanced']).optional(),
+    headerStyle: z.enum(['institutional', 'compact']).optional(),
+    fontScale: z.number().min(0.8).max(1.3).optional(),
+    lineSpacing: z.number().min(0.9).max(1.6).optional(),
+    separateCoverPage: z.boolean().optional()
+  })
+  .strict();
+const esquemaOmrConfig = z
+  .object({
+    sheetFamilyCode: z.enum(['S20_5A_BASIC', 'S50_5A_ID5_VR6', 'S100_5A_ID9_VR6_2P', 'CUSTOM_SCHEMA_V1']).optional(),
+    sheetRevisionId: z.string().trim().max(120).optional(),
+    prefillMode: z.enum(['none', 'roster', 'per-student']).optional(),
+    identityMode: z.enum(['qr_plus_bubbled_id']).optional(),
+    allowBlankGenericSheets: z.boolean().optional(),
+    versionMode: z.enum(['single', 'multi_version']).optional(),
+    ignoreUnusedTrailingQuestions: z.boolean().optional(),
+    captureMode: z.enum(['pdf_and_mobile']).optional()
+  })
+  .strict();
 
 /**
  * Garantiza unicidad semántica de IDs dentro del mismo payload.
@@ -56,8 +80,13 @@ export const esquemaCrearPlantilla = z
     titulo: esquemaTitulo,
     instrucciones: esquemaInstrucciones.optional(),
     numeroPaginas: z.number().int().positive().max(50),
+    reactivosObjetivo: z.number().int().positive().max(200).optional(),
+    defaultVersionCount: z.number().int().positive().max(12).optional(),
+    answerKeyMode: z.enum(['digital', 'scan_sheet']).optional(),
     preguntasIds: z.array(esquemaObjectId).optional(),
     temas: z.array(esquemaTema).max(50).optional(),
+    bookletConfig: esquemaBookletConfig.optional(),
+    omrConfig: esquemaOmrConfig.optional(),
     configuracionPdf: z
       .object({
         margenMm: z.number().positive().max(40).optional(),
@@ -116,8 +145,13 @@ export const esquemaActualizarPlantilla = z
     titulo: esquemaTitulo.optional(),
     instrucciones: esquemaInstrucciones.optional(),
     numeroPaginas: z.number().int().positive().max(50).optional(),
+    reactivosObjetivo: z.number().int().positive().max(200).optional(),
+    defaultVersionCount: z.number().int().positive().max(12).optional(),
+    answerKeyMode: z.enum(['digital', 'scan_sheet']).optional(),
     preguntasIds: z.array(esquemaObjectId).optional(),
     temas: z.array(esquemaTema).max(50).optional(),
+    bookletConfig: esquemaBookletConfig.optional(),
+    omrConfig: esquemaOmrConfig.optional(),
     configuracionPdf: z
       .object({
         margenMm: z.number().positive().max(40).optional(),

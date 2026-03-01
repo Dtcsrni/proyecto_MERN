@@ -58,6 +58,29 @@ export type Plantilla = {
   titulo: string;
   tipo: 'parcial' | 'global';
   numeroPaginas: number;
+  reactivosObjetivo?: number;
+  defaultVersionCount?: number;
+  answerKeyMode?: 'digital' | 'scan_sheet';
+  bookletConfig?: {
+    targetPages?: number;
+    densityMode?: 'balanced' | 'compact' | 'relaxed';
+    allowImages?: boolean;
+    imageBudgetPolicy?: 'strict' | 'balanced';
+    headerStyle?: 'institutional' | 'compact';
+    fontScale?: number;
+    lineSpacing?: number;
+    separateCoverPage?: boolean;
+  };
+  omrConfig?: {
+    sheetFamilyCode?: string;
+    sheetRevisionId?: string;
+    prefillMode?: 'none' | 'roster' | 'per-student';
+    identityMode?: 'qr_plus_bubbled_id';
+    allowBlankGenericSheets?: boolean;
+    versionMode?: 'single' | 'multi_version';
+    ignoreUnusedTrailingQuestions?: boolean;
+    captureMode?: 'pdf_and_mobile';
+  };
   // Legacy (deprecado): puede existir en plantillas antiguas.
   totalReactivos?: number;
   periodoId?: string;
@@ -68,21 +91,40 @@ export type Plantilla = {
 };
 
 export type PreviewPlantilla = {
-  plantillaId: string;
-  numeroPaginas: number;
-  totalDisponibles?: number;
-  totalUsados?: number;
-  fraccionVaciaUltimaPagina?: number;
-  advertencias?: string[];
-  conteoPorTema?: Array<{ tema: string; disponibles: number }>;
-  temasDisponiblesEnMateria?: Array<{ tema: string; disponibles: number }>;
-  paginas: Array<{
-    numero: number;
-    preguntasDel: number;
-    preguntasAl: number;
-    elementos: string[];
-    preguntas: Array<{ numero: number; id: string; tieneImagen: boolean; enunciadoCorto: string }>;
-  }>;
+  omrRuntimeVersion: 1;
+  assessmentTemplateId: string;
+  questionCount: number;
+  recommendedSheetFamily: string;
+  bookletPreview: {
+    pagesConfigured: number;
+    pagesEstimated: number;
+    questionsPerPage: number[];
+    imageHeavyQuestions: Array<{ id: string; numero: number }>;
+    layoutWarnings: string[];
+    pdfUrl?: string;
+  };
+  omrSheetPreview: {
+    familyCode: string;
+    familyRevision: number;
+    questionCapacity: number;
+    questionsUsed: number;
+    unusedQuestionsIgnored: number;
+    studentIdDigits: number;
+    versionBubbleCount: number;
+    identityMode: 'qr_plus_bubbled_id';
+    pdfUrl?: string;
+  };
+  diagnostics: {
+    bookletDensityScore: number;
+    omrReadabilityScore: number;
+    anchorFootprintRatio: number;
+    qrFootprintRatio: number;
+    bubbleSpacingScore: number;
+    pagesWithLowDensity: number[];
+    hardLayoutWarnings: string[];
+  };
+  blockingIssues: string[];
+  warnings: string[];
 };
 
 export type Pregunta = {
@@ -130,7 +172,7 @@ export type ResultadoOmr = {
   calidadPagina: number;
   estadoAnalisis: 'ok' | 'rechazado_calidad' | 'requiere_revision';
   motivosRevision: string[];
-  templateVersionDetectada: 3;
+  templateVersionDetectada: 1 | 3;
   confianzaPromedioPagina: number;
   ratioAmbiguas: number;
 };
@@ -174,7 +216,7 @@ export type ResultadoAnalisisOmr = {
   folio: string;
   numeroPagina: number;
   alumnoId?: string | null;
-  templateVersionDetectada?: 3;
+  templateVersionDetectada?: 1 | 3;
 };
 
 export type RevisionPaginaOmr = {

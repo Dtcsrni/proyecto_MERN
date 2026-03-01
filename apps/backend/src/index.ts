@@ -9,12 +9,14 @@ import { logError, log } from './infraestructura/logging/logger';
 import { seedAdminDocente } from './modulos/modulo_autenticacion/seedAdmin';
 import { ErrorOmrCvNoDisponible, ejecutarSmokeTestOmrCv } from './modulos/modulo_escaneo_omr/infra/omrCvEngine';
 import { asegurarIndicesEscaneoOmrArchivado } from './modulos/modulo_escaneo_omr/modeloEscaneoOmrArchivado';
+import { seedFamiliasOmrV1 } from './modulos/modulo_omr_v1/seedOmrV1';
 import { iniciarSchedulerCobranzaAutomatica } from './modulos/modulo_comercial_core/schedulerCobranza';
 
 async function iniciar() {
   await conectarBaseDatos();
   await seedAdminDocente();
   await asegurarIndicesEscaneoOmrArchivado();
+  await seedFamiliasOmrV1();
   const smokeCv = await ejecutarSmokeTestOmrCv();
   if (smokeCv.enabled && !smokeCv.cvDisponible) {
     throw new ErrorOmrCvNoDisponible(

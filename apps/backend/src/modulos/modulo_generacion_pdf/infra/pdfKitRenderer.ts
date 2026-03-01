@@ -19,7 +19,7 @@ import {
 import { TEMPLATE_VERSION_TV3 } from '../domain/tv3Compat';
 
 type PerfilPlantillaRender = PerfilPlantillaOmr & {
-  version: 3;
+  version: 1 | 3;
   qrRasterWidth: number;
   burbujaStroke: number;
   burbujaOffsetX: number;
@@ -508,13 +508,14 @@ function partirEnLineas({
   return lineas.length > 0 ? lineas : [''];
 }
 
-function resolverPerfilRender(templateVersion: 3, perfilBase: PerfilPlantillaOmr): PerfilPlantillaRender {
-  if (templateVersion !== TEMPLATE_VERSION_TV3) {
-    throw new Error(`Template version ${String(templateVersion)} no compatible para renderer TV3`);
+function resolverPerfilRender(templateVersion: 1 | 3, perfilBase: PerfilPlantillaOmr): PerfilPlantillaRender {
+  if (templateVersion !== 1 && templateVersion !== TEMPLATE_VERSION_TV3) {
+    throw new Error(`Template version ${String(templateVersion)} no compatible para renderer legacy`);
   }
   const base = PERFIL_OMR_V3_RENDER;
   return {
     ...base,
+    version: templateVersion,
     qrSize: perfilBase.qrSize,
     qrPadding: perfilBase.qrPadding,
     qrMarginModulos: perfilBase.qrMarginModulos,

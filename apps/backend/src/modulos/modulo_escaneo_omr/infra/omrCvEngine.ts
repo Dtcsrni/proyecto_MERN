@@ -72,7 +72,8 @@ async function validarBackendCv() {
 
 export function debeIntentarMotorCv(templateVersion?: number) {
   const enabled = resolverCvHabilitado();
-  return enabled && Number(templateVersion ?? 3) === 3;
+  const version = Number(templateVersion ?? 1);
+  return enabled && (version === 1 || version === 3);
 }
 
 /**

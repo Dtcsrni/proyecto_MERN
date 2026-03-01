@@ -203,7 +203,7 @@ describe('utilidades app docente', () => {
       confianza: 0
     });
     expect(normal.estadoAnalisis).toBe('requiere_revision');
-    expect(normal.templateVersionDetectada).toBe(3);
+    expect(normal.templateVersionDetectada).toBe(1);
   });
 
   it('dominios de correo, etiquetas e ids', () => {

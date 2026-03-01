@@ -59,8 +59,8 @@ export function SeccionPlantillas({
   setCargandoPreviewPlantillaId: Dispatch<SetStateAction<string | null>>;
   plantillaPreviewId: string | null;
   setPlantillaPreviewId: Dispatch<SetStateAction<string | null>>;
-  previewPdfUrlPorPlantillaId: Record<string, string>;
-  setPreviewPdfUrlPorPlantillaId: Dispatch<SetStateAction<Record<string, string>>>;
+  previewPdfUrlPorPlantillaId: Record<string, { booklet?: string; omrSheet?: string }>;
+  setPreviewPdfUrlPorPlantillaId: Dispatch<SetStateAction<Record<string, { booklet?: string; omrSheet?: string }>>>;
   cargandoPreviewPdfPlantillaId: string | null;
   setCargandoPreviewPdfPlantillaId: Dispatch<SetStateAction<string | null>>;
   onRefrescar: () => void;
@@ -78,6 +78,11 @@ export function SeccionPlantillas({
   const [tipo, setTipo] = useState<'parcial' | 'global'>('parcial');
   const [periodoId, setPeriodoId] = useState('');
   const [numeroPaginas, setNumeroPaginas] = useState(2);
+  const [reactivosObjetivo, setReactivosObjetivo] = useState(20);
+  const [defaultVersionCount, setDefaultVersionCount] = useState(1);
+  const [sheetFamilyCode, setSheetFamilyCode] = useState('S50_5A_ID5_VR6');
+  const [prefillMode, setPrefillMode] = useState<'none' | 'roster' | 'per-student'>('none');
+  const [versionMode, setVersionMode] = useState<'single' | 'multi_version'>('single');
   const [temasSeleccionados, setTemasSeleccionados] = useState<string[]>([]);
   const [instrucciones, setInstrucciones] = useState(INSTRUCCIONES_DEFAULT);
   const [mensaje, setMensaje] = useState('');
@@ -255,7 +260,8 @@ export function SeccionPlantillas({
     titulo.trim() &&
       periodoId &&
       temasSeleccionados.length > 0 &&
-      numeroPaginas > 0
+      numeroPaginas > 0 &&
+      reactivosObjetivo > 0
   );
   const puedeGenerar = Boolean(plantillaId) && puedeGenerarExamenes;
   const normalizarTituloPlantillaUi = (valor: string) => String(valor || '').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -318,6 +324,11 @@ export function SeccionPlantillas({
     setTipo(plantilla.tipo);
     setPeriodoId(String(plantilla.periodoId || ''));
     setNumeroPaginas(Number((plantilla as unknown as { numeroPaginas?: unknown })?.numeroPaginas ?? 1));
+    setReactivosObjetivo(Number(plantilla.reactivosObjetivo ?? 20));
+    setDefaultVersionCount(Number(plantilla.defaultVersionCount ?? 1));
+    setSheetFamilyCode(String(plantilla.omrConfig?.sheetFamilyCode ?? 'S50_5A_ID5_VR6'));
+    setPrefillMode(plantilla.omrConfig?.prefillMode ?? 'none');
+    setVersionMode(plantilla.omrConfig?.versionMode ?? 'single');
     setTemasSeleccionados(Array.isArray(plantilla.temas) ? plantilla.temas : []);
     setInstrucciones(String(plantilla.instrucciones || ''));
     setMensaje('');
@@ -330,6 +341,11 @@ export function SeccionPlantillas({
     setTipo('parcial');
     setPeriodoId('');
     setNumeroPaginas(2);
+    setReactivosObjetivo(20);
+    setDefaultVersionCount(1);
+    setSheetFamilyCode('S50_5A_ID5_VR6');
+    setPrefillMode('none');
+    setVersionMode('single');
     setTemasSeleccionados([]);
     setInstrucciones(INSTRUCCIONES_DEFAULT);
     setMensaje('');
@@ -357,6 +373,28 @@ export function SeccionPlantillas({
         titulo: titulo.trim(),
         tipo,
         numeroPaginas: Math.max(1, Math.floor(numeroPaginas)),
+        reactivosObjetivo: Math.max(1, Math.floor(reactivosObjetivo)),
+        defaultVersionCount: Math.max(1, Math.floor(defaultVersionCount)),
+        answerKeyMode: 'digital',
+        bookletConfig: {
+          targetPages: Math.max(1, Math.floor(numeroPaginas)),
+          densityMode: 'balanced',
+          allowImages: true,
+          imageBudgetPolicy: 'balanced',
+          headerStyle: 'compact',
+          fontScale: 1,
+          lineSpacing: 1.1,
+          separateCoverPage: false
+        },
+        omrConfig: {
+          sheetFamilyCode,
+          prefillMode,
+          identityMode: 'qr_plus_bubbled_id',
+          allowBlankGenericSheets: true,
+          versionMode,
+          ignoreUnusedTrailingQuestions: true,
+          captureMode: 'pdf_and_mobile'
+        },
         instrucciones: String(instrucciones || '').trim() || undefined
       };
       if (periodoId) payload.periodoId = periodoId;
@@ -460,7 +498,29 @@ export function SeccionPlantillas({
         tipo,
         titulo: titulo.trim(),
         instrucciones: String(instrucciones || '').trim() || undefined,
-        numeroPaginas: Math.max(1, Math.floor(numeroPaginas))
+        numeroPaginas: Math.max(1, Math.floor(numeroPaginas)),
+        reactivosObjetivo: Math.max(1, Math.floor(reactivosObjetivo)),
+        defaultVersionCount: Math.max(1, Math.floor(defaultVersionCount)),
+        answerKeyMode: 'digital',
+        bookletConfig: {
+          targetPages: Math.max(1, Math.floor(numeroPaginas)),
+          densityMode: 'balanced',
+          allowImages: true,
+          imageBudgetPolicy: 'balanced',
+          headerStyle: 'compact',
+          fontScale: 1,
+          lineSpacing: 1.1,
+          separateCoverPage: false
+        },
+        omrConfig: {
+          sheetFamilyCode,
+          prefillMode,
+          identityMode: 'qr_plus_bubbled_id',
+          allowBlankGenericSheets: true,
+          versionMode,
+          ignoreUnusedTrailingQuestions: true,
+          captureMode: 'pdf_and_mobile'
+        }
       };
       const periodoIdNorm = String(periodoId || '').trim();
       if (periodoIdNorm) payload.periodoId = periodoIdNorm;
@@ -501,13 +561,21 @@ export function SeccionPlantillas({
       }
       setGenerando(true);
       setMensajeGeneracion('');
-      const payload = await enviarConPermiso<{ examenGenerado: ExamenGeneradoResumen; advertencias?: string[] }>(
+      const payload = await enviarConPermiso<{
+        examenGenerado?: ExamenGeneradoResumen;
+        generatedAssessment?: { _id: string; folio: string };
+        advertencias?: string[];
+      }>(
         'examenes:generar',
-        '/examenes/generados',
-        { plantillaId },
+        `/assessments/templates/${encodeURIComponent(plantillaId)}/generate`,
+        {},
         'No tienes permiso para generar examenes.'
       );
-      const ex = payload?.examenGenerado ?? null;
+      const ex =
+        payload?.examenGenerado ??
+        (payload?.generatedAssessment
+          ? ({ _id: payload.generatedAssessment._id, folio: payload.generatedAssessment.folio } as ExamenGeneradoResumen)
+          : null);
       const adv = Array.isArray(payload?.advertencias) ? payload.advertencias : [];
       setUltimoGenerado(ex);
       setMensajeGeneracion(ex ? `Examen generado. Folio: ${ex.folio} (ID: ${idCortoMateria(ex._id)})` : 'Examen generado');
@@ -659,6 +727,16 @@ export function SeccionPlantillas({
           bloqueoEdicion={bloqueoEdicion}
           numeroPaginas={numeroPaginas}
           setNumeroPaginas={setNumeroPaginas}
+          reactivosObjetivo={reactivosObjetivo}
+          setReactivosObjetivo={setReactivosObjetivo}
+          defaultVersionCount={defaultVersionCount}
+          setDefaultVersionCount={setDefaultVersionCount}
+          sheetFamilyCode={sheetFamilyCode}
+          setSheetFamilyCode={setSheetFamilyCode}
+          prefillMode={prefillMode}
+          setPrefillMode={setPrefillMode}
+          versionMode={versionMode}
+          setVersionMode={setVersionMode}
           instrucciones={instrucciones}
           setInstrucciones={setInstrucciones}
           temasDisponibles={temasDisponibles}

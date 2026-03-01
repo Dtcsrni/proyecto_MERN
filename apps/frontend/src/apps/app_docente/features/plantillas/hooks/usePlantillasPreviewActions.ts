@@ -13,6 +13,8 @@ import type { PreviewPlantilla } from '../../../tipos';
 import { mensajeDeError } from '../../../utilidades';
 import type { Dispatch, SetStateAction } from 'react';
 
+type PreviewPdfUrls = { booklet?: string; omrSheet?: string };
+
 type Params = {
   puedePrevisualizarPlantillas: boolean;
   avisarSinPermiso: (mensaje: string) => void;
@@ -22,7 +24,7 @@ type Params = {
   setPreviewPorPlantillaId: Dispatch<SetStateAction<Record<string, PreviewPlantilla>>>;
   setCargandoPreviewPlantillaId: Dispatch<SetStateAction<string | null>>;
   setPlantillaPreviewId: Dispatch<SetStateAction<string | null>>;
-  setPreviewPdfUrlPorPlantillaId: Dispatch<SetStateAction<Record<string, string>>>;
+  setPreviewPdfUrlPorPlantillaId: Dispatch<SetStateAction<Record<string, PreviewPdfUrls>>>;
   setCargandoPreviewPdfPlantillaId: Dispatch<SetStateAction<string | null>>;
 };
 
@@ -48,7 +50,7 @@ export function usePlantillasPreviewActions({
       try {
         setCargandoPreviewPlantillaId(id);
         const payload = await clienteApi.obtener<PreviewPlantilla>(
-          `/examenes/plantillas/${encodeURIComponent(id)}/previsualizar`
+          `/assessments/templates/${encodeURIComponent(id)}/preview`
         );
         setPreviewPorPlantillaId((prev) => ({ ...prev, [id]: payload }));
       } catch (error) {
@@ -85,7 +87,7 @@ export function usePlantillasPreviewActions({
   );
 
   const cargarPreviewPdfPlantilla = useCallback(
-    async (id: string) => {
+    async (id: string, kind: keyof PreviewPdfUrls = 'booklet') => {
       if (cargandoPreviewPdfPlantillaId === id) return;
       if (!puedePrevisualizarPlantillas) {
         avisarSinPermiso('No tienes permiso para previsualizar plantillas.');
@@ -97,8 +99,13 @@ export function usePlantillasPreviewActions({
         return;
       }
 
+      const path =
+        kind === 'omrSheet'
+          ? `/assessments/templates/${encodeURIComponent(id)}/preview/omr-sheet.pdf`
+          : `/assessments/templates/${encodeURIComponent(id)}/preview/booklet.pdf`;
+
       const intentar = async (t: string) =>
-        fetch(`${clienteApi.baseApi}/examenes/plantillas/${encodeURIComponent(id)}/previsualizar/pdf`, {
+        fetch(`${clienteApi.baseApi}${path}`, {
           credentials: 'include',
           headers: { Authorization: `Bearer ${t}` }
         });
@@ -115,15 +122,15 @@ export function usePlantillasPreviewActions({
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         setPreviewPdfUrlPorPlantillaId((prev) => {
-          const anterior = prev[id];
+          const anterior = prev[id]?.[kind];
           if (anterior) URL.revokeObjectURL(anterior);
-          return { ...prev, [id]: url };
+          return { ...prev, [id]: { ...prev[id], [kind]: url } };
         });
       } catch (error) {
-        const msg = mensajeDeError(error, 'No se pudo generar el PDF de previsualizacion');
+        const msg = mensajeDeError(error, `No se pudo generar el PDF de ${kind === 'omrSheet' ? 'hoja OMR' : 'cuadernillo'}`);
         emitToast({
           level: 'error',
-          title: 'Previsualizacion PDF',
+          title: kind === 'omrSheet' ? 'Hoja OMR' : 'Cuadernillo',
           message: msg,
           durationMs: 5200,
           action: accionToastSesionParaError(error, 'docente')
@@ -142,12 +149,22 @@ export function usePlantillasPreviewActions({
   );
 
   const cerrarPreviewPdfPlantilla = useCallback(
-    (id: string) => {
+    (id: string, kind?: keyof PreviewPdfUrls) => {
       setPreviewPdfUrlPorPlantillaId((prev) => {
         const actual = prev[id];
-        if (actual) URL.revokeObjectURL(actual);
+        if (!actual) return prev;
         const copia = { ...prev };
-        delete copia[id];
+        if (!kind) {
+          if (actual.booklet) URL.revokeObjectURL(actual.booklet);
+          if (actual.omrSheet) URL.revokeObjectURL(actual.omrSheet);
+          delete copia[id];
+          return copia;
+        }
+        if (actual[kind]) URL.revokeObjectURL(actual[kind]!);
+        const siguiente = { ...actual };
+        delete siguiente[kind];
+        if (!siguiente.booklet && !siguiente.omrSheet) delete copia[id];
+        else copia[id] = siguiente;
         return copia;
       });
     },
